@@ -1,0 +1,6 @@
+git+https://github.com/johentsch/ms3.git@development
+git+https://github.com/DCMLab/dimcat.git@development
+plotly
+kaleido
+colorlover
+nbformat
