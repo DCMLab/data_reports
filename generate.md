@@ -1,7 +1,7 @@
 ---
 jupyter:
   jupytext:
-    formats: ipynb,md,py:percent
+    formats: md,py:percent
     text_representation:
       extension: .md
       format_name: markdown
@@ -14,18 +14,7 @@ jupyter:
 ---
 
 <!-- #region tags=[] -->
-In order to run this notebook:
-* clone the corpus: `git clone --recurse-submodules -j8 git@github.com:DCMLab/romantic_piano_corpus.git`
-* create new environment, make it visible to your Jupyter
-  * for conda do `conda create --name {name} python=3.10`
-  * activate it and install `pip install ipykernel`
-  * `ipython kernel install --user --name={name}`
-* within the new environment, install requirements, e.g. `pip install -r requirements.txt`
-  * this currently involves installing ms3 and dimcat from their `development` branches
-* head into the clone of romantic_piano_corpus and run `ms3 extract -X -M -N`
-* Set the `corpus_path` in the second cell to your local clone.
-
-If the plots are not displayed and you are in JupyterLab, use [this guide](https://plotly.com/python/getting-started/#jupyterlab-support).
+# Corpus overview plots
 <!-- #endregion -->
 
 ```python
