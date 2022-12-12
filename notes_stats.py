@@ -1,7 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:percent,md
+#     formats: py:percent,md
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -17,36 +17,22 @@
 # %load_ext autoreload
 # %autoreload 2
 import os
-from dimcat import (
-    Corpus,  
-    Pipeline,
-    IsAnnotatedFilter,
-    CorpusGrouper, 
-    PieceGrouper, 
-    ModeGrouper, 
-    ChordFeatureSlicer,
-    ChordSymbolBigrams, 
-    ChordSymbolUnigrams,
-    LocalKeySlicer,
-)
-from dimcat import __version__ as dimcat_version
-from ms3 import __version__ as ms3_version
-from ms3 import fifths2name
+from fractions import Fraction
+from IPython.display import HTML
+import ms3
+import dimcat as dc
 from git import Repo
 import plotly.express as px
-import plotly.graph_objects as go
 import colorlover
-from plotly.subplots import make_subplots
 import pandas as pd
 pd.set_option("display.max_columns", 100)
 
 # %%
-corpus_path = "~/romantic_piano_corpus"
-
-repo = Repo(corpus_path)
-print(f"{os.path.basename(corpus_path)} @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dimcat_version}")
-print(f"ms3 version {ms3_version}")
+dataset_path = "~/romantic_piano_corpus"
+repo = Repo(dataset_path)
+print(f"{os.path.basename(dataset_path)} @ {repo.commit().hexsha[:7]}")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3.__version__}")
 
 # %%
 STD_LAYOUT = {
@@ -56,41 +42,48 @@ STD_LAYOUT = {
  'font': {'size': 15}
 }
 OUTPUT_DIR = "/home/hentsche/Documents/phd/romantic_piano_corpus_report/figures/"
+#HTML(colorlover.to_html(colorlover.scales))
+HTML(colorlover.to_html(colorlover.scales['9']['qual']['Paired']))
+
+# %%
+fig = px.colors.qualitative.swatches()
+fig.show()
+
+# %%
 corpus_color_scale = px.colors.qualitative.D3
 
 # %% [markdown]
 # # Overview
 
 # %% pycharm={"name": "#%%\n"}
-corpus = Corpus(directory=corpus_path)
-corpus.data
+dataset = dc.Dataset(directory=dataset_path)
+dataset.data
 
 # %%
-all_metadata = corpus.data.metadata(from_tsv=True).set_index('fnames', append=True)
-print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {len(corpus.data._score_ids())} scores.")
+all_metadata = dataset.data.metadata()
+print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.n_pieces} scores.")
 all_metadata.groupby(level=0).nth(0)
 
 # %%
-annotated = IsAnnotatedFilter().process_data(corpus)
-print(f"Before: {len(corpus.indices[()])} IDs, after filtering: {len(annotated.indices[()])}")
+annotated = dc.IsAnnotatedFilter().process_data(dataset)
+print(f"Before: {len(dataset.indices[()])} IDs, after filtering: {len(annotated.indices[()])}")
 
 # %% [markdown]
 # **Choose here if you want to see stats for all or only for annotated scores.**
 
 # %%
-#selected = corpus
+#selected = dataset
 selected = annotated
 
 # %% [markdown]
 # **Compute chronological order**
 
 # %%
-all_metadata = corpus.data.metadata(from_tsv=True)
 summary = all_metadata[all_metadata.label_count > 0]
 print(f"Selected metadata rows cover {len(summary)} of the {len(sum((ixs for _, ixs in selected.iter_groups()), start=[]))} scores.")
 mean_composition_years = summary.groupby(level=0).composed_end.mean().astype(int).sort_values()
 chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, corpus_color_scale))
+dataset_colors = dict(zip(chronological_order, corpus_color_scale))
 chronological_order
 
 # %% [markdown]
@@ -133,13 +126,13 @@ def repeat_notes_according_to_weights(weights):
 #            )
 # fig = px.violin(weighted_midi, labels=dict(variable='', value='pitch'), box=True, height=500,
 #                category_orders=chronological_order,
-#                ) #, title="Distribution of pitches per corpus"
+#                ) #, title="Distribution of pitches per dataset"
 # fig.update_layout(yaxis=yaxis, **STD_LAYOUT)
-# fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_corpus.png"), scale=2)
+# fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_dataset.png"), scale=2)
 # fig.show()
 
 # %%
-corpus_names = dict(
+dataset_names = dict(
     beethoven_piano_sonatas='Beethoven Sonatas',
     chopin_mazurkas='Chopin Mazurkas',
     debussy_suite_bergamasque='Debussy Suite',
@@ -150,14 +143,14 @@ corpus_names = dict(
     schumann_kinderszenen="Schumann Kinderszenen",
     tchaikovsky_seasons="Tchaikovsky Seasons"
 )
-corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
-chronological_corpus_names = [corpus_names[corp] for corp in chronological_order]
-all_notes['corpus_name'] = all_notes.index.get_level_values(0).map(corpus_names)
+dataset_name_colors = {dataset_names[corp]: color for corp, color in dataset_colors.items()}
+chronological_dataset_names = [dataset_names[corp] for corp in chronological_order]
+all_notes['dataset_name'] = all_notes.index.get_level_values(0).map(dataset_names)
 
 # %%
-grouped_notes = all_notes.groupby('corpus_name')
+grouped_notes = all_notes.groupby('dataset_name')
 weighted_midi = pd.concat([weight_notes(nl, 'midi', precise=False) for _, nl in grouped_notes], keys=grouped_notes.groups.keys()).reset_index(level=0)
-weighted_midi.columns = ['corpus', 'midi']
+weighted_midi.columns = ['dataset', 'midi']
 weighted_midi
 
 # %%
@@ -166,18 +159,18 @@ yaxis=dict(tickmode= 'array',
            ticktext = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7"],
            gridcolor='lightgrey',
            )
-fig = px.violin(weighted_midi, x='corpus', y='midi', color='corpus', box=True,
+fig = px.violin(weighted_midi, x='dataset', y='midi', color='dataset', box=True,
                 labels=dict(
-                    corpus='',
+                    dataset='',
                     midi='distribution of pitches by duration'
                 ),
-                category_orders=dict(corpus=chronological_corpus_names),
-                color_discrete_map=corpus_name_colors,
+                category_orders=dict(dataset=chronological_dataset_names),
+                color_discrete_map=dataset_name_colors,
                 width=1000, height=600,
                )
 fig.update_layout(yaxis=yaxis, **STD_LAYOUT,
                  showlegend=False)
-fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_corpus_colored.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_dataset_colored.png"), scale=2)
 fig.show()
 
 # %% [raw]
@@ -195,7 +188,7 @@ fig.show()
 #            )
 # fig = px.violin(weighted_tpc, labels=dict(variable='', value='pitch class'), box=True, height=500)
 # fig.update_layout(yaxis=yaxis, **STD_LAYOUT)
-# fig.write_image(os.path.join(OUTPUT_DIR, "tpc_per_corpus.png"), scale=2)
+# fig.write_image(os.path.join(OUTPUT_DIR, "tpc_per_dataset.png"), scale=2)
 # fig.show()
 
 # %% [raw]
@@ -211,7 +204,7 @@ fig.show()
 # %%
 bar_data = all_notes.groupby('tpc').duration_qb.sum().reset_index()
 x_values = list(range(bar_data.tpc.min(), bar_data.tpc.max()+1))
-x_names = fifths2name(x_values)
+x_names = ms3.fifths2name(x_values)
 fig = px.bar(bar_data, x='tpc', y='duration_qb',
                  labels=dict(tpc='Named pitch class',
                              duration_qb='Duration in quarter notes'
@@ -229,15 +222,15 @@ fig.write_image(os.path.join(OUTPUT_DIR, "tpc_distribution_overall.png"), scale=
 fig.show()
 
 # %%
-scatter_data = all_notes.groupby(['corpus_name', 'tpc']).duration_qb.sum().reset_index()
-fig = px.scatter(scatter_data, x='tpc', y='duration_qb', color='corpus_name', 
+scatter_data = all_notes.groupby(['dataset_name', 'tpc']).duration_qb.sum().reset_index()
+fig = px.scatter(scatter_data, x='tpc', y='duration_qb', color='dataset_name', 
                  labels=dict(
                      duration_qb='duration',
                      tpc='named pitch class',
                  ),
-                 category_orders=dict(corpus=chronological_corpus_names),
-                 color_discrete_map=corpus_name_colors,
-                 facet_col='corpus_name', facet_col_wrap=3, facet_col_spacing=0.03,
+                 category_orders=dict(dataset=chronological_dataset_names),
+                 color_discrete_map=dataset_name_colors,
+                 facet_col='dataset_name', facet_col_wrap=3, facet_col_spacing=0.03,
                  width=1000, height=500,
                 )
 fig.update_traces(mode='lines+markers')
@@ -246,17 +239,17 @@ fig.update_layout(**STD_LAYOUT, showlegend=False)
 fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='lightgrey', tickmode='array', tickvals= [-12, -6, 0, 6, 12, 18],
     ticktext = ["Dbb", "Gb", "C", "F#", "B#", "E##"], visible=True, )
 fig.update_yaxes(gridcolor='lightgrey', zeroline=False, matches=None, showticklabels=True)
-fig.write_image(os.path.join(OUTPUT_DIR, "tpc_line_per_corpus_compact.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "tpc_line_per_dataset_compact.png"), scale=2)
 fig.show()
 
 # %%
-px.bar(scatter_data, x='tpc', y='duration_qb', color='corpus_name', 
+px.bar(scatter_data, x='tpc', y='duration_qb', color='dataset_name', 
                  labels=dict(
                      duration_qb='duration',
                      tpc='named pitch class',
                  ),
-                 category_orders=dict(corpus=chronological_corpus_names),
-                 color_discrete_map=corpus_name_colors,
+                 category_orders=dict(dataset=chronological_dataset_names),
+                 color_discrete_map=dataset_name_colors,
                  width=1000, height=500,
                 )
 
@@ -280,7 +273,7 @@ f"Fraction of note duration without accidental of the entire durations: {no_acci
 # fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='lightgrey', tickmode='array', tickvals= [-12, -6, 0, 6, 12, 18],
 #     ticktext = ["Dbb", "Gb", "C", "F#", "B#", "E##"],)
 # fig.update_yaxes(showgrid=False, zeroline=False)
-# fig.write_image(os.path.join(OUTPUT_DIR, "tpc_line_per_corpus.png"), scale=2)
+# fig.write_image(os.path.join(OUTPUT_DIR, "tpc_line_per_dataset.png"), scale=2)
 # fig.show()
 
 # %% [markdown]
