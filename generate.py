@@ -1,7 +1,7 @@
 # ---
 # jupyter:
 #   jupytext:
-#     formats: ipynb,py:percent,md
+#     formats: ipynb,md,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
@@ -13,7 +13,7 @@
 #     name: dimcat
 # ---
 
-# %% [markdown]
+# %% [markdown] tags=[]
 # In order to run this notebook:
 # * clone the corpus: `git clone --recurse-submodules -j8 git@github.com:DCMLab/romantic_piano_corpus.git`
 # * create new environment, make it visible to your Jupyter
@@ -27,33 +27,17 @@
 #
 # If the plots are not displayed and you are in JupyterLab, use [this guide](https://plotly.com/python/getting-started/#jupyterlab-support).
 
-# %% pycharm={"name": "#%%\n"}
+# %%
 # %load_ext autoreload
 # %autoreload 2
 import os
 from fractions import Fraction
 from IPython.display import HTML
-from ms3 import __version__ as ms3_version
-from ms3 import fifths2iv, resolve_relative_keys, map_dict
-from dimcat import (
-    Corpus,  
-    Pipeline,
-    IsAnnotatedFilter,
-    CorpusGrouper, 
-    PieceGrouper, 
-    ModeGrouper, 
-    ChordFeatureSlicer,
-    ChordSymbolBigrams, 
-    ChordSymbolUnigrams,
-    LocalKeySlicer,
-    PhraseSlicer
-)
-from dimcat import __version__ as dimcat_version
+import ms3
+import dimcat as dc
 from git import Repo
 import plotly.express as px
-import plotly.graph_objects as go
 import colorlover
-from plotly.subplots import make_subplots
 import pandas as pd
 pd.set_option("display.max_columns", 100)
 
@@ -61,8 +45,8 @@ pd.set_option("display.max_columns", 100)
 corpus_path = "~/romantic_piano_corpus"
 repo = Repo(corpus_path)
 print(f"{os.path.basename(corpus_path)} @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dimcat_version}")
-print(f"ms3 version {ms3_version}")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3.__version__}")
 
 # %%
 STD_LAYOUT = {
@@ -85,17 +69,17 @@ corpus_color_scale = px.colors.qualitative.D3
 # %% [markdown]
 # # Overview
 
-# %% pycharm={"name": "#%%\n"}
-corpus = Corpus()
-corpus.load(directory=corpus_path)
-corpus.data
+# %%
+dataset = dc.Dataset()
+dataset.load(directory=corpus_path)
+dataset.data
 
 # %% [markdown]
 # ## Metadata
 
 # %%
-all_metadata = corpus.data.metadata(from_tsv=True)
-print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {len(corpus.data._score_ids())} scores.")
+all_metadata = dataset.data.metadata()
+print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {len(dataset.pieces)} scores.")
 all_metadata.groupby(level=0).nth(0)
 
 # %%
@@ -103,22 +87,29 @@ print("VALUE COUNTS OF THE COLUMN 'annotators'")
 all_metadata.annotators.value_counts()
 
 # %%
-print(f"Composition dates range from {all_metadata.composed_start.min()} ({all_metadata.loc[all_metadata.composed_start.idxmin(), 'fnames']}) "
-      f"to {all_metadata.composed_end.max()} ({all_metadata.loc[all_metadata.composed_end.idxmax(), 'fnames']}).")
+print(f"Composition dates range from {all_metadata.composed_start.min()} {all_metadata.composed_start.idxmin()} "
+      f"to {all_metadata.composed_end.max()} {all_metadata.composed_end.idxmax()}.")
 
-# %%
-annotated = IsAnnotatedFilter().process_data(corpus)
-print(f"Before: {len(corpus.indices[()])} IDs, after filtering: {len(annotated.indices[()])}")
+# %% tags=[]
+annotated = dc.IsAnnotatedFilter().process_data(dataset)
+print(f"Before: {len(dataset.indices[()])} IDs, after filtering: {len(annotated.indices[()])}")
 
 # %% [markdown]
 # **Choose here if you want to see stats for all or only for annotated scores.**
 
 # %%
-#selected = corpus
-selected = annotated
+selected = dataset
+#selected = annotated
 
 # %% [markdown]
 # ## Measures
+
+# %%
+for group, ixs in selected.iter_groups():
+    ix = ixs[0]
+    break
+c, f = ix
+selected.data[c][f].get_facet('measures', interval_index=True)
 
 # %%
 all_measures = selected.get_facet('measures')
@@ -154,25 +145,25 @@ for group, df in all_notes.groupby(level=[0,1]):
 # %%
 all_notes[all_notes.staff > 2].groupby(level=[0,1]).staff.value_counts()
 
-# %% [markdown] pycharm={"name": "#%% md\n"}
+# %% [markdown]
 # ## Harmony labels
 #
 # All symbols, independent of the local key (the mode of which changes their semantics).
 
-# %% pycharm={"name": "#%%\n"}
+# %%
 all_annotations = annotated.get_facet('expanded')
 all_annotations.head()
 
-# %% pycharm={"name": "#%%\n"}
+# %%
 no_chord = all_annotations.root.isna()
 print(f"Concatenated annotation tables contains {all_annotations.shape[0]} rows. {no_chord.sum()} of them are not chords. Their values are:")
 all_annotations.label[no_chord].value_counts(dropna=False).to_dict()
 
-# %% pycharm={"name": "#%%\n"}
+# %%
 all_chords = all_annotations[~no_chord].copy()
 print(f"Corpus contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
 
-# %% pycharm={"name": "#%%\n"}
+# %%
 #from ms3 import write_tsv
 #write_tsv(all_annotations[all_annotations.pedalend.notna()], './issues/pedalpoints.tsv', pre_process=False)
 
@@ -180,10 +171,9 @@ print(f"Corpus contains {all_chords.shape[0]} tokens and {len(all_chords.chord.u
 # ## Corpus summary
 
 # %%
-summary = all_metadata.set_index('fnames', append=True).reset_index(level=[1,2], drop=True)
+summary = all_metadata
 if selected == annotated:
     summary = summary[summary.label_count > 0].copy()
-summary.index = summary.index.rename(['corpus', 'fname'])
 summary.length_qb = all_measures.groupby(level=[0,1]).act_dur.sum() * 4.0
 summary = pd.concat([summary,
                      all_notes.groupby(level=[0,1]).size().rename('notes'),
@@ -251,6 +241,9 @@ fig.write_image(os.path.join(OUTPUT_DIR, "corpus_size_histogram.png"), scale=2)
 fig.show()
 
 # %%
+summary.columns
+
+# %%
 corpus_metadata = summary.groupby(level=0)
 n_pieces = corpus_metadata.size().rename('pieces')
 absolute_numbers = dict(
@@ -277,6 +270,12 @@ summary_with_sum
 pd.concat([summary, complete_summary.sum()])
 
 # %%
+summary[summary.ambitus.isna()]
+
+# %%
+summary.ambitus.str.extract(r"^(\d+)-(\d+)")
+
+# %%
 ambitus = summary.ambitus.str.extract(r"^(\d+)-(\d+)").astype(int)
 ambitus.columns = ['low', 'high']
 ambitus['range'] = ambitus.high - ambitus.low
@@ -298,7 +297,7 @@ ambitus.groupby(level=0).high.max() - ambitus.groupby(level=0).low.min()
 # # Phrases
 
 # %%
-phrase_segmented = PhraseSlicer().process_data(selected)
+phrase_segmented = dc.PhraseSlicer().process_data(selected)
 phrases = phrase_segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
 phrases.head(20)
@@ -347,7 +346,7 @@ uniform_timesigs[uniform_timesigs.duration_measures > 80]
 
 # %%
 from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
-keys_segmented = LocalKeySlicer().process_data(selected)
+keys_segmented = dc.LocalKeySlicer().process_data(selected)
 keys = keys_segmented.get_slice_info()
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
@@ -378,7 +377,7 @@ localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor'
 # sort by stacked bar length:
 localkey_fifths_durations = localkey_fifths_durations.sort_values(key=lambda S: S.index.get_level_values(0).map(S.groupby(level=0).sum()), ascending=False)
 bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
-bar_data.localkey_fifths = bar_data.localkey_fifths.map(fifths2iv)
+bar_data.localkey_fifths = bar_data.localkey_fifths.map(ms3.fifths2iv)
 fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mode', log_y=True, barmode='group',
              labels=dict(localkey_fifths='Roots of local keys as intervallic distance from the global tonic', 
                    duration_qb='total duration in quarter notes',
@@ -395,7 +394,7 @@ fig.show()
 localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor']).duration_qb.sum()
 # sort by stacked bar length:
 bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
-bar_data.localkey_fifths = bar_data.localkey_fifths.map(fifths2iv)
+bar_data.localkey_fifths = bar_data.localkey_fifths.map(ms3.fifths2iv)
 fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mode', log_y=True, barmode='group',
              labels=dict(localkey_fifths='Roots of local keys as intervallic distance from the global tonic', 
                    duration_qb='total duration in quarter notes',
@@ -428,10 +427,10 @@ all_annotations.cadence.value_counts()
 all_annotations.groupby("corpus_name").cadence.value_counts()
 
 # %%
+cadence_count_per_corpus = all_annotations.groupby("corpus_name").cadence.value_counts().sort_values(ascending=False)
 cadence_count_per_corpus.groupby(level=0).sum()
 
 # %%
-cadence_count_per_corpus = all_annotations.groupby("corpus_name").cadence.value_counts().sort_values(ascending=False)
 cadence_fraction_per_corpus = cadence_count_per_corpus / cadence_count_per_corpus.groupby(level=0).sum()
 fig = px.bar(cadence_fraction_per_corpus.rename('count').reset_index(), x='corpus_name', y='count', color='cadence',
              labels=dict(count='fraction', corpus=''), 
@@ -444,7 +443,7 @@ fig.update_yaxes(gridcolor='lightgrey')
 fig.write_image(os.path.join(OUTPUT_DIR, "cadences.png"), scale=2)
 fig.show()
 
-# %% [markdown] pycharm={"name": "#%% md\n"}
+# %% [markdown]
 # # Harmony labels
 # ## Unigrams
 # For computing unigram statistics, the tokens need to be grouped by their occurrence within a major or a minor key because this changes their meaning. To that aim, the annotated corpus needs to be sliced into contiguous localkey segments which are then grouped into a major (`is_minor=False`) and a minor group.
@@ -454,20 +453,17 @@ root_durations = all_chords[all_chords.root.between(-5,6)].groupby(['root', 'cho
 # sort by stacked bar length:
 #root_durations = root_durations.sort_values(key=lambda S: S.index.get_level_values(0).map(S.groupby(level=0).sum()), ascending=False)
 bar_data = root_durations.reset_index()
-bar_data.root = bar_data.root.map(fifths2iv)
+bar_data.root = bar_data.root.map(ms3.fifths2iv)
 px.bar(bar_data, x='root', y='duration_qb', color='chord_type')
 
 # %%
-chord_type_frequency.index.
-
-# %%
 relative_roots = all_chords[['numeral', 'duration_qb', 'relativeroot', 'localkey_is_minor', 'chord_type']].copy()
-relative_roots['relativeroot_resolved'] = transform(relative_roots, resolve_relative_keys, ['relativeroot', 'localkey_is_minor'])
+relative_roots['relativeroot_resolved'] = transform(relative_roots, ms3.resolve_relative_keys, ['relativeroot', 'localkey_is_minor'])
 has_rel = relative_roots.relativeroot_resolved.notna()
 relative_roots.loc[has_rel, 'localkey_is_minor'] = relative_roots.loc[has_rel, 'relativeroot_resolved'].str.islower()
 relative_roots['root'] = transform(relative_roots, roman_numeral2fifths, ['numeral', 'localkey_is_minor'])
 chord_type_frequency = all_chords.chord_type.value_counts()
-replace_rare = map_dict({t: 'other' for t in chord_type_frequency[chord_type_frequency < 500].index})
+replace_rare = ms3.map_dict({t: 'other' for t in chord_type_frequency[chord_type_frequency < 500].index})
 relative_roots['type_reduced'] = relative_roots.chord_type.map(replace_rare)
 #is_special = relative_roots.chord_type.isin(('It', 'Ger', 'Fr'))
 #relative_roots.loc[is_special, 'root'] = -4
@@ -475,7 +471,7 @@ relative_roots['type_reduced'] = relative_roots.chord_type.map(replace_rare)
 # %%
 root_durations = relative_roots.groupby(['root', 'type_reduced']).duration_qb.sum().sort_values(ascending=False)
 bar_data = root_durations.reset_index()
-bar_data.root = bar_data.root.map(fifths2iv)
+bar_data.root = bar_data.root.map(ms3.fifths2iv)
 root_order = bar_data.groupby('root').duration_qb.sum().sort_values(ascending=False).index.to_list()
 type_colors = dict(zip(('Mm7', 'M', 'o7', 'o', 'mm7', 'm', '%7', 'MM7', 'other'), colorlover.scales['9']['qual']['Paired']))
 fig = px.bar(bar_data, x='root', y='duration_qb', color='type_reduced', barmode='group', log_y=True,
@@ -511,16 +507,22 @@ complete = bar_data.duration_qb.sum()
 print(f"On diminished or augmented scale degrees: {dim_or_aug} / {complete} = {dim_or_aug / complete}")
 
 # %%
-mode_slices = ModeGrouper().process_data(keys_segmented)
+mode_slices = dc.ModeGrouper().process_data(keys_segmented)
 
 # %% [markdown]
 # ### Whole dataset
 
 # %%
-unigrams = ChordSymbolUnigrams(once_per_group=True).process_data(mode_slices)
+mode_slices.get_slice_info()
 
 # %%
-unigrams.get()
+unigrams = dc.ChordSymbolUnigrams(once_per_group=True).process_data(mode_slices)
+
+# %%
+unigrams.group2pandas = "group_of_series2series"
+
+# %%
+unigrams.get(as_pandas=True)
 
 # %%
 modes = {True: 'MINOR', False: 'MAJOR'}
@@ -532,7 +534,7 @@ for (is_minor,), ugs in unigrams.iter():
 # ### Per corpus
 
 # %%
-corpus_wise_unigrams = Pipeline([CorpusGrouper(), ChordSymbolUnigrams(once_per_group=True)]).process_data(mode_slices)
+corpus_wise_unigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process_data(mode_slices)
 
 # %%
 corpus_wise_unigrams.get()
@@ -557,7 +559,7 @@ print(f"Chords which occur in all corpora, sorted by descending global frequency
 # ### Per piece
 
 # %%
-piece_wise_unigrams = Pipeline([PieceGrouper(), ChordSymbolUnigrams(once_per_group=True)]).process_data(mode_slices)
+piece_wise_unigrams = dc.Pipeline([dc.PieceGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process_data(mode_slices)
 
 # %%
 piece_wise_unigrams.get()
@@ -571,14 +573,14 @@ for (is_minor, corpus_name), ugs in piece_wise_unigrams.iter():
         types_shared_between_pieces[is_minor] = set(ugs.index)
 print(types_shared_between_pieces)
 
-# %% [markdown] pycharm={"name": "#%% md\n"}
+# %% [markdown]
 # ## Bigrams
 
 # %% [markdown]
 # ### Whole dataset
 
 # %%
-bigrams = ChordSymbolBigrams(once_per_group=True).process_data(mode_slices)
+bigrams = dc.ChordSymbolBigrams(once_per_group=True).process_data(mode_slices)
 
 # %%
 bigrams.get()
@@ -593,7 +595,7 @@ for (is_minor,), ugs in bigrams.iter():
 # ### Per corpus
 
 # %%
-corpus_wise_bigrams = Pipeline([CorpusGrouper(), ChordSymbolBigrams(once_per_group=True)]).process_data(mode_slices)
+corpus_wise_bigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolBigrams(once_per_group=True)]).process_data(mode_slices)
 
 # %%
 corpus_wise_bigrams.get()
@@ -629,7 +631,7 @@ pd.concat(transitions_from_shared_types[True].values(), keys=transitions_from_sh
 # ### Per piece
 
 # %%
-piece_wise_bigrams = Pipeline([PieceGrouper(), ChordSymbolBigrams(once_per_group=True)]).process_data(mode_slices)
+piece_wise_bigrams = dc.Pipeline([dc.PieceGrouper(), dc.ChordSymbolBigrams(once_per_group=True)]).process_data(mode_slices)
 
 # %%
 piece_wise_bigrams.get()

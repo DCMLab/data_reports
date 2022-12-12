@@ -124,6 +124,7 @@ def repeat_notes_according_to_weights(weights):
         counts_reflecting_weights.extend([pitch]*count)
     return pd.Series(counts_reflecting_weights)
 
+
 ```
 
 <!-- #raw -->
