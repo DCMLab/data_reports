@@ -28,9 +28,10 @@ import pandas as pd
 pd.set_option("display.max_columns", 100)
 
 # %%
-dataset_path = "~/romantic_piano_corpus"
-repo = Repo(dataset_path)
-print(f"{os.path.basename(dataset_path)} @ {repo.commit().hexsha[:7]}")
+corpus_path = "~/romantic_piano_corpus"
+corpus_path = os.path.expanduser(corpus_path)
+repo = Repo(corpus_path)
+print(f"{os.path.basename(corpus_path)} @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 
@@ -41,7 +42,9 @@ STD_LAYOUT = {
  'margin': {'l': 40, 'r': 0, 'b': 0, 't': 40, 'pad': 0},
  'font': {'size': 15}
 }
-OUTPUT_DIR = "/home/hentsche/Documents/phd/romantic_piano_corpus_report/figures/"
+#OUTPUT_DIR = "/home/hentsche/Documents/phd/romantic_piano_corpus_report/figures/"
+OUTPUT_DIR = os.path.join(corpus_path, 'figures')
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 #HTML(colorlover.to_html(colorlover.scales))
 HTML(colorlover.to_html(colorlover.scales['9']['qual']['Paired']))
 
@@ -56,7 +59,7 @@ corpus_color_scale = px.colors.qualitative.D3
 # # Overview
 
 # %% pycharm={"name": "#%%\n"}
-dataset = dc.Dataset(directory=dataset_path)
+dataset = dc.Dataset(directory=corpus_path)
 dataset.data
 
 # %%
@@ -168,6 +171,7 @@ fig = px.violin(weighted_midi, x='dataset', y='midi', color='dataset', box=True,
                 color_discrete_map=dataset_name_colors,
                 width=1000, height=600,
                )
+fig.update_traces(spanmode='hard') # do not extend beyond outliers
 fig.update_layout(yaxis=yaxis, **STD_LAYOUT,
                  showlegend=False)
 fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_dataset_colored.png"), scale=2)

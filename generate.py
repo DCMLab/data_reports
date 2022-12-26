@@ -32,6 +32,7 @@ pd.set_option("display.max_columns", 100)
 
 # %%
 corpus_path = "~/romantic_piano_corpus"
+corpus_path = os.path.expanduser(corpus_path)
 repo = Repo(corpus_path)
 print(f"{os.path.basename(corpus_path)} @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
@@ -44,7 +45,9 @@ STD_LAYOUT = {
  'margin': {'l': 40, 'r': 0, 'b': 0, 't': 40, 'pad': 0},
  'font': {'size': 15}
 }
-OUTPUT_DIR = "/home/hentsche/Documents/phd/romantic_piano_corpus_report/figures/"
+#OUTPUT_DIR = "/home/hentsche/Documents/phd/romantic_piano_corpus_report/figures/"
+OUTPUT_DIR = os.path.join(corpus_path, 'figures')
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 #HTML(colorlover.to_html(colorlover.scales))
 HTML(colorlover.to_html(colorlover.scales['9']['qual']['Paired']))
 
@@ -87,18 +90,11 @@ print(f"Before: {len(dataset.indices[()])} IDs, after filtering: {len(annotated.
 # **Choose here if you want to see stats for all or only for annotated scores.**
 
 # %%
-selected = dataset
-#selected = annotated
+#selected = dataset
+selected = annotated
 
 # %% [markdown]
 # ## Measures
-
-# %%
-for group, ixs in selected.iter_groups():
-    ix = ixs[0]
-    break
-c, f = ix
-selected.data[c][f].get_facet('measures', interval_index=True)
 
 # %%
 all_measures = selected.get_facet('measures')
