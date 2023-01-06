@@ -1,5 +1,5 @@
 ms3 >= 1.0.2
-git+https://github.com/DCMLab/dimcat.git@new_ms3
+git+https://github.com/DCMLab/dimcat.git@development
 plotly
 kaleido
 colorlover
