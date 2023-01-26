@@ -19,7 +19,6 @@ you can [install add this pre-commit hook](https://jupytext.readthedocs.io/en/la
   * `ipython kernel install --user --name={name}`
 * within the new environment, install requirements, e.g. `pip install -r requirements.txt`
   * this currently involves installing dimcat from its `development` branch
-* head into the clone of romantic_piano_corpus and run `ms3 extract -X -M -N`
 * open up jupyter notebook or jupyter lab and open either the `.md` or the `.py` file ([documentation](https://jupytext.readthedocs.io/en/latest/paired-notebooks.html#how-to-open-scripts-with-either-the-text-or-notebook-view-in-jupyter))
 * Set the `corpus_path` in the second cell to your local clone.
 
