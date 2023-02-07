@@ -32,6 +32,8 @@ pd.set_option("display.max_columns", 100)
 corpus_path = "~/romantic_piano_corpus"
 corpus_path = os.path.expanduser(corpus_path)
 repo = Repo(corpus_path)
+notebook_repo = Repo('.')
+print(f"data_reports @ {notebook_repo.commit().hexsha[:7]}")
 print(f"{os.path.basename(corpus_path)} @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
@@ -148,7 +150,7 @@ dataset_names = dict(
     chopin_mazurkas='Chopin Mazurkas',
     debussy_suite_bergamasque='Debussy Suite',
     dvorak_silhouettes="Dvořák Silhouettes",
-    grieg_lyrical_pieces="Grieg Lyrical Pieces",
+    grieg_lyric_pieces="Grieg Lyric Pieces",
     liszt_pelerinage="Liszt Années",
     medtner_tales="Medtner Tales",
     schumann_kinderszenen="Schumann Kinderszenen",
