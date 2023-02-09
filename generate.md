@@ -94,7 +94,7 @@ print(f"Composition dates range from {all_metadata.composed_start.min()} {all_me
 
 ```python tags=[]
 annotated = dc.IsAnnotatedFilter().process_data(dataset)
-print(f"Before: {len(dataset.indices[()])} IDs, after filtering: {len(annotated.indices[()])}")
+print(f"Before: {dataset.n_indices} IDs, after filtering: {annotated.n_indices}")
 ```
 
 **Choose here if you want to see stats for all or only for annotated scores.**
@@ -556,7 +556,7 @@ mode_slices.get_slice_info()
 ```
 
 ```python
-unigrams = dc.ChordSymbolUnigrams(once_per_group=True).process_data(mode_slices)
+unigrams = dc.ChordSymbolUnigrams().process_data(mode_slices)
 ```
 
 ```python
@@ -564,28 +564,28 @@ unigrams.group2pandas = "group_of_series2series"
 ```
 
 ```python
-unigrams.get(as_pandas=True)
+unigrams.get_group_results()
 ```
 
 ```python
 modes = {True: 'MINOR', False: 'MAJOR'}
-for (is_minor,), ugs in unigrams.iter():
+for (is_minor,), ugs in unigrams.iter_group_results():
     print(f"{modes[is_minor]} UNIGRAMS\n{ugs.shape[0]} types, {ugs.sum()} tokens")
-    print(ugs.head(20).to_string())
+    print(ugs.sort_values(ascending=False).head(20).to_string())
 ```
 
 ### Per corpus
 
 ```python
-corpus_wise_unigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process_data(mode_slices)
+corpus_wise_unigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolUnigrams()]).process_data(mode_slices)
 ```
 
 ```python
-corpus_wise_unigrams.get()
+corpus_wise_unigrams.get_group_results()
 ```
 
 ```python
-for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
+for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter_group_results():
     print(f"{corpus_name} {modes[is_minor]} unigrams ({ugs.shape[0]} types, {ugs.sum()} tokens)")
     print(ugs.head(5).to_string())
 ```
