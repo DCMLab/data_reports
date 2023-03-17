@@ -1,26 +1,49 @@
 ---
-jupyter:
-  jupytext:
-    formats: py:percent,md
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.14.4
-  kernelspec:
-    display_name: dimcat
-    language: python
-    name: dimcat
+jupytext:
+  formats: ipynb,md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.14.4
+kernelspec:
+  display_name: dimcat
+  language: python
+  name: dimcat
 ---
 
-```python pycharm={"name": "#%%\n"}
-%load_ext autoreload
-%autoreload 2
+```{code-cell} ipython3
 import os
-from fractions import Fraction
-from IPython.display import HTML
-import ms3
+from git import Repo
 import dimcat as dc
+from ms3 import __version__ as ms3_version
+```
+
+```{code-cell} ipython3
+corpus_path = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+corpus_path
+```
+
+```{code-cell} ipython3
+repo = Repo(corpus_path)
+notebook_repo = Repo('.', search_parent_directories=True)
+notebook_repo_path = notebook_repo.git.rev_parse("--show-toplevel")
+print(f"Notebook repository '{os.path.basename(notebook_repo_path)}' @ {notebook_repo.commit().hexsha[:7]}")
+print(f"Data repo '{os.path.basename(corpus_path)}' @ {repo.commit().hexsha[:7]}")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3_version}")
+```
+
+```{code-cell} ipython3
+---
+pycharm:
+  name: '#%%
+
+    '
+---
+from fractions import Fraction
+import ms3
+from IPython.display import HTML
 from git import Repo
 import plotly.express as px
 import colorlover
@@ -28,63 +51,62 @@ import pandas as pd
 pd.set_option("display.max_columns", 100)
 ```
 
-```python
-dataset_path = "~/romantic_piano_corpus"
-repo = Repo(dataset_path)
-print(f"{os.path.basename(dataset_path)} @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-```
-
-```python
+```{code-cell} ipython3
 STD_LAYOUT = {
  'paper_bgcolor': '#FFFFFF',
  'plot_bgcolor': '#FFFFFF',
  'margin': {'l': 40, 'r': 0, 'b': 0, 't': 40, 'pad': 0},
  'font': {'size': 15}
 }
-OUTPUT_DIR = "/home/hentsche/Documents/phd/romantic_piano_corpus_report/figures/"
+OUTPUT_DIR = os.path.join(corpus_path, 'figures')
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 #HTML(colorlover.to_html(colorlover.scales))
 HTML(colorlover.to_html(colorlover.scales['9']['qual']['Paired']))
 ```
 
-```python
+```{code-cell} ipython3
 fig = px.colors.qualitative.swatches()
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 corpus_color_scale = px.colors.qualitative.D3
 ```
 
 # Overview
 
-```python pycharm={"name": "#%%\n"}
-dataset = dc.Dataset(directory=dataset_path)
+```{code-cell} ipython3
+---
+pycharm:
+  name: '#%%
+
+    '
+---
+dataset = dc.Dataset(directory=corpus_path)
 dataset.data
 ```
 
-```python
+```{code-cell} ipython3
 all_metadata = dataset.data.metadata()
 print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.n_pieces} scores.")
 all_metadata.groupby(level=0).nth(0)
 ```
 
-```python
+```{code-cell} ipython3
 annotated = dc.IsAnnotatedFilter().process_data(dataset)
 print(f"Before: {len(dataset.indices[()])} IDs, after filtering: {len(annotated.indices[()])}")
 ```
 
 **Choose here if you want to see stats for all or only for annotated scores.**
 
-```python
+```{code-cell} ipython3
 #selected = dataset
 selected = annotated
 ```
 
 **Compute chronological order**
 
-```python
+```{code-cell} ipython3
 summary = all_metadata[all_metadata.label_count > 0]
 print(f"Selected metadata rows cover {len(summary)} of the {len(sum((ixs for _, ixs in selected.iter_groups()), start=[]))} scores.")
 mean_composition_years = summary.groupby(level=0).composed_end.mean().astype(int).sort_values()
@@ -95,13 +117,13 @@ chronological_order
 
 ## Notes
 
-```python
+```{code-cell} ipython3
 all_notes = selected.get_facet('notes')
 print(f"{len(all_notes.index)} notes over {len(all_notes.groupby(level=[0,1]))} files.")
 all_notes.head()
 ```
 
-```python
+```{code-cell} ipython3
 def weight_notes(nl, group_col='midi', precise=True):
     summed_durations = nl.groupby(group_col).duration_qb.sum()
     summed_durations /= summed_durations.min() # normalize such that the shortest duration results in 1 occurrence
@@ -118,11 +140,9 @@ def repeat_notes_according_to_weights(weights):
     for pitch, count in counts.iteritems():
         counts_reflecting_weights.extend([pitch]*count)
     return pd.Series(counts_reflecting_weights)
-
-
 ```
 
-<!-- #raw -->
+```{raw-cell}
 grouped_notes = all_notes.groupby(level=0)
 weighted_midi = pd.concat([weight_notes(nl, 'midi', precise=False) for _, nl in grouped_notes], axis=1, keys=grouped_notes.groups.keys())
 
@@ -137,33 +157,36 @@ fig = px.violin(weighted_midi, labels=dict(variable='', value='pitch'), box=True
 fig.update_layout(yaxis=yaxis, **STD_LAYOUT)
 fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_dataset.png"), scale=2)
 fig.show()
-<!-- #endraw -->
+```
 
-```python
-dataset_names = dict(
+```{code-cell} ipython3
+corpus_names = dict(
+    corelli='Corelli Trio Sonatas',
+    mozart_piano_sonatas='Mozart Piano Sonatas',
+    ABC='Beethoven String Quartets',
     beethoven_piano_sonatas='Beethoven Sonatas',
     chopin_mazurkas='Chopin Mazurkas',
     debussy_suite_bergamasque='Debussy Suite',
     dvorak_silhouettes="Dvořák Silhouettes",
-    grieg_lyrical_pieces="Grieg Lyrical Pieces",
+    grieg_lyric_pieces="Grieg Lyric Pieces",
     liszt_pelerinage="Liszt Années",
     medtner_tales="Medtner Tales",
     schumann_kinderszenen="Schumann Kinderszenen",
     tchaikovsky_seasons="Tchaikovsky Seasons"
 )
-dataset_name_colors = {dataset_names[corp]: color for corp, color in dataset_colors.items()}
-chronological_dataset_names = [dataset_names[corp] for corp in chronological_order]
-all_notes['dataset_name'] = all_notes.index.get_level_values(0).map(dataset_names)
+dataset_name_colors = {corpus_names[corp]: color for corp, color in dataset_colors.items()}
+chronological_corpus_names = [corpus_names[corp] for corp in chronological_order]
+all_notes['dataset_name'] = all_notes.index.get_level_values(0).map(corpus_names)
 ```
 
-```python
+```{code-cell} ipython3
 grouped_notes = all_notes.groupby('dataset_name')
 weighted_midi = pd.concat([weight_notes(nl, 'midi', precise=False) for _, nl in grouped_notes], keys=grouped_notes.groups.keys()).reset_index(level=0)
 weighted_midi.columns = ['dataset', 'midi']
 weighted_midi
 ```
 
-```python
+```{code-cell} ipython3
 yaxis=dict(tickmode= 'array',
            tickvals= [12, 24, 36, 48, 60, 72, 84, 96],
            ticktext = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7"],
@@ -174,22 +197,23 @@ fig = px.violin(weighted_midi, x='dataset', y='midi', color='dataset', box=True,
                     dataset='',
                     midi='distribution of pitches by duration'
                 ),
-                category_orders=dict(dataset=chronological_dataset_names),
+                category_orders=dict(dataset=chronological_corpus_names),
                 color_discrete_map=dataset_name_colors,
                 width=1000, height=600,
                )
+fig.update_traces(spanmode='hard') # do not extend beyond outliers
 fig.update_layout(yaxis=yaxis, **STD_LAYOUT,
                  showlegend=False)
 fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_dataset_colored.png"), scale=2)
 fig.show()
 ```
 
-<!-- #raw -->
+```{raw-cell}
 weighted_tpc = pd.concat([weight_notes(nl, 'tpc') for _, nl in grouped_notes], axis=1, keys=grouped_notes.groups.keys())
 weighted_tpc
-<!-- #endraw -->
+```
 
-<!-- #raw -->
+```{raw-cell}
 yaxis=dict(
     tickmode= 'array',
     tickvals= [-12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18],
@@ -202,9 +226,9 @@ fig = px.violin(weighted_tpc, labels=dict(variable='', value='pitch class'), box
 fig.update_layout(yaxis=yaxis, **STD_LAYOUT)
 fig.write_image(os.path.join(OUTPUT_DIR, "tpc_per_dataset.png"), scale=2)
 fig.show()
-<!-- #endraw -->
+```
 
-<!-- #raw -->
+```{raw-cell}
 # adapted from https://plotly.com/python/violin/#ridgeline-plot
 fig = go.Figure()
 for corp, data_line in weighted_tpc.iteritems():
@@ -213,10 +237,11 @@ for corp, data_line in weighted_tpc.iteritems():
 fig.update_traces(side='positive', orientation='h', width=2, points=False)
 fig.update_layout(xaxis_showgrid=False, xaxis_zeroline=True, height=600)
 fig.show()
-<!-- #endraw -->
+```
 
-```python
+```{code-cell} ipython3
 bar_data = all_notes.groupby('tpc').duration_qb.sum().reset_index()
+bar_data.to_csv('romantic_tpc_profile.tsv.zip', sep='\t')
 x_values = list(range(bar_data.tpc.min(), bar_data.tpc.max()+1))
 x_names = ms3.fifths2name(x_values)
 fig = px.bar(bar_data, x='tpc', y='duration_qb',
@@ -236,14 +261,14 @@ fig.write_image(os.path.join(OUTPUT_DIR, "tpc_distribution_overall.png"), scale=
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 scatter_data = all_notes.groupby(['dataset_name', 'tpc']).duration_qb.sum().reset_index()
 fig = px.scatter(scatter_data, x='tpc', y='duration_qb', color='dataset_name', 
                  labels=dict(
                      duration_qb='duration',
                      tpc='named pitch class',
                  ),
-                 category_orders=dict(dataset=chronological_dataset_names),
+                 category_orders=dict(dataset=chronological_corpus_names),
                  color_discrete_map=dataset_name_colors,
                  facet_col='dataset_name', facet_col_wrap=3, facet_col_spacing=0.03,
                  width=1000, height=500,
@@ -258,29 +283,29 @@ fig.write_image(os.path.join(OUTPUT_DIR, "tpc_line_per_dataset_compact.png"), sc
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 px.bar(scatter_data, x='tpc', y='duration_qb', color='dataset_name', 
                  labels=dict(
                      duration_qb='duration',
                      tpc='named pitch class',
                  ),
-                 category_orders=dict(dataset=chronological_dataset_names),
+                 category_orders=dict(dataset=chronological_corpus_names),
                  color_discrete_map=dataset_name_colors,
                  width=1000, height=500,
                 )
 ```
 
-```python
+```{code-cell} ipython3
 no_accidental = bar_data[bar_data.tpc.between(-1,5)].duration_qb.sum()
 with_accidental = bar_data[~bar_data.tpc.between(-1,5)].duration_qb.sum()
 ```
 
-```python
+```{code-cell} ipython3
 entire = no_accidental + with_accidental
 f"Fraction of note duration without accidental of the entire durations: {no_accidental} / {entire} = {no_accidental / entire}"
 ```
 
-<!-- #raw -->
+```{raw-cell}
 fig = make_subplots(rows=len(grouped_notes), cols=1, subplot_titles=list(grouped_notes.groups.keys()), shared_xaxes=True)
 for i, (corp, notes) in enumerate(grouped_notes, 1):
     tpc_durations = notes.groupby('tpc').duration_qb.sum()
@@ -294,16 +319,16 @@ fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='lightgrey', tickmode='arr
 fig.update_yaxes(showgrid=False, zeroline=False)
 fig.write_image(os.path.join(OUTPUT_DIR, "tpc_line_per_dataset.png"), scale=2)
 fig.show()
-<!-- #endraw -->
+```
 
 ### Notes and staves
 
-```python
+```{code-cell} ipython3
 print("Distribution of notes over staves:")
 all_notes.staff.value_counts()
 ```
 
-```python
+```{code-cell} ipython3
 print("Distribution of notes over staves for all pieces with more than two staves\n")
 for group, df in all_notes.groupby(level=[0,1]):
     if (df.staff > 2).any():
@@ -311,6 +336,6 @@ for group, df in all_notes.groupby(level=[0,1]):
         print(df.staff.value_counts().to_dict())
 ```
 
-```python
+```{code-cell} ipython3
 all_notes[all_notes.staff > 2].groupby(level=[0,1]).staff.value_counts()
 ```

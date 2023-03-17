@@ -1,69 +1,79 @@
 ---
-jupyter:
-  jupytext:
-    formats: md,py:percent
-    text_representation:
-      extension: .md
-      format_name: markdown
-      format_version: '1.3'
-      jupytext_version: 1.14.4
-  kernelspec:
-    display_name: dimcat
-    language: python
-    name: dimcat
+jupytext:
+  formats: ipynb,md:myst
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.14.4
+kernelspec:
+  display_name: ms3
+  language: python
+  name: ms3
 ---
 
-<!-- #region tags=[] -->
-# Corpus overview plots
-<!-- #endregion -->
++++ {"tags": []}
 
-```python
-%load_ext autoreload
-%autoreload 2
+# Corpus overview plots
+
+```{code-cell} ipython3
 import os
-from fractions import Fraction
-from IPython.display import HTML
-import ms3
-import dimcat as dc
 from git import Repo
+import dimcat as dc
+from ms3 import __version__ as ms3_version
+```
+
+```{code-cell} ipython3
+corpus_path = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+corpus_path = os.path.realpath(os.path.expanduser(corpus_path))
+corpus_path
+```
+
+```{code-cell} ipython3
+repo = Repo(corpus_path)
+notebook_repo = Repo('.', search_parent_directories=True)
+notebook_repo_path = notebook_repo.git.rev_parse("--show-toplevel")
+print(f"Notebook repository '{os.path.basename(notebook_repo_path)}' @ {notebook_repo.commit().hexsha[:7]}")
+print(f"Data repo '{os.path.basename(corpus_path)}' @ {repo.commit().hexsha[:7]}")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3_version}")
+```
+
+```{code-cell} ipython3
+from fractions import Fraction
+import ms3
+from IPython.display import HTML
 import plotly.express as px
 import colorlover
 import pandas as pd
 pd.set_option("display.max_columns", 100)
 ```
 
-```python
-corpus_path = "~/romantic_piano_corpus"
-repo = Repo(corpus_path)
-print(f"{os.path.basename(corpus_path)} @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-```
-
-```python
+```{code-cell} ipython3
 STD_LAYOUT = {
  'paper_bgcolor': '#FFFFFF',
  'plot_bgcolor': '#FFFFFF',
  'margin': {'l': 40, 'r': 0, 'b': 0, 't': 40, 'pad': 0},
  'font': {'size': 15}
 }
-OUTPUT_DIR = "/home/hentsche/Documents/phd/romantic_piano_corpus_report/figures/"
+OUTPUT_DIR = os.path.join(corpus_path, 'figures')
+os.makedirs(OUTPUT_DIR, exist_ok=True)
 #HTML(colorlover.to_html(colorlover.scales))
 HTML(colorlover.to_html(colorlover.scales['9']['qual']['Paired']))
 ```
 
-```python
+```{code-cell} ipython3
 fig = px.colors.qualitative.swatches()
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 corpus_color_scale = px.colors.qualitative.D3
 ```
 
 # Overview
 
-```python
+```{code-cell} ipython3
 dataset = dc.Dataset()
 dataset.load(directory=corpus_path)
 dataset.data
@@ -71,58 +81,52 @@ dataset.data
 
 ## Metadata
 
-```python
+```{code-cell} ipython3
 all_metadata = dataset.data.metadata()
 print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {len(dataset.pieces)} scores.")
 all_metadata.groupby(level=0).nth(0)
 ```
 
-```python
+```{code-cell} ipython3
 print("VALUE COUNTS OF THE COLUMN 'annotators'")
 all_metadata.annotators.value_counts()
 ```
 
-```python
+```{code-cell} ipython3
 print(f"Composition dates range from {all_metadata.composed_start.min()} {all_metadata.composed_start.idxmin()} "
       f"to {all_metadata.composed_end.max()} {all_metadata.composed_end.idxmax()}.")
 ```
 
-```python tags=[]
+```{code-cell} ipython3
+:tags: []
+
 annotated = dc.IsAnnotatedFilter().process_data(dataset)
 print(f"Before: {len(dataset.indices[()])} IDs, after filtering: {len(annotated.indices[()])}")
 ```
 
 **Choose here if you want to see stats for all or only for annotated scores.**
 
-```python
-selected = dataset
-#selected = annotated
+```{code-cell} ipython3
+#selected = dataset
+selected = annotated
 ```
 
 ## Measures
 
-```python
-for group, ixs in selected.iter_groups():
-    ix = ixs[0]
-    break
-c, f = ix
-selected.data[c][f].get_facet('measures', interval_index=True)
-```
-
-```python
+```{code-cell} ipython3
 all_measures = selected.get_facet('measures')
 print(f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files.")
 all_measures.head()
 ```
 
-```python
+```{code-cell} ipython3
 print("Distribution of time signatures per XML measure (MC):")
 all_measures.timesig.value_counts(dropna=False)
 ```
 
 ## Notes
 
-```python
+```{code-cell} ipython3
 all_notes = selected.get_facet('notes')
 print(f"{len(all_notes.index)} notes over {len(all_notes.groupby(level=[0,1]))} files.")
 all_notes.head()
@@ -130,12 +134,12 @@ all_notes.head()
 
 ### Notes and staves
 
-```python
+```{code-cell} ipython3
 print("Distribution of notes over staves:")
 all_notes.staff.value_counts()
 ```
 
-```python
+```{code-cell} ipython3
 print("Distribution of notes over staves for all pieces with more than two staves\n")
 for group, df in all_notes.groupby(level=[0,1]):
     if (df.staff > 2).any():
@@ -143,7 +147,7 @@ for group, df in all_notes.groupby(level=[0,1]):
         print(df.staff.value_counts().to_dict())
 ```
 
-```python
+```{code-cell} ipython3
 all_notes[all_notes.staff > 2].groupby(level=[0,1]).staff.value_counts()
 ```
 
@@ -151,30 +155,30 @@ all_notes[all_notes.staff > 2].groupby(level=[0,1]).staff.value_counts()
 
 All symbols, independent of the local key (the mode of which changes their semantics).
 
-```python
+```{code-cell} ipython3
 all_annotations = annotated.get_facet('expanded')
 all_annotations.head()
 ```
 
-```python
+```{code-cell} ipython3
 no_chord = all_annotations.root.isna()
 print(f"Concatenated annotation tables contains {all_annotations.shape[0]} rows. {no_chord.sum()} of them are not chords. Their values are:")
 all_annotations.label[no_chord].value_counts(dropna=False).to_dict()
 ```
 
-```python
+```{code-cell} ipython3
 all_chords = all_annotations[~no_chord].copy()
 print(f"Corpus contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
 ```
 
-```python
+```{code-cell} ipython3
 #from ms3 import write_tsv
 #write_tsv(all_annotations[all_annotations.pedalend.notna()], './issues/pedalpoints.tsv', pre_process=False)
 ```
 
 ## Corpus summary
 
-```python
+```{code-cell} ipython3
 summary = all_metadata
 if selected == annotated:
     summary = summary[summary.label_count > 0].copy()
@@ -185,7 +189,7 @@ summary = pd.concat([summary,
 summary.groupby(level=0).describe().dropna(axis=1, how='all')
 ```
 
-```python
+```{code-cell} ipython3
 mean_composition_years = summary.groupby(level=0).composed_end.mean().astype(int).sort_values()
 chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, corpus_color_scale))
@@ -204,13 +208,16 @@ fig.write_image(os.path.join(OUTPUT_DIR, "corpus_sizes.png"), scale=2)
 fig.update_traces(width=5)
 ```
 
-```python
+```{code-cell} ipython3
 corpus_names = dict(
+    corelli='Corelli Trio Sonatas',
+    mozart_piano_sonatas='Mozart Piano Sonatas',
+    ABC='Beethoven String Quartets',
     beethoven_piano_sonatas='Beethoven Sonatas',
     chopin_mazurkas='Chopin Mazurkas',
     debussy_suite_bergamasque='Debussy Suite',
     dvorak_silhouettes="Dvořák Silhouettes",
-    grieg_lyrical_pieces="Grieg Lyrical Pieces",
+    grieg_lyric_pieces="Grieg Lyric Pieces",
     liszt_pelerinage="Liszt Années",
     medtner_tales="Medtner Tales",
     schumann_kinderszenen="Schumann Kinderszenen",
@@ -222,18 +229,18 @@ all_annotations['corpus_name'] = all_annotations.index.get_level_values(0).map(c
 all_chords['corpus_name'] = all_chords.index.get_level_values(0).map(corpus_names)
 ```
 
-```python
+```{code-cell} ipython3
 bar_data = summary.reset_index().groupby(['composed_end', 'corpus']).size().rename('counts').reset_index()
 px.bar(bar_data, x='composed_end', y='counts', color='corpus', color_discrete_map=corpus_colors)
 ```
 
-```python
+```{code-cell} ipython3
 hist_data = summary.reset_index()
 hist_data.corpus = hist_data.corpus.map(corpus_names)
 hist_data.head()
 ```
 
-```python
+```{code-cell} ipython3
 fig = px.histogram(hist_data, x='composed_end', color='corpus',
                    labels=dict(composed_end='decade',
                                count='pieces',
@@ -250,11 +257,11 @@ fig.write_image(os.path.join(OUTPUT_DIR, "corpus_size_histogram.png"), scale=2)
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 summary.columns
 ```
 
-```python
+```{code-cell} ipython3
 corpus_metadata = summary.groupby(level=0)
 n_pieces = corpus_metadata.size().rename('pieces')
 absolute_numbers = dict(
@@ -268,10 +275,11 @@ relative = absolute.div(n_pieces, axis=0)
 complete_summary = pd.concat([pd.concat([n_pieces, absolute], axis=1), relative, absolute.iloc[:,2:].div(absolute.measures, axis=0)], axis=1, keys=['absolute', 'per piece', 'per measure'])
 complete_summary = complete_summary.apply(pd.to_numeric).round(2)
 complete_summary.index = complete_summary.index.map(corpus_names)
+complete_summary.to_csv('romantic_summary.tsv', sep='\t')
 complete_summary
 ```
 
-```python
+```{code-cell} ipython3
 sum_row = pd.DataFrame(complete_summary.sum(), columns=['sum']).T
 sum_row.iloc[:,5:] = ''
 summary_with_sum = pd.concat([complete_summary, sum_row])
@@ -279,60 +287,59 @@ summary_with_sum.loc[:, [('absolute', 'notes'), ('absolute', 'labels')]] = summa
 summary_with_sum
 ```
 
-```python
-pd.concat([summary, complete_summary.sum()])
-```
-
-```python
+```{code-cell} ipython3
 summary[summary.ambitus.isna()]
 ```
 
-```python
+```{code-cell} ipython3
 summary.ambitus.str.extract(r"^(\d+)-(\d+)")
 ```
 
-```python
+```{code-cell} ipython3
 ambitus = summary.ambitus.str.extract(r"^(\d+)-(\d+)").astype(int)
 ambitus.columns = ['low', 'high']
 ambitus['range'] = ambitus.high - ambitus.low
 ambitus.head()
 ```
 
-```python
+```{code-cell} ipython3
 ambitus.groupby(level=0).high.max()
 ```
 
-```python
+```{code-cell} ipython3
 ambitus.groupby(level=0).low.min()
 ```
 
-```python
+```{code-cell} ipython3
 ambitus.groupby(level=0).range.max()
 ```
 
-```python
+```{code-cell} ipython3
 ambitus.groupby(level=0).high.max() - ambitus.groupby(level=0).low.min()
 ```
 
 # Phrases
 
-```python
+```{code-cell} ipython3
+:tags: []
+
 phrase_segmented = dc.PhraseSlicer().process_data(selected)
 phrases = phrase_segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
 phrases.head(20)
 ```
 
-```python
+```{code-cell} ipython3
 phrase_segments = phrase_segmented.get_facet('expanded')
+phrase_segments.to_csv('romantic_phrase_segments.tsv.zip', sep='\t')
 phrase_segments
 ```
 
-```python
+```{code-cell} ipython3
 phrases[phrases.duration_qb > 50]
 ```
 
-```python
+```{code-cell} ipython3
 phrase2timesigs = phrase_segments.groupby(level=[0,1,2]).timesig.unique()
 n_timesignatures_per_phrase = phrase2timesigs.map(len)
 uniform_timesigs = phrase2timesigs[n_timesignatures_per_phrase == 1].map(lambda l: l[0])
@@ -362,47 +369,48 @@ fig.write_image(os.path.join(OUTPUT_DIR, "phrase_lengths.png"), scale=2)
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 uniform_timesigs[uniform_timesigs.duration_measures > 80]
 ```
 
 # Keys
 
-```python
+```{code-cell} ipython3
 from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
 keys_segmented = dc.LocalKeySlicer().process_data(selected)
 keys = keys_segmented.get_slice_info()
+keys.to_csv('romantic_keys.tsv.zip', sep='\t')
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
 keys.head(20)
 ```
 
-```python
+```{code-cell} ipython3
 keys.duration_qb.sum()
 ```
 
-```python
+```{code-cell} ipython3
 phrases.duration_qb.sum()
 ```
 
-```python
+```{code-cell} ipython3
 key_durations = keys.groupby(['globalkey_is_minor', 'localkey']).duration_qb.sum().sort_values(ascending=False)
 print(f"{len(key_durations)} keys overall including hierarchical such as 'III/v'.")
 ```
 
-```python
+```{code-cell} ipython3
 keys_resolved = resolve_all_relative_numerals(keys)
 key_resolved_durations = keys_resolved.groupby(['globalkey_is_minor', 'localkey']).duration_qb.sum().sort_values(ascending=False)
 print(f"{len(key_resolved_durations)} keys overall after resolving hierarchical ones.")
 key_resolved_durations
 ```
 
-```python
+```{code-cell} ipython3
 pie_data = replace_boolean_mode_by_strings(key_resolved_durations.reset_index())
 px.pie(pie_data, names='localkey', values='duration_qb', facet_col='globalkey_mode', height=700)
 ```
 
-```python
+```{code-cell} ipython3
 localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor']).duration_qb.sum()
 # sort by stacked bar length:
 localkey_fifths_durations = localkey_fifths_durations.sort_values(key=lambda S: S.index.get_level_values(0).map(S.groupby(level=0).sum()), ascending=False)
@@ -421,7 +429,7 @@ fig.write_image(os.path.join(OUTPUT_DIR, "key_segments.png"), scale=2)
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor']).duration_qb.sum()
 # sort by stacked bar length:
 bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
@@ -439,35 +447,35 @@ fig.write_image(os.path.join(OUTPUT_DIR, "key_segments_line_of_fifths.png"), sca
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 localkey_fifths_durations_stacked = localkey_fifths_durations.groupby(level=0).sum().sort_values()
 pd.concat([localkey_fifths_durations_stacked, localkey_fifths_durations_stacked.rename('fraction') / localkey_fifths_durations_stacked.sum()], axis=1)
 ```
 
-```python
+```{code-cell} ipython3
 keys[keys.localkey_fifths == -9]
 ```
 
-```python
+```{code-cell} ipython3
 keys[keys.localkey_fifths == 10]
 ```
 
 # Cadences
 
-```python
+```{code-cell} ipython3
 all_annotations.cadence.value_counts()
 ```
 
-```python
+```{code-cell} ipython3
 all_annotations.groupby("corpus_name").cadence.value_counts()
 ```
 
-```python
+```{code-cell} ipython3
 cadence_count_per_corpus = all_annotations.groupby("corpus_name").cadence.value_counts().sort_values(ascending=False)
 cadence_count_per_corpus.groupby(level=0).sum()
 ```
 
-```python
+```{code-cell} ipython3
 cadence_fraction_per_corpus = cadence_count_per_corpus / cadence_count_per_corpus.groupby(level=0).sum()
 fig = px.bar(cadence_fraction_per_corpus.rename('count').reset_index(), x='corpus_name', y='count', color='cadence',
              labels=dict(count='fraction', corpus=''), 
@@ -485,7 +493,7 @@ fig.show()
 ## Unigrams
 For computing unigram statistics, the tokens need to be grouped by their occurrence within a major or a minor key because this changes their meaning. To that aim, the annotated corpus needs to be sliced into contiguous localkey segments which are then grouped into a major (`is_minor=False`) and a minor group.
 
-```python
+```{code-cell} ipython3
 root_durations = all_chords[all_chords.root.between(-5,6)].groupby(['root', 'chord_type']).duration_qb.sum()
 # sort by stacked bar length:
 #root_durations = root_durations.sort_values(key=lambda S: S.index.get_level_values(0).map(S.groupby(level=0).sum()), ascending=False)
@@ -494,7 +502,7 @@ bar_data.root = bar_data.root.map(ms3.fifths2iv)
 px.bar(bar_data, x='root', y='duration_qb', color='chord_type')
 ```
 
-```python
+```{code-cell} ipython3
 relative_roots = all_chords[['numeral', 'duration_qb', 'relativeroot', 'localkey_is_minor', 'chord_type']].copy()
 relative_roots['relativeroot_resolved'] = transform(relative_roots, ms3.resolve_relative_keys, ['relativeroot', 'localkey_is_minor'])
 has_rel = relative_roots.relativeroot_resolved.notna()
@@ -507,7 +515,7 @@ relative_roots['type_reduced'] = relative_roots.chord_type.map(replace_rare)
 #relative_roots.loc[is_special, 'root'] = -4
 ```
 
-```python
+```{code-cell} ipython3
 root_durations = relative_roots.groupby(['root', 'type_reduced']).duration_qb.sum().sort_values(ascending=False)
 bar_data = root_durations.reset_index()
 bar_data.root = bar_data.root.map(ms3.fifths2iv)
@@ -538,39 +546,39 @@ fig.write_image(os.path.join(OUTPUT_DIR, "chord_roots.png"), scale=2)
 fig.show()
 ```
 
-```python
+```{code-cell} ipython3
 print(f"Reduced to {len(set(bar_data.iloc[:,:2].itertuples(index=False, name=None)))} types. Paper cites the sum of types in major and types in minor (see below), treating them as distinct.")
 ```
 
-```python
+```{code-cell} ipython3
 dim_or_aug = bar_data[bar_data.root.str.startswith("a") | bar_data.root.str.startswith("d")].duration_qb.sum()
 complete = bar_data.duration_qb.sum()
 print(f"On diminished or augmented scale degrees: {dim_or_aug} / {complete} = {dim_or_aug / complete}")
 ```
 
-```python
+```{code-cell} ipython3
 mode_slices = dc.ModeGrouper().process_data(keys_segmented)
 ```
 
 ### Whole dataset
 
-```python
+```{code-cell} ipython3
 mode_slices.get_slice_info()
 ```
 
-```python
+```{code-cell} ipython3
 unigrams = dc.ChordSymbolUnigrams(once_per_group=True).process_data(mode_slices)
 ```
 
-```python
+```{code-cell} ipython3
 unigrams.group2pandas = "group_of_series2series"
 ```
 
-```python
+```{code-cell} ipython3
 unigrams.get(as_pandas=True)
 ```
 
-```python
+```{code-cell} ipython3
 modes = {True: 'MINOR', False: 'MAJOR'}
 for (is_minor,), ugs in unigrams.iter():
     print(f"{modes[is_minor]} UNIGRAMS\n{ugs.shape[0]} types, {ugs.sum()} tokens")
@@ -579,21 +587,21 @@ for (is_minor,), ugs in unigrams.iter():
 
 ### Per corpus
 
-```python
+```{code-cell} ipython3
 corpus_wise_unigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process_data(mode_slices)
 ```
 
-```python
+```{code-cell} ipython3
 corpus_wise_unigrams.get()
 ```
 
-```python
+```{code-cell} ipython3
 for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
     print(f"{corpus_name} {modes[is_minor]} unigrams ({ugs.shape[0]} types, {ugs.sum()} tokens)")
     print(ugs.head(5).to_string())
 ```
 
-```python
+```{code-cell} ipython3
 types_shared_between_corpora = {}
 for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
     if is_minor in types_shared_between_corpora:
@@ -607,15 +615,15 @@ print(f"Chords which occur in all corpora, sorted by descending global frequency
 
 ### Per piece
 
-```python
+```{code-cell} ipython3
 piece_wise_unigrams = dc.Pipeline([dc.PieceGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process_data(mode_slices)
 ```
 
-```python
+```{code-cell} ipython3
 piece_wise_unigrams.get()
 ```
 
-```python
+```{code-cell} ipython3
 types_shared_between_pieces = {}
 for (is_minor, corpus_name), ugs in piece_wise_unigrams.iter():
     if is_minor in types_shared_between_pieces:
@@ -627,18 +635,19 @@ print(types_shared_between_pieces)
 
 ## Bigrams
 
++++
 
 ### Whole dataset
 
-```python
+```{code-cell} ipython3
 bigrams = dc.ChordSymbolBigrams(once_per_group=True).process_data(mode_slices)
 ```
 
-```python
+```{code-cell} ipython3
 bigrams.get()
 ```
 
-```python
+```{code-cell} ipython3
 modes = {True: 'MINOR', False: 'MAJOR'}
 for (is_minor,), ugs in bigrams.iter():
     print(f"{modes[is_minor]} BIGRAMS\n{ugs.shape[0]} transition types, {ugs.sum()} tokens")
@@ -647,25 +656,25 @@ for (is_minor,), ugs in bigrams.iter():
 
 ### Per corpus
 
-```python
+```{code-cell} ipython3
 corpus_wise_bigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolBigrams(once_per_group=True)]).process_data(mode_slices)
 ```
 
-```python
+```{code-cell} ipython3
 corpus_wise_bigrams.get()
 ```
 
-```python
+```{code-cell} ipython3
 for (is_minor, corpus_name), ugs in corpus_wise_bigrams.iter():
     print(f"{corpus_name} {modes[is_minor]} bigrams ({ugs.shape[0]} transition types, {ugs.sum()} tokens)")
     print(ugs.head(5).to_string())
 ```
 
-```python
+```{code-cell} ipython3
 normalized_corpus_unigrams = {group: (100 * ugs / ugs.sum()).round(1).rename("frequency") for group, ugs in corpus_wise_unigrams.iter()}
 ```
 
-```python
+```{code-cell} ipython3
 transitions_from_shared_types = {
     False: {},
     True: {}
@@ -679,20 +688,20 @@ for (is_minor, corpus_name), bgs in corpus_wise_bigrams.iter():
     transitions_from_shared_types[is_minor][corpus_name] = combined
 ```
 
-```python
+```{code-cell} ipython3
 pd.concat(transitions_from_shared_types[False].values(), keys=transitions_from_shared_types[False].keys(), axis=1)
 ```
 
-```python
+```{code-cell} ipython3
 pd.concat(transitions_from_shared_types[True].values(), keys=transitions_from_shared_types[False].keys(), axis=1)
 ```
 
 ### Per piece
 
-```python
+```{code-cell} ipython3
 piece_wise_bigrams = dc.Pipeline([dc.PieceGrouper(), dc.ChordSymbolBigrams(once_per_group=True)]).process_data(mode_slices)
 ```
 
-```python
+```{code-cell} ipython3
 piece_wise_bigrams.get()
 ```
