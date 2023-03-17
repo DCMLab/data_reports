@@ -40,7 +40,7 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-# Overview
+## Data loading
 
 ```{code-cell} ipython3
 dataset = dc.Dataset()
@@ -79,8 +79,6 @@ chronological_order = mean_composition_years.index.to_list()
 dataset_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
 chronological_order
 ```
-
-## Notes
 
 ```{code-cell} ipython3
 all_notes = selected.get_facet('notes')
@@ -205,7 +203,6 @@ fig.show()
 
 ```{code-cell} ipython3
 bar_data = all_notes.groupby('tpc').duration_qb.sum().reset_index()
-bar_data.to_csv('romantic_tpc_profile.tsv.zip', sep='\t')
 x_values = list(range(bar_data.tpc.min(), bar_data.tpc.max()+1))
 x_names = ms3.fifths2name(x_values)
 fig = px.bar(bar_data, x='tpc', y='duration_qb',

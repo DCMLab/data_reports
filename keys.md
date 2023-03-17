@@ -101,8 +101,6 @@ fig = px.bar(bar_data, x='year', y='pieces', color='dataset', title='Pieces cont
 fig.update_traces(width=5)
 ```
 
-# Keys
-
 ## Computing extent of key segments from annotations
 
 **In the following, major and minor keys are distinguished as boolean `localkey_is_minor=(False|True)`**

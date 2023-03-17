@@ -6,9 +6,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.14.4
 kernelspec:
-  display_name: ms3
+  display_name: dimcat
   language: python
-  name: ms3
+  name: dimcat
 ---
 
 +++ {"tags": []}
@@ -18,6 +18,7 @@ kernelspec:
 ```{code-cell} ipython3
 import os
 from collections import defaultdict, Counter
+from fractions import Fraction
 
 from git import Repo
 import dimcat as dc
@@ -26,29 +27,30 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df
+from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, color_background, value_count_df
 ```
 
 ```{code-cell} ipython3
-corpus_path = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
-corpus_path
+CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+CORPUS_PATH
 ```
 
 ```{code-cell} ipython3
-repo = Repo(corpus_path)
+repo = Repo(CORPUS_PATH)
 notebook_repo = Repo('.', search_parent_directories=True)
 notebook_repo_path = notebook_repo.git.rev_parse("--show-toplevel")
 print(f"Notebook repository '{os.path.basename(notebook_repo_path)}' @ {notebook_repo.commit().hexsha[:7]}")
-print(f"Data repo '{os.path.basename(corpus_path)}' @ {repo.commit().hexsha[:7]}")
+print(f"Data repo '{os.path.basename(CORPUS_PATH)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-# Overview
-
 ```{code-cell} ipython3
 dataset = dc.Dataset()
-dataset.load(directory=corpus_path)
+for folder in ['corelli', 'liszt_pelerinage']:
+    print("Loading", folder)
+    path = os.path.join(CORPUS_PATH, folder)
+    dataset.load(directory=path)
 dataset.data
 ```
 
@@ -165,7 +167,7 @@ summary.groupby(level=0).describe().dropna(axis=1, how='all')
 ```{code-cell} ipython3
 mean_composition_years = summary.groupby(level=0).composed_end.mean().astype(int).sort_values()
 chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, corpus_color_scale))
+corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
 bar_data = pd.concat([mean_composition_years.rename('year'), 
                       summary.groupby(level='corpus').size().rename('pieces')],
                      axis=1
@@ -177,7 +179,6 @@ fig = px.bar(bar_data, x='year', y='pieces', color='corpus',
 fig.update_traces(width=5)
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "corpus_sizes.png"), scale=2)
 fig.update_traces(width=5)
 ```
 
@@ -226,7 +227,6 @@ fig.update_traces(xbins=dict(
 ))
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "corpus_size_histogram.png"), scale=2)
 fig.show()
 ```
 
@@ -248,7 +248,6 @@ relative = absolute.div(n_pieces, axis=0)
 complete_summary = pd.concat([pd.concat([n_pieces, absolute], axis=1), relative, absolute.iloc[:,2:].div(absolute.measures, axis=0)], axis=1, keys=['absolute', 'per piece', 'per measure'])
 complete_summary = complete_summary.apply(pd.to_numeric).round(2)
 complete_summary.index = complete_summary.index.map(corpus_names)
-complete_summary.to_csv('romantic_summary.tsv', sep='\t')
 complete_summary
 ```
 
@@ -291,7 +290,7 @@ ambitus.groupby(level=0).range.max()
 ambitus.groupby(level=0).high.max() - ambitus.groupby(level=0).low.min()
 ```
 
-# Phrases
+## Phrases
 
 ```{code-cell} ipython3
 :tags: []
@@ -304,7 +303,6 @@ phrases.head(20)
 
 ```{code-cell} ipython3
 phrase_segments = phrase_segmented.get_facet('expanded')
-phrase_segments.to_csv('romantic_phrase_segments.tsv.zip', sep='\t')
 phrase_segments
 ```
 
@@ -326,7 +324,7 @@ exact_measure_lengths = uniform_timesig_phrases.duration_qb / timesig_in_quarter
 uniform_timesigs = pd.concat([exact_measure_lengths.rename('duration_measures'), uniform_timesig_phrases], axis=1)
 fig = px.histogram(uniform_timesigs, x='duration_measures', log_y=True,
                    labels=dict(duration_measures='phrase length bin in number of measures'),
-                   color_discrete_sequence=corpus_color_scale,
+                   color_discrete_sequence=CORPUS_COLOR_SCALE,
                    height=400,
                    width = 1000,
                   )
@@ -338,7 +336,6 @@ fig.update_traces(xbins=dict( # bins used for histogram
 fig.update_layout(**STD_LAYOUT)
 fig.update_xaxes(dtick=4, gridcolor='lightgrey')
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "phrase_lengths.png"), scale=2)
 fig.show()
 ```
 
@@ -346,13 +343,12 @@ fig.show()
 uniform_timesigs[uniform_timesigs.duration_measures > 80]
 ```
 
-# Keys
+## Keys
 
 ```{code-cell} ipython3
 from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
 keys_segmented = dc.LocalKeySlicer().process_data(selected)
 keys = keys_segmented.get_slice_info()
-keys.to_csv('romantic_keys.tsv.zip', sep='\t')
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
 keys.head(20)
@@ -394,11 +390,10 @@ fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mod
                    duration_qb='total duration in quarter notes',
                    localkey_mode='mode'
                   ),
-             color_discrete_sequence=corpus_color_scale,
+             color_discrete_sequence=CORPUS_COLOR_SCALE,
              width=1000)
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "key_segments.png"), scale=2)
 fig.show()
 ```
 
@@ -412,11 +407,10 @@ fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mod
                    duration_qb='total duration in quarter notes',
                    localkey_mode='mode'
                   ),
-             color_discrete_sequence=corpus_color_scale,
+             color_discrete_sequence=CORPUS_COLOR_SCALE,
              width=1000)
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "key_segments_line_of_fifths.png"), scale=2)
 fig.show()
 ```
 
@@ -433,7 +427,7 @@ keys[keys.localkey_fifths == -9]
 keys[keys.localkey_fifths == 10]
 ```
 
-# Cadences
+## Cadences
 
 ```{code-cell} ipython3
 all_annotations.cadence.value_counts()
@@ -458,12 +452,11 @@ fig = px.bar(cadence_fraction_per_corpus.rename('count').reset_index(), x='corpu
 
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "cadences.png"), scale=2)
 fig.show()
 ```
 
-# Harmony labels
-## Unigrams
+## Harmony labels
+### Unigrams
 For computing unigram statistics, the tokens need to be grouped by their occurrence within a major or a minor key because this changes their meaning. To that aim, the annotated corpus needs to be sliced into contiguous localkey segments which are then grouped into a major (`is_minor=False`) and a minor group.
 
 ```{code-cell} ipython3
@@ -493,9 +486,8 @@ root_durations = relative_roots.groupby(['root', 'type_reduced']).duration_qb.su
 bar_data = root_durations.reset_index()
 bar_data.root = bar_data.root.map(ms3.fifths2iv)
 root_order = bar_data.groupby('root').duration_qb.sum().sort_values(ascending=False).index.to_list()
-type_colors = dict(zip(('Mm7', 'M', 'o7', 'o', 'mm7', 'm', '%7', 'MM7', 'other'), colorlover.scales['9']['qual']['Paired']))
 fig = px.bar(bar_data, x='root', y='duration_qb', color='type_reduced', barmode='group', log_y=True,
-             color_discrete_map=type_colors, 
+             color_discrete_map=TYPE_COLORS, 
              category_orders=dict(root=root_order,
                                   type_reduced=relative_roots.type_reduced.value_counts().index.to_list(),
                                  ),
@@ -515,7 +507,6 @@ fig.update_layout(**STD_LAYOUT,
                   )
                  )
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "chord_roots.png"), scale=2)
 fig.show()
 ```
 

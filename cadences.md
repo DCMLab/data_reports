@@ -99,7 +99,6 @@ fig = px.bar(bar_data, x='year', y='pieces', color='dataset', title='Pieces cont
 fig.update_traces(width=5)
 ```
 
-# Cadences
 ## Overall
 
 * **PAC**: Perfect Authentic Cadence
