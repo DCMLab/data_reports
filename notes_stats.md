@@ -12,77 +12,43 @@ kernelspec:
   name: dimcat
 ---
 
+# Notes
+
 ```{code-cell} ipython3
 import os
+
 from git import Repo
 import dimcat as dc
-from ms3 import __version__ as ms3_version
+import ms3
+import pandas as pd
+import plotly.express as px
+
+from utils import CORPUS_COLOR_SCALE, STD_LAYOUT
 ```
 
 ```{code-cell} ipython3
-corpus_path = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
-corpus_path
+CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+CORPUS_PATH
 ```
 
 ```{code-cell} ipython3
-repo = Repo(corpus_path)
+repo = Repo(CORPUS_PATH)
 notebook_repo = Repo('.', search_parent_directories=True)
 notebook_repo_path = notebook_repo.git.rev_parse("--show-toplevel")
 print(f"Notebook repository '{os.path.basename(notebook_repo_path)}' @ {notebook_repo.commit().hexsha[:7]}")
-print(f"Data repo '{os.path.basename(corpus_path)}' @ {repo.commit().hexsha[:7]}")
+print(f"Data repo '{os.path.basename(CORPUS_PATH)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3_version}")
-```
-
-```{code-cell} ipython3
----
-pycharm:
-  name: '#%%
-
-    '
----
-from fractions import Fraction
-import ms3
-from IPython.display import HTML
-from git import Repo
-import plotly.express as px
-import colorlover
-import pandas as pd
-pd.set_option("display.max_columns", 100)
-```
-
-```{code-cell} ipython3
-STD_LAYOUT = {
- 'paper_bgcolor': '#FFFFFF',
- 'plot_bgcolor': '#FFFFFF',
- 'margin': {'l': 40, 'r': 0, 'b': 0, 't': 40, 'pad': 0},
- 'font': {'size': 15}
-}
-OUTPUT_DIR = os.path.join(corpus_path, 'figures')
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-#HTML(colorlover.to_html(colorlover.scales))
-HTML(colorlover.to_html(colorlover.scales['9']['qual']['Paired']))
-```
-
-```{code-cell} ipython3
-fig = px.colors.qualitative.swatches()
-fig.show()
-```
-
-```{code-cell} ipython3
-corpus_color_scale = px.colors.qualitative.D3
+print(f"ms3 version {ms3.__version__}")
 ```
 
 # Overview
 
 ```{code-cell} ipython3
----
-pycharm:
-  name: '#%%
-
-    '
----
-dataset = dc.Dataset(directory=corpus_path)
+dataset = dc.Dataset()
+for folder in ['corelli', 'liszt_pelerinage']:
+    print("Loading", folder)
+    path = os.path.join(CORPUS_PATH, folder)
+    dataset.load(directory=path)
 dataset.data
 ```
 
@@ -111,7 +77,7 @@ summary = all_metadata[all_metadata.label_count > 0]
 print(f"Selected metadata rows cover {len(summary)} of the {len(sum((ixs for _, ixs in selected.iter_groups()), start=[]))} scores.")
 mean_composition_years = summary.groupby(level=0).composed_end.mean().astype(int).sort_values()
 chronological_order = mean_composition_years.index.to_list()
-dataset_colors = dict(zip(chronological_order, corpus_color_scale))
+dataset_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
 chronological_order
 ```
 
@@ -204,7 +170,6 @@ fig = px.violin(weighted_midi, x='dataset', y='midi', color='dataset', box=True,
 fig.update_traces(spanmode='hard') # do not extend beyond outliers
 fig.update_layout(yaxis=yaxis, **STD_LAYOUT,
                  showlegend=False)
-fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_dataset_colored.png"), scale=2)
 fig.show()
 ```
 
@@ -245,19 +210,18 @@ bar_data.to_csv('romantic_tpc_profile.tsv.zip', sep='\t')
 x_values = list(range(bar_data.tpc.min(), bar_data.tpc.max()+1))
 x_names = ms3.fifths2name(x_values)
 fig = px.bar(bar_data, x='tpc', y='duration_qb',
-                 labels=dict(tpc='Named pitch class',
+             labels=dict(tpc='Named pitch class',
                              duration_qb='Duration in quarter notes'
                             ),
-             color_discrete_sequence=corpus_color_scale,
+             color_discrete_sequence=CORPUS_COLOR_SCALE,
              width=1000, height=300,
-            )
+             )
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
 fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array', 
                  tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black', 
                  minor=dict(dtick=6, gridcolor='grey', showgrid=True),
                 )
-fig.write_image(os.path.join(OUTPUT_DIR, "tpc_distribution_overall.png"), scale=2)
 fig.show()
 ```
 
@@ -279,7 +243,6 @@ fig.update_layout(**STD_LAYOUT, showlegend=False)
 fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='lightgrey', tickmode='array', tickvals= [-12, -6, 0, 6, 12, 18],
     ticktext = ["Dbb", "Gb", "C", "F#", "B#", "E##"], visible=True, )
 fig.update_yaxes(gridcolor='lightgrey', zeroline=False, matches=None, showticklabels=True)
-fig.write_image(os.path.join(OUTPUT_DIR, "tpc_line_per_dataset_compact.png"), scale=2)
 fig.show()
 ```
 
@@ -329,6 +292,8 @@ all_notes.staff.value_counts()
 ```
 
 ```{code-cell} ipython3
+:tags: []
+
 print("Distribution of notes over staves for all pieces with more than two staves\n")
 for group, df in all_notes.groupby(level=[0,1]):
     if (df.staff > 2).any():

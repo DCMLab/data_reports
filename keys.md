@@ -12,41 +12,21 @@ kernelspec:
   name: ms3
 ---
 
-`pip install dimcat Jinja2 colorlover GitPython plotly`
+# Keys
 
 ```{code-cell} ipython3
-%load_ext autoreload
-%autoreload 2
 import os
 from collections import defaultdict, Counter
-from fractions import Fraction
-from IPython.display import HTML
-import ms3
-import dimcat as dc
+
 from git import Repo
-import plotly.express as px
-import colorlover
+import dimcat as dc
+import ms3
 import pandas as pd
-import numpy as np
-pd.set_option("display.max_columns", 100)
-pd.set_option("display.max_rows", 500)
 import plotly.express as px
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-plt.set_loglevel('error')
 
-def value_count_df(S, thing=None, counts='counts'):
-    thing = S.name if thing is None else thing
-    df = S.value_counts().rename(counts).to_frame()
-    df.index.rename(thing, inplace=True)
-    return df
-
-def color_background(x, color="#ffffb3"):
-    return np.where(x.notna().to_numpy(), f"background-color: {color};", None)
+from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df
 ```
-
-# Preliminaries
-## Software versions and configurations
 
 ```{code-cell} ipython3
 corpus_path = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
@@ -61,20 +41,6 @@ print(f"Notebook repository '{os.path.basename(notebook_repo_path)}' @ {notebook
 print(f"Data repo '{os.path.basename(corpus_path)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
-```
-
-```{code-cell} ipython3
-STD_LAYOUT = {
- 'paper_bgcolor': '#FFFFFF',
- 'plot_bgcolor': '#FFFFFF',
- 'margin': {'l': 40, 'r': 0, 'b': 0, 't': 40, 'pad': 0},
- 'font': {'size': 15}
-}
-import colorlover
-#for name, scales in colorlover.scales['6']['qual'].items():
-#    print(name)
-#    display(HTML(colorlover.to_html(scales)))
-cadence_colors = dict(zip(('HC', 'PAC', 'PC', 'IAC', 'DC', 'EC'), colorlover.scales['6']['qual']['Set1']))
 ```
 
 ## Data loading
@@ -95,8 +61,7 @@ dataset.data
 
 ```{code-cell} ipython3
 hascadence = dc.HasCadenceAnnotationsFilter().process_data(dataset)
-display(HTML(f"<h4>Before: {len(dataset.indices[()])} pieces; "
-             f"after removing those without cadence labels: {len(hascadence.indices[()])}</h4>"))
+print(f"Before: {len(dataset.indices[()])} pieces; after removing those without cadence labels: {len(hascadence.indices[()])}")
 ```
 
 ### Show corpora containing pieces with cadence annotations

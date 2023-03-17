@@ -1,108 +1,70 @@
 ---
-jupytext:
-  formats: ipynb,md:myst
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.14.4
-kernelspec:
-  display_name: ms3
-  language: python
-  name: ms3
+jupyter:
+  jupytext:
+    formats: md,ipynb
+    text_representation:
+      extension: .md
+      format_name: markdown
+      format_version: '1.3'
+      jupytext_version: 1.14.4
+  kernelspec:
+    display_name: ms3
+    language: python
+    name: ms3
 ---
 
-`pip install dimcat Jinja2 colorlover GitPython plotly`
+# Cadences
 
-```{code-cell} ipython3
-%load_ext autoreload
-%autoreload 2
+```python
 import os
 from collections import defaultdict, Counter
-from fractions import Fraction
-from IPython.display import HTML
-import ms3
-import dimcat as dc
+
 from git import Repo
-import plotly.express as px
-import colorlover
+import dimcat as dc
+import ms3
 import pandas as pd
-import numpy as np
-pd.set_option("display.max_columns", 100)
-pd.set_option("display.max_rows", 500)
 import plotly.express as px
 import plotly.graph_objects as go
-import matplotlib.pyplot as plt
-plt.set_loglevel('error')
 
-def value_count_df(S, thing=None, counts='counts'):
-    thing = S.name if thing is None else thing
-    df = S.value_counts().rename(counts).to_frame()
-    df.index.rename(thing, inplace=True)
-    return df
-
-def color_background(x, color="#ffffb3"):
-    return np.where(x.notna().to_numpy(), f"background-color: {color};", None)
-
+from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df
 ```
 
-# Preliminaries
-## Software versions and configurations
-
-```{code-cell} ipython3
-corpus_path = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
-corpus_path
+```python
+CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+CORPUS_PATH
 ```
 
-```{code-cell} ipython3
-repo = Repo(corpus_path)
+```python
+repo = Repo(CORPUS_PATH)
 notebook_repo = Repo('.', search_parent_directories=True)
 notebook_repo_path = notebook_repo.git.rev_parse("--show-toplevel")
 print(f"Notebook repository '{os.path.basename(notebook_repo_path)}' @ {notebook_repo.commit().hexsha[:7]}")
-print(f"Data repo '{os.path.basename(corpus_path)}' @ {repo.commit().hexsha[:7]}")
+print(f"Data repo '{os.path.basename(CORPUS_PATH)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-```{code-cell} ipython3
-STD_LAYOUT = {
- 'paper_bgcolor': '#FFFFFF',
- 'plot_bgcolor': '#FFFFFF',
- 'margin': {'l': 40, 'r': 0, 'b': 0, 't': 40, 'pad': 0},
- 'font': {'size': 15}
-}
-import colorlover
-#for name, scales in colorlover.scales['6']['qual'].items():
-#    print(name)
-#    display(HTML(colorlover.to_html(scales)))
-cadence_colors = dict(zip(('HC', 'PAC', 'PC', 'IAC', 'DC', 'EC'), colorlover.scales['6']['qual']['Set1']))
-```
-
 ## Data loading
 
-```{code-cell} ipython3
+```python
 dataset = dc.Dataset()
 for folder in ['corelli', 'liszt_pelerinage']:
     print("Loading", folder)
-    path = os.path.join(corpus_path, folder)
+    path = os.path.join(CORPUS_PATH, folder)
     dataset.load(directory=path)
-```
-
-```{code-cell} ipython3
 dataset.data
 ```
 
 ### Filtering out pieces without cadence annotations
 
-```{code-cell} ipython3
+```python
 hascadence = dc.HasCadenceAnnotationsFilter().process_data(dataset)
-display(HTML(f"<h4>Before: {len(dataset.indices[()])} pieces; "
-             f"after removing those without cadence labels: {len(hascadence.indices[()])}</h4>"))
+print(f"Before: {len(dataset.indices[()])} pieces; after removing those without cadence labels: {len(hascadence.indices[()])}")
 ```
 
 ### Show corpora containing pieces with cadence annotations
 
-```{code-cell} ipython3
+```python
 grouped_by_dataset = dc.CorpusGrouper().process_data(hascadence)
 corpora = {group[0]: f"{len(ixs)} pieces" for group, ixs in  grouped_by_dataset.indices.items()}
 print(f"{len(corpora)} corpora with {sum(map(len, grouped_by_dataset.indices.values()))} pieces containing cadence annotations:")
@@ -111,7 +73,7 @@ corpora
 
 ### All annotation labels from the selected pieces
 
-```{code-cell} ipython3
+```python
 all_labels = hascadence.get_facet('expanded')
 
 print(f"{len(all_labels.index)} hand-annotated harmony labels:")
@@ -120,14 +82,14 @@ all_labels.iloc[:10, 14:].style.apply(color_background, subset="chord")
 
 ### Metadata
 
-```{code-cell} ipython3
+```python
 dataset_metadata = hascadence.data.metadata()
 hascadence_metadata = dataset_metadata.loc[hascadence.indices[()]]
 hascadence_metadata.index.rename('dataset', level=0, inplace=True)
 hascadence_metadata.head()
 ```
 
-```{code-cell} ipython3
+```python
 mean_composition_years = hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
 chronological_order = mean_composition_years.index.to_list()
 bar_data = pd.concat([mean_composition_years.rename('year'), 
@@ -148,27 +110,27 @@ fig.update_traces(width=5)
 * **EC**: Evaded Cadence
 * **PC**: Plagal Cadence
 
-```{code-cell} ipython3
+```python
 print(f"{all_labels.cadence.notna().sum()} cadence labels.")
 value_count_df(all_labels.cadence)
 ```
 
-```{code-cell} ipython3
-px.pie(all_labels[all_labels.cadence.notna()], names="cadence", color="cadence", color_discrete_map=cadence_colors)
+```python
+px.pie(all_labels[all_labels.cadence.notna()], names="cadence", color="cadence", color_discrete_map=CADENCE_COLORS)
 ```
 
 ## Per dataset
 
-```{code-cell} ipython3
+```python
 cadence_count_per_dataset = all_labels.groupby("corpus").cadence.value_counts()
 cadence_fraction_per_dataset = cadence_count_per_dataset / cadence_count_per_dataset.groupby(level=0).sum()
 px.bar(cadence_fraction_per_dataset.rename('count').reset_index(), x='corpus', y='count', color='cadence',
-      color_discrete_map=cadence_colors, category_orders=dict(dataset=chronological_order))
+      color_discrete_map=CADENCE_COLORS, category_orders=dict(dataset=chronological_order))
 ```
 
-```{code-cell} ipython3
+```python
 fig = px.pie(cadence_count_per_dataset.rename('count').reset_index(), names='cadence', color='cadence', values='count', 
-       facet_col='corpus', facet_col_wrap=4, height=2000, color_discrete_map=cadence_colors)
+       facet_col='corpus', facet_col_wrap=4, height=2000, color_discrete_map=CADENCE_COLORS)
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_layout(**STD_LAYOUT)
 ```
@@ -176,9 +138,7 @@ fig.update_layout(**STD_LAYOUT)
 ## Per phrase
 ### Number of cadences per phrase
 
-```{code-cell} ipython3
-:tags: []
-
+```python tags=[]
 segmented = dc.PhraseSlicer().process_data(grouped_by_dataset)
 phrases = segmented.get_slice_info()
 phrase_segments = segmented.get_facet("expanded")
@@ -196,7 +156,7 @@ phrases_with_cadences = pd.concat([
 value_count_df(phrases_with_cadences.n_cadences, counts="#phrases")
 ```
 
-```{code-cell} ipython3
+```python
 n_cad = phrases_with_cadences.groupby(level='corpus').n_cadences.value_counts().rename('counts').reset_index().sort_values('n_cadences')
 n_cad.n_cadences = n_cad.n_cadences.astype(str)
 fig = px.bar(n_cad, x='corpus', y='counts', color='n_cadences', height=800, barmode='group',
@@ -208,13 +168,13 @@ fig.show()
 
 ### Combinations of cadence types for phrases with more than one cadence
 
-```{code-cell} ipython3
+```python
 value_count_df(phrases_with_cadences[phrases_with_cadences.n_cadences > 1].cadences)
 ```
 
 ### Positioning of cadences within phrases
 
-```{code-cell} ipython3
+```python
 df_rows = []
 y_position = 0
 for ix in phrases_with_cadences[phrases_with_cadences.n_cadences > 0].sort_values('duration_qb').index:
@@ -235,9 +195,9 @@ for ix in phrases_with_cadences[phrases_with_cadences.n_cadences > 0].sort_value
 data = pd.DataFrame(df_rows, columns=["phrase_ix", "x", "marker", "description"])
 ```
 
-```{code-cell} ipython3
+```python
 fig = px.scatter(data[data.x.notna()], x='x', y="phrase_ix", color="marker", hover_name="description", height=3000,
-                labels=dict(marker='legend'), color_discrete_map=cadence_colors)
+                labels=dict(marker='legend'), color_discrete_map=CADENCE_COLORS)
 fig.update_traces(marker_size=5)
 fig.update_yaxes(autorange="reversed")
 fig.show()
@@ -245,12 +205,11 @@ fig.show()
 
 ## Cadence ultima
 
-```{code-cell} ipython3
+```python
 phrase_segments = segmented.get_facet("expanded")
 cadence_selector = phrase_segments.cadence.notna()
 missing_chord_selector = phrase_segments.chord.isna()
 cadence_with_missing_chord_selector = cadence_selector & missing_chord_selector
-#print(f"Ultima missing for {cadence_with_missing_chord_selector.sum()} cadences.")
 missing = phrase_segments[cadence_with_missing_chord_selector]
 expanded = ms3.expand_dcml.expand_labels(phrase_segments[cadence_with_missing_chord_selector], propagate=False, chord_tones=True, skip_checks=True)
 phrase_segments.loc[cadence_with_missing_chord_selector] = expanded
@@ -259,12 +218,12 @@ print(f"Ultima harmony missing for {(phrase_segments.cadence.notna() & phrase_se
 
 ### Ultimae as Roman numeral
 
-```{code-cell} ipython3
+```python
 def highlight(row, color="#ffffb3"):
     if row.counts < 10:
         return [None, None, None, None]
     else:
-        return ["background-color: #ffffb3;"] * 4
+        return ["background-color: {color};"] * 4
 
 cadence_counts = all_labels.cadence.value_counts()
 ultima_root = phrase_segments.groupby(['localkey_is_minor', 'cadence']).numeral.value_counts().rename('counts').to_frame().reset_index()
@@ -272,7 +231,7 @@ ultima_root.localkey_is_minor = ultima_root.localkey_is_minor.map({False: 'in ma
 #ultima_root.style.apply(highlight, axis=1)
 ```
 
-```{code-cell} ipython3
+```python
 fig = px.pie(ultima_root, names='numeral', values='counts', 
              facet_row='cadence', facet_col='localkey_is_minor', 
              height=1500,
@@ -284,20 +243,20 @@ fig.update_layout(**STD_LAYOUT)
 fig.show()
 ```
 
-```{code-cell} ipython3
+```python
 #phrase_segments.groupby(level=[0,1,2], group_keys=False).apply(lambda df: df if ((df.cadence == 'PAC') & (df.numeral == 'V')).any() else None)
 ```
 
 ### Ultimae bass note as scale degree
 
-```{code-cell} ipython3
+```python
 ultima_bass = phrase_segments.groupby(['localkey_is_minor','cadence']).bass_note.value_counts().rename('counts').reset_index()
 ultima_bass.bass_note = ms3.transform(ultima_bass, ms3.fifths2sd, dict(fifths='bass_note', minor='localkey_is_minor'))
 ultima_bass.localkey_is_minor = ultima_bass.localkey_is_minor.map({False: 'in major', True: 'in minor'})
 #ultima_bass.style.apply(highlight, axis=1)
 ```
 
-```{code-cell} ipython3
+```python
 fig = px.pie(ultima_bass, names='bass_note', values='counts', 
              facet_row='cadence', facet_col='localkey_is_minor', 
              height=1500, 
@@ -311,17 +270,16 @@ fig.show()
 
 ## Chord progressions
 
-+++
 
 ### PACs with ultima I/i
 
-```{code-cell} ipython3
+```python
 #pac_on_i = phrase_segments.groupby(level=[0,1,2], group_keys=False).apply(lambda df: df if ((df.cadence == 'PAC') & (df.numeral.isin(('I', 'i')))).any() else None)
 #pac_on_i.cadence.value_counts()
 #pac_on_i.droplevel(-1).index.nunique()
 ```
 
-```{code-cell} ipython3
+```python
 def get_progressions(selected='PAC', last_row={}, feature='chord', dataset=None, as_series=True):
     """Uses the nonlocal variable phrase_segments."""
     last_row = {k: v if isinstance(v, tuple) else (v,) for k, v in last_row.items()}
@@ -346,21 +304,20 @@ def get_progressions(selected='PAC', last_row={}, feature='chord', dataset=None,
     if as_series:
         return pd.Series(progressions)
     return progressions
-
 ```
 
-```{code-cell} ipython3
+```python
 chord_progressions = get_progressions('PAC', dict(numeral=('I', 'i')), 'chord')
 print(f"Progressions for {len(chord_progressions)} cadences:")
 value_count_df(chord_progressions, "chord progressions")
 ```
 
-```{code-cell} ipython3
+```python
 numeral_progressions = get_progressions('PAC', dict(numeral=('I', 'i')), 'numeral')
 value_count_df(numeral_progressions, "numeral progressions")
 ```
 
-```{code-cell} ipython3
+```python
 def remove_immediate_duplicates(l):
     return tuple(a for a, b in zip(l, (None, ) + l) if a != b)
 
@@ -372,19 +329,19 @@ value_count_df(numeral_prog_no_dups)
 
 **Scale degrees expressed w.r.t. major scale, regardless of actual key.**
 
-```{code-cell} ipython3
+```python
 bass_progressions = get_progressions('PAC', dict(bass_note=0), 'bass_note')
 bass_prog = bass_progressions.map(ms3.fifths2sd)
 print(f"Progressions for {len(bass_progressions)} cadences:")
 value_count_df(bass_prog, "bass progressions")
 ```
 
-```{code-cell} ipython3
+```python
 bass_prog_no_dups = bass_prog.map(remove_immediate_duplicates)
 value_count_df(bass_prog_no_dups)
 ```
 
-```{code-cell} ipython3
+```python
 def make_sankey(data, labels, node_pos=None, margin={'l': 10, 'r': 10, 'b': 10, 't': 10}, pad=20, color='auto', **kwargs):
     if color=='auto':
         unique_labels = set(labels)
@@ -446,30 +403,30 @@ def plot_progressions(progressions, cut_at_stage=None):
 plot_progressions(numeral_prog_no_dups, cut_at_stage=3)
 ```
 
-```{code-cell} ipython3
+```python
 chord_progressions_minor = get_progressions('PAC', dict(numeral='i', localkey_is_minor=True), 'root')
 chord_progressions_minor
 ```
 
-```{code-cell} ipython3
+```python
 pac_major = get_progressions('PAC', dict(numeral='I', localkey_is_minor=False), 'chord')
 plot_progressions(pac_major, cut_at_stage=4)
 ```
 
-```{code-cell} ipython3
+```python
 deceptive = get_progressions('DC', dict(localkey_is_minor=False), 'chord')
 deceptive.value_counts()
 ```
 
-```{code-cell} ipython3
+```python
 plot_progressions(deceptive, cut_at_stage=4)
 ```
 
-```{code-cell} ipython3
+```python
 plot_progressions(bass_prog_no_dups, cut_at_stage=7)
 ```
 
-```{code-cell} ipython3
+```python
 def remove_sd_accidentals(t):
     return tuple(map(lambda sd: sd[-1], t))
                   
@@ -479,7 +436,7 @@ plot_progressions(bass_prog_no_acc_no_dup, cut_at_stage=7)
 
 ### HCs ending on V
 
-```{code-cell} ipython3
+```python
 half = get_progressions('HC', dict(numeral='V'), 'bass_note').map(ms3.fifths2sd)
 print(f"Progressions for {len(half)} cadences:")
 plot_progressions(half.map(remove_immediate_duplicates), cut_at_stage=5)

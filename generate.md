@@ -14,18 +14,24 @@ kernelspec:
 
 +++ {"tags": []}
 
-# Corpus overview plots
+# General overview
 
 ```{code-cell} ipython3
 import os
+from collections import defaultdict, Counter
+
 from git import Repo
 import dimcat as dc
-from ms3 import __version__ as ms3_version
+import ms3
+import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
+
+from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df
 ```
 
 ```{code-cell} ipython3
 corpus_path = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
-corpus_path = os.path.realpath(os.path.expanduser(corpus_path))
 corpus_path
 ```
 
@@ -36,39 +42,7 @@ notebook_repo_path = notebook_repo.git.rev_parse("--show-toplevel")
 print(f"Notebook repository '{os.path.basename(notebook_repo_path)}' @ {notebook_repo.commit().hexsha[:7]}")
 print(f"Data repo '{os.path.basename(corpus_path)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3_version}")
-```
-
-```{code-cell} ipython3
-from fractions import Fraction
-import ms3
-from IPython.display import HTML
-import plotly.express as px
-import colorlover
-import pandas as pd
-pd.set_option("display.max_columns", 100)
-```
-
-```{code-cell} ipython3
-STD_LAYOUT = {
- 'paper_bgcolor': '#FFFFFF',
- 'plot_bgcolor': '#FFFFFF',
- 'margin': {'l': 40, 'r': 0, 'b': 0, 't': 40, 'pad': 0},
- 'font': {'size': 15}
-}
-OUTPUT_DIR = os.path.join(corpus_path, 'figures')
-os.makedirs(OUTPUT_DIR, exist_ok=True)
-#HTML(colorlover.to_html(colorlover.scales))
-HTML(colorlover.to_html(colorlover.scales['9']['qual']['Paired']))
-```
-
-```{code-cell} ipython3
-fig = px.colors.qualitative.swatches()
-fig.show()
-```
-
-```{code-cell} ipython3
-corpus_color_scale = px.colors.qualitative.D3
+print(f"ms3 version {ms3.__version__}")
 ```
 
 # Overview
