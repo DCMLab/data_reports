@@ -1,5 +1,7 @@
+import os
 import numpy as np
 import colorlover
+from git import Repo
 import plotly.express as px
 
 STD_LAYOUT = {
@@ -16,6 +18,18 @@ TYPE_COLORS = dict(zip(('Mm7', 'M', 'o7', 'o', 'mm7', 'm', '%7', 'MM7', 'other')
 def color_background(x, color="#ffffb3"):
     """Format DataFrame cells with given background color."""
     return np.where(x.notna().to_numpy(), f"background-color: {color};", None)
+
+def get_repo_name(repo: Repo) -> str:
+    """Gets the repo name from the origin's URL, or from the local path if there is None."""
+    if isinstance(repo, str):
+        repo = Repo(repo)
+    if len(repo.remotes) == 0:
+        return repo.git.rev_parse("--show-toplevel")
+    remote = repo.remotes[0]
+    return remote.url.split('.git')[0].split('/')[-1]
+
+def resolve_dir(directory: str):
+    return os.path.realpath(os.path.expanduser(directory))
 
 
 def value_count_df(S, thing=None, counts='counts'):

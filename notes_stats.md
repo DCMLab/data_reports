@@ -11,27 +11,28 @@ jupytext:
 
 ```{code-cell} ipython3
 import os
+from collections import defaultdict, Counter
 
 from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 
-from utils import CORPUS_COLOR_SCALE, STD_LAYOUT
+from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, color_background, get_repo_name, resolve_dir, value_count_df, get_repo_name, resolve_dir
 ```
 
 ```{code-cell} ipython3
 CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
-CORPUS_PATH
+CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
 ```{code-cell} ipython3
 repo = Repo(CORPUS_PATH)
 notebook_repo = Repo('.', search_parent_directories=True)
-notebook_repo_path = notebook_repo.git.rev_parse("--show-toplevel")
-print(f"Notebook repository '{os.path.basename(notebook_repo_path)}' @ {notebook_repo.commit().hexsha[:7]}")
-print(f"Data repo '{os.path.basename(CORPUS_PATH)}' @ {repo.commit().hexsha[:7]}")
+print(f"Notebook repository '{get_repo_name(notebook_repo)}' @ {notebook_repo.commit().hexsha[:7]}")
+print(f"Data repo '{get_repo_name(CORPUS_PATH)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 ```
@@ -40,10 +41,7 @@ print(f"ms3 version {ms3.__version__}")
 
 ```{code-cell} ipython3
 dataset = dc.Dataset()
-for folder in ['corelli', 'liszt_pelerinage']:
-    print("Loading", folder)
-    path = os.path.join(CORPUS_PATH, folder)
-    dataset.load(directory=path)
+dataset.load(directory=CORPUS_PATH)
 dataset.data
 ```
 
