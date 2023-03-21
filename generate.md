@@ -5,10 +5,6 @@ jupytext:
     format_name: myst
     format_version: 0.13
     jupytext_version: 1.14.4
-kernelspec:
-  display_name: dimcat
-  language: python
-  name: dimcat
 ---
 
 +++ {"tags": []}
