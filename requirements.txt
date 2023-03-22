@@ -4,7 +4,7 @@ ipython==8.11.0
 jupytext==1.14.5
 kaleido==0.2.1
 matplotlib==3.7.1
-ms3==1.2.4
+ms3==1.2.5
 nbformat==5.7.3
 numpy==1.24.2
 pandas==1.5.3

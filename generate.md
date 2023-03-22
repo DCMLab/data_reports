@@ -28,6 +28,7 @@ from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, c
 
 ```{code-cell} ipython3
 CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
@@ -42,23 +43,35 @@ print(f"ms3 version {ms3.__version__}")
 
 ## Data loading
 
+### Detected files
+
 ```{code-cell} ipython3
 dataset = dc.Dataset()
-dataset.load(directory=CORPUS_PATH)
+dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 dataset.data
+```
+
+### Filtering
+
+```{code-cell} ipython3
+annotated_view = dataset.data.get_view('annotated')
+annotated_view.include('facets', 'measures', 'notes$', 'expanded')
+annotated_view.fnames_with_incomplete_facets = False
+dataset.data.set_view(annotated_view)
+dataset.data.parse_tsv(choose='auto')
+dataset.data
+```
+
+```{code-cell} ipython3
+print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
 ```
 
 ## Metadata
 
 ```{code-cell} ipython3
 all_metadata = dataset.data.metadata()
-print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {len(dataset.pieces)} scores.")
-all_metadata.groupby(level=0).nth(0)
-```
-
-```{code-cell} ipython3
-print("VALUE COUNTS OF THE COLUMN 'annotators'")
-all_metadata.annotators.value_counts()
+print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
+all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
 ```
 
 ```{code-cell} ipython3
