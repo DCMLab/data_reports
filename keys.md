@@ -20,11 +20,12 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils import STD_LAYOUT, CADENCE_COLORS, color_background, get_repo_name, resolve_dir, value_count_df, get_repo_name, resolve_dir
+from utils import STD_LAYOUT, CADENCE_COLORS, chronological_corpus_order, color_background, get_repo_name, resolve_dir, value_count_df, get_repo_name, resolve_dir
 ```
 
 ```{code-cell} ipython3
 CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
@@ -39,55 +40,45 @@ print(f"ms3 version {ms3.__version__}")
 
 ## Data loading
 
+### Detected files
+
 ```{code-cell} ipython3
 dataset = dc.Dataset()
-dataset.load(directory=CORPUS_PATH)
+dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 dataset.data
 ```
 
-### Filtering out pieces without cadence annotations
+### Filtering
 
 ```{code-cell} ipython3
-hascadence = dc.HasCadenceAnnotationsFilter().process_data(dataset)
-print(f"Before: {len(dataset.indices[()])} pieces; after removing those without cadence labels: {len(hascadence.indices[()])}")
+annotated_view = dataset.data.get_view('annotated')
+annotated_view.include('facets', 'measures', 'expanded')
+annotated_view.fnames_with_incomplete_facets = False
+dataset.data.set_view(annotated_view)
+dataset.data.parse_tsv(choose='auto')
+dataset.get_indices()
+dataset.data
 ```
 
-### Show corpora containing pieces with cadence annotations
-
 ```{code-cell} ipython3
-grouped_by_dataset = dc.CorpusGrouper().process_data(hascadence)
-corpora = {group[0]: f"{len(ixs)} pieces" for group, ixs in  grouped_by_dataset.indices.items()}
-print(f"{len(corpora)} corpora with {sum(map(len, grouped_by_dataset.indices.values()))} pieces containing cadence annotations:")
-corpora
+print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
 ```
 
-### All annotation labels from the selected pieces
+## Metadata
 
 ```{code-cell} ipython3
-all_labels = hascadence.get_facet('expanded')
+all_metadata = dataset.data.metadata()
+print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
+all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
+```
+
+## All annotation labels from the selected pieces
+
+```{code-cell} ipython3
+all_labels = dataset.data.get_facet('expanded')
 
 print(f"{len(all_labels.index)} hand-annotated harmony labels:")
-all_labels.iloc[:10, 14:].style.apply(color_background, subset="chord")
-```
-
-### Metadata
-
-```{code-cell} ipython3
-dataset_metadata = hascadence.data.metadata()
-hascadence_metadata = dataset_metadata.loc[hascadence.indices[()]]
-hascadence_metadata.index.rename('dataset', level=0, inplace=True)
-hascadence_metadata.head()
-```
-
-```{code-cell} ipython3
-mean_composition_years = hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
-chronological_order = mean_composition_years.index.to_list()
-bar_data = pd.concat([mean_composition_years.rename('year'), 
-                      hascadence_metadata.groupby(level='dataset').size().rename('pieces')],
-                     axis=1
-                    ).reset_index()
-fig = px.bar(bar_data, x='year', y='pieces', color='dataset', title='Pieces contained in the dataset')
-fig.update_traces(width=5)
+all_labels.iloc[:20].style.apply(color_background, subset="chord")
 ```
 
 ## Computing extent of key segments from annotations
@@ -98,7 +89,7 @@ fig.update_traces(width=5)
 segmented_by_keys = dc.Pipeline([
                          dc.LocalKeySlicer(), 
                          dc.ModeGrouper()])\
-                        .process_data(hascadence)
+                        .process_data(dataset)
 key_segments = segmented_by_keys.get_slice_info()
 ```
 
@@ -139,7 +130,7 @@ maj_min_ratio_per_dataset.reset_index()
 ```
 
 ```{code-cell} ipython3
-chronological_order
+chronological_order = chronological_corpus_order(all_metadata)
 ```
 
 ```{code-cell} ipython3

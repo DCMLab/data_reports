@@ -20,7 +20,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, color_background, get_repo_name, resolve_dir, value_count_df, get_repo_name, resolve_dir
+from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, chronological_corpus_order, color_background, get_corpus_display_name, get_repo_name, resolve_dir, value_count_df, get_repo_name, resolve_dir
 ```
 
 ```{code-cell} ipython3
@@ -73,9 +73,8 @@ all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
 **Compute chronological order**
 
 ```{code-cell} ipython3
-mean_composition_years = all_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
-chronological_order = mean_composition_years.index.to_list()
-dataset_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
+chronological_order = chronological_corpus_order(all_metadata)
+corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
 chronological_order
 ```
 
@@ -98,7 +97,10 @@ def weight_notes(nl, group_col='midi', precise=True):
     return repeat_notes_according_to_weights(summed_durations)
     
 def repeat_notes_according_to_weights(weights):
-    counts = weights.round().astype(int)
+    try:
+        counts = weights.round().astype(int)
+    except Exception:
+        return pd.Series(dtype=int)
     counts_reflecting_weights = []
     for pitch, count in counts.items():
         counts_reflecting_weights.extend([pitch]*count)
@@ -108,27 +110,14 @@ def repeat_notes_according_to_weights(weights):
 ## Ambitus
 
 ```{code-cell} ipython3
-corpus_names = dict(
-    corelli='Corelli Trio Sonatas',
-    mozart_piano_sonatas='Mozart Piano Sonatas',
-    ABC='Beethoven String Quartets',
-    beethoven_piano_sonatas='Beethoven Sonatas',
-    chopin_mazurkas='Chopin Mazurkas',
-    debussy_suite_bergamasque='Debussy Suite',
-    dvorak_silhouettes="Dvořák Silhouettes",
-    grieg_lyric_pieces="Grieg Lyric Pieces",
-    liszt_pelerinage="Liszt Années",
-    medtner_tales="Medtner Tales",
-    schumann_kinderszenen="Schumann Kinderszenen",
-    tchaikovsky_seasons="Tchaikovsky Seasons"
-)
-dataset_name_colors = {corpus_names[corp]: color for corp, color in dataset_colors.items()}
-chronological_corpus_names = [corpus_names[corp] for corp in chronological_order]
-all_notes['dataset_name'] = all_notes.index.get_level_values(0).map(corpus_names)
+corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
+chronological_corpus_names = list(corpus_names.values())
+corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
+all_notes['corpus_name'] = all_notes.index.get_level_values(0).map(corpus_names)
 ```
 
 ```{code-cell} ipython3
-grouped_notes = all_notes.groupby('dataset_name')
+grouped_notes = all_notes.groupby('corpus_name')
 weighted_midi = pd.concat([weight_notes(nl, 'midi', precise=False) for _, nl in grouped_notes], keys=grouped_notes.groups.keys()).reset_index(level=0)
 weighted_midi.columns = ['dataset', 'midi']
 weighted_midi
@@ -150,7 +139,7 @@ fig = px.violin(weighted_midi,
                     midi='distribution of pitches by duration'
                 ),
                 category_orders=dict(dataset=chronological_corpus_names),
-                color_discrete_map=dataset_name_colors,
+                color_discrete_map=corpus_name_colors,
                 width=1000, height=600,
                )
 fig.update_traces(spanmode='hard') # do not extend beyond outliers
@@ -189,7 +178,7 @@ fig = px.violin(weighted_tpc,
                     tpc='distribution of tonal pitch classes by duration'
                 ),
                 category_orders=dict(dataset=chronological_corpus_names),
-                color_discrete_map=dataset_name_colors,
+                color_discrete_map=corpus_name_colors,
                 width=1000, 
                 height=600,
                )
@@ -223,30 +212,37 @@ fig.show()
 ```
 
 ```{code-cell} ipython3
-scatter_data = all_notes.groupby(['dataset_name', 'tpc']).duration_qb.sum().reset_index()
-px.bar(scatter_data, x='tpc', y='duration_qb', color='dataset_name', 
+scatter_data = all_notes.groupby(['corpus_name', 'tpc']).duration_qb.sum().reset_index()
+fig = px.bar(scatter_data, x='tpc', y='duration_qb', color='corpus_name', 
                  labels=dict(
                      duration_qb='duration',
                      tpc='named pitch class',
                  ),
                  category_orders=dict(dataset=chronological_corpus_names),
-                 color_discrete_map=dataset_name_colors,
+                 color_discrete_map=corpus_name_colors,
                  width=1000, height=500,
                 )
+fig.update_layout(**STD_LAYOUT)
+fig.update_yaxes(gridcolor='lightgrey')
+fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array', 
+                 tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black', 
+                 minor=dict(dtick=6, gridcolor='grey', showgrid=True),
+                )
+fig.show()
 ```
 
 ### As scatter plots
 
 ```{code-cell} ipython3
-fig = px.scatter(scatter_data, x='tpc', y='duration_qb', color='dataset_name', 
+fig = px.scatter(scatter_data, x='tpc', y='duration_qb', color='corpus_name', 
                  labels=dict(
                      duration_qb='duration',
                      tpc='named pitch class',
                  ),
                  category_orders=dict(dataset=chronological_corpus_names),
-                 color_discrete_map=dataset_name_colors,
-                 facet_col='dataset_name', facet_col_wrap=3, facet_col_spacing=0.03,
-                 width=1000, height=500,
+                 color_discrete_map=corpus_name_colors,
+                 facet_col='corpus_name', facet_col_wrap=3, facet_col_spacing=0.03,
+                 width=1000, height=1000,
                 )
 fig.update_traces(mode='lines+markers')
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))

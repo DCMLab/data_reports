@@ -25,6 +25,7 @@ from utils import STD_LAYOUT, color_background, value_count_df, get_repo_name, r
 
 ```{code-cell} ipython3
 CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
@@ -39,63 +40,45 @@ print(f"ms3 version {ms3.__version__}")
 
 ## Data loading
 
+### Detected files
+
 ```{code-cell} ipython3
 dataset = dc.Dataset()
-dataset.load(directory=CORPUS_PATH)
+dataset.load(directory=CORPUS_PATH, parse_tsv=False)
+dataset.data
+```
+
+### Filtering
+
+```{code-cell} ipython3
+annotated_view = dataset.data.get_view('annotated')
+annotated_view.include('facets', 'expanded')
+annotated_view.fnames_with_incomplete_facets = False
+dataset.data.set_view(annotated_view)
+dataset.data.parse_tsv(choose='auto')
+dataset.get_indices()
 dataset.data
 ```
 
 ```{code-cell} ipython3
-dataset.data
+print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
 ```
 
-### Filtering out pieces without cadence annotations
+## Metadata
 
 ```{code-cell} ipython3
-hascadence = dc.HasCadenceAnnotationsFilter().process_data(dataset)
-print(f"Before: {len(dataset.indices[()])} pieces; after removing those without cadence labels: {len(hascadence.indices[()])}")
+all_metadata = dataset.data.metadata()
+print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
+all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
 ```
 
-### Show corpora containing pieces with cadence annotations
+## All annotation labels from the selected pieces
 
 ```{code-cell} ipython3
-grouped_by_dataset = dc.CorpusGrouper().process_data(hascadence)
-corpora = {group[0]: f"{len(ixs)} pieces" for group, ixs in  grouped_by_dataset.indices.items()}
-print(f"{len(corpora)} corpora with {sum(map(len, grouped_by_dataset.indices.values()))} pieces containing cadence annotations:")
-corpora
-```
-
-### All annotation labels from the selected pieces
-
-```{code-cell} ipython3
-all_labels = hascadence.get_facet('expanded')
+all_labels = dataset.data.get_facet('expanded')
 
 print(f"{len(all_labels.index)} hand-annotated harmony labels:")
-all_labels.iloc[:10, 14:].style.apply(color_background, subset="chord")
-```
-
-### Metadata
-
-```{code-cell} ipython3
-dataset_metadata = hascadence.data.metadata()
-hascadence_metadata = dataset_metadata.loc[hascadence.indices[()]]
-hascadence_metadata.index.rename('dataset', level=0, inplace=True)
-hascadence_metadata.head()
-```
-
-```{code-cell} ipython3
----
-pycharm:
-  is_executing: true
----
-mean_composition_years = hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
-chronological_order = mean_composition_years.index.to_list()
-bar_data = pd.concat([mean_composition_years.rename('year'), 
-                      hascadence_metadata.groupby(level='dataset').size().rename('pieces')],
-                     axis=1
-                    ).reset_index()
-fig = px.bar(bar_data, x='year', y='pieces', color='dataset', title='Pieces contained in the dataset')
-fig.update_traces(width=5)
+all_labels.iloc[:20].style.apply(color_background, subset="chord")
 ```
 
 ## Overview
@@ -116,7 +99,8 @@ all_labels.groupby(["corpus"]).phraseend.value_counts()
 pycharm:
   is_executing: true
 ---
-all_labels[all_labels.phraseend == r'\\'].style.apply(color_background, subset="label")
+legacy = all_labels[all_labels.phraseend == r'\\']
+legacy.groupby(level=0).size()
 ```
 
 ### A table with the extents of all annotated phrases
@@ -131,8 +115,8 @@ pycharm:
   is_executing: true
 tags: []
 ---
-# segmented = PhraseSlicer().process_data(hascadence)
-segmented = dc.PhraseSlicer().process_data(grouped_by_dataset)
+#grouped_by_corpus = dc.CorpusGrouper().process_data(dataset)
+segmented = dc.PhraseSlicer().process_data(dataset)
 phrases = segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
 phrases.head(10).style.apply(color_background, subset=["quarterbeats", "duration_qb"])
@@ -148,8 +132,6 @@ phrases.duration_qb = pd.to_numeric(phrases.duration_qb)
 ```
 
 ### Annotation table sliced by phrase annotations
-
-ToDo: Example for overlap / phrase beginning without new chord
 
 ```{code-cell} ipython3
 ---

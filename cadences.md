@@ -25,6 +25,7 @@ from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, 
 
 ```{code-cell} ipython3
 CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
@@ -39,10 +40,45 @@ print(f"ms3 version {ms3.__version__}")
 
 ## Data loading
 
+### Detected files
+
 ```{code-cell} ipython3
 dataset = dc.Dataset()
-dataset.load(directory=CORPUS_PATH)
+dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 dataset.data
+```
+
+### Filtering
+
+```{code-cell} ipython3
+annotated_view = dataset.data.get_view('annotated')
+annotated_view.include('facets', 'expanded')
+annotated_view.fnames_with_incomplete_facets = False
+dataset.data.set_view(annotated_view)
+dataset.data.parse_tsv(choose='auto')
+dataset.get_indices()
+dataset.data
+```
+
+```{code-cell} ipython3
+print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
+```
+
+## Metadata
+
+```{code-cell} ipython3
+all_metadata = dataset.data.metadata()
+print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
+all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
+```
+
+## All annotation labels from the selected pieces
+
+```{code-cell} ipython3
+all_labels = dataset.data.get_facet('expanded')
+
+print(f"{len(all_labels.index)} hand-annotated harmony labels:")
+all_labels.iloc[:20].style.apply(color_background, subset="chord")
 ```
 
 ### Filtering out pieces without cadence annotations
@@ -55,9 +91,9 @@ print(f"Before: {len(dataset.indices[()])} pieces; after removing those without 
 ### Show corpora containing pieces with cadence annotations
 
 ```{code-cell} ipython3
-grouped_by_dataset = dc.CorpusGrouper().process_data(hascadence)
-corpora = {group[0]: f"{len(ixs)} pieces" for group, ixs in  grouped_by_dataset.indices.items()}
-print(f"{len(corpora)} corpora with {sum(map(len, grouped_by_dataset.indices.values()))} pieces containing cadence annotations:")
+grouped_by_corpus = dc.CorpusGrouper().process_data(hascadence)
+corpora = {group[0]: f"{len(ixs)} pieces" for group, ixs in  grouped_by_corpus.indices.items()}
+print(f"{len(corpora)} corpora with {sum(map(len, grouped_by_corpus.indices.values()))} pieces containing cadence annotations:")
 corpora
 ```
 
@@ -130,7 +166,7 @@ fig.update_layout(**STD_LAYOUT)
 ```{code-cell} ipython3
 :tags: []
 
-segmented = dc.PhraseSlicer().process_data(grouped_by_dataset)
+segmented = dc.PhraseSlicer().process_data(grouped_by_corpus)
 phrases = segmented.get_slice_info()
 phrase_segments = segmented.get_facet("expanded")
 phrase_gpb = phrase_segments.groupby(level=[0,1,2])
