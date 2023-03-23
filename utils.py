@@ -3,6 +3,7 @@ import numpy as np
 import colorlover
 from git import Repo
 import plotly.express as px
+import pandas as pd
 
 STD_LAYOUT = {
  'paper_bgcolor': '#FFFFFF',
@@ -37,7 +38,9 @@ def value_count_df(S, thing=None, counts='counts'):
     are given in the column ``counts``.
     """
     thing = S.name if thing is None else thing
-    df = S.value_counts().rename(counts).to_frame()
+    vc = S.value_counts().rename(counts)
+    normalized = vc / vc.sum()
+    df = pd.concat([vc.to_frame(), normalized.rename('%')], axis=1)
     df.index.rename(thing, inplace=True)
     return df
 
