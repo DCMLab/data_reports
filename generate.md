@@ -243,7 +243,7 @@ fig.update_traces(xbins=dict(
 ))
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "corpus_size_histogram.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "1_corpus_size_histogram.png"), scale=2)
 fig.show()
 ```
 
@@ -342,10 +342,10 @@ timesig_in_quarterbeats = uniform_timesigs.map(Fraction) * 4
 exact_measure_lengths = uniform_timesig_phrases.duration_qb / timesig_in_quarterbeats
 uniform_timesigs = pd.concat([exact_measure_lengths.rename('duration_measures'), uniform_timesig_phrases], axis=1)
 fig = px.histogram(uniform_timesigs, x='duration_measures', log_y=True,
-                   labels=dict(duration_measures='phrase length bin in number of measures'),
+                   labels=dict(duration_measures='phrase length in measures'),
                    color_discrete_sequence=corpus_color_scale,
                    height=400,
-                   width = 1000,
+                   width =1000,
                   )
 fig.update_traces(xbins=dict( # bins used for histogram
         #start=0.0,
@@ -355,7 +355,7 @@ fig.update_traces(xbins=dict( # bins used for histogram
 fig.update_layout(**STD_LAYOUT)
 fig.update_xaxes(dtick=4, gridcolor='lightgrey')
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "phrase_lengths.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "5_phrase_lengths.png"), scale=2)
 fig.show()
 ```
 
@@ -406,7 +406,7 @@ localkey_fifths_durations = localkey_fifths_durations.sort_values(key=lambda S: 
 bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
 bar_data.localkey_fifths = bar_data.localkey_fifths.map(ms3.fifths2iv)
 fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mode', log_y=True, barmode='group',
-             labels=dict(localkey_fifths='Roots of local keys as intervallic distance from the global tonic', 
+             labels=dict(localkey_fifths='Local-key tonics as intervallic distance from the global tonic', 
                    duration_qb='total duration in quarter notes',
                    localkey_mode='mode'
                   ),
@@ -424,7 +424,7 @@ localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor'
 bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
 bar_data.localkey_fifths = bar_data.localkey_fifths.map(ms3.fifths2iv)
 fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mode', log_y=True, barmode='group',
-             labels=dict(localkey_fifths='Roots of local keys as intervallic distance from the global tonic', 
+             labels=dict(localkey_fifths='Local-key tonics as intervallic distance from the global tonic', 
                    duration_qb='total duration in quarter notes',
                    localkey_mode='mode'
                   ),
@@ -432,7 +432,7 @@ fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mod
              width=1000)
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "key_segments_line_of_fifths.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "6_key_segments_line_of_fifths.png"), scale=2)
 fig.show()
 ```
 
@@ -467,14 +467,14 @@ cadence_count_per_corpus.groupby(level=0).sum()
 ```python
 cadence_fraction_per_corpus = cadence_count_per_corpus / cadence_count_per_corpus.groupby(level=0).sum()
 fig = px.bar(cadence_fraction_per_corpus.rename('count').reset_index(), x='corpus_name', y='count', color='cadence',
-             labels=dict(count='fraction', corpus=''), 
+             labels=dict(count='fraction', corpus_name=''), 
              height=400, width=900,
        category_orders=dict(corpus_name=chronological_corpus_names))
       #color_discrete_map=cadence_colors, 
 
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.write_image(os.path.join(OUTPUT_DIR, "cadences.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "7_cadences.png"), scale=2)
 fig.show()
 ```
 

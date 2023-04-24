@@ -120,7 +120,7 @@ def weight_notes(nl, group_col='midi', precise=True):
 def repeat_notes_according_to_weights(weights):
     counts = weights.round().astype(int)
     counts_reflecting_weights = []
-    for pitch, count in counts.iteritems():
+    for pitch, count in counts.items():
         counts_reflecting_weights.extend([pitch]*count)
     return pd.Series(counts_reflecting_weights)
 
@@ -186,7 +186,7 @@ fig = px.violin(weighted_midi, x='dataset', y='midi', color='dataset', box=True,
 fig.update_traces(spanmode='hard') # do not extend beyond outliers
 fig.update_layout(yaxis=yaxis, **STD_LAYOUT,
                  showlegend=False)
-fig.write_image(os.path.join(OUTPUT_DIR, "ambitus_per_dataset_colored.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "2_ambitus_per_dataset_colored.png"), scale=2)
 fig.show()
 ```
 
@@ -213,7 +213,7 @@ fig.show()
 <!-- #raw -->
 # adapted from https://plotly.com/python/violin/#ridgeline-plot
 fig = go.Figure()
-for corp, data_line in weighted_tpc.iteritems():
+for corp, data_line in weighted_tpc.items():
     fig.add_trace(go.Violin(x=data_line, name=corp))
 
 fig.update_traces(side='positive', orientation='h', width=2, points=False)
@@ -238,7 +238,7 @@ fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array',
                  tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black', 
                  minor=dict(dtick=6, gridcolor='grey', showgrid=True),
                 )
-fig.write_image(os.path.join(OUTPUT_DIR, "tpc_distribution_overall.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "3_tpc_distribution_overall.png"), scale=2)
 fig.show()
 ```
 
@@ -260,7 +260,7 @@ fig.update_layout(**STD_LAYOUT, showlegend=False)
 fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='lightgrey', tickmode='array', tickvals= [-12, -6, 0, 6, 12, 18],
     ticktext = ["Dbb", "Gb", "C", "F#", "B#", "E##"], visible=True, )
 fig.update_yaxes(gridcolor='lightgrey', zeroline=False, matches=None, showticklabels=True)
-fig.write_image(os.path.join(OUTPUT_DIR, "tpc_line_per_dataset_compact.png"), scale=2)
+fig.write_image(os.path.join(OUTPUT_DIR, "4_tpc_line_per_dataset_compact.png"), scale=2)
 fig.show()
 ```
 
