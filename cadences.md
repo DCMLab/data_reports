@@ -53,19 +53,17 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-## Data loading
-
-### Detected files
+## Loading corpus data
 
 ```{code-cell} ipython3
+:tags: [remove-output]
 dataset = dc.Dataset()
 dataset.load(directory=CORPUS_PATH, parse_tsv=False)
-dataset.data
 ```
 
-### Filtering
-
 ```{code-cell} ipython3
+:tags: [remove-input]
+
 annotated_view = dataset.data.get_view('annotated')
 annotated_view.include('facets', 'expanded')
 annotated_view.fnames_with_incomplete_facets = False
@@ -76,6 +74,8 @@ dataset.data
 ```
 
 ```{code-cell} ipython3
+:tags: [remove-input]
+
 print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
 ```
 
