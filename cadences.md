@@ -15,6 +15,10 @@ kernelspec:
 # Cadences
 
 ```{code-cell} ipython3
+:tags: [hide-cell]
+:mystnb:
+:  code_prompt_show: "Show imports"
+:  code_prompt_hide: "Hide imports"
 import os
 from collections import defaultdict, Counter
 
