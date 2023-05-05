@@ -102,6 +102,10 @@ def get_repo_name(repo: Repo) -> str:
     remote = repo.remotes[0]
     return remote.url.split('.git')[0].split('/')[-1]
 
+def print_heading(heading: str, underline: chr = '-') -> None:
+    """Underlines the given heading and prints it."""
+    print(f"{heading}\n{underline * len(heading)}\n")
+
 def resolve_dir(directory: str):
     return os.path.realpath(os.path.expanduser(directory))
 

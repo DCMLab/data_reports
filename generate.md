@@ -36,14 +36,17 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, color_background, corpus_mean_composition_years, value_count_df, get_corpus_display_name, get_repo_name, resolve_dir
+from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, color_background, corpus_mean_composition_years, value_count_df, get_corpus_display_name, get_repo_name, print_heading, resolve_dir
 ```
 
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/workflow_test_metarepo")
-print(f"CORPUS_PATH: '{CORPUS_PATH}'")
+CORPUS_PATH = os.getenv('CORPUS_PATH', "~/workflow_test_metarepo")
+ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
+print_heading("Notebook settings")
+print(f"CORPUS_PATH: {CORPUS_PATH!r}")
+print(f"ANNOTATED_ONLY: {ANNOTATED_ONLY}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
@@ -52,6 +55,7 @@ CORPUS_PATH = resolve_dir(CORPUS_PATH)
 
 repo = Repo(CORPUS_PATH)
 notebook_repo = Repo('.', search_parent_directories=True)
+print_heading("Data and software versions")
 print(f"Notebook repository '{get_repo_name(notebook_repo)}' @ {notebook_repo.commit().hexsha[:7]}")
 print(f"Data repo '{get_repo_name(CORPUS_PATH)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
@@ -62,6 +66,7 @@ print(f"ms3 version {ms3.__version__}")
 
 ```{code-cell} ipython3
 :tags: [remove-output]
+
 dataset = dc.Dataset()
 dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 ```
@@ -120,19 +125,15 @@ all_annotations.head()
 ```
 
 ```{code-cell} ipython3
+print(f"Concatenated annotation tables contains {all_annotations.shape[0]} rows.")
 no_chord = all_annotations.root.isna()
-print(f"Concatenated annotation tables contains {all_annotations.shape[0]} rows. {no_chord.sum()} of them are not chords. Their values are:")
-all_annotations.label[no_chord].value_counts(dropna=False).to_dict()
+if no_chord.sum() > 0:
+    print(f"{no_chord.sum()} of them are not chords. Their values are: {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}")
 ```
 
 ```{code-cell} ipython3
 all_chords = all_annotations[~no_chord].copy()
 print(f"Corpus contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
-```
-
-```{code-cell} ipython3
-#from ms3 import write_tsv
-#write_tsv(all_annotations[all_annotations.pedalend.notna()], './issues/pedalpoints.tsv', pre_process=False)
 ```
 
 ## Corpus summary

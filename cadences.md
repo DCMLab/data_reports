@@ -31,14 +31,17 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, get_repo_name, resolve_dir
+from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, get_repo_name, print_heading, resolve_dir
 ```
 
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/workflow_test_metarepo")
-print(f"CORPUS_PATH: '{CORPUS_PATH}'")
+CORPUS_PATH = os.getenv('CORPUS_PATH', "~/workflow_test_metarepo")
+ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
+print_heading("Notebook settings")
+print(f"CORPUS_PATH: {CORPUS_PATH!r}")
+print(f"ANNOTATED_ONLY: {ANNOTATED_ONLY}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
@@ -47,6 +50,7 @@ CORPUS_PATH = resolve_dir(CORPUS_PATH)
 
 repo = Repo(CORPUS_PATH)
 notebook_repo = Repo('.', search_parent_directories=True)
+print_heading("Data and software versions")
 print(f"Notebook repository '{get_repo_name(notebook_repo)}' @ {notebook_repo.commit().hexsha[:7]}")
 print(f"Data repo '{get_repo_name(CORPUS_PATH)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
