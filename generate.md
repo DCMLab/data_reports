@@ -36,7 +36,7 @@ from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, c
 ```
 
 ```{code-cell} ipython3
-CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/workflow_test_metarepo")
 print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```

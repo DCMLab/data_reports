@@ -32,7 +32,7 @@ from utils import STD_LAYOUT, color_background, value_count_df, get_repo_name, r
 ```
 
 ```{code-cell} ipython3
-CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/dcml_corpora")
+CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/workflow_test_metarepo")
 print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
