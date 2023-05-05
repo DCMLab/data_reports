@@ -71,7 +71,7 @@ dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 :tags: [remove-input]
 
 annotated_view = dataset.data.get_view('annotated')
-annotated_view.include('facets', 'measures', 'expanded')
+annotated_view.include('facets', 'measures', 'notes$', 'expanded')
 annotated_view.fnames_with_incomplete_facets = False
 dataset.data.set_view(annotated_view)
 dataset.data.parse_tsv(choose='auto')
@@ -110,7 +110,7 @@ n_annotations = len(all_annotations.index)
 includes_annotations = n_annotations > 0
 if includes_annotations:
     display(all_annotations.head())
-    print(f"Concatenated annotation tables contains {all_annotations.shape[0]} rows.")
+    print(f"Concatenated annotation tables contain {all_annotations.shape[0]} rows.")
     no_chord = all_annotations.root.isna()
     if no_chord.sum() > 0:
         print(f"{no_chord.sum()} of them are not chords. Their values are: {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}")
@@ -221,7 +221,7 @@ phrases_with_unique_key = phrases_with_keys[two_keys_selector].copy()
 value_count_df(phrases_with_unique_key.local_keys, "modulations")
 ```
 
-## Keys
+## Key areas
 
 ```{code-cell} ipython3
 from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
@@ -229,16 +229,12 @@ keys_segmented = dc.LocalKeySlicer().process_data(dataset)
 keys = keys_segmented.get_slice_info()
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
-keys.head(20)
+keys.head(5).style.apply(color_background, subset="localkey")
 ```
 
-```{code-cell} ipython3
-keys.duration_qb.sum()
-```
+### Durational distribution of local keys
 
-```{code-cell} ipython3
-phrases.duration_qb.sum()
-```
+All durations given in quarter notes
 
 ```{code-cell} ipython3
 key_durations = keys.groupby(['globalkey_is_minor', 'localkey']).duration_qb.sum().sort_values(ascending=False)
@@ -252,15 +248,19 @@ print(f"{len(key_resolved_durations)} keys overall after resolving hierarchical 
 key_resolved_durations
 ```
 
+#### Distribution of local keys for piece in major and in minor
+
+`globalkey_mode=minor` => Piece is in Minor
+
 ```{code-cell} ipython3
 pie_data = replace_boolean_mode_by_strings(key_resolved_durations.reset_index())
-px.pie(pie_data, names='localkey', values='duration_qb', facet_col='globalkey_mode', height=700)
+px.pie(pie_data, names='localkey', values='duration_qb', facet_col='globalkey_mode')
 ```
+
+#### Distribution of intervals between localkey tonic and global tonic
 
 ```{code-cell} ipython3
 localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor']).duration_qb.sum()
-# sort by stacked bar length:
-localkey_fifths_durations = localkey_fifths_durations.sort_values(key=lambda S: S.index.get_level_values(0).map(S.groupby(level=0).sum()), ascending=False)
 bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
 bar_data.localkey_fifths = bar_data.localkey_fifths.map(ms3.fifths2iv)
 fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mode', log_y=True, barmode='group',
@@ -269,40 +269,91 @@ fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mod
                    localkey_mode='mode'
                   ),
              color_discrete_sequence=CORPUS_COLOR_SCALE,
-             width=1000)
+             )
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
 fig.show()
 ```
 
+### Ratio between major and minor key segments by aggregated durations
+#### Overall
+
 ```{code-cell} ipython3
-localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor']).duration_qb.sum()
-# sort by stacked bar length:
-bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
-bar_data.localkey_fifths = bar_data.localkey_fifths.map(ms3.fifths2iv)
-fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mode', log_y=True, barmode='group',
-             labels=dict(localkey_fifths='Roots of local keys as intervallic distance from the global tonic', 
-                   duration_qb='total duration in quarter notes',
-                   localkey_mode='mode'
+keys.duration_qb = pd.to_numeric(keys.duration_qb)
+maj_min_ratio = keys.groupby("localkey_is_minor").duration_qb.sum().to_frame()
+maj_min_ratio['fraction'] = (100.0 * maj_min_ratio.duration_qb / maj_min_ratio.duration_qb.sum()).round(1)
+maj_min_ratio
+```
+
+#### By dataset
+
+```{code-cell} ipython3
+segment_duration_per_dataset = keys.groupby(["corpus", "localkey_is_minor"]).duration_qb.sum().round(2)
+norm_segment_duration_per_dataset = 100 * segment_duration_per_dataset / segment_duration_per_dataset.groupby(level="corpus").sum()
+maj_min_ratio_per_dataset = pd.concat([segment_duration_per_dataset, 
+                                      norm_segment_duration_per_dataset.rename('fraction').round(1).astype(str)+" %"], 
+                                     axis=1)
+maj_min_ratio_per_dataset['corpus_name'] = maj_min_ratio_per_dataset.index.get_level_values('corpus').map(corpus_names)
+maj_min_ratio_per_dataset['mode'] = maj_min_ratio_per_dataset.index.get_level_values('localkey_is_minor').map({False: 'major', True: 'minor'})
+```
+
+```{code-cell} ipython3
+fig = px.bar(maj_min_ratio_per_dataset.reset_index(), 
+       x="corpus_name", 
+       y="duration_qb", 
+       color="mode", 
+       text='fraction',
+       labels=dict(dataset='', duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
+       category_orders=dict(dataset=chronological_order)
+    )
+fig.update_layout(**STD_LAYOUT)
+fig.show()
+```
+
+### Tone profiles for all major and minor local keys
+
+```{code-cell} ipython3
+notes_by_keys = keys_segmented.get_facet("notes")
+notes_by_keys
+```
+
+```{code-cell} ipython3
+keys = keys[[col for col in keys.columns if col not in notes_by_keys]]
+notes_joined_with_keys = notes_by_keys.join(keys, on=keys.index.names)
+notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
+mode_tpcs = notes_by_keys_transposed.reset_index(drop=True).groupby(['localkey_is_minor', 'tpc']).duration_qb.sum().reset_index(-1).sort_values('tpc').reset_index()
+mode_tpcs['sd'] = ms3.fifths2sd(mode_tpcs.tpc)
+mode_tpcs['duration_pct'] = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum())
+mode_tpcs['mode'] = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'})
+```
+
+```{code-cell} ipython3
+#mode_tpcs = mode_tpcs[mode_tpcs['duration_pct'] > 0.001]
+#sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', 'b4', '4', '#4', '##4', 'b5', '5', '#5', 'b6','6', '#6', 'b7', '7']
+xaxis = dict(
+        tickmode = 'array',
+        tickvals = mode_tpcs.tpc,
+        ticktext = mode_tpcs.sd
+    )
+legend=dict(
+    yanchor="top",
+    y=0.99,
+    xanchor="right",
+    x=0.99
+)
+fig = px.bar(mode_tpcs,
+       x='tpc',
+       y='duration_pct',
+       color='mode',
+       barmode='group',
+       labels=dict(duration_pct='normalized duration',
+                   tpc="Notes transposed to the local key, as major-scale degrees",
                   ),
-             color_discrete_sequence=CORPUS_COLOR_SCALE,
-             width=1000)
-fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
+       #log_y=True,
+       #category_orders=dict(sd=sd_order)
+      )
+fig.update_layout(**STD_LAYOUT, xaxis=xaxis, legend=legend)
 fig.show()
-```
-
-```{code-cell} ipython3
-localkey_fifths_durations_stacked = localkey_fifths_durations.groupby(level=0).sum().sort_values()
-pd.concat([localkey_fifths_durations_stacked, localkey_fifths_durations_stacked.rename('fraction') / localkey_fifths_durations_stacked.sum()], axis=1)
-```
-
-```{code-cell} ipython3
-keys[keys.localkey_fifths == -9]
-```
-
-```{code-cell} ipython3
-keys[keys.localkey_fifths == 10]
 ```
 
 ## Cadences
