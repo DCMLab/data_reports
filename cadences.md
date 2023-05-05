@@ -15,10 +15,12 @@ kernelspec:
 # Cadences
 
 ```{code-cell} ipython3
-:tags: [hide-cell]
-:mystnb:
-:  code_prompt_show: "Show imports"
-:  code_prompt_hide: "Hide imports"
+---
+mystnb:
+  code_prompt_hide: Hide imports
+  code_prompt_show: Show imports
+tags: [hide-cell]
+---
 import os
 from collections import defaultdict, Counter
 
@@ -33,12 +35,16 @@ from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, 
 ```
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/workflow_test_metarepo")
 print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 repo = Repo(CORPUS_PATH)
 notebook_repo = Repo('.', search_parent_directories=True)
 print(f"Notebook repository '{get_repo_name(notebook_repo)}' @ {notebook_repo.commit().hexsha[:7]}")
