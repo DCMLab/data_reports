@@ -6,6 +6,10 @@ jupytext:
     format_name: myst
     format_version: 0.13
     jupytext_version: 1.14.4
+kernelspec:
+  display_name: corpus_docs
+  language: python
+  name: corpus_docs
 ---
 
 # Phrases
