@@ -42,8 +42,8 @@ from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, c
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-CORPUS_PATH = os.getenv('CORPUS_PATH', "~/workflow_test_metarepo")
-ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
+CORPUS_PATH = os.getenv('CORPUS_PATH', "~/debussy_piano/debussy_preludes")
+ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "False").lower() in ('true', '1', 't')
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 print(f"ANNOTATED_ONLY: {ANNOTATED_ONLY}")
@@ -74,10 +74,11 @@ dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 ```{code-cell} ipython3
 :tags: [remove-input]
 
-annotated_view = dataset.data.get_view('annotated')
-annotated_view.include('facets', 'measures', 'notes$', 'expanded')
-annotated_view.fnames_with_incomplete_facets = False
-dataset.data.set_view(annotated_view)
+if ANNOTATED_ONLY:
+    annotated_view = dataset.data.get_view('annotated')
+    annotated_view.include('facets', 'measures', 'notes$', 'expanded')
+    annotated_view.fnames_with_incomplete_facets = False
+    dataset.data.set_view(annotated_view)
 dataset.data.parse_tsv(choose='auto')
 dataset.get_indices()
 dataset.data
@@ -93,6 +94,7 @@ print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_
 
 ```{code-cell} ipython3
 all_metadata = dataset.data.metadata()
+assert len(all_metadata) > 0, "No pieces selected for analysis."
 print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
 all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
 ```
@@ -120,20 +122,22 @@ all_measures.timesig.value_counts(dropna=False)
 All symbols, independent of the local key (the mode of which changes their semantics).
 
 ```{code-cell} ipython3
-all_annotations = dataset.get_facet('expanded')
-all_annotations.head()
-```
-
-```{code-cell} ipython3
-print(f"Concatenated annotation tables contains {all_annotations.shape[0]} rows.")
-no_chord = all_annotations.root.isna()
-if no_chord.sum() > 0:
-    print(f"{no_chord.sum()} of them are not chords. Their values are: {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}")
-```
-
-```{code-cell} ipython3
-all_chords = all_annotations[~no_chord].copy()
-print(f"Corpus contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
+try:
+    all_annotations = dataset.get_facet('expanded')
+except Exception:
+    all_annotations = pd.DataFrame()
+n_annotations = len(all_annotations.index)
+includes_annotations = n_annotations > 0
+if includes_annotations:
+    display(all_annotations.head())
+    print(f"Concatenated annotation tables contains {all_annotations.shape[0]} rows.")
+    no_chord = all_annotations.root.isna()
+    if no_chord.sum() > 0:
+        print(f"{no_chord.sum()} of them are not chords. Their values are: {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}")
+        all_chords = all_annotations[~no_chord].copy()
+    print(f"Dataset contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
+else:
+    print(f"Dataset contains no annotations.")
 ```
 
 ## Corpus summary
