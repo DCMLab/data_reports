@@ -123,15 +123,33 @@ else:
 ```
 
 ## Phrases
+### Presence of phrase annotation symbols per dataset:
 
 ```{code-cell} ipython3
-:tags: []
+all_annotations.groupby(["corpus"]).phraseend.value_counts()
+```
 
+### Presence of legacy phrase endings
+
+```{code-cell} ipython3
+legacy = all_annotations[all_annotations.phraseend == r'\\']
+legacy.groupby(level=0).size()
+```
+
+### A table with the extents of all annotated phrases
+**Relevant columns:**
+* `quarterbeats`: start position for each phrase
+* `duration_qb`: duration of each phrase, measured in quarter notes 
+* `phrase_slice`: time interval of each annotated phrases (for segmenting chord progressions and notes)
+
+```{code-cell} ipython3
 phrase_segmented = dc.PhraseSlicer().process_data(dataset)
 phrases = phrase_segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
-phrases.head(20)
+phrases.head(10).style.apply(color_background, subset=["quarterbeats", "duration_qb"])
 ```
+
+### A table with the chord sequences of all annotated phrases
 
 ```{code-cell} ipython3
 phrase_segments = phrase_segmented.get_facet('expanded')
@@ -139,10 +157,8 @@ phrase_segments
 ```
 
 ```{code-cell} ipython3
-phrases[phrases.duration_qb > 50]
-```
+:tags: [hide-input]
 
-```{code-cell} ipython3
 phrase2timesigs = phrase_segments.groupby(level=[0,1,2]).timesig.unique()
 n_timesignatures_per_phrase = phrase2timesigs.map(len)
 uniform_timesigs = phrase2timesigs[n_timesignatures_per_phrase == 1].map(lambda l: l[0])
@@ -157,8 +173,6 @@ uniform_timesigs = pd.concat([exact_measure_lengths.rename('duration_measures'),
 fig = px.histogram(uniform_timesigs, x='duration_measures', log_y=True,
                    labels=dict(duration_measures='phrase length bin in number of measures'),
                    color_discrete_sequence=CORPUS_COLOR_SCALE,
-                   height=400,
-                   width = 1000,
                   )
 fig.update_traces(xbins=dict( # bins used for histogram
         #start=0.0,
@@ -171,8 +185,40 @@ fig.update_yaxes(gridcolor='lightgrey')
 fig.show()
 ```
 
+### Local keys per phrase
+
 ```{code-cell} ipython3
-uniform_timesigs[uniform_timesigs.duration_measures > 80]
+local_keys_per_phrase = phrase_segments.groupby(level=[0,1,2]).localkey.unique().map(tuple)
+n_local_keys_per_phrase = local_keys_per_phrase.map(len)
+phrases_with_keys = pd.concat([n_local_keys_per_phrase.rename('n_local_keys'),
+                               local_keys_per_phrase.rename('local_keys'),
+                               phrases], axis=1)
+phrases_with_keys.head(10).style.apply(color_background, subset=['n_local_keys', 'local_keys'])
+```
+
+#### Number of unique local keys per phrase
+
+```{code-cell} ipython3
+count_n_keys = phrases_with_keys.n_local_keys.value_counts().rename("#phrases").to_frame()
+count_n_keys.index.rename("unique keys", inplace=True)
+count_n_keys
+```
+
+#### The most frequent keys for non-modulating phrases
+
+```{code-cell} ipython3
+unique_key_selector = phrases_with_keys.n_local_keys == 1
+phrases_with_unique_key = phrases_with_keys[unique_key_selector].copy()
+phrases_with_unique_key.local_keys = phrases_with_unique_key.local_keys.map(lambda t: t[0])
+value_count_df(phrases_with_unique_key.local_keys, counts="#phrases")
+```
+
+#### Most frequent modulations within one phrase
+
+```{code-cell} ipython3
+two_keys_selector = phrases_with_keys.n_local_keys > 1
+phrases_with_unique_key = phrases_with_keys[two_keys_selector].copy()
+value_count_df(phrases_with_unique_key.local_keys, "modulations")
 ```
 
 ## Keys
