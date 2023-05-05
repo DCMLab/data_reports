@@ -90,24 +90,108 @@ dataset.data
 print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
 ```
 
-## Metadata
-
 ```{code-cell} ipython3
+---
+mystnb:
+  code_prompt_hide: Hide data loading
+  code_prompt_show: Show data loading
+tags: [hide-cell]
+---
 all_metadata = dataset.data.metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
-print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
-all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
+print(f"Metadata covers {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
+all_notes = dataset.get_facet('notes')
+all_measures = dataset.get_facet('measures')
+summary = all_metadata.copy()
+summary.length_qb = all_measures.groupby(level=[0,1]).act_dur.sum() * 4.0
+summary = pd.concat([summary,
+                     all_notes.groupby(level=[0,1]).size().rename('notes'),
+                    ], axis=1)
+mean_composition_years = corpus_mean_composition_years(summary)
+chronological_order = mean_composition_years.index.to_list()
+corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
+corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
+chronological_corpus_names = list(corpus_names.values())
+corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
 ```
+
+## Composition dates
+
+This section relies on the dataset's metadata.
 
 ```{code-cell} ipython3
 print(f"Composition dates range from {all_metadata.composed_start.min()} {all_metadata.composed_start.idxmin()} "
       f"to {all_metadata.composed_end.max()} {all_metadata.composed_end.idxmax()}.")
 ```
 
-## Measures
+### Mean composition years per corpus
 
 ```{code-cell} ipython3
-all_measures = dataset.get_facet('measures')
+:tags: [hide-input]
+
+bar_data = pd.concat([mean_composition_years.rename('year'), 
+                      summary.groupby(level='corpus').size().rename('pieces')],
+                     axis=1
+                    ).reset_index()
+fig = px.bar(bar_data, x='year', y='pieces', color='corpus',
+             color_discrete_map=corpus_colors,
+            )
+fig.update_traces(width=5)
+fig.update_layout(**STD_LAYOUT)
+fig.update_yaxes(gridcolor='lightgrey')
+fig.update_traces(width=5)
+```
+
+### Composition years histogram
+
+```{code-cell} ipython3
+:tags: [hide-input]
+
+hist_data = summary.reset_index()
+hist_data.corpus = hist_data.corpus.map(corpus_names)
+fig = px.histogram(hist_data, x='composed_end', color='corpus',
+                   labels=dict(composed_end='decade',
+                               count='pieces',
+                              ),
+                   color_discrete_map=corpus_name_colors,
+                  )
+fig.update_traces(xbins=dict(
+    size=10
+))
+fig.update_layout(**STD_LAYOUT)
+fig.update_yaxes(gridcolor='lightgrey')
+fig.show()
+```
+
+## Dimensions
+
+### Overview
+
+```{code-cell} ipython3
+:tags: [hide-input]
+
+corpus_metadata = summary.groupby(level=0)
+n_pieces = corpus_metadata.size().rename('pieces')
+absolute_numbers = dict(
+    measures = corpus_metadata.last_mn.sum(),
+    length = corpus_metadata.length_qb.sum(),
+    notes = corpus_metadata.notes.sum(),
+    labels = corpus_metadata.label_count.sum(),
+)
+absolute = pd.DataFrame.from_dict(absolute_numbers)
+absolute = pd.concat([n_pieces, absolute], axis=1)
+sum_row = pd.DataFrame(absolute.sum(), columns=['sum']).T
+absolute = pd.concat([absolute, sum_row])
+relative = absolute.div(n_pieces, axis=0)
+complete_summary = pd.concat([absolute, relative, absolute.iloc[:1,2:].div(absolute.measures, axis=0)], axis=1, keys=['absolute', 'per piece', 'per measure'])
+complete_summary = complete_summary.apply(pd.to_numeric).round(2)
+complete_summary.index = complete_summary.index.map(dict(corpus_names, sum='sum'))
+complete_summary
+```
+
+### Measures
+
+```{code-cell} ipython3
 print(f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files.")
 all_measures.head()
 ```
@@ -117,11 +201,13 @@ print("Distribution of time signatures per XML measure (MC):")
 all_measures.timesig.value_counts(dropna=False)
 ```
 
-## Harmony labels
+### Harmony labels
 
 All symbols, independent of the local key (the mode of which changes their semantics).
 
 ```{code-cell} ipython3
+:tags: [hide-input]
+
 try:
     all_annotations = dataset.get_facet('expanded')
 except Exception:
@@ -134,134 +220,12 @@ if includes_annotations:
     no_chord = all_annotations.root.isna()
     if no_chord.sum() > 0:
         print(f"{no_chord.sum()} of them are not chords. Their values are: {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}")
-        all_chords = all_annotations[~no_chord].copy()
+    all_chords = all_annotations[~no_chord].copy()
     print(f"Dataset contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
+    all_annotations['corpus_name'] = all_annotations.index.get_level_values(0).map(corpus_names)
+    all_chords['corpus_name'] = all_chords.index.get_level_values(0).map(corpus_names)
 else:
     print(f"Dataset contains no annotations.")
-```
-
-## Corpus summary
-
-```{code-cell} ipython3
-all_notes = dataset.get_facet('notes')
-```
-
-```{code-cell} ipython3
-summary = all_metadata.copy()
-summary.length_qb = all_measures.groupby(level=[0,1]).act_dur.sum() * 4.0
-summary = pd.concat([summary,
-                     all_notes.groupby(level=[0,1]).size().rename('notes'),
-                    ], axis=1)
-summary.groupby(level=0).describe().dropna(axis=1, how='all')
-```
-
-```{code-cell} ipython3
-mean_composition_years = corpus_mean_composition_years(summary)
-chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
-bar_data = pd.concat([mean_composition_years.rename('year'), 
-                      summary.groupby(level='corpus').size().rename('pieces')],
-                     axis=1
-                    ).reset_index()
-fig = px.bar(bar_data, x='year', y='pieces', color='corpus',
-             color_discrete_map=corpus_colors,
-            height=350, width=800,
-            )
-fig.update_traces(width=5)
-fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
-fig.update_traces(width=5)
-```
-
-```{code-cell} ipython3
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
-chronological_corpus_names = list(corpus_names.values())
-corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
-all_annotations['corpus_name'] = all_annotations.index.get_level_values(0).map(corpus_names)
-all_chords['corpus_name'] = all_chords.index.get_level_values(0).map(corpus_names)
-```
-
-```{code-cell} ipython3
-bar_data = summary.reset_index().groupby(['composed_end', 'corpus']).size().rename('counts').reset_index()
-px.bar(bar_data, x='composed_end', y='counts', color='corpus', color_discrete_map=corpus_colors)
-```
-
-```{code-cell} ipython3
-hist_data = summary.reset_index()
-hist_data.corpus = hist_data.corpus.map(corpus_names)
-hist_data.head()
-```
-
-```{code-cell} ipython3
-fig = px.histogram(hist_data, x='composed_end', color='corpus',
-                   labels=dict(composed_end='decade',
-                               count='pieces',
-                              ),
-                   color_discrete_map=corpus_name_colors,
-                   width=1000, height=400,
-                  )
-fig.update_traces(xbins=dict(
-    size=10
-))
-fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
-fig.show()
-```
-
-```{code-cell} ipython3
-corpus_metadata = summary.groupby(level=0)
-n_pieces = corpus_metadata.size().rename('pieces')
-absolute_numbers = dict(
-    measures = corpus_metadata.last_mn.sum(),
-    length = corpus_metadata.length_qb.sum(),
-    notes = corpus_metadata.notes.sum(),
-    labels = corpus_metadata.label_count.sum(),
-)
-absolute = pd.DataFrame.from_dict(absolute_numbers)
-relative = absolute.div(n_pieces, axis=0)
-complete_summary = pd.concat([pd.concat([n_pieces, absolute], axis=1), relative, absolute.iloc[:,2:].div(absolute.measures, axis=0)], axis=1, keys=['absolute', 'per piece', 'per measure'])
-complete_summary = complete_summary.apply(pd.to_numeric).round(2)
-complete_summary.index = complete_summary.index.map(corpus_names)
-complete_summary
-```
-
-```{code-cell} ipython3
-sum_row = pd.DataFrame(complete_summary.sum(), columns=['sum']).T
-sum_row.iloc[:,5:] = ''
-summary_with_sum = pd.concat([complete_summary, sum_row])
-summary_with_sum.loc[:, [('absolute', 'notes'), ('absolute', 'labels')]] = summary_with_sum[[('absolute', 'notes'), ('absolute', 'labels')]].astype(int)
-summary_with_sum
-```
-
-```{code-cell} ipython3
-summary[summary.ambitus.isna()]
-```
-
-```{code-cell} ipython3
-summary.ambitus.str.extract(r"^(\d+)-(\d+)")
-```
-
-```{code-cell} ipython3
-ambitus = summary.ambitus.str.extract(r"^(\d+)-(\d+)").astype(int)
-ambitus.columns = ['low', 'high']
-ambitus['range'] = ambitus.high - ambitus.low
-ambitus.head()
-```
-
-```{code-cell} ipython3
-ambitus.groupby(level=0).high.max()
-```
-
-```{code-cell} ipython3
-ambitus.groupby(level=0).low.min()
-```
-
-```{code-cell} ipython3
-ambitus.groupby(level=0).range.max()
-```
-
-```{code-cell} ipython3
-ambitus.groupby(level=0).high.max() - ambitus.groupby(level=0).low.min()
 ```
 
 ## Phrases
