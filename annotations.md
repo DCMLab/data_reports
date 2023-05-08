@@ -39,10 +39,8 @@ from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, TYPE_COLORS, c
 :tags: [hide-input]
 
 CORPUS_PATH = os.getenv('CORPUS_PATH', "~/workflow_test_metarepo")
-ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
-print(f"ANNOTATED_ONLY: {ANNOTATED_ONLY}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 

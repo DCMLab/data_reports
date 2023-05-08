@@ -61,6 +61,7 @@ print(f"ms3 version {ms3.__version__}")
 
 ```{code-cell} ipython3
 :tags: [remove-output]
+
 dataset = dc.Dataset()
 dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 ```
@@ -68,10 +69,11 @@ dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 ```{code-cell} ipython3
 :tags: [remove-input]
 
-annotated_view = dataset.data.get_view('annotated')
-annotated_view.include('facets', 'measures', 'notes$', 'expanded')
-annotated_view.fnames_with_incomplete_facets = False
-dataset.data.set_view(annotated_view)
+if ANNOTATED_ONLY:
+    annotated_view = dataset.data.get_view('annotated')
+    annotated_view.include('facets', 'measures', 'notes$', 'expanded')
+    annotated_view.fnames_with_incomplete_facets = False
+    dataset.data.set_view(annotated_view)
 dataset.data.parse_tsv(choose='auto')
 dataset.get_indices()
 dataset.data
