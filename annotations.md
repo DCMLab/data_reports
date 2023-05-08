@@ -38,7 +38,7 @@ from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, TYPE_COLORS, c
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-CORPUS_PATH = os.getenv('CORPUS_PATH', "~/workflow_test_metarepo")
+CORPUS_PATH = os.getenv('CORPUS_PATH', "~/dcml_corpora")
 ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
@@ -472,10 +472,23 @@ unigrams.get(as_pandas=True)
 ```
 
 ```{code-cell} ipython3
+k = 20
 modes = {True: 'MINOR', False: 'MAJOR'}
 for (is_minor,), ugs in unigrams.iter():
-    print(f"{modes[is_minor]} UNIGRAMS\n{ugs.shape[0]} types, {ugs.sum()} tokens")
-    print(ugs.head(20).to_string())
+    print(f"TOP {k} {modes[is_minor]} UNIGRAMS\n{ugs.shape[0]} types, {ugs.sum()} tokens")
+    print(ugs.head(k).to_string())
+```
+
+```{code-cell} ipython3
+ugs_dict = {modes[is_minor].lower(): (ugs/ugs.sum() * 100).round(2).rename('%').reset_index() for (is_minor,), ugs in unigrams.iter()}
+ugs_df = pd.concat(ugs_dict, axis=1)
+ugs_df.columns = ['_'.join(map(str, col)) for col in ugs_df.columns]
+ugs_df.index = (ugs_df.index + 1).rename('k')
+ugs_df
+```
+
+```{code-cell} ipython3
+print(ugs_df.iloc[:50].to_markdown())
 ```
 
 ### Per corpus
