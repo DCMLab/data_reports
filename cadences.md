@@ -61,6 +61,7 @@ print(f"ms3 version {ms3.__version__}")
 
 ```{code-cell} ipython3
 :tags: [remove-output]
+
 dataset = dc.Dataset()
 dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 ```
@@ -87,6 +88,7 @@ print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_
 
 ```{code-cell} ipython3
 all_metadata = dataset.data.metadata()
+assert len(all_metadata) > 0, "No pieces selected for analysis."
 print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
 all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
 ```
@@ -104,6 +106,7 @@ all_labels.iloc[:20].style.apply(color_background, subset="chord")
 
 ```{code-cell} ipython3
 hascadence = dc.HasCadenceAnnotationsFilter().process_data(dataset)
+assert () in hascadence.indices and len(hascadence.indices[()]) > 0, "No cadences found."
 print(f"Before: {len(dataset.indices[()])} pieces; after removing those without cadence labels: {len(hascadence.indices[()])}")
 ```
 
@@ -122,7 +125,7 @@ corpora
 all_labels = hascadence.get_facet('expanded')
 
 print(f"{len(all_labels.index)} hand-annotated harmony labels:")
-all_labels.iloc[:10, 14:].style.apply(color_background, subset="chord")
+all_labels.iloc[:10, 13:].style.apply(color_background, subset="chord")
 ```
 
 ### Metadata
@@ -321,13 +324,10 @@ fig.show()
 ### PACs with ultima I/i
 
 ```{code-cell} ipython3
-#pac_on_i = phrase_segments.groupby(level=[0,1,2], group_keys=False).apply(lambda df: df if ((df.cadence == 'PAC') & (df.numeral.isin(('I', 'i')))).any() else None)
-#pac_on_i.cadence.value_counts()
-#pac_on_i.droplevel(-1).index.nunique()
-```
+def remove_immediate_duplicates(l):
+    return tuple(a for a, b in zip(l, (None, ) + l) if a != b)
 
-```{code-cell} ipython3
-def get_progressions(selected='PAC', last_row={}, feature='chord', dataset=None, as_series=True):
+def get_progressions(selected='PAC', last_row={}, feature='chord', dataset=None, as_series=True, remove_duplicates=False):
     """Uses the nonlocal variable phrase_segments."""
     last_row = {k: v if isinstance(v, tuple) else (v,) for k, v in last_row.items()}
     progressions = []
@@ -347,9 +347,12 @@ def get_progressions(selected='PAC', last_row={}, feature='chord', dataset=None,
                     continue
                 if any(last_r[feat] not in values for feat, values in last_row.items()):
                     continue
-                progressions.append(tuple(cadence[feature]))
+                if remove_duplicates:
+                    progressions.append(remove_immediate_duplicates(cadence[feature].to_list()))
+                else:
+                    progressions.append(tuple(cadence[feature]))
     if as_series:
-        return pd.Series(progressions)
+        return pd.Series(progressions, dtype='object')
     return progressions
 ```
 
@@ -365,9 +368,6 @@ value_count_df(numeral_progressions, "numeral progressions")
 ```
 
 ```{code-cell} ipython3
-def remove_immediate_duplicates(l):
-    return tuple(a for a, b in zip(l, (None, ) + l) if a != b)
-
 numeral_prog_no_dups = numeral_progressions.map(remove_immediate_duplicates)
 value_count_df(numeral_prog_no_dups)
 ```
@@ -446,32 +446,28 @@ def graph_data2sankey(stage_nodes, edge_weights):
 def plot_progressions(progressions, cut_at_stage=None):
     stage_nodes, edge_weights = progressions2graph_data(progressions, cut_at_stage=cut_at_stage)
     return graph_data2sankey(stage_nodes, edge_weights)
+```
 
+#### Chordal roots for the 3 last stages
+
+```{code-cell} ipython3
 plot_progressions(numeral_prog_no_dups, cut_at_stage=3)
 ```
 
-```{code-cell} ipython3
-chord_progressions_minor = get_progressions('PAC', dict(numeral='i', localkey_is_minor=True), 'root')
-chord_progressions_minor
-```
+#### Complete chords for the last four stages in major
 
 ```{code-cell} ipython3
 pac_major = get_progressions('PAC', dict(numeral='I', localkey_is_minor=False), 'chord')
 plot_progressions(pac_major, cut_at_stage=4)
 ```
 
-```{code-cell} ipython3
-deceptive = get_progressions('DC', dict(localkey_is_minor=False), 'chord')
-deceptive.value_counts()
-```
-
-```{code-cell} ipython3
-plot_progressions(deceptive, cut_at_stage=4)
-```
+#### Bass degrees for the last 6 stages.
 
 ```{code-cell} ipython3
 plot_progressions(bass_prog_no_dups, cut_at_stage=7)
 ```
+
+#### Bass degrees without accidentals
 
 ```{code-cell} ipython3
 def remove_sd_accidentals(t):

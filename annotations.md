@@ -38,7 +38,7 @@ from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, TYPE_COLORS, c
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-CORPUS_PATH = os.getenv('CORPUS_PATH', "~/dcml_corpora")
+CORPUS_PATH = os.getenv('CORPUS_PATH', "~/workflow_test_metarepo")
 ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
@@ -356,34 +356,6 @@ fig.update_layout(**STD_LAYOUT, xaxis=xaxis, legend=legend)
 fig.show()
 ```
 
-## Cadences
-
-```{code-cell} ipython3
-all_annotations.cadence.value_counts()
-```
-
-```{code-cell} ipython3
-all_annotations.groupby("corpus_name").cadence.value_counts()
-```
-
-```{code-cell} ipython3
-cadence_count_per_corpus = all_annotations.groupby("corpus_name").cadence.value_counts().sort_values(ascending=False)
-cadence_count_per_corpus.groupby(level=0).sum()
-```
-
-```{code-cell} ipython3
-cadence_fraction_per_corpus = cadence_count_per_corpus / cadence_count_per_corpus.groupby(level=0).sum()
-fig = px.bar(cadence_fraction_per_corpus.rename('count').reset_index(), x='corpus_name', y='count', color='cadence',
-             labels=dict(count='fraction', corpus=''), 
-             height=400, width=900,
-       category_orders=dict(corpus_name=chronological_corpus_names))
-      #color_discrete_map=cadence_colors, 
-
-fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
-fig.show()
-```
-
 ## Harmony labels
 ### Unigrams
 For computing unigram statistics, the tokens need to be grouped by their occurrence within a major or a minor key because this changes their meaning. To that aim, the annotated corpus needs to be sliced into contiguous localkey segments which are then grouped into a major (`is_minor=False`) and a minor group.
@@ -484,10 +456,6 @@ ugs_dict = {modes[is_minor].lower(): (ugs/ugs.sum() * 100).round(2).rename('%').
 ugs_df = pd.concat(ugs_dict, axis=1)
 ugs_df.columns = ['_'.join(map(str, col)) for col in ugs_df.columns]
 ugs_df.index = (ugs_df.index + 1).rename('k')
-ugs_df
-```
-
-```{code-cell} ipython3
 print(ugs_df.iloc[:50].to_markdown())
 ```
 
