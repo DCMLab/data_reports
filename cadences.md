@@ -55,8 +55,6 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-## Loading corpus data
-
 ```{code-cell} ipython3
 :tags: [remove-output]
 
