@@ -5,14 +5,12 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.4
+    jupytext_version: 1.15.0
 kernelspec:
   display_name: corpus_docs
   language: python
   name: corpus_docs
 ---
-
-+++ {"tags": []}
 
 # Overview
 
@@ -113,8 +111,10 @@ corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors
 This section relies on the dataset's metadata.
 
 ```{code-cell} ipython3
-print(f"Composition dates range from {all_metadata.composed_start.min()} {all_metadata.composed_start.idxmin()} "
-      f"to {all_metadata.composed_end.max()} {all_metadata.composed_end.idxmax()}.")
+valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors='coerce')
+valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors='coerce')
+print(f"Composition dates range from {int(valid_composed_start.min())} {valid_composed_start.idxmin()} "
+      f"to {int(valid_composed_end.max())} {valid_composed_end.idxmax()}.")
 ```
 
 ### Mean composition years per corpus

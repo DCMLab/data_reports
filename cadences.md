@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.4
+    jupytext_version: 1.15.0
 kernelspec:
   display_name: corpus_docs
   language: python
@@ -182,8 +182,6 @@ fig.update_layout(**STD_LAYOUT)
 ### Number of cadences per phrase
 
 ```{code-cell} ipython3
-:tags: []
-
 segmented = dc.PhraseSlicer().process_data(grouped_by_corpus)
 phrases = segmented.get_slice_info()
 phrase_segments = segmented.get_facet("expanded")
