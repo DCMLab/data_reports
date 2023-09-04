@@ -37,7 +37,7 @@ from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, 
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-CORPUS_PATH = os.getenv('CORPUS_PATH', "~/workflow_test_metarepo")
+CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)

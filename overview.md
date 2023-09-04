@@ -40,7 +40,7 @@ from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, c
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-CORPUS_PATH = os.getenv('CORPUS_PATH', "~/workflow_test_metarepo")
+CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))
 ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
