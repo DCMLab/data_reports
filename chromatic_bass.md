@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: coup
+  display_name: revamp
   language: python
-  name: coup
+  name: revamp
 ---
 
 # Chromatic bass progressions
@@ -18,33 +18,58 @@ kernelspec:
 import os
 import ms3
 import pandas as pd
-from helpers import cnt
+from git import Repo
+
+from utils import cnt, print_heading, resolve_dir, get_repo_name, remove_none_labels, remove_non_chord_labels
+
 pd.options.display.max_columns = 50
 pd.options.display.max_rows = 100
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
-CORPUS_PATH = "~/all_subcorpora/couperin_concerts"
-RESULTS_PATH = os.path.abspath(os.path.join("..", "results"))
+# CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
+CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
+print_heading("Notebook settings")
+print(f"CORPUS_PATH: {CORPUS_PATH!r}")
+CORPUS_PATH = resolve_dir(CORPUS_PATH)
+RESULTS_PATH = os.path.abspath("results")
+os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
-corpus_obj = ms3.Corpus(CORPUS_PATH)
-corpus_obj.parse_tsv()
-corpus_obj
+repo = Repo(CORPUS_PATH)
+print_heading("Data and software versions")
+print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+print("dimcat version [NOT USED]")
+print(f"ms3 version {ms3.__version__}")
 ```
 
 ```{code-cell} ipython3
-labels = corpus_obj.expanded()
+parse_obj = ms3.Parse(CORPUS_PATH)
+annotated_view = parse_obj.get_view('annotated')
+annotated_view.include('facets', 'expanded')
+annotated_view.fnames_with_incomplete_facets = False
+parse_obj.set_view(annotated_view)
+parse_obj.parse_tsv(choose='auto')
+parse_obj
+```
+
+```{code-cell} ipython3
+labels = parse_obj.get_facet("expanded")
 labels
+```
+
+#### Delete @none labels
+This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
+
+```{code-cell} ipython3
+labels = remove_none_labels(labels)
+```
+
+#### Delete non-chord labels (typically, phrase labels)
+
+```{code-cell} ipython3
+labels = remove_non_chord_labels(labels)
 ```
 
 ## Transform `bass_note` column
@@ -147,7 +172,11 @@ def filtr(df, query, column='chord'):
     n_grams = [t for t in zip(*(vals[i:] for i in range(len(query))))]
     if isinstance(query[0], str):
         lengths = [len(q) for q in query]
-        n_grams = [tuple(e[:l] for e,l  in zip(t, lengths)) for t in n_grams]
+        try:
+          n_grams = [tuple(e[:l] for e,l  in zip(t, lengths)) for t in n_grams]
+        except Exception:
+          print(n_grams)
+          raise
     return query in n_grams
 
 def show(df, query, column='chord'):

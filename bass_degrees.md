@@ -23,7 +23,8 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
-from utils import cnt, plot_bigram_tables, prettify_counts, resolve_dir, sorted_gram_counts, transition_matrix
+from utils import cnt, plot_bigram_tables, prettify_counts, resolve_dir, sorted_gram_counts, transition_matrix, \
+  remove_none_labels, remove_non_chord_labels
 import dimcat as dc
 
 pd.set_option('display.max_rows', 1000)
@@ -132,27 +133,13 @@ df[df.key_regions.isin(selected)]
 This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
 
 ```{code-cell} ipython3
-print(f"Length before: {len(df.index)}")
-is_none = (df.chord == '@none').fillna(False)
-print(f"There are {is_none.sum()} @none labels which we are going to delete.")
-df.drop(df.index[is_none], inplace=True)
-print(f"Length after: {len(df.index)}")
+df = remove_none_labels(df)
 ```
 
 #### Delete non-chord labels (typically, phrase labels)
 
 ```{code-cell} ipython3
-print(f"Length before: {len(df.index)}")
-non_chord = df.chord.isna()
-print(f"There are {non_chord.sum()} non-chord labels which we are going to delete:")
-display(df.loc[non_chord, "label"].value_counts())
-erroneous_chord = df.root.isna() & ~non_chord
-if erroneous_chord.sum() > 0:
-    print(f"There are {erroneous_chord.sum()} labels with erroneous chord annotations which we are going to delete:")
-    display(df.loc[erroneous_chord, "label"].value_counts())
-    non_chord |= erroneous_chord
-df.drop(df.index[non_chord], inplace=True)
-print(f"Length after: {len(df.index)}")
+df = remove_non_chord_labels(df)
 ```
 
 ### Get bass degree progressions & intervals

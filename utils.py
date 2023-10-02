@@ -14,6 +14,7 @@ import pandas as pd
 import plotly.express as px
 import seaborn as sns
 from git import Repo
+from IPython.display import display
 from matplotlib import gridspec as gridspec
 from matplotlib import pyplot as plt
 from plotly.colors import sample_colorscale
@@ -621,6 +622,32 @@ def prettify_counts(counter_object: Counter):
 def print_heading(heading: str, underline: chr = "-") -> None:
     """Underlines the given heading and prints it."""
     print(f"{heading}\n{underline * len(heading)}\n")
+
+
+def remove_non_chord_labels(df):
+    print(f"Length before: {len(df.index)}")
+    non_chord = df.chord.isna()
+    print(f"There are {non_chord.sum()} non-chord labels which we are going to delete:")
+    display(df.loc[non_chord, "label"].value_counts())
+    erroneous_chord = df.root.isna() & ~non_chord
+    if erroneous_chord.sum() > 0:
+        print(
+            f"There are {erroneous_chord.sum()} labels with erroneous chord annotations which we are going to delete:"
+        )
+        display(df.loc[erroneous_chord, "label"].value_counts())
+        non_chord |= erroneous_chord
+    result = df.drop(df.index[non_chord])
+    print(f"Length after: {len(result.index)}")
+    return result
+
+
+def remove_none_labels(df):
+    print(f"Length before: {len(df.index)}")
+    is_none = (df.chord == "@none").fillna(False)
+    print(f"There are {is_none.sum()} @none labels which we are going to delete.")
+    result = df.drop(df.index[is_none])
+    print(f"Length after: {len(result.index)}")
+    return result
 
 
 def resolve_dir(directory: str):

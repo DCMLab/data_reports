@@ -35,8 +35,8 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background,
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))
-#CORPUS_PATH = "~/distant_listening_corpus" # for running the notebook locally
+# CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
+CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
