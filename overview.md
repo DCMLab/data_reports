@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: corpus_docs
+  display_name: revamp
   language: python
-  name: corpus_docs
+  name: revamp
 ---
 
 # Overview
@@ -24,64 +24,33 @@ mystnb:
 tags: [hide-cell]
 ---
 import os
-from collections import defaultdict, Counter
-from fractions import Fraction
 
 from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
-from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, color_background, corpus_mean_composition_years, value_count_df, get_corpus_display_name, get_repo_name, print_heading, resolve_dir
+from utils import (CORPUS_COLOR_SCALE, STD_LAYOUT, corpus_mean_composition_years,
+                   get_corpus_display_name, get_repo_name, print_heading, resolve_dir)
 ```
 
 ```{code-cell}
-:tags: [hide-input]
-
-CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))
-ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
-print_heading("Notebook settings")
-print(f"CORPUS_PATH: {CORPUS_PATH!r}")
-print(f"ANNOTATED_ONLY: {ANNOTATED_ONLY}")
-CORPUS_PATH = resolve_dir(CORPUS_PATH)
+RESULTS_PATH = os.path.abspath("results")
+os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 
-```{code-cell}
-:tags: [hide-input]
+**Loading data**
 
-repo = Repo(CORPUS_PATH)
+```{code-cell}
+package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
-```
-
-```{code-cell}
-:tags: [remove-output]
-
-dataset = dc.Dataset()
-dataset.load(directory=CORPUS_PATH, parse_tsv=False)
-```
-
-```{code-cell}
-:tags: [remove-input]
-
-if ANNOTATED_ONLY:
-    annotated_view = dataset.data.get_view('annotated')
-    annotated_view.include('facets', 'measures', 'notes$', 'expanded')
-    annotated_view.fnames_with_incomplete_facets = False
-    dataset.data.set_view(annotated_view)
-dataset.data.parse_tsv(choose='auto')
-dataset.get_indices()
-dataset.data
-```
-
-```{code-cell}
-:tags: [remove-input]
-
-print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
+D = dc.Dataset.from_package(package_path)
+D
 ```
 
 ```{code-cell}
@@ -91,11 +60,10 @@ mystnb:
   code_prompt_show: Show data loading
 tags: [hide-cell]
 ---
-all_metadata = dataset.data.metadata()
+all_metadata = D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
-print(f"Metadata covers {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
-all_notes = dataset.get_facet('notes')
-all_measures = dataset.get_facet('measures')
+all_notes = D.get_feature('notes').df
+all_measures = D.get_feature('measures').df
 mean_composition_years = corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
@@ -203,7 +171,7 @@ All symbols, independent of the local key (the mode of which changes their seman
 
 ```{code-cell}
 try:
-    all_annotations = dataset.get_facet('expanded')
+    all_annotations = D.get_feature("harmonylabels").df
 except Exception:
     all_annotations = pd.DataFrame()
 n_annotations = len(all_annotations.index)
