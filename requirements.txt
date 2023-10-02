@@ -1,5 +1,5 @@
 colorlover==0.3.0
-dimcat==0.3.0
+dimcat @ git+https://github.com/johentsch/dimcat@56be4b66
 ipykernel==6.25.2
 ipython==8.16.0
 ipywidgets==8.1.1
@@ -8,11 +8,12 @@ jupyter==1.0.0
 jupytext==1.15.2
 kaleido==0.2.1
 matplotlib==3.8.0
-ms3>=2.2.2
+ms3>=2.2.1
 nbformat==5.9.2
 numpy==1.26.0
-pandas==2.1.1
+pandas
 pitchtypes==0.4.0
-plotly==5.17.0
+plotly
 pre-commit==3.4.0
+scipy==1.11.3
 tabulate==0.9.0
