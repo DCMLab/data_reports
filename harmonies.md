@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: coup
+  display_name: revamp
   language: python
-  name: coup
+  name: revamp
 ---
 
 ```{code-cell} ipython3
@@ -17,33 +17,57 @@ kernelspec:
 %autoreload 2
 import os
 from collections import Counter
+from git import Repo
 import pandas as pd
-from helpers import grams, plot_cum, sorted_gram_counts, transition_matrix, STD_LAYOUT
 import ms3
+import dimcat as dc
+from utils import grams, plot_cum, sorted_gram_counts, transition_matrix, STD_LAYOUT, print_heading, resolve_dir, \
+  get_repo_name, remove_none_labels, remove_non_chord_labels
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
-CORPUS_PATH = "~/all_subcorpora/couperin_concerts"
-RESULTS_PATH = os.path.join('..', 'results')
+RESULTS_PATH = os.path.abspath("results")
+os.makedirs(RESULTS_PATH, exist_ok=True)
+```
+
+**Loading data**
+
+```{code-cell} ipython3
+package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+repo = Repo(os.path.dirname(package_path))
+print_heading("Data and software versions")
+print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3.__version__}")
+D = dc.Dataset.from_package(package_path)
+D
+```
+
+**All labels**
+
+```{code-cell} ipython3
+labels = D.get_feature('harmonylabels')
+labels
+```
+
+#### Delete @none labels
+This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
+
+```{code-cell} ipython3
+df = remove_none_labels(labels.df)
+```
+
+#### Delete non-chord labels (typically, phrase labels)
+
+```{code-cell} ipython3
+df = remove_non_chord_labels(df)
 ```
 
 ```{code-cell} ipython3
-corpus_obj = ms3.Corpus(CORPUS_PATH)
-corpus_obj.view.include('facet', "expanded")
-corpus_obj.parse_tsv()
-corpus_obj
-```
-
-```{code-cell} ipython3
-df = corpus_obj.expanded()
-df['key_regions'] = df.groupby(level=0, group_keys=False).localkey.apply(lambda col: col != col.shift()).cumsum()
-df.head(20)
+key_region_groups, key_region2key = ms3.adjacency_groups(df.localkey)
+df['key_regions'] = key_region_groups
 ```
 
 # Unigrams
@@ -60,7 +84,7 @@ H_LAYOUT.update({'legend': dict({'orientation': 'h', 'itemsizing':'constant', 'x
 ```
 
 ```{code-cell} ipython3
-fig = plot_cum(df.chord, x_log=True, markersize=4, left_range=(-0.03, 3.7), right_range=(-0.01,1.11), **H_LAYOUT)
+fig = plot_cum(df.chord, x_log=True, markersize=4, left_range=(-0.03, 3.7), right_range=(-0.01, 1.11), **H_LAYOUT)
 fig.write_image(os.path.join(RESULTS_PATH, 'type_distribution.png'))
 fig
 ```
@@ -278,8 +302,4 @@ phraseending_progressions(df)
 
 ```{code-cell} ipython3
 phraseending_progressions(df, 4)
-```
-
-```{code-cell} ipython3
-
 ```
