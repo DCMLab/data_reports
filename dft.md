@@ -7,29 +7,24 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: ms3
+  display_name: corpus_docs
   language: python
-  name: ms3
+  name: corpus_docs
 ---
 
 # Notes
 
 ```{code-cell}
-import os
-from collections import defaultdict, Counter
-
 from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
-import plotly.express as px
-import plotly.graph_objects as go
 
-from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, chronological_corpus_order, color_background, get_corpus_display_name, get_repo_name, resolve_dir, value_count_df, get_repo_name, resolve_dir
+from utils import get_repo_name, resolve_dir
 ```
 
 ```{code-cell}
-CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/debussy_piano")
+CORPUS_PATH = "~/git/meta_repositories/debussy_piano"
 print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
