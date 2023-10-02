@@ -707,7 +707,15 @@ def plot_pitch_class_distribution(
     else:
         x_col, y_col = pitch_column, duration_column
     return fifths_bar_plot(
-        bar_data, x_col, y_col, labels, title, fifths_transform, width, height, output
+        bar_data=bar_data,
+        x_col=x_col,
+        y_col=y_col,
+        labels=labels,
+        title=title,
+        fifth_transform=fifths_transform,
+        width=width,
+        height=height,
+        output=output,
     )
 
 

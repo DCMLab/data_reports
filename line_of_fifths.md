@@ -7,70 +7,68 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: ms3
+  display_name: revamp
   language: python
-  name: ms3
+  name: revamp
 ---
 
-```{code-cell} ipython3
-Notes = ms3.load_tsv(os.path.join(PATH, 'all_subcorpora_annotated.notes.tsv'))
-Notes
-```
+## Line of Fifth plots
+
+Notebook adapted from the one used for the presentation at HCI 2023 in Copenhagen
 
 ```{code-cell} ipython3
 %load_ext autoreload
 %autoreload 2
 import os
-import modin.pandas as pd
-import ray
-
+from git import Repo
 import plotly.express as px
-#import pitchtypes as pt
+import plotly.graph_objects as go
+import dimcat as dc
 import ms3
 
 from utils import (
-    load_facets,
     get_pitch_class_distribution,
     plot_pitch_class_distribution,
-    tpc_bubbles
+    tpc_bubbles, resolve_dir, print_heading, get_repo_name
 )
-PATH = "all_subcorpora"
-FIG_PATH = "figures"
+import pandas as pd
+# import modin.pandas as pd
+# import ray
+# ray.init(runtime_env={'env_vars': {'__MODIN_AUTOIMPORT_PANDAS__': '1'}}, ignore_reinit_error=True)
 ```
 
 ```{code-cell} ipython3
-ray.init(runtime_env={'env_vars': {'__MODIN_AUTOIMPORT_PANDAS__': '1'}}, ignore_reinit_error=True)
+RESULTS_PATH = os.path.abspath("results")
+os.makedirs(RESULTS_PATH, exist_ok=True)
+```
+
+**Loading data**
+
+```{code-cell} ipython3
+package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+repo = Repo(os.path.dirname(package_path))
+print_heading("Data and software versions")
+print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3.__version__}")
+D = dc.Dataset.from_package(package_path)
+D
 ```
 
 ```{code-cell} ipython3
-facets = load_facets(PATH, "_annotated")
+notes = D.get_feature("notes")
+notes.df
 ```
 
 ```{code-cell} ipython3
-notes = facets['notes']
-notes
+annotations = D.get_feature("harmonylabels")
+annotations.df
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
-measures = facets['measures']
-measures
-```
-
-```{code-cell} ipython3
-annotations = facets['expanded']
-annotations
-```
-
-```{code-cell} ipython3
-metadata = facets['metadata']
+metadata = D.get_metadata()
 metadata
 ```
-
-+++ {"jupyter": {"outputs_hidden": false}}
 
 ## Pitch class distribution
 
@@ -80,16 +78,17 @@ tpc_distribution
 ```
 
 ```{code-cell} ipython3
-la_mer_notes = ms3.load_tsv("debussy_la_mer/La_Mer_1-84.tsv")
+la_mer_notes = ms3.load_tsv("La_Mer_1-84.notes.tsv")
 la_mer_notes
 ```
 
 ```{code-cell} ipython3
 plot_pitch_class_distribution(
-    la_mer_notes,
+    df=la_mer_notes,
     modin=False,
     title="Pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
-    output=os.path.join(FIG_PATH, 'la_mer_distribution.png'))
+    output=os.path.join(RESULTS_PATH, 'la_mer_distribution.png')
+)
 ```
 
 ```{code-cell} ipython3
@@ -102,19 +101,15 @@ fig = tpc_bubbles(
     x_axis=x_axis,
     title="measure-wise pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
     labels=dict(mn="Measure number", tpc="Tonal pitch class"),
-    output=os.path.join(FIG_PATH, "la_mer.png"),
+    output=os.path.join(RESULTS_PATH, "la_mer.png"),
     modin=False
 )
 fig
 ```
 
 ```{code-cell} ipython3
-
-```
-
-```{code-cell} ipython3
 id_notes = pd.concat({i: df for i, (_, df) in enumerate(notes.groupby(['corpus', 'piece']))})
-id_notes.index.rename(['ID', 'i'], inplace=True)
+id_notes.index.rename(['ID', 'corpus', 'piece',  'i'], inplace=True)
 id_notes
 ```
 
@@ -150,26 +145,25 @@ fig
 
 ```{code-cell} ipython3
 test = id_distributions.loc[(slice(0,1),),]
-tpc_bubbles(test, modin=True)
+tpc_bubbles(test, modin=False)
 ```
 
 ```{code-cell} ipython3
-tpc_bubbles(id_distributions)
+tpc_bubbles(id_distributions, modin=False)
 ```
 
 ```{code-cell} ipython3
-id_distributions = piece_distributions.droplevel([1,2])
-id_distributions
+distributions = id_distributions.reset_index()
+distributions
 ```
 
 ```{code-cell} ipython3
-import plotly.graph_objects as go
 fig = go.Figure(data=go.Scatter(
-    x=list(piece_distributions.tpc),
-    y=list(piece_distributions.index),
-    mode='markers',
-    marker=dict(
-        size=list(piece_distributions.duration_qb))))
+    x=distributions.tpc.values,
+    y=distributions.ID.values,
+    mode='markers'))
+    # marker=dict(
+    #     size=durations_normalized.values,)))
 
 fig.update_layout(
     autosize=False,
@@ -188,10 +182,6 @@ fig
 ```
 
 ```{code-cell} ipython3
-
-```
-
-```{code-cell} ipython3
 x_vals = sorted(notes.tpc.unique())
 x_names = ms3.fifths2name(x_vals)
 x_axis = dict(tickvals=x_vals, ticktext=x_names)
@@ -200,15 +190,12 @@ fig = tpc_bubbles(
     x_axis=x_axis,
     #title="measure-wise pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
     labels=dict(mn="Measure number", tpc="Tonal pitch class"),
-    output=os.path.join(FIG_PATH, "all_tpc_distributions.png"),
+    output=os.path.join(RESULTS_PATH, "all_tpc_distributions.png"),
+  modin=False
 )
 ```
 
 ```{code-cell} ipython3
-fig = plot_pitch_class_distribution(notes, output=os.path.join(FIG_PATH, "dl_corpus_tpc.png"))
+fig = plot_pitch_class_distribution(notes, output=os.path.join(RESULTS_PATH, "dl_corpus_tpc.png"), modin=False)
 fig
-```
-
-```{code-cell} ipython3
-
 ```
