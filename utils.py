@@ -39,49 +39,50 @@ CADENCE_COLORS = dict(
 )
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
 
-CORPUS_NAMES = dict(
-    gastoldi_baletti="Gastoldi Baletti",
-    peri_euridice="Peri Euridice",
-    monteverdi_madrigals="Monteverdi Madrigals",
-    sweelinck_keyboard="Sweelinck Keyboard",
-    frescobaldi_fiori_musicali="Frescobaldi Fiori Musicali",
-    kleine_geistliche_konzerte="Schütz Kleine Geistliche Konzerte",
-    corelli="Corelli Trio Sonatas",
-    couperin_clavecin="Couperin Clavecin",
-    handel_keyboard="Handel Keyboard",
-    bach_en_fr_suites="Bach Suites",
-    bach_solo="Bach Solo",
-    couperin_concerts="Couperin Concerts Royaux",
-    pergolesi_stabat_mater="Pergolesi Stabat Mater",
-    scarlatti_sonatas="Scarlatti Sonatas",
-    wf_bach_sonatas="WF Bach Sonatas",
-    jc_bach_sonatas="JC Bach Sonatas",
-    mozart_piano_sonatas="Mozart Piano Sonatas",
-    pleyel_quartets="Pleyel Quartets",
-    beethoven_piano_sonatas="Beethoven Sonatas",
-    kozeluh_sonatas="Kozeluh Sonatas",
-    ABC="Beethoven String Quartets",
-    schubert_dances="Schubert Dances",
-    schubert_winterreise="Schubert Winterreise",
-    mendelssohn_quartets="Mendelssohn Quartets",
-    chopin_mazurkas="Chopin Mazurkas",
-    schumann_kinderszenen="R Schumann Kinderszenen",
-    schumann_liederkreis="R Schumann Liederkreis",
-    c_schumann_lieder="C Schumann Lieder",
-    liszt_pelerinage="Liszt Années",
-    wagner_overtures="Wagner Overtures",
-    tchaikovsky_seasons="Tchaikovsky Seasons",
-    dvorak_silhouettes="Dvořák Silhouettes",
-    grieg_lyric_pieces="Grieg Lyric Pieces",
-    mahler_kindertotenlieder="Mahler Kindertotenlieder",
-    ravel_piano="Ravel Piano",
-    debussy_suite_bergamasque="Debussy Suite Bergamasque",
-    bartok_bagatelles="Bartok Bagatelles",
-    medtner_tales="Medtner Tales",
-    poulenc_mouvements_perpetuels="Poulenc Mouvements Perpetuels",
-    rachmaninoff_piano="Rachmaninoff Piano",
-    schulhoff_suite_dansante_en_jazz="Schulhoff Suite Dansante En Jazz",
-)
+CORPUS_NAMES = {
+    "ABC": "Beethoven String Quartets",
+    "bach_en_fr_suites": "Bach Suites",
+    "bach_solo": "Bach Solo",
+    "bartok_bagatelles": "Bartok Bagatelles",
+    "beethoven_piano_sonatas": "Beethoven Sonatas",
+    "c_schumann_lieder": "C Schumann Lieder",
+    "chopin_mazurkas": "Chopin Mazurkas",
+    "corelli": "Corelli Trio Sonatas",
+    "couperin_clavecin": "Couperin Clavecin",
+    "couperin_concerts": "Couperin Concerts Royaux",
+    "cpe_bach_keyboard": "CPE Bach Keyboard",
+    "debussy_suite_bergamasque": "Debussy Suite Bergamasque",
+    "dvorak_silhouettes": "Dvořák Silhouettes",
+    "frescobaldi_fiori_musicali": "Frescobaldi Fiori Musicali",
+    "gastoldi_baletti": "Gastoldi Baletti",
+    "grieg_lyric_pieces": "Grieg Lyric Pieces",
+    "handel_keyboard": "Handel Keyboard",
+    "jc_bach_sonatas": "JC Bach Sonatas",
+    "kleine_geistliche_konzerte": "Schütz Kleine Geistliche Konzerte",
+    "kozeluh_sonatas": "Kozeluh Sonatas",
+    "liszt_pelerinage": "Liszt Années",
+    "mahler_kindertotenlieder": "Mahler Kindertotenlieder",
+    "medtner_tales": "Medtner Tales",
+    "mendelssohn_quartets": "Mendelssohn Quartets",
+    "monteverdi_madrigals": "Monteverdi Madrigals",
+    "mozart_piano_sonatas": "Mozart Piano Sonatas",
+    "pergolesi_stabat_mater": "Pergolesi Stabat Mater",
+    "peri_euridice": "Peri Euridice",
+    "pleyel_quartets": "Pleyel Quartets",
+    "poulenc_mouvements_perpetuels": "Poulenc Mouvements Perpetuels",
+    "rachmaninoff_piano": "Rachmaninoff Piano",
+    "ravel_piano": "Ravel Piano",
+    "scarlatti_sonatas": "Scarlatti Sonatas",
+    "schubert_dances": "Schubert Dances",
+    "schubert_winterreise": "Schubert Winterreise",
+    "schulhoff_suite_dansante_en_jazz": "Schulhoff Suite Dansante En Jazz",
+    "schumann_kinderszenen": "R Schumann Kinderszenen",
+    "schumann_liederkreis": "R Schumann Liederkreis",
+    "sweelinck_keyboard": "Sweelinck Keyboard",
+    "tchaikovsky_seasons": "Tchaikovsky Seasons",
+    "wagner_overtures": "Wagner Overtures",
+    "wf_bach_sonatas": "WF Bach Sonatas",
+}
 
 TRACES_SETTINGS = dict(marker_line_color="black")
 TYPE_COLORS = dict(
@@ -157,7 +158,8 @@ def corpus_mean_composition_years(
     ('corpus' by default).
     Returns the result as a series where the index contains corpus names and the values are mean composition years.
     """
-    return df.groupby(level=0)[year_column].mean().sort_values()
+    years = pd.to_numeric(df[year_column], errors="coerce")
+    return years.groupby(level=0).mean().sort_values()
 
 
 def chronological_corpus_order(

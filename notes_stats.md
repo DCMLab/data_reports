@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: corpus_docs
+  display_name: revamp
   language: python
-  name: corpus_docs
+  name: revamp
 ---
 
 # Notes
@@ -22,70 +22,45 @@ mystnb:
 tags: [hide-cell]
 ---
 import os
-from collections import defaultdict, Counter
 
 from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 
-from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, chronological_corpus_order, color_background, get_corpus_display_name, get_repo_name, resolve_dir, value_count_df, get_repo_name, print_heading, resolve_dir
+from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, chronological_corpus_order, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
+
+pd.set_option('display.max_rows', 1000)
+pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell}
 :tags: [hide-input]
 
-CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))
-ANNOTATED_ONLY = os.getenv("ANNOTATED_ONLY", "True").lower() in ('true', '1', 't')
-print_heading("Notebook settings")
-print(f"CORPUS_PATH: {CORPUS_PATH!r}")
-print(f"ANNOTATED_ONLY: {ANNOTATED_ONLY}")
-CORPUS_PATH = resolve_dir(CORPUS_PATH)
+RESULTS_PATH = os.path.abspath("results")
+os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
+
+**Loading data**
 
 ```{code-cell}
 :tags: [hide-input]
 
-repo = Repo(CORPUS_PATH)
+package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
-```
-
-```{code-cell}
-:tags: [remove-output]
-
-dataset = dc.Dataset()
-dataset.load(directory=CORPUS_PATH, parse_tsv=False)
-```
-
-```{code-cell}
-:tags: [remove-input]
-
-if ANNOTATED_ONLY:
-    annotated_view = dataset.data.get_view('annotated')
-    annotated_view.include('facets', 'measures', 'notes$', 'expanded')
-    annotated_view.fnames_with_incomplete_facets = False
-    dataset.data.set_view(annotated_view)
-dataset.data.parse_tsv(choose='auto')
-dataset.get_indices()
-dataset.data
-```
-
-```{code-cell}
-:tags: [remove-input]
-
-print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
+D = dc.Dataset.from_package(package_path)
+D
 ```
 
 ## Metadata
 
 ```{code-cell}
-all_metadata = dataset.data.metadata()
-print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
+all_metadata = D.get_metadata()
 all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
 ```
 
@@ -98,7 +73,8 @@ chronological_order
 ```
 
 ```{code-cell}
-all_notes = dataset.data.get_all_parsed('notes', force=True, flat=True)
+notes_feature = D.get_feature('notes')
+all_notes = notes_feature.df
 print(f"{len(all_notes.index)} notes over {len(all_notes.groupby(level=[0,1]))} files.")
 all_notes.head()
 ```
