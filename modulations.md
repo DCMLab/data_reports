@@ -7,16 +7,22 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: coup
+  display_name: revamp
   language: python
-  name: coup
+  name: revamp
 ---
 
 +++ {"jupyter": {"outputs_hidden": false}}
 
 # Modulation Plans
 
+Use for the `couperin_concerts` corpus only. Headings and function calls have been programatically generated for that
+corpus.
+
 ```{code-cell} ipython3
+from git import Repo
+
+from utils import print_heading, resolve_dir, get_repo_name
 %load_ext autoreload
 %autoreload 2
 
@@ -31,11 +37,21 @@ from create_gantt import create_modulation_plan, get_phraseends
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
-CORPUS_PATH = "~/all_subcorpora/couperin_concerts"
+# import os
+# CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))  # for running the notebook in the homepage deployment
+# workflow
+CORPUS_PATH = "~/all_subcorpora/couperin_concerts"         # for running the notebook locally
+print_heading("Notebook settings")
+print(f"CORPUS_PATH: {CORPUS_PATH!r}")
+CORPUS_PATH = resolve_dir(CORPUS_PATH)
+```
+
+```{code-cell} ipython3
+repo = Repo(CORPUS_PATH)
+print_heading("Data and software versions")
+print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+print("dimcat version [NOT USED]")
+print(f"ms3 version {ms3.__version__}")
 ```
 
 ```{code-cell} ipython3
