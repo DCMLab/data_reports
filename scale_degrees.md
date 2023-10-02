@@ -21,10 +21,6 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
-import os
-from collections import defaultdict, Counter
-from fractions import Fraction
-
 from git import Repo
 import dimcat as dc
 import ms3
@@ -32,15 +28,15 @@ import pandas as pd
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 100)
 import plotly.express as px
-import plotly.graph_objects as go
 
-from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, TYPE_COLORS, chronological_corpus_order, color_background, corpus_mean_composition_years, get_corpus_display_name, get_repo_name, resolve_dir, value_count_df, get_repo_name, print_heading, resolve_dir
+from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, get_repo_name, print_heading, resolve_dir
 ```
 
 ```{code-cell}
 :tags: [hide-input]
 
-CORPUS_PATH = os.getenv('CORPUS_PATH', "/home/hentsche/tmp/all_subcorpora/")
+# CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
+CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
@@ -488,8 +484,4 @@ rectangular_sunburst(chords_by_localkey_minor, title="MINOR")
 
 ```{code-cell}
 rectangular_sunburst(chords_by_localkey_minor, ['sd', 'interval', 'figbass'], title="MINOR")
-```
-
-```{code-cell}
-
 ```
