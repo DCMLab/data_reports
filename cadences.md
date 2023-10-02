@@ -21,7 +21,6 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
-import os
 from collections import defaultdict, Counter
 
 from git import Repo
@@ -37,7 +36,9 @@ from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, 
 ```{code-cell}
 :tags: [hide-input]
 
-CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))
+# import os
+# CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
+CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
@@ -329,7 +330,7 @@ def get_progressions(selected='PAC', last_row={}, feature='chord', dataset=None,
             continue
         if (df.cadence == selected).fillna(False).any():
             # remove chords after the last cadence label
-            df = df[df.cadence.fillna(method='bfill').notna()]
+            df = df[df.cadence.bfill().notna()]
             # group segments leading up to a cadence label
             cadence_groups = df.cadence.notna().shift().fillna(False).cumsum()
             for i, cadence in df.groupby(cadence_groups):
