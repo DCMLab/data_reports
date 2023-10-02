@@ -228,7 +228,7 @@ def frictionless_types2modin_types(schema):
     }
 
 
-@cache()
+@cache
 def get_corpus_display_name(repo_name: str) -> str:
     """Looks up a repository name in the CORPUS_NAMES constant. If not present,
     the repo name is returned as title case.
