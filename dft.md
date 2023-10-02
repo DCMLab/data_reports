@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.14.4
+    jupytext_version: 1.15.2
 kernelspec:
   display_name: ms3
   language: python
@@ -14,7 +14,7 @@ kernelspec:
 
 # Notes
 
-```{code-cell} ipython3
+```{code-cell}
 import os
 from collections import defaultdict, Counter
 
@@ -28,13 +28,13 @@ import plotly.graph_objects as go
 from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, chronological_corpus_order, color_background, get_corpus_display_name, get_repo_name, resolve_dir, value_count_df, get_repo_name, resolve_dir
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 CORPUS_PATH = os.environ.get('CORPUS_PATH', "~/debussy_piano")
 print(f"CORPUS_PATH: '{CORPUS_PATH}'")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 repo = Repo(CORPUS_PATH)
 notebook_repo = Repo('.', search_parent_directories=True)
 print(f"Notebook repository '{get_repo_name(notebook_repo)}' @ {notebook_repo.commit().hexsha[:7]}")
@@ -47,25 +47,25 @@ print(f"ms3 version {ms3.__version__}")
 
 ### Detected files
 
-```{code-cell} ipython3
+```{code-cell}
 dataset = dc.Dataset()
 dataset.load(directory=CORPUS_PATH)
 dataset.data
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 print(f"N = {dataset.data.count_pieces()} annotated pieces.")
 ```
 
 ## Metadata
 
-```{code-cell} ipython3
+```{code-cell}
 all_metadata = dataset.data.metadata()
 print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
 all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 pcvs = dc.Pipeline([
     dc.NoteSlicer(quarters_per_slice=1.0),
     dc.PitchClassVectors(
@@ -74,12 +74,12 @@ pcvs = dc.Pipeline([
 ]).process_data(dataset)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 P = pcvs.get().fillna(0.0)
 P
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 import numpy as np
 
 def apply_dft_to_pitch_class_matrix(pc_mat, build_utm = True, long=False):
@@ -119,25 +119,25 @@ def apply_dft_to_pitch_class_matrix(pc_mat, build_utm = True, long=False):
     return res
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 df = pd.DataFrame(apply_dft_to_pitch_class_matrix(P), index=P.index).sort_index()
 sample = df.sample(5)
 sample
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 print(sample.style.format(precision=2).to_latex())
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 print(sample.style.to_latex())
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 def comp2str(c, dec=2):
     """Interpret a complex number as magnitude and phase and convert into a human-readable string."""
     magn = np.round(abs(c), dec)
@@ -148,6 +148,6 @@ def comp2str(c, dec=2):
 comp2str_vec = np.vectorize(comp2str)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 comp2str_vec(apply_dft_to_pitch_class_matrix(P))
 ```

@@ -4,7 +4,7 @@ ipykernel==6.25.0
 ipython==8.11.0
 ipywidgets
 jinja2==3.1.2
-jupytext==1.14.5
+jupytext==1.15.2
 kaleido==0.2.1
 matplotlib==3.7.1
 ms3>=2.2.0

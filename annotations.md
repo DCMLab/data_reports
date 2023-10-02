@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.0
+    jupytext_version: 1.15.2
 kernelspec:
   display_name: corpus_docs
   language: python
@@ -133,7 +133,7 @@ legacy.groupby(level=0).size()
 ### A table with the extents of all annotated phrases
 **Relevant columns:**
 * `quarterbeats`: start position for each phrase
-* `duration_qb`: duration of each phrase, measured in quarter notes 
+* `duration_qb`: duration of each phrase, measured in quarter notes
 * `phrase_slice`: time interval of each annotated phrases (for segmenting chord progressions and notes)
 
 ```{code-cell} ipython3
@@ -258,7 +258,7 @@ localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor'
 bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
 bar_data.localkey_fifths = bar_data.localkey_fifths.map(ms3.fifths2iv)
 fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mode', log_y=True, barmode='group',
-             labels=dict(localkey_fifths='Roots of local keys as intervallic distance from the global tonic', 
+             labels=dict(localkey_fifths='Roots of local keys as intervallic distance from the global tonic',
                    duration_qb='total duration in quarter notes',
                    localkey_mode='mode'
                   ),
@@ -284,18 +284,18 @@ maj_min_ratio
 ```{code-cell} ipython3
 segment_duration_per_dataset = keys.groupby(["corpus", "localkey_is_minor"]).duration_qb.sum().round(2)
 norm_segment_duration_per_dataset = 100 * segment_duration_per_dataset / segment_duration_per_dataset.groupby(level="corpus").sum()
-maj_min_ratio_per_dataset = pd.concat([segment_duration_per_dataset, 
-                                      norm_segment_duration_per_dataset.rename('fraction').round(1).astype(str)+" %"], 
+maj_min_ratio_per_dataset = pd.concat([segment_duration_per_dataset,
+                                      norm_segment_duration_per_dataset.rename('fraction').round(1).astype(str)+" %"],
                                      axis=1)
 maj_min_ratio_per_dataset['corpus_name'] = maj_min_ratio_per_dataset.index.get_level_values('corpus').map(corpus_names)
 maj_min_ratio_per_dataset['mode'] = maj_min_ratio_per_dataset.index.get_level_values('localkey_is_minor').map({False: 'major', True: 'minor'})
 ```
 
 ```{code-cell} ipython3
-fig = px.bar(maj_min_ratio_per_dataset.reset_index(), 
-       x="corpus_name", 
-       y="duration_qb", 
-       color="mode", 
+fig = px.bar(maj_min_ratio_per_dataset.reset_index(),
+       x="corpus_name",
+       y="duration_qb",
+       color="mode",
        text='fraction',
        labels=dict(dataset='', duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
        category_orders=dict(dataset=chronological_order)
@@ -382,7 +382,7 @@ bar_data = root_durations.reset_index()
 bar_data.root = bar_data.root.map(ms3.fifths2iv)
 root_order = bar_data.groupby('root').duration_qb.sum().sort_values(ascending=False).index.to_list()
 fig = px.bar(bar_data, x='root', y='duration_qb', color='type_reduced', barmode='group', log_y=True,
-             color_discrete_map=TYPE_COLORS, 
+             color_discrete_map=TYPE_COLORS,
              category_orders=dict(root=root_order,
                                   type_reduced=relative_roots.type_reduced.value_counts().index.to_list(),
                                  ),
@@ -473,7 +473,7 @@ for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
 types_shared_between_corpora = {}
 for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
     if is_minor in types_shared_between_corpora:
-        types_shared_between_corpora[is_minor] = types_shared_between_corpora[is_minor].intersection(ugs.index) 
+        types_shared_between_corpora[is_minor] = types_shared_between_corpora[is_minor].intersection(ugs.index)
     else:
         types_shared_between_corpora[is_minor] = set(ugs.index)
 types_shared_between_corpora = {k: sorted(v, key=lambda x: unigrams.get()[(k, x)], reverse=True) for k, v in types_shared_between_corpora.items()}
@@ -495,7 +495,7 @@ piece_wise_unigrams.get()
 types_shared_between_pieces = {}
 for (is_minor, corpus_name), ugs in piece_wise_unigrams.iter():
     if is_minor in types_shared_between_pieces:
-        types_shared_between_pieces[is_minor] = types_shared_between_pieces[is_minor].intersection(ugs.index) 
+        types_shared_between_pieces[is_minor] = types_shared_between_pieces[is_minor].intersection(ugs.index)
     else:
         types_shared_between_pieces[is_minor] = set(ugs.index)
 print(types_shared_between_pieces)

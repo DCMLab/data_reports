@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.0
+    jupytext_version: 1.15.2
 kernelspec:
   display_name: corpus_docs
   language: python
@@ -14,7 +14,7 @@ kernelspec:
 
 # Notes
 
-```{code-cell} ipython3
+```{code-cell}
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -34,7 +34,7 @@ import plotly.graph_objects as go
 from utils import STD_LAYOUT, CADENCE_COLORS, CORPUS_COLOR_SCALE, chronological_corpus_order, color_background, get_corpus_display_name, get_repo_name, resolve_dir, value_count_df, get_repo_name, print_heading, resolve_dir
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))
@@ -45,7 +45,7 @@ print(f"ANNOTATED_ONLY: {ANNOTATED_ONLY}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 repo = Repo(CORPUS_PATH)
@@ -55,14 +55,14 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [remove-output]
 
 dataset = dc.Dataset()
 dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [remove-input]
 
 if ANNOTATED_ONLY:
@@ -75,7 +75,7 @@ dataset.get_indices()
 dataset.data
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [remove-input]
 
 print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
@@ -83,7 +83,7 @@ print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_
 
 ## Metadata
 
-```{code-cell} ipython3
+```{code-cell}
 all_metadata = dataset.data.metadata()
 print(f"Concatenated 'metadata.tsv' files cover {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
 all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
@@ -91,19 +91,19 @@ all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:,:20]
 
 **Compute chronological order**
 
-```{code-cell} ipython3
+```{code-cell}
 chronological_order = chronological_corpus_order(all_metadata)
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
 chronological_order
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 all_notes = dataset.data.get_all_parsed('notes', force=True, flat=True)
 print(f"{len(all_notes.index)} notes over {len(all_notes.groupby(level=[0,1]))} files.")
 all_notes.head()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 def weight_notes(nl, group_col='midi', precise=True):
     summed_durations = nl.groupby(group_col).duration_qb.sum()
     shortest_duration = summed_durations[summed_durations > 0].min()
@@ -114,7 +114,7 @@ def weight_notes(nl, group_col='midi', precise=True):
         # if it was exactly 0.5 it would be rounded down by repeat_notes_according_to_weights()
         summed_durations /= 1.9999999
     return repeat_notes_according_to_weights(summed_durations)
-    
+
 def repeat_notes_according_to_weights(weights):
     try:
         counts = weights.round().astype(int)
@@ -128,30 +128,30 @@ def repeat_notes_according_to_weights(weights):
 
 ## Ambitus
 
-```{code-cell} ipython3
+```{code-cell}
 corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
 chronological_corpus_names = list(corpus_names.values())
 corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
 all_notes['corpus_name'] = all_notes.index.get_level_values(0).map(corpus_names)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 grouped_notes = all_notes.groupby('corpus_name')
 weighted_midi = pd.concat([weight_notes(nl, 'midi', precise=False) for _, nl in grouped_notes], keys=grouped_notes.groups.keys()).reset_index(level=0)
 weighted_midi.columns = ['dataset', 'midi']
 weighted_midi
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 yaxis=dict(tickmode= 'array',
            tickvals= [12, 24, 36, 48, 60, 72, 84, 96],
            ticktext = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7"],
            gridcolor='lightgrey',
            )
-fig = px.violin(weighted_midi, 
-                x='dataset', 
-                y='midi', 
-                color='dataset', 
+fig = px.violin(weighted_midi,
+                x='dataset',
+                y='midi',
+                color='dataset',
                 box=True,
                 labels=dict(
                     dataset='',
@@ -162,7 +162,7 @@ fig = px.violin(weighted_midi,
                 width=1000, height=600,
                )
 fig.update_traces(spanmode='hard') # do not extend beyond outliers
-fig.update_layout(yaxis=yaxis, 
+fig.update_layout(yaxis=yaxis,
                   **STD_LAYOUT,
                  showlegend=False)
 fig.show()
@@ -170,7 +170,7 @@ fig.show()
 
 ## Tonal Pitch Classes (TPC)
 
-```{code-cell} ipython3
+```{code-cell}
 weighted_tpc = pd.concat([weight_notes(nl, 'tpc') for _, nl in grouped_notes], keys=grouped_notes.groups.keys()).reset_index(level=0)
 weighted_tpc.columns = ['dataset', 'tpc']
 weighted_tpc
@@ -178,7 +178,7 @@ weighted_tpc
 
 ### As violin plot
 
-```{code-cell} ipython3
+```{code-cell}
 yaxis=dict(
     tickmode= 'array',
     tickvals= [-12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18],
@@ -187,10 +187,10 @@ yaxis=dict(
     zerolinecolor='lightgrey',
     zeroline=True
            )
-fig = px.violin(weighted_tpc, 
-                x='dataset', 
-                y='tpc', 
-                color='dataset', 
+fig = px.violin(weighted_tpc,
+                x='dataset',
+                y='tpc',
+                color='dataset',
                 box=True,
                 labels=dict(
                     dataset='',
@@ -198,11 +198,11 @@ fig = px.violin(weighted_tpc,
                 ),
                 category_orders=dict(dataset=chronological_corpus_names),
                 color_discrete_map=corpus_name_colors,
-                width=1000, 
+                width=1000,
                 height=600,
                )
 fig.update_traces(spanmode='hard') # do not extend beyond outliers
-fig.update_layout(yaxis=yaxis, 
+fig.update_layout(yaxis=yaxis,
                   **STD_LAYOUT,
                  showlegend=False)
 fig.show()
@@ -210,7 +210,7 @@ fig.show()
 
 ### As bar plots
 
-```{code-cell} ipython3
+```{code-cell}
 bar_data = all_notes.groupby('tpc').duration_qb.sum().reset_index()
 x_values = list(range(bar_data.tpc.min(), bar_data.tpc.max()+1))
 x_names = ms3.fifths2name(x_values)
@@ -223,16 +223,16 @@ fig = px.bar(bar_data, x='tpc', y='duration_qb',
              )
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array', 
-                 tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black', 
+fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array',
+                 tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black',
                  minor=dict(dtick=6, gridcolor='grey', showgrid=True),
                 )
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 scatter_data = all_notes.groupby(['corpus_name', 'tpc']).duration_qb.sum().reset_index()
-fig = px.bar(scatter_data, x='tpc', y='duration_qb', color='corpus_name', 
+fig = px.bar(scatter_data, x='tpc', y='duration_qb', color='corpus_name',
                  labels=dict(
                      duration_qb='duration',
                      tpc='named pitch class',
@@ -243,8 +243,8 @@ fig = px.bar(scatter_data, x='tpc', y='duration_qb', color='corpus_name',
                 )
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array', 
-                 tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black', 
+fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array',
+                 tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black',
                  minor=dict(dtick=6, gridcolor='grey', showgrid=True),
                 )
 fig.show()
@@ -252,8 +252,8 @@ fig.show()
 
 ### As scatter plots
 
-```{code-cell} ipython3
-fig = px.scatter(scatter_data, x='tpc', y='duration_qb', color='corpus_name', 
+```{code-cell}
+fig = px.scatter(scatter_data, x='tpc', y='duration_qb', color='corpus_name',
                  labels=dict(
                      duration_qb='duration',
                      tpc='named pitch class',
@@ -272,19 +272,19 @@ fig.update_yaxes(gridcolor='lightgrey', zeroline=False, matches=None, showtickla
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 no_accidental = bar_data[bar_data.tpc.between(-1,5)].duration_qb.sum()
 with_accidental = bar_data[~bar_data.tpc.between(-1,5)].duration_qb.sum()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 entire = no_accidental + with_accidental
 f"Fraction of note duration without accidental of the entire durations: {no_accidental} / {entire} = {no_accidental / entire}"
 ```
 
 ### Notes and staves
 
-```{code-cell} ipython3
+```{code-cell}
 print("Distribution of notes over staves:")
 value_count_df(all_notes.staff)
 ```

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.0
+    jupytext_version: 1.15.2
 kernelspec:
   display_name: corpus_docs
   language: python
@@ -16,7 +16,7 @@ kernelspec:
 
 This notebook gives a general overview of the features included in the dataset.
 
-```{code-cell} ipython3
+```{code-cell}
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -37,7 +37,7 @@ import plotly.graph_objects as go
 from utils import CADENCE_COLORS, CORPUS_COLOR_SCALE, STD_LAYOUT, TYPE_COLORS, color_background, corpus_mean_composition_years, value_count_df, get_corpus_display_name, get_repo_name, print_heading, resolve_dir
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))
@@ -48,7 +48,7 @@ print(f"ANNOTATED_ONLY: {ANNOTATED_ONLY}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 repo = Repo(CORPUS_PATH)
@@ -58,14 +58,14 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [remove-output]
 
 dataset = dc.Dataset()
 dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [remove-input]
 
 if ANNOTATED_ONLY:
@@ -78,13 +78,13 @@ dataset.get_indices()
 dataset.data
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [remove-input]
 
 print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 ---
 mystnb:
   code_prompt_hide: Hide data loading
@@ -108,7 +108,7 @@ corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors
 
 This section relies on the dataset's metadata.
 
-```{code-cell} ipython3
+```{code-cell}
 valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors='coerce')
 valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors='coerce')
 print(f"Composition dates range from {int(valid_composed_start.min())} {valid_composed_start.idxmin()} "
@@ -117,7 +117,7 @@ print(f"Composition dates range from {int(valid_composed_start.min())} {valid_co
 
 ### Mean composition years per corpus
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 summary = all_metadata.copy()
@@ -125,7 +125,7 @@ summary.length_qb = all_measures.groupby(level=[0,1]).act_dur.sum() * 4.0
 summary = pd.concat([summary,
                      all_notes.groupby(level=[0,1]).size().rename('notes'),
                     ], axis=1)
-bar_data = pd.concat([mean_composition_years.rename('year'), 
+bar_data = pd.concat([mean_composition_years.rename('year'),
                       summary.groupby(level='corpus').size().rename('pieces')],
                      axis=1
                     ).reset_index()
@@ -140,7 +140,7 @@ fig.update_traces(width=5)
 
 ### Composition years histogram
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 hist_data = summary.reset_index()
@@ -163,7 +163,7 @@ fig.show()
 
 ### Overview
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 corpus_metadata = summary.groupby(level=0)
@@ -187,12 +187,12 @@ complete_summary
 
 ### Measures
 
-```{code-cell} ipython3
+```{code-cell}
 print(f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files.")
 all_measures.head()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 print("Distribution of time signatures per XML measure (MC):")
 all_measures.timesig.value_counts(dropna=False)
 ```
@@ -201,7 +201,7 @@ all_measures.timesig.value_counts(dropna=False)
 
 All symbols, independent of the local key (the mode of which changes their semantics).
 
-```{code-cell} ipython3
+```{code-cell}
 try:
     all_annotations = dataset.get_facet('expanded')
 except Exception:
