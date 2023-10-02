@@ -7,28 +7,23 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: coup
+  display_name: revamp
   language: python
-  name: coup
+  name: revamp
 ---
 
 # Bass degrees
 
 ```{code-cell} ipython3
-import os
-os.chdir("/home/laser/git/coup/notebooks")
-```
-
-```{code-cell} ipython3
 %load_ext autoreload
 %autoreload 2
-# pip install ms3 pandas plotly seaborn scipy
+import os
 from collections import Counter, defaultdict
 import ms3
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
-from helpers import cnt, transition_matrix, plot_bigram_tables, prettify_counts, sorted_gram_counts
+from utils import cnt, plot_bigram_tables, prettify_counts, resolve_dir, sorted_gram_counts, transition_matrix
 import dimcat as dc
 
 pd.set_option('display.max_rows', 1000)
@@ -36,14 +31,14 @@ pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell} ipython3
-CORPUS_PATH = '~/all_subcorpora/couperin_concerts'
-RESULTS_PATH = os.path.abspath(os.path.join("..", "results"))
+RESULTS_PATH = os.path.abspath("results")
+os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 
 **Loading data**
 
 ```{code-cell} ipython3
-package_path = "/home/laser/all_subcorpora/couperin_concerts/couperin_concerts.datapackage.json"
+package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 D = dc.Dataset.from_package(package_path)
 D
 ```
@@ -106,14 +101,24 @@ fig.show()
 #### Get localkey segments
 
 ```{code-cell} ipython3
-df['key_regions'] = df.groupby(level=0, group_keys=False).localkey.apply(lambda col: col != col.shift()).cumsum()
+df.groupby(level=0, group_keys=False).localkey.apply(lambda col: col != col.shift()).cumsum()
+```
+
+```{code-cell} ipython3
+key_region_groups, key_region2key = ms3.adjacency_groups(df.localkey)
+df['key_regions'] = key_region_groups
 df['bass_degree'] = ms3.transform(df, ms3.fifths2sd, ['bass_note', 'localkey_is_minor'])
 ```
 
 ```{code-cell} ipython3
 segment_lengths = df.groupby('key_regions').size()
-segment_lengths_aggr = segment_lengths.value_counts()
-px.bar(x=segment_lengths_aggr.index, y=segment_lengths_aggr, labels=dict(x='#labels', y='number of key segments with particular length'))
+# segment_lengths_aggr = segment_lengths.value_counts()
+# truncate_mask = segment_lengths_aggr.index < 500
+# segment_lengths_aggr_truncated = segment_lengths_aggr[truncate_mask]
+px.histogram(
+  segment_lengths,
+  log_y=True,
+  labels=dict(value='#labels in a key segment', count='number of key segments'),)
 ```
 
 ```{code-cell} ipython3
@@ -141,6 +146,11 @@ print(f"Length before: {len(df.index)}")
 non_chord = df.chord.isna()
 print(f"There are {non_chord.sum()} non-chord labels which we are going to delete:")
 display(df.loc[non_chord, "label"].value_counts())
+erroneous_chord = df.root.isna() & ~non_chord
+if erroneous_chord.sum() > 0:
+    print(f"There are {erroneous_chord.sum()} labels with erroneous chord annotations which we are going to delete:")
+    display(df.loc[erroneous_chord, "label"].value_counts())
+    non_chord |= erroneous_chord
 df.drop(df.index[non_chord], inplace=True)
 print(f"Length after: {len(df.index)}")
 ```
@@ -161,7 +171,7 @@ All scale degrees are expressed as fifth-intervals to the local tonic:
 ```{code-cell} ipython3
 bd_series = {seg: bn for seg, bn in  df.groupby('key_regions').bass_note}
 bd_intervals = {seg: bd - bd.shift() for seg, bd in bd_series.items()}
-df['bass_interval'] = df.groupby('key_regions', group_keys=False).bass_note.apply(lambda bd: bd - bd.shift())
+df['bass_interval'] = df.groupby('key_regions', group_keys=False).bass_note.apply(lambda bd: bd - bd.shift(-1))
 print("Example output for the intervals of the first key segment:")
 df.loc[df.key_regions==1, ['bass_note', 'bass_interval']]
 ```
@@ -323,7 +333,7 @@ key_regions = df.groupby('key_regions').apply(summarize)
 key_regions.head(10)
 ```
 
-**Store to file [key_regions.tsv](https://github.com/DCMLab/coup/blob/main/results/key_regions.tsv) for easier inspection.**
+**Store to file `key_regions.tsv` for easier inspection.**
 
 ```{code-cell} ipython3
 key_regions.to_csv(os.path.join(RESULTS_PATH, 'key_regions.tsv'), sep='\t')
@@ -512,8 +522,4 @@ sorted_gram_counts(full_grams_major, 5)
 
 ```{code-cell} ipython3
 sorted_gram_counts(full_grams_minor, 5)
-```
-
-```{code-cell} ipython3
-
 ```
