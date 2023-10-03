@@ -27,9 +27,11 @@ from utils import STD_LAYOUT, chronological_corpus_order, color_background, get_
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER
+from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "keys"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell}

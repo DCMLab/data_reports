@@ -34,9 +34,11 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background,
 ```
 
 ```{code-cell} ipython3
-from utils import OUTPUT_FOLDER
+from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "annotations"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell} ipython3
@@ -181,6 +183,7 @@ fig.update_traces(xbins=dict( # bins used for histogram
 fig.update_layout(**STD_LAYOUT)
 fig.update_xaxes(dtick=4, gridcolor='lightgrey')
 fig.update_yaxes(gridcolor='lightgrey')
+save_figure_as(fig, 'phrase_lengths_in_measures_histogram')
 fig.show()
 ```
 
@@ -253,7 +256,9 @@ key_resolved_durations
 
 ```{code-cell} ipython3
 pie_data = replace_boolean_mode_by_strings(key_resolved_durations.reset_index())
-px.pie(pie_data, names='localkey', values='duration_qb', facet_col='globalkey_mode')
+fig = px.pie(pie_data, names='localkey', values='duration_qb', facet_col='globalkey_mode')
+save_figure_as(fig, 'localkey_distributiona_major_minor_pies')
+fig.show
 ```
 
 #### Distribution of intervals between localkey tonic and global tonic
@@ -271,6 +276,7 @@ fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mod
              )
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
+save_figure_as(fig, 'scale_degree_distributions_maj_min_absolute_bars')
 fig.show()
 ```
 
@@ -306,6 +312,7 @@ fig = px.bar(maj_min_ratio_per_dataset.reset_index(),
        category_orders=dict(dataset=chronological_order)
     )
 fig.update_layout(**STD_LAYOUT)
+save_figure_as(fig, 'major_minor_key_segments_corpuswise_bars')
 fig.show()
 ```
 
@@ -352,6 +359,7 @@ fig = px.bar(mode_tpcs,
        #category_orders=dict(sd=sd_order)
       )
 fig.update_layout(**STD_LAYOUT, xaxis=xaxis, legend=legend)
+save_figure_as(fig, 'scale_degree_distributions_maj_min_normalized_bars')
 fig.show()
 ```
 
@@ -365,6 +373,7 @@ root_durations = all_chords[all_chords.root.between(-5,6)].groupby(['root', 'cho
 #root_durations = root_durations.sort_values(key=lambda S: S.index.get_level_values(0).map(S.groupby(level=0).sum()), ascending=False)
 bar_data = root_durations.reset_index()
 bar_data.root = bar_data.root.map(ms3.fifths2iv)
+save_figure_as(fig, 'chord_type_distribution_over_scale_degrees_absolute_stacked_bars')
 px.bar(bar_data, x='root', y='duration_qb', color='chord_type')
 ```
 
@@ -407,6 +416,7 @@ fig.update_layout(**STD_LAYOUT,
                   )
                  )
 fig.update_yaxes(gridcolor='lightgrey')
+save_figure_as(fig, 'chord_type_distribution_over_scale_degrees_absolute_grouped_bars')
 fig.show()
 ```
 

@@ -28,9 +28,11 @@ pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell} ipython3
-from utils import OUTPUT_FOLDER
+from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "harmonies"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    write_image(fig, filename, directory, **kwargs)
 ```
 
 **Loading data**
@@ -86,7 +88,7 @@ H_LAYOUT.update({'legend': dict({'orientation': 'h', 'itemsizing':'constant', 'x
 
 ```{code-cell} ipython3
 fig = plot_cum(df.chord, x_log=True, markersize=4, left_range=(-0.03, 3.7), right_range=(-0.01, 1.11), **H_LAYOUT)
-fig.write_image(os.path.join(RESULTS_PATH, 'type_distribution.png'))
+save_figure_as(fig, 'type_distribution')
 fig
 ```
 
@@ -103,7 +105,7 @@ major.chord.value_counts().iloc[:k]
 
 ```{code-cell} ipython3
 fig = plot_cum(major.chord, x_log=True, markersize=4, left_range=(-0.03, 3.7), right_range=(-0.01,1.11), **H_LAYOUT)
-fig.write_image(os.path.join(RESULTS_PATH, 'unigrams_major.png'))
+save_figure_as(fig, 'unigrams_major')
 fig.show()
 ```
 
@@ -119,7 +121,7 @@ minor.chord.value_counts().iloc[:k]
 
 ```{code-cell} ipython3
 fig = plot_cum(minor.chord, x_log=True, markersize=4, left_range=(-0.03, 3.7), right_range=(-0.01,1.11), **H_LAYOUT)
-fig.write_image(os.path.join(RESULTS_PATH, 'unigrams_minor.png'))
+save_figure_as(fig, 'unigrams_minor')
 fig.show()
 ```
 

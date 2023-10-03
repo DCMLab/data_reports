@@ -36,9 +36,11 @@ from utils import (CORPUS_COLOR_SCALE, STD_LAYOUT, corpus_mean_composition_years
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER
+from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    write_image(fig, filename, directory, **kwargs)
 ```
 
 **Loading data**

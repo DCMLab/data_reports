@@ -34,8 +34,11 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background,
 ```
 
 ```{code-cell}
-RESULTS_PATH = os.path.abspath(os.path.join("results/scale_degrees"))
+from utils import OUTPUT_FOLDER, write_image
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "scale_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell}

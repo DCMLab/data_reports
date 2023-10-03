@@ -25,9 +25,11 @@ from utils import get_repo_name, resolve_dir
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER
+from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "dft"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell}
