@@ -12,32 +12,36 @@ kernelspec:
   name: revamp
 ---
 
-+++ {"jupyter": {"outputs_hidden": false}}
-
 # Modulation Plans
 
 Use for the `couperin_concerts` corpus only. Headings and function calls have been programatically generated for that
 corpus.
 
 ```{code-cell} ipython3
-from git import Repo
-
-from utils import print_heading, resolve_dir, get_repo_name
 %load_ext autoreload
 %autoreload 2
 
+import os
 from typing import Literal
 import re
+
+from git import Repo
 import ms3
 import pandas as pd
+
+from utils import print_heading, resolve_dir, get_repo_name
+from create_gantt import create_modulation_plan, get_phraseends
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
-
-from create_gantt import create_modulation_plan, get_phraseends
 ```
 
 ```{code-cell} ipython3
-# import os
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "modulations"))
+os.makedirs(RESULTS_PATH, exist_ok=True)
+```
+
+```{code-cell} ipython3
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))  # for running the notebook in the homepage deployment
 # workflow
 CORPUS_PATH = "~/all_subcorpora/couperin_concerts"         # for running the notebook locally

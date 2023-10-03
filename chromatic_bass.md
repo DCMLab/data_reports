@@ -27,6 +27,12 @@ pd.options.display.max_rows = 100
 ```
 
 ```{code-cell} ipython3
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "chromatic_bass"))
+os.makedirs(RESULTS_PATH, exist_ok=True)
+```
+
+```{code-cell} ipython3
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
 CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
 print_heading("Notebook settings")

@@ -15,12 +15,19 @@ kernelspec:
 # Notes
 
 ```{code-cell}
+import os
 from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
 
 from utils import get_repo_name, resolve_dir
+```
+
+```{code-cell}
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "dft"))
+os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 
 ```{code-cell}

@@ -38,7 +38,8 @@ import pandas as pd
 ```
 
 ```{code-cell} ipython3
-RESULTS_PATH = os.path.abspath("results")
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 

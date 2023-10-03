@@ -36,7 +36,8 @@ from utils import (CORPUS_COLOR_SCALE, STD_LAYOUT, corpus_mean_composition_years
 ```
 
 ```{code-cell}
-RESULTS_PATH = os.path.abspath("results")
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 

@@ -21,6 +21,7 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+import os
 from git import Repo
 import dimcat as dc
 import ms3
@@ -30,6 +31,11 @@ pd.set_option('display.max_columns', 100)
 import plotly.express as px
 
 from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, get_repo_name, print_heading, resolve_dir
+```
+
+```{code-cell}
+RESULTS_PATH = os.path.abspath(os.path.join("results/scale_degrees"))
+os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 
 ```{code-cell}

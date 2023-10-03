@@ -22,6 +22,7 @@ from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
 from scipy.stats import entropy
 
+OUTPUT_FOLDER = os.path.abspath("outputs")
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
 COLOR_SCALE_SETTINGS = dict(
     color_continuous_scale="RdBu_r", color_continuous_midpoint=2

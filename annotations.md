@@ -21,6 +21,7 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+import os
 from fractions import Fraction
 
 from git import Repo
@@ -30,6 +31,12 @@ import pandas as pd
 import plotly.express as px
 
 from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
+```
+
+```{code-cell} ipython3
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "annotations"))
+os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 
 ```{code-cell} ipython3

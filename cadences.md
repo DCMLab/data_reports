@@ -21,6 +21,7 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+import os
 from collections import defaultdict, Counter
 
 from git import Repo
@@ -34,9 +35,14 @@ from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, 
 ```
 
 ```{code-cell}
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "cadences"))
+os.makedirs(RESULTS_PATH, exist_ok=True)
+```
+
+```{code-cell}
 :tags: [hide-input]
 
-# import os
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
 CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
 print_heading("Notebook settings")

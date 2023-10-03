@@ -13,22 +13,23 @@ kernelspec:
 ---
 
 ```{code-cell} ipython3
+from git import Repo
 %load_ext autoreload
 %autoreload 2
 import os
 from collections import Counter
-from git import Repo
 import pandas as pd
-import ms3
-import dimcat as dc
 from utils import grams, plot_cum, sorted_gram_counts, transition_matrix, STD_LAYOUT, print_heading, resolve_dir, \
   get_repo_name, remove_none_labels, remove_non_chord_labels
+import ms3
+import dimcat as dc
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell} ipython3
-RESULTS_PATH = os.path.abspath("results")
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "harmonies"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 

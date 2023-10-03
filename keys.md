@@ -27,7 +27,8 @@ from utils import STD_LAYOUT, chronological_corpus_order, color_background, get_
 ```
 
 ```{code-cell}
-RESULTS_PATH = os.path.abspath(os.path.join("results/keys"))
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "keys"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 

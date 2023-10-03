@@ -32,7 +32,8 @@ pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell} ipython3
-RESULTS_PATH = os.path.abspath("results")
+from utils import OUTPUT_FOLDER
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "bass_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 ```
 
