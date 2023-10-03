@@ -161,7 +161,7 @@ fig = px.bar(maj_min_ratio_per_dataset.reset_index(),
        category_orders=dict(dataset=chronological_order)
     )
 fig.update_layout(**STD_LAYOUT, height=270, width=1200)
-fig.write_image(os.path.join(RESULTS_PATH, "mode.pdf"))
+save_figure_as(fig, 'major_minor_key_segments_corpuswise_absolute_stacked_bars')
 fig.show()
 ```
 
@@ -232,10 +232,6 @@ fig = px.bar(mode_tpcs,
        #category_orders=dict(sd=sd_order)
       )
 fig.update_layout(**STD_LAYOUT, xaxis=xaxis, legend=legend, height=210, width=1200)
-fig.write_image(os.path.join(RESULTS_PATH, "mode_sds.pdf"))
+save_figure_as(fig, 'scale_degree_distribution_maj_min_normalized_grouped_bars')
 fig.show()
-```
-
-```{code-cell}
-
 ```
