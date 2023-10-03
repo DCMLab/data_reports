@@ -1,6 +1,6 @@
 import os
 import re
-from collections import Counter
+from collections import Counter, defaultdict
 from functools import cache
 from typing import List, Optional
 
@@ -97,6 +97,13 @@ TYPE_COLORS = dict(
 )
 X_AXIS = dict(gridcolor="lightgrey", zerolinecolor="grey")
 Y_AXIS = dict()
+
+COLUMN2SUNBURST_TITLE = dict(
+    sd="bass degree",
+    figbass="figured bass",
+    interval="bass progression",
+    following_figbass="subsequent figured bass",
+)
 
 
 def cnt(
@@ -407,6 +414,40 @@ def load_facets(
         )
         facets[facet_name] = facet_df
     return facets
+
+
+def make_sunburst(chords, mode, inspect=False):
+    in_scale = []
+    sd2prog = defaultdict(Counter)
+    for sd, sd_prog in chords[["sd", "sd_progression"]].itertuples(index=False):
+        if len(sd) == 1:
+            in_scale.append(sd)
+            sd2prog[sd].update(["∎"] if pd.isnull(sd_prog) else [str(sd_prog)])
+    label_counts = Counter(in_scale)
+    labels, values = list(label_counts.keys()), list(label_counts.values())
+    # labels, values = zip(*list((sd, label_counts[sd]) for sd in sorted(label_counts)))
+    parents = [mode] * len(labels)
+    labels = [mode] + labels
+    parents = [""] + parents
+    values = [len(chords)] + values
+    # print(sd2prog)
+    if inspect:
+        print(len(labels), len(parents), len(values))
+        for scad, prog_counts in sd2prog.items():
+            for prog, cnt in prog_counts.most_common():
+                labels.append(prog)
+                parents.append(scad)
+                values.append(cnt)
+                if cnt < 3000:
+                    break
+                print(f"added {prog}, {scad}, {cnt}")
+            break
+
+    fig = go.Figure(
+        go.Sunburst(labels=labels, parents=parents, values=values, branchvalues="total")
+    )
+    fig.update_layout(margin=dict(t=0, l=0, r=0, b=0))
+    return fig
 
 
 def nest_level(obj, include_tuples=False):
@@ -725,6 +766,26 @@ def plot_pitch_class_distribution(
     )
 
 
+def prepare_sunburst_data(sliced_harmonies_table: pd.DataFrame) -> pd.DataFrame:
+    """"""
+    chord_data = sliced_harmonies_table[
+        sliced_harmonies_table.sd.str.len() == 1
+    ].copy()  # scale degrees without
+    # accidentals
+    chord_data["interval"] = ms3.transform(
+        chord_data.sd_progression, safe_interval
+    ).fillna("∎")
+    chord_data.figbass.fillna("3", inplace=True)
+    chord_data["following_figbass"] = (
+        chord_data.groupby(
+            level=[0, 1, 2],
+        )
+        .figbass.shift(-1)
+        .fillna("∎")
+    )
+    return chord_data
+
+
 def prettify_counts(counter_object: Counter):
     N = counter_object.total()
     print(f"N = {N}")
@@ -770,95 +831,27 @@ def resolve_dir(directory: str):
     return os.path.realpath(os.path.expanduser(directory))
 
 
-def write_image(
-    fig: go.Figure,
-    filename: str,
-    directory: Optional[str] = None,
-    format=None,
-    scale=None,
-    width=None,
-    height=None,
-    validate=True,
-):
-    """
-    Convert a figure to a static image and write it to a file.
-
-    Args:
-        fig:
-            Figure object or dict representing a figure
-
-        file: str or writeable
-            A string representing a local file path or a writeable object
-            (e.g. a pathlib.Path object or an open file descriptor)
-
-        format: str or None
-            The desired image format. One of
-              - 'png'
-              - 'jpg' or 'jpeg'
-              - 'webp'
-              - 'svg'
-              - 'pdf'
-              - 'eps' (Requires the poppler library to be installed and on the PATH)
-
-            If not specified and `file` is a string then this will default to the
-            file extension. If not specified and `file` is not a string then this
-            will default to:
-                - `plotly.io.kaleido.scope.default_format` if engine is "kaleido"
-                - `plotly.io.orca.config.default_format` if engine is "orca"
-
-        width: int or None
-            The width of the exported image in layout pixels. If the `scale`
-            property is 1.0, this will also be the width of the exported image
-            in physical pixels.
-
-            If not specified, will default to:
-                - `plotly.io.kaleido.scope.default_width` if engine is "kaleido"
-                - `plotly.io.orca.config.default_width` if engine is "orca"
-
-        height: int or None
-            The height of the exported image in layout pixels. If the `scale`
-            property is 1.0, this will also be the height of the exported image
-            in physical pixels.
-
-            If not specified, will default to:
-                - `plotly.io.kaleido.scope.default_height` if engine is "kaleido"
-                - `plotly.io.orca.config.default_height` if engine is "orca"
-
-        scale: int or float or None
-            The scale factor to use when exporting the figure. A scale factor
-            larger than 1.0 will increase the image resolution with respect
-            to the figure's layout pixel dimensions. Whereas as scale factor of
-            less than 1.0 will decrease the image resolution.
-
-            If not specified, will default to:
-                - `plotly.io.kaleido.scope.default_scale` if engine is "kaleido"
-                - `plotly.io.orca.config.default_scale` if engine is "orca"
-
-        validate: bool
-            True if the figure should be validated before being converted to
-            an image, False otherwise.
-    """
-    fname, fext = os.path.splitext(filename)
-    if format is None:
-        has_allowed_extension = fext.lstrip(".") in AVAILABLE_FIGURE_FORMATS
-        output_filename = (
-            filename
-            if has_allowed_extension
-            else f"{filename}.{DEFAULT_OUTPUT_FORMAT.lstrip('.')}"
-        )
-    else:
-        output_filename = f"{filename}.{format.lstrip('.')}"
-    if directory is None:
-        output_filepath = os.path.join(OUTPUT_FOLDER, output_filename)
-    else:
-        output_filepath = os.path.join(directory, output_filename)
-    fig.write_image(
-        file=output_filepath,
-        width=width,
+def rectangular_sunburst(
+    sliced_harmonies_table: pd.DataFrame,
+    path,
+    height=1500,
+    title="Sunburst",
+) -> go.Figure:
+    chord_data = prepare_sunburst_data(sliced_harmonies_table)
+    title = f"{title} ({' - '.join(COLUMN2SUNBURST_TITLE[col] for col in path)})"
+    fig = px.sunburst(
+        chord_data,
+        path=path,
         height=height,
-        scale=scale,
-        validate=validate,
+        title=title,
     )
+    return fig
+
+
+def safe_interval(fifths):
+    if pd.isnull(fifths):
+        return "∎"
+    return ms3.fifths2iv(fifths, smallest=True)
 
 
 def sorted_gram_counts(lists_of_symbols, n=2, k=25):
@@ -1075,3 +1068,94 @@ def value_count_df(S, thing=None, counts="counts"):
     df = pd.concat([vc.to_frame(), normalized.rename("%")], axis=1)
     df.index.rename(thing, inplace=True)
     return df
+
+
+def write_image(
+    fig: go.Figure,
+    filename: str,
+    directory: Optional[str] = None,
+    format=None,
+    scale=None,
+    width=None,
+    height=None,
+    validate=True,
+):
+    """
+    Convert a figure to a static image and write it to a file.
+
+    Args:
+        fig:
+            Figure object or dict representing a figure
+
+        file: str or writeable
+            A string representing a local file path or a writeable object
+            (e.g. a pathlib.Path object or an open file descriptor)
+
+        format: str or None
+            The desired image format. One of
+              - 'png'
+              - 'jpg' or 'jpeg'
+              - 'webp'
+              - 'svg'
+              - 'pdf'
+              - 'eps' (Requires the poppler library to be installed and on the PATH)
+
+            If not specified and `file` is a string then this will default to the
+            file extension. If not specified and `file` is not a string then this
+            will default to:
+                - `plotly.io.kaleido.scope.default_format` if engine is "kaleido"
+                - `plotly.io.orca.config.default_format` if engine is "orca"
+
+        width: int or None
+            The width of the exported image in layout pixels. If the `scale`
+            property is 1.0, this will also be the width of the exported image
+            in physical pixels.
+
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_width` if engine is "kaleido"
+                - `plotly.io.orca.config.default_width` if engine is "orca"
+
+        height: int or None
+            The height of the exported image in layout pixels. If the `scale`
+            property is 1.0, this will also be the height of the exported image
+            in physical pixels.
+
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_height` if engine is "kaleido"
+                - `plotly.io.orca.config.default_height` if engine is "orca"
+
+        scale: int or float or None
+            The scale factor to use when exporting the figure. A scale factor
+            larger than 1.0 will increase the image resolution with respect
+            to the figure's layout pixel dimensions. Whereas as scale factor of
+            less than 1.0 will decrease the image resolution.
+
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_scale` if engine is "kaleido"
+                - `plotly.io.orca.config.default_scale` if engine is "orca"
+
+        validate: bool
+            True if the figure should be validated before being converted to
+            an image, False otherwise.
+    """
+    fname, fext = os.path.splitext(filename)
+    if format is None:
+        has_allowed_extension = fext.lstrip(".") in AVAILABLE_FIGURE_FORMATS
+        output_filename = (
+            filename
+            if has_allowed_extension
+            else f"{filename}.{DEFAULT_OUTPUT_FORMAT.lstrip('.')}"
+        )
+    else:
+        output_filename = f"{filename}.{format.lstrip('.')}"
+    if directory is None:
+        output_filepath = os.path.join(OUTPUT_FOLDER, output_filename)
+    else:
+        output_filepath = os.path.join(directory, output_filename)
+    fig.write_image(
+        file=output_filepath,
+        width=width,
+        height=height,
+        scale=scale,
+        validate=validate,
+    )
