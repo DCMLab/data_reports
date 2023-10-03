@@ -166,7 +166,11 @@ value_count_df(all_labels.cadence)
 ```
 
 ```{code-cell}
-px.pie(all_labels[all_labels.cadence.notna()], names="cadence", color="cadence", color_discrete_map=CADENCE_COLORS)
+fig = px.pie(all_labels[all_labels.cadence.notna()], names="cadence", color="cadence",
+             color_discrete_map=CADENCE_COLORS)
+
+save_figure_as(fig, 'all_cadences_pie')
+fig.show()
 ```
 
 ## Per dataset
@@ -174,8 +178,10 @@ px.pie(all_labels[all_labels.cadence.notna()], names="cadence", color="cadence",
 ```{code-cell}
 cadence_count_per_dataset = all_labels.groupby("corpus").cadence.value_counts()
 cadence_fraction_per_dataset = cadence_count_per_dataset / cadence_count_per_dataset.groupby(level=0).sum()
-px.bar(cadence_fraction_per_dataset.rename('count').reset_index(), x='corpus', y='count', color='cadence',
+fig = px.bar(cadence_fraction_per_dataset.rename('count').reset_index(), x='corpus', y='count', color='cadence',
       color_discrete_map=CADENCE_COLORS, category_orders=dict(dataset=chronological_order))
+save_figure_as(fig, 'all_cadences_corpuswise_stacked_bars')
+fig.show()
 ```
 
 ```{code-cell}
@@ -183,6 +189,8 @@ fig = px.pie(cadence_count_per_dataset.rename('count').reset_index(), names='cad
        facet_col='corpus', facet_col_wrap=4, height=2000, color_discrete_map=CADENCE_COLORS)
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_layout(**STD_LAYOUT)
+save_figure_as(fig, 'all_cadences_corpuswise_pies')
+fig.show()
 ```
 
 ## Per phrase
@@ -213,6 +221,7 @@ fig = px.bar(n_cad, x='corpus', y='counts', color='n_cadences', height=800, barm
              labels=dict(n_cadences="#cadences in a phrase"),
              category_orders=dict(dataset=chronological_order)
       )
+save_figure_as(fig, 'n_cadences_per_phrase_corpuswise_absolute_grouped_bars')
 fig.show()
 ```
 
@@ -250,6 +259,7 @@ fig = px.scatter(data[data.x.notna()], x='x', y="phrase_ix", color="marker", hov
                 labels=dict(marker='legend'), color_discrete_map=CADENCE_COLORS)
 fig.update_traces(marker_size=5)
 fig.update_yaxes(autorange="reversed")
+save_figure_as(fig, 'cadence_positions_within_all_phrases')
 fig.show()
 ```
 
@@ -290,6 +300,7 @@ fig = px.pie(ultima_root, names='numeral', values='counts',
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_traces(textposition='inside', textinfo='percent+label')
 fig.update_layout(**STD_LAYOUT)
+save_figure_as(fig, 'ultima_root_distributions_over_cadence_types_maj_min_pies')
 fig.show()
 ```
 
@@ -315,6 +326,7 @@ fig = px.pie(ultima_bass, names='bass_note', values='counts',
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_traces(textposition='inside', textinfo='percent+label')
 fig.update_layout(**STD_LAYOUT)
+save_figure_as(fig, 'ultima_degree_distributions_over_cadence_types_maj_min_pies')
 fig.show()
 ```
 
@@ -452,20 +464,26 @@ def plot_progressions(progressions, cut_at_stage=None):
 #### Chordal roots for the 3 last stages
 
 ```{code-cell}
-plot_progressions(numeral_prog_no_dups, cut_at_stage=3)
+fig = plot_progressions(numeral_prog_no_dups, cut_at_stage=3)
+save_figure_as(fig, 'last_3_roots_before_pacs_ending_on_1_sankey')
+fig.show()
 ```
 
 #### Complete chords for the last four stages in major
 
 ```{code-cell}
 pac_major = get_progressions('PAC', dict(numeral='I', localkey_is_minor=False), 'chord')
-plot_progressions(pac_major, cut_at_stage=4)
+fig = plot_progressions(pac_major, cut_at_stage=4)
+save_figure_as(fig, 'last_4_stages_before_pacs_in_major_sankey')
+fig.show()
 ```
 
 #### Bass degrees for the last 6 stages.
 
 ```{code-cell}
-plot_progressions(bass_prog_no_dups, cut_at_stage=7)
+fig = plot_progressions(bass_prog_no_dups, cut_at_stage=7)
+save_figure_as(fig, 'last_7_degrees_before_pacs_ending_on_1_sankey')
+fig.show()
 ```
 
 #### Bass degrees without accidentals
@@ -475,7 +493,9 @@ def remove_sd_accidentals(t):
     return tuple(map(lambda sd: sd[-1], t))
 
 bass_prog_no_acc_no_dup = bass_prog.map(remove_sd_accidentals).map(remove_immediate_duplicates)
-plot_progressions(bass_prog_no_acc_no_dup, cut_at_stage=7)
+fig = plot_progressions(bass_prog_no_acc_no_dup, cut_at_stage=7)
+save_figure_as(fig, 'last_7_degrees_before_pacs_ending_on_1_without_accdentals_sankey')
+fig.show()
 ```
 
 ### HCs ending on V
@@ -483,5 +503,7 @@ plot_progressions(bass_prog_no_acc_no_dup, cut_at_stage=7)
 ```{code-cell}
 half = get_progressions('HC', dict(numeral='V'), 'bass_note').map(ms3.fifths2sd)
 print(f"Progressions for {len(half)} cadences:")
-plot_progressions(half.map(remove_immediate_duplicates), cut_at_stage=5)
+fig = plot_progressions(half.map(remove_immediate_duplicates), cut_at_stage=5)
+save_figure_as(fig, 'last_7_degrees_before_hcs_ending_on_V_sankey')
+fig.show()
 ```
