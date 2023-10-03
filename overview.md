@@ -107,6 +107,8 @@ fig.update_traces(width=5)
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
 fig.update_traces(width=5)
+save_figure_as(fig, "pieces_timeline_bars")
+fig.show()
 ```
 
 ### Composition years histogram
@@ -127,6 +129,7 @@ fig.update_traces(xbins=dict(
 ))
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
+save_figure_as(fig, "pieces_timeline_histogram")
 fig.show()
 ```
 
