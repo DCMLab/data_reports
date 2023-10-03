@@ -24,7 +24,7 @@ import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
 from utils import cnt, plot_bigram_tables, prettify_counts, resolve_dir, sorted_gram_counts, transition_matrix, \
-  remove_none_labels, remove_non_chord_labels
+  remove_none_labels, remove_non_chord_labels, write_image
 import dimcat as dc
 
 pd.set_option('display.max_rows', 1000)
@@ -35,6 +35,8 @@ pd.set_option('display.max_columns', 500)
 from utils import OUTPUT_FOLDER
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "bass_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    write_image(fig, filename, directory, **kwargs)
 ```
 
 **Loading data**
@@ -53,10 +55,6 @@ df = labels.df.droplevel(0)
 df.head(20)
 ```
 
-```{code-cell} ipython3
-type(labels)
-```
-
 ## Bass degree unigrams
 As expressed by the annotation labels.
 
@@ -68,6 +66,7 @@ fig = px.bar(x=ms3.fifths2sd(bd.index.to_list()), y=bd.values,
              title="Distribution of all bass degrees",
              color_discrete_sequence =['grey']*len(bd))
 fig.update_xaxes(type='category')
+save_figure_as(fig, 'bass_degree_unigrams')
 fig.show()
 ```
 
@@ -80,6 +79,7 @@ fig = px.bar(bd_maj, x=ms3.fifths2sd(bd_maj.index.to_list(), minor=False), y=bd_
              title="Distribution of bass degrees in major segments",
              color_discrete_sequence =['blue']*len(bd_maj))
 fig.update_xaxes(type='category')
+save_figure_as(fig, 'bass_degree_unigrams_major')
 fig.show()
 ```
 
@@ -91,6 +91,7 @@ fig = px.bar(bd_min, x=ms3.fifths2sd(bd_min.index.to_list(), minor=True), y=bd_m
              title="Distribution of bass degrees in minor segments",
              color_discrete_sequence =['red']*len(bd_min))
 fig.update_xaxes(type='category')
+save_figure_as(fig, 'bass_degree_unigrams_minor')
 fig.show()
 ```
 
@@ -114,13 +115,12 @@ df['bass_degree'] = ms3.transform(df, ms3.fifths2sd, ['bass_note', 'localkey_is_
 
 ```{code-cell} ipython3
 segment_lengths = df.groupby('key_regions').size()
-# segment_lengths_aggr = segment_lengths.value_counts()
-# truncate_mask = segment_lengths_aggr.index < 500
-# segment_lengths_aggr_truncated = segment_lengths_aggr[truncate_mask]
-px.histogram(
+fig = px.histogram(
   segment_lengths,
   log_y=True,
   labels=dict(value='#labels in a key segment', count='number of key segments'),)
+save_figure_as(fig, 'n_labels_per_key_segment_histogram')
+fig.show()
 ```
 
 ```{code-cell} ipython3
@@ -180,6 +180,7 @@ fig = px.bar(x=ms3.fifths2iv(bar_data.index.to_list()), y=bar_data.values,
              title="Distribution of all bass intervals (within the same localkey)",
              color_discrete_sequence =['grey']*len(bd))
 fig.update_xaxes(type='category')
+save_figure_as(fig, "bass_progression_intervals_within_all_key_segments_sorted_bars")
 fig.show()
 ```
 
