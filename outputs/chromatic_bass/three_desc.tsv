@@ -591,252 +591,248 @@ bach_en_fr_suites	BWV812_03_Sarabande	59	19	19	55		0.5	1/4	1/4	3/4	2	1	V65/V	d	i
 bach_en_fr_suites	BWV812_03_Sarabande	60	19	19	111/2		1.0	3/8	3/8	3/4	2	1	V6/V	d	i		V6/V		V		6		V			M	True	True	(6, 3, 2)	()	2	6					G#
 bach_en_fr_suites	BWV812_03_Sarabande	61	19	19	113/2		0.5	5/8	5/8	3/4	2	1	V65/V	d	i		V65/V		V		65		V			Mm7	True	True	(6, 3, 0, 2)	()	2	6					G#
 bach_en_fr_suites	BWV812_03_Sarabande	62	20	20	57		3.0	0	0	3/4	2	1	V2	d	i		V2		V		2					Mm7	True	True	(-1, 1, 5, 2)	()	1	-1					G
-bach_solo	BWV1001_02_Fuga	304	91	91	360	360	0.5	0	0	2/2	1	1	III6(2)	g	i		III6(2)		III		6	2				M	True	True	(1, -2, -1)	()	-3	1					D
-bach_solo	BWV1001_02_Fuga	305	91	91	721/2	721/2	0.5	1/8	1/8	2/2	1	1	III6	g	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					D
-bach_solo	BWV1001_02_Fuga	306	91	91	361	361	0.5	1/4	1/4	2/2	1	1	II6(2)	g	i		II6(2)		II		6	2				M	True	True	(6, 3, -3)	()	2	6					C#
-bach_solo	BWV1001_02_Fuga	307	91	91	723/2	723/2	0.5	3/8	3/8	2/2	1	1	ii6	g	i		ii6		ii		6					m	True	True	(-1, 3, 2)	()	2	-1					C
-bach_solo	BWV1001_02_Fuga	308	91	91	362	362	0.5	1/2	1/2	2/2	1	1	I6(2)	g	i		I6(2)		I		6	2				M	True	True	(4, 1, 2)	()	0	4					B
-bach_solo	BWV1001_02_Fuga	309	91	91	725/2	725/2	0.5	5/8	5/8	2/2	1	1	i6	g	i		i6		i		6					m	True	True	(-3, 1, 0)	()	0	-3					Bb
-bach_solo	BWV1001_02_Fuga	310	91	91	363	363	0.5	3/4	3/4	2/2	1	1	VII6(2)	g	i		VII6(2)		VII		6	2				M	True	True	(2, -1, 0)	()	-2	2					A
-bach_solo	BWV1001_02_Fuga	311	91	91	727/2	727/2	0.5	7/8	7/8	2/2	1	1	vii6	g	i		vii6		vii		6					m	True	True	(-5, -1, -2)	()	-2	-5					Ab
-bach_solo	BWV1001_02_Fuga	312	92	92	364	364	0.5	0	0	2/2	1	1	VI6(2)	g	i		VI6(2)		VI		6	2				M	True	True	(0, -3, -2)	()	-4	0					G
-bach_solo	BWV1001_02_Fuga	313	92	92	729/2	729/2	0.5	1/8	1/8	2/2	1	1	VI6	g	i		VI6		VI		6					M	True	True	(0, -3, -4)	()	-4	0					G
-bach_solo	BWV1001_02_Fuga	314	92	92	365	365	0.5	1/4	1/4	2/2	1	1	V6(2)	g	i		V6(2)		V		6	2				M	True	True	(5, 2, -4)	()	1	5					F#
-bach_solo	BWV1001_02_Fuga	315	92	92	731/2	731/2	0.5	3/8	3/8	2/2	1	1	v6	g	i		v6		v		6					m	True	True	(-2, 2, 1)	()	1	-2					F
-bach_solo	BWV1001_02_Fuga	316	92	92	366	366	0.5	1/2	1/2	2/2	1	1	IV6(2)	g	i		IV6(2)		IV		6	2				M	True	True	(3, 0, 1)	()	-1	3					E
-bach_solo	BWV1001_02_Fuga	317	92	92	733/2	733/2	0.5	5/8	5/8	2/2	1	1	IV6	g	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					E
-bach_solo	BWV1001_04_Presto	172	113	113	168	168	1.5	0	0	3/8	1	1	viio43/IV	g	i		viio43/IV		vii	o	43		IV			o7	True	True	(-2, -5, 4, 1)	()	4	-2					F
-bach_solo	BWV1001_04_Presto	173	114	114	339/2	339/2	1.0	0	0	3/8	1	1	IV6	g	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					E
-bach_solo	BWV1001_04_Presto	174	114	114	341/2	341/2	0.5	1/4	1/4	3/8	1	1	viio/VII	g	i		viio/VII		vii	o			VII			o	True	True	(3, 0, -3)	()	3	3					E
-bach_solo	BWV1001_04_Presto	175	115	115	171	171	1.5	0	0	3/8	1	1	vii%43/III	g	i		vii%43/III		vii	%	43		III			%7	True	True	(-4, 0, 2, -1)	()	2	-4					Eb
-bach_solo	BWV1001_04_Presto	176	116	116	345/2	345/2	1.0	0	0	3/8	1	1	III6	g	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					D
-bach_solo	BWV1001_04_Presto	177	116	116	347/2	347/2	0.5	1/4	1/4	3/8	1	1	viio/VI	g	i		viio/VI		vii	o			VI			o	True	True	(1, -2, -5)	()	1	1					D
-bach_solo	BWV1002_03_Corrente	74	57	55	329/2	329/2	1.0	1/2	1/2	3/4	1	1	i6	b	i		i6		i		6					m	True	True	(-3, 1, 0)	()	0	-3					D
-bach_solo	BWV1002_03_Corrente	75	58	56	331/2	331/2	3.0	0	0	3/4	1	1	ii%7	b	i		ii%7		ii	%	7					%7	True	True	(2, -1, -4, 0)	()	2	2					C#
-bach_solo	BWV1002_03_Corrente	76	59	57	337/2	337/2	1.0	0	0	3/4	1	1	viio64/VI	b	i		viio64/VI		vii	o	64		VI			o	True	True	(-5, 1, -2)	()	1	-5					C
-bach_solo	BWV1002_03_Corrente	77	59	57	339/2	339/2	1.0	1/4	1/4	3/4	1	1	VI6	b	i		VI6		VI		6					M	True	True	(0, -3, -4)	()	-4	0					B
-bach_solo	BWV1002_04_Double	96	66	64	765/4	765/4	1.0	1/2	1/2	3/4	1	1	iio6	b	i		iio6		ii	o	6					o	True	True	(-1, -4, 2)	()	2	-1					E
-bach_solo	BWV1002_04_Double	97	67	65	769/4	769/4	2.0	0	0	3/4	1	1	V65/iv	b	i		V65/iv		V		65		iv			Mm7	True	True	(4, 1, -2, 0)	()	0	4					D#
-bach_solo	BWV1002_04_Double	98	67	65	777/4	777/4	1.0	1/2	1/2	3/4	1	1	viio64/VII	b	i		viio64/VII		vii	o	64		VII			o	True	True	(-3, 3, 0)	()	3	-3					D
-bach_solo	BWV1002_04_Double	99	68	66	781/4	781/4	2.0	0	0	3/4	1	1	V65/III	b	i		V65/III		V		65		III			Mm7	True	True	(2, -1, -4, -2)	()	-2	2					C#
-bach_solo	BWV1002_04_Double	100	68	66	789/4	789/4	1.0	1/2	1/2	3/4	1	1	viio64/VI	b	i		viio64/VI		vii	o	64		VI			o	True	True	(-5, 1, -2)	()	1	-5					C
-bach_solo	BWV1002_04_Double	101	69	67	793/4	793/4	2.0	0	0	3/4	1	1	VIM65	b	i		VIM65		VI	M	65					MM7	True	True	(0, -3, 1, -4)	()	-4	0					B
-bach_solo	BWV1002_04_Double	102	69	67	801/4	801/4	1.0	1/2	1/2	3/4	1	1	iv64	b	i		iv64		iv		64					m	True	True	(0, -1, -4)	()	-1	0					B
-bach_solo	BWV1002_04_Double	103	70	68	805/4	805/4	2.0	0	0	3/4	1	1	V65	b	i		V65		V		65					Mm7	True	True	(5, 2, -1, 1)	()	1	5					A#
-bach_solo	BWV1002_04_Double	104	70	68	813/4	813/4	1.0	1/2	1/2	3/4	1	1	#viio64/iv	b	i		#viio64/iv		#vii	o	64		iv			o	True	True	(-2, 4, 1)	()	4	-2					A
-bach_solo	BWV1002_04_Double	105	71	69	817/4	817/4	3.0	0	0	3/4	1	1	vii%7/VII	b	i		vii%7/VII		vii	%	7		VII			%7	True	True	(3, 0, -3, 1)	()	3	3					G#
-bach_solo	BWV1002_08_Double	69	44	42	335/2	335/2	2.0	1/2	1/2	2/2	1	1	#viio(2)	b	i		#viio(2)		#vii	o		2				o	True	True	(0, 2, -1)	()	5	0					B
-bach_solo	BWV1002_08_Double	70	45	43	339/2	339/2	1.0	0	0	2/2	1	1	#viio	b	i		#viio		#vii	o						o	True	True	(5, 2, -1)	()	5	5					A#
-bach_solo	BWV1002_08_Double	71	45	43	341/2	341/2	1.0	1/4	1/4	2/2	1	1	VII	b	i		VII		VII							M	True	True	(-2, 2, -1)	()	-2	-2					A
-bach_solo	BWV1002_08_Double	72	45	43	343/2	343/2	1.0	1/2	1/2	2/2	1	1	IV6	b	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					G#
-bach_solo	BWV1002_08_Double	73	45	43	345/2	345/2	1.0	3/4	3/4	2/2	1	1	iv6	b	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					G
-bach_solo	BWV1003_02_Fuga	7	5	5	8	8	1.0	0	0	2/4	1	1	V6	a	i		V6		V		6					M	True	True	(5, 2, 1)	()	1	5					G#
-bach_solo	BWV1003_02_Fuga	8	5	5	9	9	1.0	1/4	1/4	2/4	1	1	v6	a	i		v6		v		6					m	True	True	(-2, 2, 1)	()	1	-2					G
-bach_solo	BWV1003_02_Fuga	9	6	6	10	10	1.0	0	0	2/4	1	1	IV6	a	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					F#
-bach_solo	BWV1003_02_Fuga	10	6	6	11	11	1.0	1/4	1/4	2/4	1	1	iv6	a	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					F
-bach_solo	BWV1003_02_Fuga	11	7	7	12	12	1.0	0	0	2/4	1	1	V	a	i		V		V							M	True	True	(1, 5, 2)	()	1	1					E
-bach_solo	BWV1003_02_Fuga	44	26	26	51	51	1.0	1/4	1/4	2/4	1	1	iv6	a	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					F
-bach_solo	BWV1003_02_Fuga	45	27	27	52	52	1.0	0	0	2/4	1	1	III6	a	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					E
-bach_solo	BWV1003_02_Fuga	46	27	27	53	53	1.0	1/4	1/4	2/4	1	1	iii6	a	i		iii6		iii		6					m	True	True	(-6, -2, -3)	()	-3	-6					Eb
-bach_solo	BWV1003_02_Fuga	47	28	28	54	54	1.0	0	0	2/4	1	1	ii6	a	i		ii6		ii		6					m	True	True	(-1, 3, 2)	()	2	-1					D
-bach_solo	BWV1003_02_Fuga	48	28	28	55	55	1.0	1/4	1/4	2/4	1	1	v6	a	i		v6		v		6					m	True	True	(-2, 2, 1)	()	1	-2					G
-bach_solo	BWV1003_02_Fuga	49	29	29	56	56	1.0	0	0	2/4	1	1	IV6	a	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					F#
-bach_solo	BWV1003_02_Fuga	50	29	29	57	57	1.0	1/4	1/4	2/4	1	1	iv6	a	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					F
-bach_solo	BWV1003_02_Fuga	51	30	30	58	58	0.5	0	0	2/4	1	1	III6	a	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					E
-bach_solo	BWV1003_02_Fuga	131	75	75	148	148	1.0	0	0	2/4	1	1	IV	a	v		IV		IV							M	True	True	(-1, 3, 0)	()	-1	-1					A
-bach_solo	BWV1003_02_Fuga	132	75	75	149	149	1.0	1/4	1/4	2/4	1	1	iv	a	v		iv		iv							m	True	True	(-1, -4, 0)	()	-1	-1					A
-bach_solo	BWV1003_02_Fuga	133	76	76	150	150	1.0	0	0	2/4	1	1	I6	a	v		I6		I		6					M	True	True	(4, 1, 0)	()	0	4					G#
-bach_solo	BWV1003_02_Fuga	134	76	76	151	151	1.0	1/4	1/4	2/4	1	1	i6	a	v		i6		i		6					m	True	True	(-3, 1, 0)	()	0	-3					G
-bach_solo	BWV1003_02_Fuga	135	77	77	152	152	1.0	0	0	2/4	1	1	VII6	a	v		VII6		VII		6					M	True	True	(2, -1, -2)	()	-2	2					F#
-bach_solo	BWV1003_02_Fuga	136	77	77	153	153	1.0	1/4	1/4	2/4	1	1	vii6	a	v		vii6		vii		6					m	True	True	(-5, -1, -2)	()	-2	-5					F
-bach_solo	BWV1003_02_Fuga	139	79	79	156	156	2.0	0	0	2/4	1	1	III.V	a	III		V		V							M	True	False	(1, 5, 2)	()	1	1					G
-bach_solo	BWV1003_02_Fuga	140	80	80	158	158	1.0	0	0	2/4	1	1	II6	a	III		II6		II		6					M	True	False	(6, 3, 2)	()	2	6					F#
-bach_solo	BWV1003_02_Fuga	141	80	80	159	159	1.0	1/4	1/4	2/4	1	1	ii6	a	III		ii6		ii		6					m	True	False	(-1, 3, 2)	()	2	-1					F
-bach_solo	BWV1003_02_Fuga	142	81	81	160	160	1.5	0	0	2/4	1	1	I6	a	III		I6		I		6					M	True	False	(4, 1, 0)	()	0	4					E
-bach_solo	BWV1003_02_Fuga	380	232	232	462	462	2.0	0	0	2/4	1	1	i}{	a	iv		i		i						}{	m	True	True	(0, -3, 1)	()	0	0					D
-bach_solo	BWV1003_02_Fuga	381	233	233	464	464	1.0	0	0	2/4	1	1	V6	a	iv		V6		V		6					M	True	True	(5, 2, 1)	()	1	5					C#
-bach_solo	BWV1003_02_Fuga	382	233	233	465	465	1.0	1/4	1/4	2/4	1	1	v6	a	iv		v6		v		6					m	True	True	(-2, 2, 1)	()	1	-2					C
-bach_solo	BWV1003_02_Fuga	383	234	234	466	466	2.0	0	0	2/4	1	1	IV6	a	iv		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					B
-bach_solo	BWV1003_02_Fuga	386	236	236	470	470	2.0	0	0	2/4	1	1	VII	a	iv		VII		VII							M	True	True	(-2, 2, -1)	()	-2	-2					C
-bach_solo	BWV1003_02_Fuga	387	237	237	472	472	1.0	0	0	2/4	1	1	IV6	a	iv		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					B
-bach_solo	BWV1003_02_Fuga	388	237	237	473	473	1.0	1/4	1/4	2/4	1	1	iv6	a	iv		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					Bb
-bach_solo	BWV1003_02_Fuga	389	238	238	474	474	2.0	0	0	2/4	1	1	III6	a	iv		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					A
-bach_solo	BWV1003_04_Allegro	195	56	56	220	220	1.0	0	0	2/2	1	1	V7/iv	a	i		V7/iv		V		7		iv			Mm7	True	True	(0, 4, 1, -2)	()	0	0					A
-bach_solo	BWV1003_04_Allegro	196	56	56	221	221	1.0	1/4	1/4	2/2	1	1	IV64	a	i		IV64		IV		64					M	True	True	(0, -1, 3)	()	-1	0					A
-bach_solo	BWV1003_04_Allegro	197	56	56	222	222	1.0	1/2	1/2	2/2	1	1	#viio7	a	i		#viio7		#vii	o	7					o7	True	True	(5, 2, -1, -4)	()	5	5					G#
-bach_solo	BWV1003_04_Allegro	198	56	56	223	223	1.0	3/4	3/4	2/2	1	1	III64	a	i		III64		III		64					M	True	True	(-2, -3, 1)	()	-3	-2					G
-bach_solo	BWV1003_04_Allegro	199	57	57	224	224	1.0	0	0	2/2	1	1	#vi%7	a	i		#vi%7		#vi	%	7					%7	True	True	(3, 0, -3, 1)	()	3	3					F#
-bach_solo	BWV1003_04_Allegro	200	57	57	225	225	1.0	1/4	1/4	2/2	1	1	iv6	a	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					F
-bach_solo	BWV1003_04_Allegro	201	57	57	226	226	2.0	1/2	1/2	2/2	1	1	V7	a	i		V7		V		7					Mm7	True	True	(1, 5, 2, -1)	()	1	1					E
-bach_solo	BWV1003_04_Allegro	202	58	58	228	228	1.0	0	0	2/2	1	1	V(64)	a	i		V(64)		V			64				M	True	True	(1, 0, -3)	()	1	1					E
-bach_solo	BWV1003_04_Allegro	203	58	58	229	229	0.5	1/4	1/4	2/2	1	1	V(4)	a	i		V(4)		V			4				M	True	True	(1, 0, 2)	()	1	1					E
-bach_solo	BWV1003_04_Allegro	204	58	58	459/2	459/2	0.5	3/8	3/8	2/2	1	1	V	a	i		V		V							M	True	True	(1, 5, 2)	()	1	1					E
-bach_solo	BWV1005_02_Fuga	6	5	4	16	16	2.0	1/2	1/2	2/2	1	1	vi	C	I		vi		vi							m	False	False	(3, 0, 4)	()	3	3					A
-bach_solo	BWV1005_02_Fuga	7	6	5	18	18	2.0	0	0	2/2	1	1	III6	C	I		III6		III		6					M	False	False	(8, 5, 4)	()	4	8					G#
-bach_solo	BWV1005_02_Fuga	8	6	5	20	20	1.0	1/2	1/2	2/2	1	1	iii6	C	I		iii6		iii		6					m	False	False	(1, 5, 4)	()	4	1					G
-bach_solo	BWV1005_02_Fuga	9	6	5	21	21	1.0	3/4	3/4	2/2	1	1	viio64/II	C	I		viio64/II		vii	o	64		II			o	False	False	(1, 7, 4)	()	7	1					G
-bach_solo	BWV1005_02_Fuga	10	7	6	22	22	2.0	0	0	2/2	1	1	II6	C	I		II6		II		6					M	False	False	(6, 3, 2)	()	2	6					F#
-bach_solo	BWV1005_02_Fuga	11	7	6	24	24	1.0	1/2	1/2	2/2	1	1	ii6	C	I		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					F
-bach_solo	BWV1005_02_Fuga	12	7	6	25	25	1.0	3/4	3/4	2/2	1	1	viio64	C	I		viio64		vii	o	64					o	False	False	(-1, 5, 2)	()	5	-1					F
-bach_solo	BWV1005_02_Fuga	13	8	7	26	26	1.0	0	0	2/2	1	1	I6	C	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					E
-bach_solo	BWV1005_02_Fuga	62	30	29	114	114	2.0	0	0	2/2	1	1	I	C	I		I		I							M	False	False	(0, 4, 1)	()	0	0					C
-bach_solo	BWV1005_02_Fuga	63	30	29	116	116	2.0	1/2	1/2	2/2	1	1	viio64/V	C	I		viio64/V		vii	o	64		V			o	False	False	(0, 6, 3)	()	6	0					C
-bach_solo	BWV1005_02_Fuga	64	31	30	118	118	2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
-bach_solo	BWV1005_02_Fuga	65	31	30	120	120	2.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
-bach_solo	BWV1005_02_Fuga	66	32	31	122	122	2.0	0	0	2/2	1	1	VI	C	I		VI		VI							M	False	False	(3, 7, 4)	()	3	3					A
-bach_solo	BWV1005_02_Fuga	67	32	31	124	124	1.0	1/2	1/2	2/2	1	1	vi	C	I		vi		vi							m	False	False	(3, 0, 4)	()	3	3					A
-bach_solo	BWV1005_02_Fuga	68	32	31	125	125	1.0	3/4	3/4	2/2	1	1	viio6/V	C	I		viio6/V		vii	o	6		V			o	False	False	(3, 0, 6)	()	6	3					A
-bach_solo	BWV1005_02_Fuga	89	45	44	177	177	1.0	3/4	3/4	2/2	1	1	v64	C	I		v64		v		64					m	False	False	(2, 1, -2)	()	1	2					D
-bach_solo	BWV1005_02_Fuga	90	46	45	178	178	2.0	0	0	2/2	1	1	VI6	C	I		VI6		VI		6					M	False	False	(7, 4, 3)	()	3	7					C#
-bach_solo	BWV1005_02_Fuga	91	46	45	180	180	1.0	1/2	1/2	2/2	1	1	vi6	C	I		vi6		vi		6					m	False	False	(0, 4, 3)	()	3	0					C
-bach_solo	BWV1005_02_Fuga	92	46	45	181	181	1.0	3/4	3/4	2/2	1	1	vii%43/V	C	I		vii%43/V		vii	%	43		V			%7	False	False	(0, 4, 6, 3)	()	6	0					C
-bach_solo	BWV1005_02_Fuga	93	47	46	182	182	2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
-bach_solo	BWV1005_02_Fuga	94	47	46	184	184	1.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
-bach_solo	BWV1005_02_Fuga	95	47	46	185	185	1.0	3/4	3/4	2/2	1	1	viio64/IV	C	I		viio64/IV		vii	o	64		IV			o	False	False	(-2, 4, 1)	()	4	-2					Bb
-bach_solo	BWV1005_02_Fuga	96	48	47	186	186	1.0	0	0	2/2	1	1	IV6(14)	C	I		IV6(14)		IV		6	14				M	False	False	(3, 0, -1)	(4,)	-1	3					A
-bach_solo	BWV1005_02_Fuga	97	48	47	187	187	3.0	1/4	1/4	2/2	1	1	IV6	C	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					A
-bach_solo	BWV1005_02_Fuga	214	115	114	454	454	2.0	0	0	2/2	1	1	II6	C	V		II6		II		6					M	False	False	(6, 3, 2)	()	2	6					C#
-bach_solo	BWV1005_02_Fuga	215	115	114	456	456	2.0	1/2	1/2	2/2	1	1	ii6	C	V		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					C
-bach_solo	BWV1005_02_Fuga	216	116	115	458	458	2.0	0	0	2/2	1	1	I6	C	V		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					B
-bach_solo	BWV1005_02_Fuga	217	116	115	460	460	2.0	1/2	1/2	2/2	1	1	i6	C	V		i6		i		6					m	False	False	(-3, 1, 0)	()	0	-3					Bb
-bach_solo	BWV1005_02_Fuga	218	117	116	462	462	2.0	0	0	2/2	1	1	bVII6	C	V		bVII6		bVII		6					M	False	False	(2, -1, -2)	()	-2	2					A
-bach_solo	BWV1005_02_Fuga	345	173	172	686	686	2.0	0	0	2/2	1	1	II6	C	V		II6		II		6					M	False	False	(6, 3, 2)	()	2	6					C#
-bach_solo	BWV1005_02_Fuga	346	173	172	688	688	1.0	1/2	1/2	2/2	1	1	ii6	C	V		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					C
-bach_solo	BWV1005_02_Fuga	347	173	172	689	689	1.0	3/4	3/4	2/2	1	1	viio64	C	V		viio64		vii	o	64					o	False	False	(-1, 5, 2)	()	5	-1					C
-bach_solo	BWV1005_02_Fuga	348	174	173	690	690	2.0	0	0	2/2	1	1	I6	C	V		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					B
-bach_solo	BWV1005_02_Fuga	349	174	173	692	692	1.0	1/2	1/2	2/2	1	1	i6	C	V		i6		i		6					m	False	False	(-3, 1, 0)	()	0	-3					Bb
-bach_solo	BWV1005_02_Fuga	350	174	173	693	693	1.0	3/4	3/4	2/2	1	1	viio64/bVII	C	V		viio64/bVII		vii	o	64		bVII			o	False	False	(-3, 3, 0)	()	3	-3					Bb
-bach_solo	BWV1005_02_Fuga	351	175	174	694	694	3.0	0	0	2/2	1	1	bVII6	C	V		bVII6		bVII		6					M	False	False	(2, -1, -2)	()	-2	2					A
-bach_solo	BWV1005_02_Fuga	366	181	180	718	718	2.0	0	0	2/2	1	1	VI6	C	V		VI6		VI		6					M	False	False	(7, 4, 3)	()	3	7					G#
-bach_solo	BWV1005_02_Fuga	367	181	180	720	720	1.0	1/2	1/2	2/2	1	1	vi6	C	V		vi6		vi		6					m	False	False	(0, 4, 3)	()	3	0					G
-bach_solo	BWV1005_02_Fuga	368	181	180	721	721	1.0	3/4	3/4	2/2	1	1	viio64/V	C	V		viio64/V		vii	o	64		V			o	False	False	(0, 6, 3)	()	6	0					G
-bach_solo	BWV1005_02_Fuga	369	182	181	722	722	2.0	0	0	2/2	1	1	V6	C	V		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					F#
-bach_solo	BWV1005_02_Fuga	370	182	181	724	724	1.0	1/2	1/2	2/2	1	1	v6	C	V		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					F
-bach_solo	BWV1005_02_Fuga	371	182	181	725	725	1.0	3/4	3/4	2/2	1	1	viio64/IV	C	V		viio64/IV		vii	o	64		IV			o	False	False	(-2, 4, 1)	()	4	-2					F
-bach_solo	BWV1005_02_Fuga	372	183	182	726	726	3.0	0	0	2/2	1	1	IV6	C	V		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					E
-bach_solo	BWV1005_02_Fuga	418	197	196	782	782	2.0	0	0	2/2	1	1	IV6	C	V	V	IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					E
-bach_solo	BWV1005_02_Fuga	419	197	196	784	784	2.0	1/2	1/2	2/2	1	1	iv6	C	V	V	iv6		iv		6					m	False	False	(-4, 0, -1)	()	-1	-4					Eb
-bach_solo	BWV1005_02_Fuga	420	198	197	786	786	1.0	0	0	2/2	1	1	V(64)	C	V	V	V(64)		V			64				M	False	False	(1, 0, 4)	()	1	1					D
-bach_solo	BWV1005_02_Fuga	421	198	197	787	787	1.0	1/4	1/4	2/2	1	1	V7	C	V	V	V7		V		7					Mm7	False	False	(1, 5, 2, -1)	()	1	1					D
-bach_solo	BWV1005_02_Fuga	422	198	197	788	788	2.0	1/2	1/2	2/2	1	1	V(64)	C	V	V	V(64)		V			64				M	False	False	(1, 0, 4)	()	1	1					D
-bach_solo	BWV1005_02_Fuga	423	199	198	790	790	1.0	0	0	2/2	1	1	vii%7/V	C	V	V	vii%7/V		vii	%	7		V			%7	False	False	(6, 3, 0, 4)	()	6	6					C#
-bach_solo	BWV1005_02_Fuga	553	267	266	1062	1062	3.0	0	0	2/2	1	1	ii6	C	I		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					F
-bach_solo	BWV1005_02_Fuga	554	267	266	1065	1065	1.0	3/4	3/4	2/2	1	1	viio64	C	I		viio64		vii	o	64					o	False	False	(-1, 5, 2)	()	5	-1					F
-bach_solo	BWV1005_02_Fuga	555	268	267	1066	1066	2.0	0	0	2/2	1	1	I6	C	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					E
-bach_solo	BWV1005_02_Fuga	556	268	267	1068	1068	1.0	1/2	1/2	2/2	1	1	i6	C	I		i6		i		6					m	False	False	(-3, 1, 0)	()	0	-3					Eb
-bach_solo	BWV1005_02_Fuga	557	268	267	1069	1069	1.0	3/4	3/4	2/2	1	1	viio64/bVII	C	I		viio64/bVII		vii	o	64		bVII			o	False	False	(-3, 3, 0)	()	3	-3					Eb
-bach_solo	BWV1005_02_Fuga	558	269	268	1070	1070	2.0	0	0	2/2	1	1	bVII6	C	I		bVII6		bVII		6					M	False	False	(2, -1, -2)	()	-2	2					D
-bach_solo	BWV1005_02_Fuga	559	269	268	1072	1072	1.0	1/2	1/2	2/2	1	1	V/v	C	I		V/v		V				v			M	False	False	(2, 6, 3)	()	2	2					D
-bach_solo	BWV1005_02_Fuga	560	269	268	1073	1073	1.0	3/4	3/4	2/2	1	1	v64	C	I		v64		v		64					m	False	False	(2, 1, -2)	()	1	2					D
-bach_solo	BWV1005_02_Fuga	618	290	289	1156	1156	2.0	1/2	1/2	2/2	1	1	I	C	I		I		I							M	False	False	(0, 4, 1)	()	0	0					C
-bach_solo	BWV1005_02_Fuga	619	291	290	1158	1158	2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
-bach_solo	BWV1005_02_Fuga	620	291	290	1160	1160	1.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
-bach_solo	BWV1005_02_Fuga	621	291	290	1161	1161	1.0	3/4	3/4	2/2	1	1	viio64/IV	C	I		viio64/IV		vii	o	64		IV			o	False	False	(-2, 4, 1)	()	4	-2					Bb
-bach_solo	BWV1005_02_Fuga	622	292	291	1162	1162	1.0	0	0	2/2	1	1	IV6	C	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					A
-bach_solo	BWV1005_02_Fuga	682	318	317	1266	1266	2.0	0	0	2/2	1	1	I	C	I		I		I							M	False	False	(0, 4, 1)	()	0	0					C
-bach_solo	BWV1005_02_Fuga	683	318	317	1268	1268	2.0	1/2	1/2	2/2	1	1	viio64/V	C	I		viio64/V		vii	o	64		V			o	False	False	(0, 6, 3)	()	6	0					C
-bach_solo	BWV1005_02_Fuga	684	319	318	1270	1270	2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
-bach_solo	BWV1005_02_Fuga	685	319	318	1272	1272	2.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
-bach_solo	BWV1005_02_Fuga	686	320	319	1274	1274	2.0	0	0	2/2	1	1	VI	C	I		VI		VI							M	False	False	(3, 7, 4)	()	3	3					A
-bach_solo	BWV1005_02_Fuga	687	320	319	1276	1276	1.0	1/2	1/2	2/2	1	1	vi	C	I		vi		vi							m	False	False	(3, 0, 4)	()	3	3					A
-bach_solo	BWV1005_02_Fuga	709	333	332	1329	1329	1.0	3/4	3/4	2/2	1	1	v64	C	I		v64		v		64					m	False	False	(2, 1, -2)	()	1	2					D
-bach_solo	BWV1005_02_Fuga	710	334	333	1330	1330	2.0	0	0	2/2	1	1	VI6	C	I		VI6		VI		6					M	False	False	(7, 4, 3)	()	3	7					C#
-bach_solo	BWV1005_02_Fuga	711	334	333	1332	1332	1.0	1/2	1/2	2/2	1	1	vi6	C	I		vi6		vi		6					m	False	False	(0, 4, 3)	()	3	0					C
-bach_solo	BWV1005_02_Fuga	712	334	333	1333	1333	1.0	3/4	3/4	2/2	1	1	vii%43/V	C	I		vii%43/V		vii	%	43		V			%7	False	False	(0, 4, 6, 3)	()	6	0					C
-bach_solo	BWV1005_02_Fuga	713	335	334	1334	1334	2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
-bach_solo	BWV1005_02_Fuga	714	335	334	1336	1336	1.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
-bach_solo	BWV1005_02_Fuga	715	335	334	1337	1337	1.0	3/4	3/4	2/2	1	1	viio64/IV	C	I		viio64/IV		vii	o	64		IV			o	False	False	(-2, 4, 1)	()	4	-2					Bb
-bach_solo	BWV1005_02_Fuga	716	336	335	1338	1338	1.0	0	0	2/2	1	1	IV6(14)	C	I		IV6(14)		IV		6	14				M	False	False	(3, 0, -1)	(4,)	-1	3					A
-bach_solo	BWV1005_02_Fuga	717	336	335	1339	1339	3.0	1/4	1/4	2/2	1	1	IV6	C	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					A
-bach_solo	BWV1008_04_Sarabande	26	17	17	48	48	1.0	0	0	3/4	1	1	viio64/III{	d	i		viio64/III		vii	o	64		III		{	o	True	True	(-4, 2, -1)	()	2	-4					Bb
-bach_solo	BWV1008_04_Sarabande	27	17	17	49	49	2.0	1/4	1/4	3/4	1	1	III6	d	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					A
-bach_solo	BWV1008_04_Sarabande	28	18	18	51	51	1.0	0	0	3/4	1	1	viio64/bII	d	i		viio64/bII		vii	o	64		bII			o	True	True	(-6, 0, -3)	()	0	-6					Ab
-bach_solo	BWV1008_04_Sarabande	29	18	18	52	52	2.0	1/4	1/4	3/4	1	1	bII6	d	i		bII6		bII		6					M	True	True	(-1, -4, -5)	()	-5	-1					G
-bach_solo	BWV1009_01_Prelude	100	77	77	228	228	3.0	0	0	3/4	1	1	V2	C	I		V2		V		2					Mm7	False	False	(-1, 1, 5, 2)	()	1	-1					F
-bach_solo	BWV1009_01_Prelude	101	78	78	231	231	3.0	0	0	3/4	1	1	I6	C	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					E
-bach_solo	BWV1009_01_Prelude	102	79	79	234	234	3.0	0	0	3/4	1	1	vi%43	C	I		vi%43		vi	%	43					%7	False	False	(-3, 1, 3, 0)	()	3	-3					Eb
-bach_solo	BWV1009_01_Prelude	103	80	80	237	237	3.0	0	0	3/4	1	1	V43	C	I		V43		V		43					Mm7	False	False	(2, -1, 1, 5)	()	1	2					D
-bach_solo	BWV1012_01_Prelude	178	98	98	585	585	1.5	3/4	3/4	12/8	1	1	viio6/V	D	I		viio6/V		vii	o	6		V			o	False	False	(3, 0, 6)	()	6	3					B
-bach_solo	BWV1012_01_Prelude	179	98	98	1173/2	1173/2	1.5	9/8	9/8	12/8	1	1	iv6	D	I		iv6		iv		6					m	False	False	(-4, 0, -1)	()	-1	-4					Bb
-bach_solo	BWV1012_01_Prelude	180	99	99	588	588	1.5	0	0	12/8	1	1	I64	D	I		I64		I		64					M	False	False	(1, 0, 4)	()	0	1					A
-bach_solo	BWV1012_01_Prelude	181	99	99	1179/2	1179/2	1.5	3/8	3/8	12/8	1	1	viio7/V	D	I		viio7/V		vii	o	7		V			o7	False	False	(6, 3, 0, -3)	()	6	6					G#
-bach_solo	BWV1013_01_Allemande	46	17	17	64	64	0.5	0	0	4/4	1	1	V6	a	v		V6		V		6					M	True	True	(5, 2, 1)	()	1	5					D#
-bach_solo	BWV1013_01_Allemande	47	17	17	129/2	129/2	0.5	1/8	1/8	4/4	1	1	viio64/IV	a	v		viio64/IV		vii	o	64		IV			o	True	True	(-2, 4, 1)	()	4	-2					D
-bach_solo	BWV1013_01_Allemande	48	17	17	65	65	0.5	1/4	1/4	4/4	1	1	IV6	a	v		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					C#
-bach_solo	BWV1013_01_Allemande	49	17	17	131/2	131/2	0.5	3/8	3/8	4/4	1	1	viio64/III	a	v		viio64/III		vii	o	64		III			o	True	True	(-4, 2, -1)	()	2	-4					C
-bach_solo	BWV1013_01_Allemande	50	17	17	66	66	0.5	1/2	1/2	4/4	1	1	III6	a	v		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					B
-bach_solo	BWV1013_01_Allemande	51	17	17	133/2	133/2	0.5	5/8	5/8	4/4	1	1	viio64/bII	a	v		viio64/bII		vii	o	64		bII			o	True	True	(-6, 0, -3)	()	0	-6					Bb
-bach_solo	BWV1013_01_Allemande	52	17	17	67	67	0.5	3/4	3/4	4/4	1	1	bII6	a	v		bII6		bII		6					M	True	True	(-1, -4, -5)	()	-5	-1					A
-bach_solo	BWV1013_01_Allemande	53	17	17	135/2	135/2	0.5	7/8	7/8	4/4	1	1	#viio64	a	v		#viio64		#vii	o	64					o	True	True	(-1, 5, 2)	()	5	-1					A
-bach_solo	BWV1013_01_Allemande	127	42	40	160	164	0.5	0	0	4/4	1	1	V6	a	i		V6		V		6					M	True	True	(5, 2, 1)	()	1	5					G#
-bach_solo	BWV1013_01_Allemande	128	42	40	321/2	329/2	0.5	1/8	1/8	4/4	1	1	viio64/IV	a	i		viio64/IV		vii	o	64		IV			o	True	True	(-2, 4, 1)	()	4	-2					G
-bach_solo	BWV1013_01_Allemande	129	42	40	161	165	0.5	1/4	1/4	4/4	1	1	IV6	a	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					F#
-bach_solo	BWV1013_01_Allemande	130	42	40	323/2	331/2	0.5	3/8	3/8	4/4	1	1	viio64/III	a	i		viio64/III		vii	o	64		III			o	True	True	(-4, 2, -1)	()	2	-4					F
-bach_solo	BWV1013_01_Allemande	131	42	40	162	166	0.5	1/2	1/2	4/4	1	1	III6	a	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					E
-bach_solo	BWV1013_01_Allemande	132	42	40	325/2	333/2	0.5	5/8	5/8	4/4	1	1	viio64/bII	a	i		viio64/bII		vii	o	64		bII			o	True	True	(-6, 0, -3)	()	0	-6					Eb
-bach_solo	BWV1013_01_Allemande	133	42	40	163	167	0.5	3/4	3/4	4/4	1	1	bII6	a	i		bII6		bII		6					M	True	True	(-1, -4, -5)	()	-5	-1					D
-bach_solo	BWV1013_01_Allemande	134	42	40	327/2	335/2	0.5	7/8	7/8	4/4	1	1	#viio64	a	i		#viio64		#vii	o	64					o	True	True	(-1, 5, 2)	()	5	-1					D
-bach_solo	BWV1013_04_BourreeAnglaise	86	64	63	249/2	249/2	1.0	0	0	2/4	1	1	iv{	a	i		iv		iv						{	m	True	True	(-1, -4, 0)	()	-1	-1					D
-bach_solo	BWV1013_04_BourreeAnglaise	87	64	63	251/2	251/2	1.0	1/4	1/4	2/4	1	1	#viio/iv	a	i		#viio/iv		#vii	o			iv			o	True	True	(4, 1, -2)	()	4	4					C#
-bach_solo	BWV1013_04_BourreeAnglaise	88	65	64	253/2	253/2	1.0	0	0	2/4	1	1	#vio64	a	i		#vio64		#vi	o	64					o	True	True	(-3, 3, 0)	()	3	-3					C
-bach_solo	BWV1013_04_BourreeAnglaise	89	65	64	255/2	255/2	1.0	1/4	1/4	2/4	1	1	iio	a	i		iio		ii	o						o	True	True	(2, -1, -4)	()	2	2					B
-bartok_bagatelles	op06n02	3	4	4	12	12	2.0	0	0	2/2	2	1	I6(+6)	Db	I		I6(+6)		I		6	+6				M	False	False	(4, 1, 0)	(3,)	0	4					F
-bartok_bagatelles	op06n02	4	4	4	14	14	1.5	1/2	1/2	2/2	2	1	ii(#74b2)	Db	I		ii(#74b2)		ii			#74b2				m	False	False	(-3, 1, 3)	(7,)	2	-3					Fb
-bartok_bagatelles	op06n02	5	4	4	31/2	31/2	0.5	7/8	7/8	2/2	2	1	ii(4)	Db	I		ii(4)		ii			4				m	False	False	(2, 1, 3)	()	2	2					Eb
-bartok_bagatelles	op06n02	6	5	5	16	16	2.0	0	0	2/2	2	1	I(+6b2)	Db	I		I(+6b2)		I			+6b2				M	False	False	(-5, 4, 1)	(3,)	0	-5					Ebb
-bartok_bagatelles	op06n02	7	5	5	18	18	2.0	1/2	1/2	2/2	2	1	I(+9+6)	Db	I		I(+9+6)		I			+9+6				M	False	False	(0, 4, 1)	(2, 3)	0	0					Db
-bartok_bagatelles	op06n02	50	25	25	100	100	2.0	0	0	2/2	2	1	I6(+6)	Db	I		I6(+6)		I		6	+6				M	False	False	(4, 1, 0)	(3,)	0	4					F
-bartok_bagatelles	op06n02	51	25	25	102	102	1.5	1/2	1/2	2/2	2	1	ii(#74b2)	Db	I		ii(#74b2)		ii			#74b2				m	False	False	(-3, 1, 3)	(7,)	2	-3					Fb
-bartok_bagatelles	op06n02	52	25	25	207/2	207/2	0.5	7/8	7/8	2/2	2	1	ii(4)	Db	I		ii(4)		ii			4				m	False	False	(2, 1, 3)	()	2	2					Eb
-bartok_bagatelles	op06n02	53	26	26	104	104	2.0	0	0	2/2	2	1	I(+6b2)	Db	I		I(+6b2)		I			+6b2				M	False	False	(-5, 4, 1)	(3,)	0	-5					Ebb
-bartok_bagatelles	op06n02	54	26	26	106	106	4.0	1/2	1/2	2/2	2	1	I(+9+6)	Db	I		I(+9+6)		I			+9+6				M	False	False	(0, 4, 1)	(2, 3)	0	0					Db
-bartok_bagatelles	op06n08	0	1	1	0	0	0.5	0	0	2/4	2	1	B.iiM43{	B	I		iiM43		ii	M	43				{	mM7	False	False	(3, 7, 2, -1)	()	2	3					G#
-bartok_bagatelles	op06n08	1	1	1	1/2	1/2	0.5	1/8	1/8	2/4	2	1	bIIM43	B	I		bIIM43		bII	M	43					MM7	False	False	(-4, 0, -5, -1)	()	-5	-4					G
-bartok_bagatelles	op06n08	2	1	1	1	1	0.5	1/4	1/4	2/4	2	1	IM43	B	I		IM43		I	M	43					MM7	False	False	(1, 5, 0, 4)	()	0	1					F#
-bartok_bagatelles	op06n08	3	1	1	3/2	3/2	0.5	3/8	3/8	2/4	2	1	bIM43	B	I		bIM43		bI	M	43					MM7	False	False	(-6, -2, -7, -3)	()	-7	-6					F
-bartok_bagatelles	op06n08	4	2	2	2	2	0.5	0	0	2/4	2	1	bVIIM43	B	I		bVIIM43		bVII	M	43					MM7	False	False	(-1, 3, -2, 2)	()	-2	-1					E
-bartok_bagatelles	op06n08	5	2	2	5/2	5/2	1.5	1/8	1/8	2/4	2	1	bvii%43	B	I		bvii%43		bvii	%	43					%7	False	False	(-8, -4, -2, -5)	()	-2	-8					Eb
-bartok_bagatelles	op06n08	6	3	3	4	4	0.5	0	0	2/4	2	1	iiM43	B	I		iiM43		ii	M	43					mM7	False	False	(3, 7, 2, -1)	()	2	3					G#
-bartok_bagatelles	op06n08	7	3	3	9/2	9/2	0.5	1/8	1/8	2/4	2	1	viM2	B	I		viM2		vi	M	2					mM7	False	False	(8, 3, 0, 4)	()	3	8					F##
-bartok_bagatelles	op06n08	8	3	3	5	5	0.5	1/4	1/4	2/4	2	1	IM43	B	I		IM43		I	M	43					MM7	False	False	(1, 5, 0, 4)	()	0	1					F#
-bartok_bagatelles	op06n08	9	3	3	11/2	11/2	0.5	3/8	3/8	2/4	2	1	vM2	B	I		vM2		v	M	2					mM7	False	False	(6, 1, -2, 2)	()	1	6					E#
-bartok_bagatelles	op06n08	10	4	4	6	6	0.5	0	0	2/4	2	1	bVIIM43	B	I		bVIIM43		bVII	M	43					MM7	False	False	(-1, 3, -2, 2)	()	-2	-1					E
-bartok_bagatelles	op06n08	51	26	26	54	54	0.25	0	0	2/4	2	1	bVI6(11b9)	B	I		bVI6(11b9)		bVI		6	11b9				M	False	False	(0, -3, -4)	(2, -2)	-4	0					B
-bartok_bagatelles	op06n08	52	26	26	217/4	217/4	0.25	1/16	1/16	2/4	2	1	V6(11b9)	B	I		V6(11b9)		V		6	11b9				M	False	False	(5, 2, 1)	(0, -4)	1	5					A#
-bartok_bagatelles	op06n08	53	26	26	109/2	109/2	0.25	1/8	1/8	2/4	2	1	bV6(11b9)	B	I		bV6(11b9)		bV		6	11b9				M	False	False	(-2, -5, -6)	(0, -4)	-6	-2					A
-bartok_bagatelles	op06n08	54	26	26	219/4	219/4	0.25	3/16	3/16	2/4	2	1	IV6(11b9)	B	I		IV6(11b9)		IV		6	11b9				M	False	False	(3, 0, -1)	(5, -6)	-1	3					G#
-bartok_bagatelles	op06n08	65	30	30	255/4	255/4	1.0	3/16	3/16	2/4	2	1	vio64(b139)	B	I		vio64(b139)		vi	o	64	b139				o	False	False	(-3, 3, 0)	(-8, 5)	3	-3					D
-bartok_bagatelles	op06n08	66	30	30	259/4	259/4	1.25	7/16	7/16	2/4	2	1	iio(b139)	B	I		iio(b139)		ii	o		b139				o	False	False	(2, -1, -4)	(-2, 4)	2	2					C#
-bartok_bagatelles	op06n08	67	31	31	66	66	0.5	1/4	1/4	2/4	2	1	bIII2(#11)	B	I		bIII2(#11)		bIII		2	#11				Mm7	False	False	(-5, -3, 1, -2)	(10,)	-3	-5					C
-bartok_bagatelles	op06n08	68	31	31	133/2	133/2	2.5	3/8	3/8	2/4	2	1	i(1311)	B	I		i(1311)		i			1311				m	False	False	(0, -3, 1)	(3, -1)	0	0					B
-bartok_bagatelles	op06n10	105	42	42	163	163	1.0	1/4	1/4	2/2	2	1	V7(11)/IV	F	I		V7(11)/IV		V		7	11	IV			Mm7	False	False	(0, 4, 1, -2)	(-1,)	0	0					F
-bartok_bagatelles	op06n10	106	42	42	164	164	1.0	1/2	1/2	2/2	2	1	V7(#13)/iii	F	I		V7(#13)/iii		V		7	#13	iii			Mm7	False	False	(5, 9, 6, 3)	(8,)	5	5					E
-bartok_bagatelles	op06n10	107	42	42	165	165	1.0	3/4	3/4	2/2	2	1	V7(#11#10)/bIII	F	I		V7(#11#10)/bIII		V		7	#11#10	bIII			Mm7	False	False	(-2, 2, -1, -4)	(4, 9)	-2	-2					Eb
-bartok_bagatelles	op06n10	108	43	43	166	166	1.0	0	0	2/2	2	1	V7(13)/ii	F	I		V7(13)/ii		V		7	13	ii			Mm7	False	False	(3, 7, 4, 1)	(-1,)	3	3					D
-bartok_bagatelles	op06n10	145	67	67	262	262	1.0	0	0	2/2	2	1	V7(13)/iii	F	I		V7(13)/iii		V		7	13	iii			Mm7	False	False	(5, 9, 6, 3)	(1,)	5	5					E
-bartok_bagatelles	op06n10	146	67	67	263	263	1.0	1/4	1/4	2/2	2	1	V7(b6b4)/bIII	F	I		V7(b6b4)/bIII		V		7	b6b4	bIII			Mm7	False	False	(-2, -10, -6, -4)	()	-2	-2					Eb
-bartok_bagatelles	op06n10	147	67	67	264	264	1.0	1/2	1/2	2/2	2	1	V7(13)/ii	F	I		V7(13)/ii		V		7	13	ii			Mm7	False	False	(3, 7, 4, 1)	(-1,)	3	3					D
-bartok_bagatelles	op06n10	148	67	67	265	265	1.0	3/4	3/4	2/2	2	1	Fr43	F	I		Fr43	Fr	V		43	b5	V			Fr	False	False	(-4, 0, 2, 6)	()	2	-4					Db
-bartok_bagatelles	op06n10	149	68	68	266	266	1.0	0	0	2/2	2	1	Fr43/V	F	I		Fr43/V	Fr	V		43	b5	V/V			Fr	False	False	(-3, 1, 3, 7)	()	3	-3					Ab
-bartok_bagatelles	op06n10	150	68	68	267	267	1.0	1/4	1/4	2/2	2	1	V7(#11#9)/V	F	I		V7(#11#9)/V		V		7	#11#9	V			Mm7	False	False	(2, 6, 3, 0)	(8, 11)	2	2					G
-bartok_bagatelles	op06n10	151	68	68	268	268	1.0	1/2	1/2	2/2	2	1	Fr43/IV	F	I		Fr43/IV	Fr	V		43	b5	V/IV			Fr	False	False	(-5, -1, 1, 5)	()	1	-5					Gb
-bartok_bagatelles	op06n10	152	68	68	269	269	1.0	3/4	3/4	2/2	2	1	Fr7/bVII	F	I		Fr7/bVII	Fr	V		7	b5	V/bVII			Fr	False	False	(0, 4, -6, -2)	()	0	0					F
-bartok_bagatelles	op06n10	153	69	69	270	270	1.0	0	0	2/2	2	1	I64(#119)	F	I		I64(#119)		I		64	#119				M	False	False	(1, 0, 4)	(6, 2)	0	1					C
-bartok_bagatelles	op06n10	154	69	69	271	271	1.0	1/4	1/4	2/2	2	1	VIIM43(9)	F	I		VIIM43(9)		VII	M	43	9				MM7	False	False	(6, 10, 5, 9)	(0,)	5	6					B
-bartok_bagatelles	op06n10	155	69	69	272	272	1.0	1/2	1/2	2/2	2	1	bVII64(#119)	F	I		bVII64(#119)		bVII		64	#119				M	False	False	(-1, -2, 2)	(11, 0)	-2	-1					Bb
-bartok_bagatelles	op06n10	156	69	69	273	273	1.0	3/4	3/4	2/2	2	1	VIM43(9)	F	I		VIM43(9)		VI	M	43	9				MM7	False	False	(4, 8, 3, 7)	(5,)	3	4					A
-bartok_bagatelles	op06n10	157	70	70	274	274	1.0	0	0	2/2	2	1	V64(#119)	F	I		V64(#119)		V		64	#119				M	False	False	(2, 1, 5)	(7, 3)	1	2					G
-bartok_bagatelles	op06n10	158	70	70	275	275	1.0	1/4	1/4	2/2	2	1	#IVM43(9)	F	I		#IVM43(9)		#IV	M	43	9				MM7	False	False	(7, 11, 6, 10)	(1,)	6	7					F#
-bartok_bagatelles	op06n10	159	70	70	276	276	1.0	1/2	1/2	2/2	2	1	IV64(#119)	F	I		IV64(#119)		IV		64	#119				M	False	False	(0, -1, 3)	(12, 1)	-1	0					F
-bartok_bagatelles	op06n10	160	70	70	277	277	1.0	3/4	3/4	2/2	2	1	IIIM43(9)	F	I		IIIM43(9)		III	M	43	9				MM7	False	False	(5, 9, 4, 8)	(-1,)	4	5					E
-bartok_bagatelles	op06n10	161	71	71	278	278	1.0	0	0	2/2	2	1	bIII64(119)	F	I		bIII64(119)		bIII		64	119				M	False	False	(-2, -3, 1)	(3, -1)	-3	-2					Eb
-bartok_bagatelles	op06n14	131	128	128	193	193	0.5	1/4	1/4	3/8	2	1	III+/vi	D	bVII		III+/vi		III	+			vi			+	False	False	(0, 4, 8)	()	0	0					C
-bartok_bagatelles	op06n14	132	129	129	387/2	387/2	21.5	0	0	3/8	2	1	ii%7/vi	D	bVII		ii%7/vi		ii	%	7		vi			%7	False	False	(5, 2, -1, 3)	()	5	5					B
-bartok_bagatelles	op06n14	133	143	143	215	215	3.0	1/8	1/8	3/8	2	1	V7/iii	D	bVII		V7/iii		V		7		iii			Mm7	False	False	(5, 9, 6, 3)	()	5	5					B
-bartok_bagatelles	op06n14	134	145	145	218	218	3.0	1/8	1/8	3/8	2	1	viio7/V/iii	D	bVII		viio7/V/iii		vii	o	7		V/iii			o7	False	False	(10, 7, 4, 1)	()	10	10					A#
-bartok_bagatelles	op06n14	135	147	147	221	221	5.5	1/8	1/8	3/8	2	1	I/VI	D	bVII		I/VI		I				VI			M	False	False	(3, 7, 4)	()	3	3					A
-bartok_bagatelles	op06n14	136	151	151	453/2	453/2	1.5	0	0	3/8	2	1	vii%7/VI}{	D	bVII		vii%7/VI		vii	%	7		VI		}{	%7	False	False	(8, 5, 2, 6)	()	8	8					G#
-bartok_bagatelles	op06n14	137	152	152	228	228	1.5	0	0	3/8	2	1	IVM7/bIII	D	bVII		IVM7/bIII		IV	M	7		bIII			MM7	False	False	(-4, 0, -3, 1)	()	-4	-4					Ab
+bach_solo	BWV1001_02_Fuga	304	91	91	360		0.5	0	0	2/2	1	1	III6(2)	g	i		III6(2)		III		6	2				M	True	True	(1, -2, -1)	()	-3	1					D
+bach_solo	BWV1001_02_Fuga	305	91	91	721/2		0.5	1/8	1/8	2/2	1	1	III6	g	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					D
+bach_solo	BWV1001_02_Fuga	306	91	91	361		0.5	1/4	1/4	2/2	1	1	II6(2)	g	i		II6(2)		II		6	2				M	True	True	(6, 3, -3)	()	2	6					C#
+bach_solo	BWV1001_02_Fuga	307	91	91	723/2		0.5	3/8	3/8	2/2	1	1	ii6	g	i		ii6		ii		6					m	True	True	(-1, 3, 2)	()	2	-1					C
+bach_solo	BWV1001_02_Fuga	308	91	91	362		0.5	1/2	1/2	2/2	1	1	I6(2)	g	i		I6(2)		I		6	2				M	True	True	(4, 1, 2)	()	0	4					B
+bach_solo	BWV1001_02_Fuga	309	91	91	725/2		0.5	5/8	5/8	2/2	1	1	i6	g	i		i6		i		6					m	True	True	(-3, 1, 0)	()	0	-3					Bb
+bach_solo	BWV1001_02_Fuga	310	91	91	363		0.5	3/4	3/4	2/2	1	1	VII6(2)	g	i		VII6(2)		VII		6	2				M	True	True	(2, -1, 0)	()	-2	2					A
+bach_solo	BWV1001_02_Fuga	311	91	91	727/2		0.5	7/8	7/8	2/2	1	1	vii6	g	i		vii6		vii		6					m	True	True	(-5, -1, -2)	()	-2	-5					Ab
+bach_solo	BWV1001_02_Fuga	312	92	92	364		0.5	0	0	2/2	1	1	VI6(2)	g	i		VI6(2)		VI		6	2				M	True	True	(0, -3, -2)	()	-4	0					G
+bach_solo	BWV1001_02_Fuga	313	92	92	729/2		0.5	1/8	1/8	2/2	1	1	VI6	g	i		VI6		VI		6					M	True	True	(0, -3, -4)	()	-4	0					G
+bach_solo	BWV1001_02_Fuga	314	92	92	365		0.5	1/4	1/4	2/2	1	1	V6(2)	g	i		V6(2)		V		6	2				M	True	True	(5, 2, -4)	()	1	5					F#
+bach_solo	BWV1001_02_Fuga	315	92	92	731/2		0.5	3/8	3/8	2/2	1	1	v6	g	i		v6		v		6					m	True	True	(-2, 2, 1)	()	1	-2					F
+bach_solo	BWV1001_02_Fuga	316	92	92	366		0.5	1/2	1/2	2/2	1	1	IV6(2)	g	i		IV6(2)		IV		6	2				M	True	True	(3, 0, 1)	()	-1	3					E
+bach_solo	BWV1001_02_Fuga	317	92	92	733/2		0.5	5/8	5/8	2/2	1	1	IV6	g	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					E
+bach_solo	BWV1001_04_Presto	175	113	113	168		1.5	0	0	3/8	1	1	viio43/IV	g	i		viio43/IV		vii	o	43		IV			o7	True	True	(-2, -5, 4, 1)	()	4	-2					F
+bach_solo	BWV1001_04_Presto	176	114	114	339/2		1.0	0	0	3/8	1	1	IV6	g	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					E
+bach_solo	BWV1001_04_Presto	177	114	114	341/2		0.5	1/4	1/4	3/8	1	1	viio/VII	g	i		viio/VII		vii	o			VII			o	True	True	(3, 0, -3)	()	3	3					E
+bach_solo	BWV1001_04_Presto	178	115	115	171		1.5	0	0	3/8	1	1	vii%43/III	g	i		vii%43/III		vii	%	43		III			%7	True	True	(-4, 0, 2, -1)	()	2	-4					Eb
+bach_solo	BWV1001_04_Presto	179	116	116	345/2		1.0	0	0	3/8	1	1	III6	g	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					D
+bach_solo	BWV1001_04_Presto	180	116	116	347/2		0.5	1/4	1/4	3/8	1	1	viio/VI	g	i		viio/VI		vii	o			VI			o	True	True	(1, -2, -5)	()	1	1					D
+bach_solo	BWV1002_03_Corrente	74	57	57	329/2		1.0	1/2	1/2	3/4	1	1	i6	b	i		i6		i		6					m	True	True	(-3, 1, 0)	()	0	-3					D
+bach_solo	BWV1002_03_Corrente	75	58	58	331/2		3.0	0	0	3/4	1	1	ii%7	b	i		ii%7		ii	%	7					%7	True	True	(2, -1, -4, 0)	()	2	2					C#
+bach_solo	BWV1002_03_Corrente	76	59	59	337/2		1.0	0	0	3/4	1	1	viio64/VI	b	i		viio64/VI		vii	o	64		VI			o	True	True	(-5, 1, -2)	()	1	-5					C
+bach_solo	BWV1002_03_Corrente	77	59	59	339/2		1.0	1/4	1/4	3/4	1	1	VI6	b	i		VI6		VI		6					M	True	True	(0, -3, -4)	()	-4	0					B
+bach_solo	BWV1002_04_Double	96	66	66	765/4		1.0	1/2	1/2	3/4	1	1	iio6	b	i		iio6		ii	o	6					o	True	True	(-1, -4, 2)	()	2	-1					E
+bach_solo	BWV1002_04_Double	97	67	67	769/4		2.0	0	0	3/4	1	1	V65/iv	b	i		V65/iv		V		65		iv			Mm7	True	True	(4, 1, -2, 0)	()	0	4					D#
+bach_solo	BWV1002_04_Double	98	67	67	777/4		1.0	1/2	1/2	3/4	1	1	viio64/VII	b	i		viio64/VII		vii	o	64		VII			o	True	True	(-3, 3, 0)	()	3	-3					D
+bach_solo	BWV1002_04_Double	99	68	68	781/4		2.0	0	0	3/4	1	1	V65/III	b	i		V65/III		V		65		III			Mm7	True	True	(2, -1, -4, -2)	()	-2	2					C#
+bach_solo	BWV1002_04_Double	100	68	68	789/4		1.0	1/2	1/2	3/4	1	1	viio64/VI	b	i		viio64/VI		vii	o	64		VI			o	True	True	(-5, 1, -2)	()	1	-5					C
+bach_solo	BWV1002_04_Double	101	69	69	793/4		2.0	0	0	3/4	1	1	VIM65	b	i		VIM65		VI	M	65					MM7	True	True	(0, -3, 1, -4)	()	-4	0					B
+bach_solo	BWV1002_04_Double	102	69	69	801/4		1.0	1/2	1/2	3/4	1	1	iv64	b	i		iv64		iv		64					m	True	True	(0, -1, -4)	()	-1	0					B
+bach_solo	BWV1002_04_Double	103	70	70	805/4		2.0	0	0	3/4	1	1	V65	b	i		V65		V		65					Mm7	True	True	(5, 2, -1, 1)	()	1	5					A#
+bach_solo	BWV1002_04_Double	104	70	70	813/4		1.0	1/2	1/2	3/4	1	1	#viio64/iv	b	i		#viio64/iv		#vii	o	64		iv			o	True	True	(-2, 4, 1)	()	4	-2					A
+bach_solo	BWV1002_04_Double	105	71	71	817/4		3.0	0	0	3/4	1	1	vii%7/VII	b	i		vii%7/VII		vii	%	7		VII			%7	True	True	(3, 0, -3, 1)	()	3	3					G#
+bach_solo	BWV1002_08_Double	69	44	44	335/2		2.0	1/2	1/2	2/2	1	1	#viio(2)	b	i		#viio(2)		#vii	o		2				o	True	True	(0, 2, -1)	()	5	0					B
+bach_solo	BWV1002_08_Double	70	45	45	339/2		1.0	0	0	2/2	1	1	#viio	b	i		#viio		#vii	o						o	True	True	(5, 2, -1)	()	5	5					A#
+bach_solo	BWV1002_08_Double	71	45	45	341/2		1.0	1/4	1/4	2/2	1	1	VII	b	i		VII		VII							M	True	True	(-2, 2, -1)	()	-2	-2					A
+bach_solo	BWV1002_08_Double	72	45	45	343/2		1.0	1/2	1/2	2/2	1	1	IV6	b	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					G#
+bach_solo	BWV1002_08_Double	73	45	45	345/2		1.0	3/4	3/4	2/2	1	1	iv6	b	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					G
+bach_solo	BWV1003_02_Fuga	7	5	5	8		1.0	0	0	2/4	1	1	V6	a	i		V6		V		6					M	True	True	(5, 2, 1)	()	1	5					G#
+bach_solo	BWV1003_02_Fuga	8	5	5	9		1.0	1/4	1/4	2/4	1	1	v6	a	i		v6		v		6					m	True	True	(-2, 2, 1)	()	1	-2					G
+bach_solo	BWV1003_02_Fuga	9	6	6	10		1.0	0	0	2/4	1	1	IV6	a	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					F#
+bach_solo	BWV1003_02_Fuga	10	6	6	11		1.0	1/4	1/4	2/4	1	1	iv6	a	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					F
+bach_solo	BWV1003_02_Fuga	11	7	7	12		1.0	0	0	2/4	1	1	V	a	i		V		V							M	True	True	(1, 5, 2)	()	1	1					E
+bach_solo	BWV1003_02_Fuga	44	26	26	51		1.0	1/4	1/4	2/4	1	1	iv6	a	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					F
+bach_solo	BWV1003_02_Fuga	45	27	27	52		1.0	0	0	2/4	1	1	III6	a	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					E
+bach_solo	BWV1003_02_Fuga	46	27	27	53		1.0	1/4	1/4	2/4	1	1	iii6	a	i		iii6		iii		6					m	True	True	(-6, -2, -3)	()	-3	-6					Eb
+bach_solo	BWV1003_02_Fuga	47	28	28	54		1.0	0	0	2/4	1	1	ii6	a	i		ii6		ii		6					m	True	True	(-1, 3, 2)	()	2	-1					D
+bach_solo	BWV1003_02_Fuga	48	28	28	55		1.0	1/4	1/4	2/4	1	1	v6	a	i		v6		v		6					m	True	True	(-2, 2, 1)	()	1	-2					G
+bach_solo	BWV1003_02_Fuga	49	29	29	56		1.0	0	0	2/4	1	1	IV6	a	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					F#
+bach_solo	BWV1003_02_Fuga	50	29	29	57		1.0	1/4	1/4	2/4	1	1	iv6	a	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					F
+bach_solo	BWV1003_02_Fuga	51	30	30	58		0.5	0	0	2/4	1	1	III6	a	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					E
+bach_solo	BWV1003_02_Fuga	131	75	75	148		1.0	0	0	2/4	1	1	IV	a	v		IV		IV							M	True	True	(-1, 3, 0)	()	-1	-1					A
+bach_solo	BWV1003_02_Fuga	132	75	75	149		1.0	1/4	1/4	2/4	1	1	iv	a	v		iv		iv							m	True	True	(-1, -4, 0)	()	-1	-1					A
+bach_solo	BWV1003_02_Fuga	133	76	76	150		1.0	0	0	2/4	1	1	I6	a	v		I6		I		6					M	True	True	(4, 1, 0)	()	0	4					G#
+bach_solo	BWV1003_02_Fuga	134	76	76	151		1.0	1/4	1/4	2/4	1	1	i6	a	v		i6		i		6					m	True	True	(-3, 1, 0)	()	0	-3					G
+bach_solo	BWV1003_02_Fuga	135	77	77	152		1.0	0	0	2/4	1	1	VII6	a	v		VII6		VII		6					M	True	True	(2, -1, -2)	()	-2	2					F#
+bach_solo	BWV1003_02_Fuga	136	77	77	153		1.0	1/4	1/4	2/4	1	1	vii6	a	v		vii6		vii		6					m	True	True	(-5, -1, -2)	()	-2	-5					F
+bach_solo	BWV1003_02_Fuga	139	79	79	156		2.0	0	0	2/4	1	1	III.V	a	III		V		V							M	True	False	(1, 5, 2)	()	1	1					G
+bach_solo	BWV1003_02_Fuga	140	80	80	158		1.0	0	0	2/4	1	1	II6	a	III		II6		II		6					M	True	False	(6, 3, 2)	()	2	6					F#
+bach_solo	BWV1003_02_Fuga	141	80	80	159		1.0	1/4	1/4	2/4	1	1	ii6	a	III		ii6		ii		6					m	True	False	(-1, 3, 2)	()	2	-1					F
+bach_solo	BWV1003_02_Fuga	142	81	81	160		1.5	0	0	2/4	1	1	I6	a	III		I6		I		6					M	True	False	(4, 1, 0)	()	0	4					E
+bach_solo	BWV1003_02_Fuga	380	232	232	462		2.0	0	0	2/4	1	1	i}{	a	iv		i		i						}{	m	True	True	(0, -3, 1)	()	0	0					D
+bach_solo	BWV1003_02_Fuga	381	233	233	464		1.0	0	0	2/4	1	1	V6	a	iv		V6		V		6					M	True	True	(5, 2, 1)	()	1	5					C#
+bach_solo	BWV1003_02_Fuga	382	233	233	465		1.0	1/4	1/4	2/4	1	1	v6	a	iv		v6		v		6					m	True	True	(-2, 2, 1)	()	1	-2					C
+bach_solo	BWV1003_02_Fuga	383	234	234	466		2.0	0	0	2/4	1	1	IV6	a	iv		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					B
+bach_solo	BWV1003_02_Fuga	386	236	236	470		2.0	0	0	2/4	1	1	VII	a	iv		VII		VII							M	True	True	(-2, 2, -1)	()	-2	-2					C
+bach_solo	BWV1003_02_Fuga	387	237	237	472		1.0	0	0	2/4	1	1	IV6	a	iv		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					B
+bach_solo	BWV1003_02_Fuga	388	237	237	473		1.0	1/4	1/4	2/4	1	1	iv6	a	iv		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					Bb
+bach_solo	BWV1003_02_Fuga	389	238	238	474		2.0	0	0	2/4	1	1	III6	a	iv		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					A
+bach_solo	BWV1003_04_Allegro	195	56	56	220		1.0	0	0	2/2	1	1	V7/iv	a	i		V7/iv		V		7		iv			Mm7	True	True	(0, 4, 1, -2)	()	0	0					A
+bach_solo	BWV1003_04_Allegro	196	56	56	221		1.0	1/4	1/4	2/2	1	1	IV64	a	i		IV64		IV		64					M	True	True	(0, -1, 3)	()	-1	0					A
+bach_solo	BWV1003_04_Allegro	197	56	56	222		1.0	1/2	1/2	2/2	1	1	#viio7	a	i		#viio7		#vii	o	7					o7	True	True	(5, 2, -1, -4)	()	5	5					G#
+bach_solo	BWV1003_04_Allegro	198	56	56	223		1.0	3/4	3/4	2/2	1	1	III64	a	i		III64		III		64					M	True	True	(-2, -3, 1)	()	-3	-2					G
+bach_solo	BWV1003_04_Allegro	199	57	57	224		1.0	0	0	2/2	1	1	#vi%7	a	i		#vi%7		#vi	%	7					%7	True	True	(3, 0, -3, 1)	()	3	3					F#
+bach_solo	BWV1003_04_Allegro	200	57	57	225		1.0	1/4	1/4	2/2	1	1	iv6	a	i		iv6		iv		6					m	True	True	(-4, 0, -1)	()	-1	-4					F
+bach_solo	BWV1003_04_Allegro	201	57	57	226		2.0	1/2	1/2	2/2	1	1	V7	a	i		V7		V		7					Mm7	True	True	(1, 5, 2, -1)	()	1	1					E
+bach_solo	BWV1003_04_Allegro	202	58	58	228		1.0	0	0	2/2	1	1	V(64)	a	i		V(64)		V			64				M	True	True	(1, 0, -3)	()	1	1					E
+bach_solo	BWV1003_04_Allegro	203	58	58	229		0.5	1/4	1/4	2/2	1	1	V(4)	a	i		V(4)		V			4				M	True	True	(1, 0, 2)	()	1	1					E
+bach_solo	BWV1003_04_Allegro	204	58	58	459/2		0.5	3/8	3/8	2/2	1	1	V	a	i		V		V							M	True	True	(1, 5, 2)	()	1	1					E
+bach_solo	BWV1005_02_Fuga	6	5	5	16		2.0	1/2	1/2	2/2	1	1	vi	C	I		vi		vi							m	False	False	(3, 0, 4)	()	3	3					A
+bach_solo	BWV1005_02_Fuga	7	6	6	18		2.0	0	0	2/2	1	1	III6	C	I		III6		III		6					M	False	False	(8, 5, 4)	()	4	8					G#
+bach_solo	BWV1005_02_Fuga	8	6	6	20		1.0	1/2	1/2	2/2	1	1	iii6	C	I		iii6		iii		6					m	False	False	(1, 5, 4)	()	4	1					G
+bach_solo	BWV1005_02_Fuga	9	6	6	21		1.0	3/4	3/4	2/2	1	1	viio64/II	C	I		viio64/II		vii	o	64		II			o	False	False	(1, 7, 4)	()	7	1					G
+bach_solo	BWV1005_02_Fuga	10	7	7	22		2.0	0	0	2/2	1	1	II6	C	I		II6		II		6					M	False	False	(6, 3, 2)	()	2	6					F#
+bach_solo	BWV1005_02_Fuga	11	7	7	24		1.0	1/2	1/2	2/2	1	1	ii6	C	I		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					F
+bach_solo	BWV1005_02_Fuga	12	7	7	25		1.0	3/4	3/4	2/2	1	1	viio64	C	I		viio64		vii	o	64					o	False	False	(-1, 5, 2)	()	5	-1					F
+bach_solo	BWV1005_02_Fuga	13	8	8	26		1.0	0	0	2/2	1	1	I6	C	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					E
+bach_solo	BWV1005_02_Fuga	62	30	30	114		2.0	0	0	2/2	1	1	I	C	I		I		I							M	False	False	(0, 4, 1)	()	0	0					C
+bach_solo	BWV1005_02_Fuga	63	30	30	116		2.0	1/2	1/2	2/2	1	1	viio64/V	C	I		viio64/V		vii	o	64		V			o	False	False	(0, 6, 3)	()	6	0					C
+bach_solo	BWV1005_02_Fuga	64	31	31	118		2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
+bach_solo	BWV1005_02_Fuga	65	31	31	120		2.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
+bach_solo	BWV1005_02_Fuga	66	32	32	122		2.0	0	0	2/2	1	1	VI	C	I		VI		VI							M	False	False	(3, 7, 4)	()	3	3					A
+bach_solo	BWV1005_02_Fuga	67	32	32	124		1.0	1/2	1/2	2/2	1	1	vi	C	I		vi		vi							m	False	False	(3, 0, 4)	()	3	3					A
+bach_solo	BWV1005_02_Fuga	68	32	32	125		1.0	3/4	3/4	2/2	1	1	viio6/V	C	I		viio6/V		vii	o	6		V			o	False	False	(3, 0, 6)	()	6	3					A
+bach_solo	BWV1005_02_Fuga	89	45	45	177		1.0	3/4	3/4	2/2	1	1	v64	C	I		v64		v		64					m	False	False	(2, 1, -2)	()	1	2					D
+bach_solo	BWV1005_02_Fuga	90	46	46	178		2.0	0	0	2/2	1	1	VI6	C	I		VI6		VI		6					M	False	False	(7, 4, 3)	()	3	7					C#
+bach_solo	BWV1005_02_Fuga	91	46	46	180		1.0	1/2	1/2	2/2	1	1	vi6	C	I		vi6		vi		6					m	False	False	(0, 4, 3)	()	3	0					C
+bach_solo	BWV1005_02_Fuga	92	46	46	181		1.0	3/4	3/4	2/2	1	1	vii%43/V	C	I		vii%43/V		vii	%	43		V			%7	False	False	(0, 4, 6, 3)	()	6	0					C
+bach_solo	BWV1005_02_Fuga	93	47	47	182		2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
+bach_solo	BWV1005_02_Fuga	94	47	47	184		1.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
+bach_solo	BWV1005_02_Fuga	95	47	47	185		1.0	3/4	3/4	2/2	1	1	viio64/IV	C	I		viio64/IV		vii	o	64		IV			o	False	False	(-2, 4, 1)	()	4	-2					Bb
+bach_solo	BWV1005_02_Fuga	96	48	48	186		1.0	0	0	2/2	1	1	IV6(14)	C	I		IV6(14)		IV		6	14				M	False	False	(3, 0, -1)	(4,)	-1	3					A
+bach_solo	BWV1005_02_Fuga	97	48	48	187		3.0	1/4	1/4	2/2	1	1	IV6	C	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					A
+bach_solo	BWV1005_02_Fuga	214	115	115	454		2.0	0	0	2/2	1	1	II6	C	V		II6		II		6					M	False	False	(6, 3, 2)	()	2	6					C#
+bach_solo	BWV1005_02_Fuga	215	115	115	456		2.0	1/2	1/2	2/2	1	1	ii6	C	V		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					C
+bach_solo	BWV1005_02_Fuga	216	116	116	458		2.0	0	0	2/2	1	1	I6	C	V		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					B
+bach_solo	BWV1005_02_Fuga	217	116	116	460		2.0	1/2	1/2	2/2	1	1	i6	C	V		i6		i		6					m	False	False	(-3, 1, 0)	()	0	-3					Bb
+bach_solo	BWV1005_02_Fuga	218	117	117	462		2.0	0	0	2/2	1	1	.bVII6	C	V		bVII6		bVII		6					M	False	False	(2, -1, -2)	()	-2	2					A
+bach_solo	BWV1005_02_Fuga	345	173	173	686		2.0	0	0	2/2	1	1	II6	C	V		II6		II		6					M	False	False	(6, 3, 2)	()	2	6					C#
+bach_solo	BWV1005_02_Fuga	346	173	173	688		1.0	1/2	1/2	2/2	1	1	ii6	C	V		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					C
+bach_solo	BWV1005_02_Fuga	347	173	173	689		1.0	3/4	3/4	2/2	1	1	viio64	C	V		viio64		vii	o	64					o	False	False	(-1, 5, 2)	()	5	-1					C
+bach_solo	BWV1005_02_Fuga	348	174	174	690		2.0	0	0	2/2	1	1	I6	C	V		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					B
+bach_solo	BWV1005_02_Fuga	349	174	174	692		1.0	1/2	1/2	2/2	1	1	i6	C	V		i6		i		6					m	False	False	(-3, 1, 0)	()	0	-3					Bb
+bach_solo	BWV1005_02_Fuga	350	174	174	693		1.0	3/4	3/4	2/2	1	1	viio64/bVII	C	V		viio64/bVII		vii	o	64		bVII			o	False	False	(-3, 3, 0)	()	3	-3					Bb
+bach_solo	BWV1005_02_Fuga	351	175	175	694		3.0	0	0	2/2	1	1	.bVII6	C	V		bVII6		bVII		6					M	False	False	(2, -1, -2)	()	-2	2					A
+bach_solo	BWV1005_02_Fuga	366	181	181	718		2.0	0	0	2/2	1	1	VI6	C	V		VI6		VI		6					M	False	False	(7, 4, 3)	()	3	7					G#
+bach_solo	BWV1005_02_Fuga	367	181	181	720		1.0	1/2	1/2	2/2	1	1	vi6	C	V		vi6		vi		6					m	False	False	(0, 4, 3)	()	3	0					G
+bach_solo	BWV1005_02_Fuga	368	181	181	721		1.0	3/4	3/4	2/2	1	1	viio64/V	C	V		viio64/V		vii	o	64		V			o	False	False	(0, 6, 3)	()	6	0					G
+bach_solo	BWV1005_02_Fuga	369	182	182	722		2.0	0	0	2/2	1	1	V6	C	V		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					F#
+bach_solo	BWV1005_02_Fuga	370	182	182	724		1.0	1/2	1/2	2/2	1	1	v6	C	V		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					F
+bach_solo	BWV1005_02_Fuga	371	182	182	725		1.0	3/4	3/4	2/2	1	1	viio64/IV	C	V		viio64/IV		vii	o	64		IV			o	False	False	(-2, 4, 1)	()	4	-2					F
+bach_solo	BWV1005_02_Fuga	372	183	183	726		3.0	0	0	2/2	1	1	IV6	C	V		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					E
+bach_solo	BWV1005_02_Fuga	418	197	197	782		2.0	0	0	2/2	1	1	IV6	C	V		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					E
+bach_solo	BWV1005_02_Fuga	419	197	197	784		2.0	1/2	1/2	2/2	1	1	iv6	C	V		iv6		iv		6					m	False	False	(-4, 0, -1)	()	-1	-4					Eb
+bach_solo	BWV1005_02_Fuga	420	198	198	786		1.0	0	0	2/2	1	1	V(64)	C	V		V(64)		V			64				M	False	False	(1, 0, 4)	()	1	1					D
+bach_solo	BWV1005_02_Fuga	421	198	198	787		1.0	1/4	1/4	2/2	1	1	V7	C	V		V7		V		7					Mm7	False	False	(1, 5, 2, -1)	()	1	1					D
+bach_solo	BWV1005_02_Fuga	422	198	198	788		2.0	1/2	1/2	2/2	1	1	V(64)	C	V		V(64)		V			64				M	False	False	(1, 0, 4)	()	1	1					D
+bach_solo	BWV1005_02_Fuga	423	199	199	790		1.0	0	0	2/2	1	1	vii%7/V	C	V		vii%7/V		vii	%	7		V			%7	False	False	(6, 3, 0, 4)	()	6	6					C#
+bach_solo	BWV1005_02_Fuga	553	267	267	1062		3.0	0	0	2/2	1	1	ii6	C	I		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					F
+bach_solo	BWV1005_02_Fuga	554	267	267	1065		1.0	3/4	3/4	2/2	1	1	viio64	C	I		viio64		vii	o	64					o	False	False	(-1, 5, 2)	()	5	-1					F
+bach_solo	BWV1005_02_Fuga	555	268	268	1066		2.0	0	0	2/2	1	1	I6	C	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					E
+bach_solo	BWV1005_02_Fuga	556	268	268	1068		1.0	1/2	1/2	2/2	1	1	i6	C	I		i6		i		6					m	False	False	(-3, 1, 0)	()	0	-3					Eb
+bach_solo	BWV1005_02_Fuga	557	268	268	1069		1.0	3/4	3/4	2/2	1	1	viio64/bVII	C	I		viio64/bVII		vii	o	64		bVII			o	False	False	(-3, 3, 0)	()	3	-3					Eb
+bach_solo	BWV1005_02_Fuga	558	269	269	1070		2.0	0	0	2/2	1	1	.bVII6	C	I		bVII6		bVII		6					M	False	False	(2, -1, -2)	()	-2	2					D
+bach_solo	BWV1005_02_Fuga	559	269	269	1072		1.0	1/2	1/2	2/2	1	1	V/v	C	I		V/v		V				v			M	False	False	(2, 6, 3)	()	2	2					D
+bach_solo	BWV1005_02_Fuga	560	269	269	1073		1.0	3/4	3/4	2/2	1	1	v64	C	I		v64		v		64					m	False	False	(2, 1, -2)	()	1	2					D
+bach_solo	BWV1005_02_Fuga	618	290	290	1156		2.0	1/2	1/2	2/2	1	1	I	C	I		I		I							M	False	False	(0, 4, 1)	()	0	0					C
+bach_solo	BWV1005_02_Fuga	619	291	291	1158		2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
+bach_solo	BWV1005_02_Fuga	620	291	291	1160		1.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
+bach_solo	BWV1005_02_Fuga	621	291	291	1161		1.0	3/4	3/4	2/2	1	1	viio64/IV	C	I		viio64/IV		vii	o	64		IV			o	False	False	(-2, 4, 1)	()	4	-2					Bb
+bach_solo	BWV1005_02_Fuga	622	292	292	1162		1.0	0	0	2/2	1	1	IV6	C	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					A
+bach_solo	BWV1005_02_Fuga	682	318	318	1266		2.0	0	0	2/2	1	1	I	C	I		I		I							M	False	False	(0, 4, 1)	()	0	0					C
+bach_solo	BWV1005_02_Fuga	683	318	318	1268		2.0	1/2	1/2	2/2	1	1	viio64/V	C	I		viio64/V		vii	o	64		V			o	False	False	(0, 6, 3)	()	6	0					C
+bach_solo	BWV1005_02_Fuga	684	319	319	1270		2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
+bach_solo	BWV1005_02_Fuga	685	319	319	1272		2.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
+bach_solo	BWV1005_02_Fuga	686	320	320	1274		2.0	0	0	2/2	1	1	VI	C	I		VI		VI							M	False	False	(3, 7, 4)	()	3	3					A
+bach_solo	BWV1005_02_Fuga	687	320	320	1276		1.0	1/2	1/2	2/2	1	1	vi	C	I		vi		vi							m	False	False	(3, 0, 4)	()	3	3					A
+bach_solo	BWV1005_02_Fuga	709	333	333	1329		1.0	3/4	3/4	2/2	1	1	v64	C	I		v64		v		64					m	False	False	(2, 1, -2)	()	1	2					D
+bach_solo	BWV1005_02_Fuga	710	334	334	1330		2.0	0	0	2/2	1	1	VI6	C	I		VI6		VI		6					M	False	False	(7, 4, 3)	()	3	7					C#
+bach_solo	BWV1005_02_Fuga	711	334	334	1332		1.0	1/2	1/2	2/2	1	1	vi6	C	I		vi6		vi		6					m	False	False	(0, 4, 3)	()	3	0					C
+bach_solo	BWV1005_02_Fuga	712	334	334	1333		1.0	3/4	3/4	2/2	1	1	vii%43/V	C	I		vii%43/V		vii	%	43		V			%7	False	False	(0, 4, 6, 3)	()	6	0					C
+bach_solo	BWV1005_02_Fuga	713	335	335	1334		2.0	0	0	2/2	1	1	V6	C	I		V6		V		6					M	False	False	(5, 2, 1)	()	1	5					B
+bach_solo	BWV1005_02_Fuga	714	335	335	1336		1.0	1/2	1/2	2/2	1	1	v6	C	I		v6		v		6					m	False	False	(-2, 2, 1)	()	1	-2					Bb
+bach_solo	BWV1005_02_Fuga	715	335	335	1337		1.0	3/4	3/4	2/2	1	1	viio64/IV	C	I		viio64/IV		vii	o	64		IV			o	False	False	(-2, 4, 1)	()	4	-2					Bb
+bach_solo	BWV1005_02_Fuga	716	336	336	1338		1.0	0	0	2/2	1	1	IV6(14)	C	I		IV6(14)		IV		6	14				M	False	False	(3, 0, -1)	(4,)	-1	3					A
+bach_solo	BWV1005_02_Fuga	717	336	336	1339		3.0	1/4	1/4	2/2	1	1	IV6	C	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					A
+bach_solo	BWV1009_01_Prelude	100	77	77	228		3.0	0	0	3/4	1	1	V2	C	I		V2		V		2					Mm7	False	False	(-1, 1, 5, 2)	()	1	-1					F
+bach_solo	BWV1009_01_Prelude	101	78	78	231		3.0	0	0	3/4	1	1	I6	C	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					E
+bach_solo	BWV1009_01_Prelude	102	79	79	234		3.0	0	0	3/4	1	1	vi%43	C	I		vi%43		vi	%	43					%7	False	False	(-3, 1, 3, 0)	()	3	-3					Eb
+bach_solo	BWV1009_01_Prelude	103	80	80	237		3.0	0	0	3/4	1	1	V43	C	I		V43		V		43					Mm7	False	False	(2, -1, 1, 5)	()	1	2					D
+bach_solo	BWV1012_01_Prelude	178	98	98	585		1.5	3/4	3/4	12/8	1	1	viio6/V	D	I		viio6/V		vii	o	6		V			o	False	False	(3, 0, 6)	()	6	3					B
+bach_solo	BWV1012_01_Prelude	179	98	98	1173/2		1.5	9/8	9/8	12/8	1	1	iv6	D	I		iv6		iv		6					m	False	False	(-4, 0, -1)	()	-1	-4					Bb
+bach_solo	BWV1012_01_Prelude	180	99	99	588		1.5	0	0	12/8	1	1	I64	D	I		I64		I		64					M	False	False	(1, 0, 4)	()	0	1					A
+bach_solo	BWV1012_01_Prelude	181	99	99	1179/2		1.5	3/8	3/8	12/8	1	1	viio7/V	D	I		viio7/V		vii	o	7		V			o7	False	False	(6, 3, 0, -3)	()	6	6					G#
+bach_solo	BWV1013_01_Allemande	46	17	17	64		0.5	0	0	4/4	1	1	V6	a	v		V6		V		6					M	True	True	(5, 2, 1)	()	1	5					D#
+bach_solo	BWV1013_01_Allemande	47	17	17	129/2		0.5	1/8	1/8	4/4	1	1	viio64/IV	a	v		viio64/IV		vii	o	64		IV			o	True	True	(-2, 4, 1)	()	4	-2					D
+bach_solo	BWV1013_01_Allemande	48	17	17	65		0.5	1/4	1/4	4/4	1	1	IV6	a	v		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					C#
+bach_solo	BWV1013_01_Allemande	49	17	17	131/2		0.5	3/8	3/8	4/4	1	1	viio64/III	a	v		viio64/III		vii	o	64		III			o	True	True	(-4, 2, -1)	()	2	-4					C
+bach_solo	BWV1013_01_Allemande	50	17	17	66		0.5	1/2	1/2	4/4	1	1	III6	a	v		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					B
+bach_solo	BWV1013_01_Allemande	51	17	17	133/2		0.5	5/8	5/8	4/4	1	1	viio64/bII	a	v		viio64/bII		vii	o	64		bII			o	True	True	(-6, 0, -3)	()	0	-6					Bb
+bach_solo	BWV1013_01_Allemande	52	17	17	67		0.5	3/4	3/4	4/4	1	1	bII6	a	v		bII6		bII		6					M	True	True	(-1, -4, -5)	()	-5	-1					A
+bach_solo	BWV1013_01_Allemande	53	17	17	135/2		0.5	7/8	7/8	4/4	1	1	#viio64	a	v		#viio64		#vii	o	64					o	True	True	(-1, 5, 2)	()	5	-1					A
+bach_solo	BWV1013_01_Allemande	127	42	40	160		0.5	0	0	4/4	1	1	V6	a	i		V6		V		6					M	True	True	(5, 2, 1)	()	1	5					G#
+bach_solo	BWV1013_01_Allemande	128	42	40	321/2		0.5	1/8	1/8	4/4	1	1	viio64/IV	a	i		viio64/IV		vii	o	64		IV			o	True	True	(-2, 4, 1)	()	4	-2					G
+bach_solo	BWV1013_01_Allemande	129	42	40	161		0.5	1/4	1/4	4/4	1	1	IV6	a	i		IV6		IV		6					M	True	True	(3, 0, -1)	()	-1	3					F#
+bach_solo	BWV1013_01_Allemande	130	42	40	323/2		0.5	3/8	3/8	4/4	1	1	viio64/III	a	i		viio64/III		vii	o	64		III			o	True	True	(-4, 2, -1)	()	2	-4					F
+bach_solo	BWV1013_01_Allemande	131	42	40	162		0.5	1/2	1/2	4/4	1	1	III6	a	i		III6		III		6					M	True	True	(1, -2, -3)	()	-3	1					E
+bach_solo	BWV1013_01_Allemande	132	42	40	325/2		0.5	5/8	5/8	4/4	1	1	viio64/bII	a	i		viio64/bII		vii	o	64		bII			o	True	True	(-6, 0, -3)	()	0	-6					Eb
+bach_solo	BWV1013_01_Allemande	133	42	40	163		0.5	3/4	3/4	4/4	1	1	bII6	a	i		bII6		bII		6					M	True	True	(-1, -4, -5)	()	-5	-1					D
+bach_solo	BWV1013_01_Allemande	134	42	40	327/2		0.5	7/8	7/8	4/4	1	1	#viio64	a	i		#viio64		#vii	o	64					o	True	True	(-1, 5, 2)	()	5	-1					D
+bach_solo	BWV1013_04_BourreeAnglaise	86	64	63	249/2		1.0	0	0	2/4	1	1	iv{	a	i		iv		iv						{	m	True	True	(-1, -4, 0)	()	-1	-1					D
+bach_solo	BWV1013_04_BourreeAnglaise	87	64	63	251/2		1.0	1/4	1/4	2/4	1	1	#viio/iv	a	i		#viio/iv		#vii	o			iv			o	True	True	(4, 1, -2)	()	4	4					C#
+bach_solo	BWV1013_04_BourreeAnglaise	88	65	64	253/2		1.0	0	0	2/4	1	1	#vio64	a	i		#vio64		#vi	o	64					o	True	True	(-3, 3, 0)	()	3	-3					C
+bach_solo	BWV1013_04_BourreeAnglaise	89	65	64	255/2		1.0	1/4	1/4	2/4	1	1	iio	a	i		iio		ii	o						o	True	True	(2, -1, -4)	()	2	2					B
+bartok_bagatelles	op06n02	3	4	4	12		2.0	0	0	2/2	2	1	I6(+6)	Db	I		I6(+6)		I		6	+6				M	False	False	(4, 1, 0)	(3,)	0	4					F
+bartok_bagatelles	op06n02	4	4	4	14		1.5	1/2	1/2	2/2	2	1	ii(#74b2)	Db	I		ii(#74b2)		ii			#74b2				m	False	False	(-3, 1, 3)	(7,)	2	-3					Fb
+bartok_bagatelles	op06n02	5	4	4	31/2		0.5	7/8	7/8	2/2	2	1	ii(4)	Db	I		ii(4)		ii			4				m	False	False	(2, 1, 3)	()	2	2					Eb
+bartok_bagatelles	op06n02	6	5	5	16		2.0	0	0	2/2	2	1	I(+6b2)	Db	I		I(+6b2)		I			+6b2				M	False	False	(-5, 4, 1)	(3,)	0	-5					Ebb
+bartok_bagatelles	op06n02	7	5	5	18		2.0	1/2	1/2	2/2	2	1	I(+9+6)	Db	I		I(+9+6)		I			+9+6				M	False	False	(0, 4, 1)	(2, 3)	0	0					Db
+bartok_bagatelles	op06n02	50	25	25	100		2.0	0	0	2/2	2	1	I6(+6)	Db	I		I6(+6)		I		6	+6				M	False	False	(4, 1, 0)	(3,)	0	4					F
+bartok_bagatelles	op06n02	51	25	25	102		1.5	1/2	1/2	2/2	2	1	ii(#74b2)	Db	I		ii(#74b2)		ii			#74b2				m	False	False	(-3, 1, 3)	(7,)	2	-3					Fb
+bartok_bagatelles	op06n02	52	25	25	207/2		0.5	7/8	7/8	2/2	2	1	ii(4)	Db	I		ii(4)		ii			4				m	False	False	(2, 1, 3)	()	2	2					Eb
+bartok_bagatelles	op06n02	53	26	26	104		2.0	0	0	2/2	2	1	I(+6b2)	Db	I		I(+6b2)		I			+6b2				M	False	False	(-5, 4, 1)	(3,)	0	-5					Ebb
+bartok_bagatelles	op06n02	54	26	26	106		4.0	1/2	1/2	2/2	2	1	I(+9+6)	Db	I		I(+9+6)		I			+9+6				M	False	False	(0, 4, 1)	(2, 3)	0	0					Db
+bartok_bagatelles	op06n08	0	1	1	0		0.5	0	0	2/4	2	1	B.iiM43{	B	I		iiM43		ii	M	43				{	mM7	False	False	(3, 7, 2, -1)	()	2	3					G#
+bartok_bagatelles	op06n08	1	1	1	1/2		0.5	1/8	1/8	2/4	2	1	bIIM43	B	I		bIIM43		bII	M	43					MM7	False	False	(-4, 0, -5, -1)	()	-5	-4					G
+bartok_bagatelles	op06n08	2	1	1	1		0.5	1/4	1/4	2/4	2	1	IM43	B	I		IM43		I	M	43					MM7	False	False	(1, 5, 0, 4)	()	0	1					F#
+bartok_bagatelles	op06n08	3	1	1	3/2		0.5	3/8	3/8	2/4	2	1	bIM43	B	I		bIM43		bI	M	43					MM7	False	False	(-6, -2, -7, -3)	()	-7	-6					F
+bartok_bagatelles	op06n08	4	2	2	2		0.5	0	0	2/4	2	1	bVIIM43	B	I		bVIIM43		bVII	M	43					MM7	False	False	(-1, 3, -2, 2)	()	-2	-1					E
+bartok_bagatelles	op06n08	5	2	2	5/2		1.5	1/8	1/8	2/4	2	1	bvii%43	B	I		bvii%43		bvii	%	43					%7	False	False	(-8, -4, -2, -5)	()	-2	-8					Eb
+bartok_bagatelles	op06n08	6	3	3	4		0.5	0	0	2/4	2	1	iiM43	B	I		iiM43		ii	M	43					mM7	False	False	(3, 7, 2, -1)	()	2	3					G#
+bartok_bagatelles	op06n08	7	3	3	9/2		0.5	1/8	1/8	2/4	2	1	viM2	B	I		viM2		vi	M	2					mM7	False	False	(8, 3, 0, 4)	()	3	8					F##
+bartok_bagatelles	op06n08	8	3	3	5		0.5	1/4	1/4	2/4	2	1	IM43	B	I		IM43		I	M	43					MM7	False	False	(1, 5, 0, 4)	()	0	1					F#
+bartok_bagatelles	op06n08	9	3	3	11/2		0.5	3/8	3/8	2/4	2	1	vM2	B	I		vM2		v	M	2					mM7	False	False	(6, 1, -2, 2)	()	1	6					E#
+bartok_bagatelles	op06n08	10	4	4	6		0.5	0	0	2/4	2	1	bVIIM43	B	I		bVIIM43		bVII	M	43					MM7	False	False	(-1, 3, -2, 2)	()	-2	-1					E
+bartok_bagatelles	op06n08	51	26	26	54		0.25	0	0	2/4	2	1	bVI6(11b9)	B	I		bVI6(11b9)		bVI		6	11b9				M	False	False	(0, -3, -4)	(2, -2)	-4	0					B
+bartok_bagatelles	op06n08	52	26	26	217/4		0.25	1/16	1/16	2/4	2	1	V6(11b9)	B	I		V6(11b9)		V		6	11b9				M	False	False	(5, 2, 1)	(0, -4)	1	5					A#
+bartok_bagatelles	op06n08	53	26	26	109/2		0.25	1/8	1/8	2/4	2	1	bV6(11b9)	B	I		bV6(11b9)		bV		6	11b9				M	False	False	(-2, -5, -6)	(0, -4)	-6	-2					A
+bartok_bagatelles	op06n08	54	26	26	219/4		0.25	3/16	3/16	2/4	2	1	IV6(11b9)	B	I		IV6(11b9)		IV		6	11b9				M	False	False	(3, 0, -1)	(5, -6)	-1	3					G#
+bartok_bagatelles	op06n08	65	30	30	255/4		1.0	3/16	3/16	2/4	2	1	vio64(b139)	B	I		vio64(b139)		vi	o	64	b139				o	False	False	(-3, 3, 0)	(-8, 5)	3	-3					D
+bartok_bagatelles	op06n08	66	30	30	259/4		1.25	7/16	7/16	2/4	2	1	iio(b139)	B	I		iio(b139)		ii	o		b139				o	False	False	(2, -1, -4)	(-2, 4)	2	2					C#
+bartok_bagatelles	op06n08	67	31	31	66		0.5	1/4	1/4	2/4	2	1	bIII2(#11)	B	I		bIII2(#11)		bIII		2	#11				Mm7	False	False	(-5, -3, 1, -2)	(10,)	-3	-5					C
+bartok_bagatelles	op06n08	68	31	31	133/2		2.5	3/8	3/8	2/4	2	1	i(1311)	B	I		i(1311)		i			1311				m	False	False	(0, -3, 1)	(3, -1)	0	0					B
+bartok_bagatelles	op06n10	105	42	42	163		1.0	1/4	1/4	2/2	2	1	V7(11)/IV	F	I		V7(11)/IV		V		7	11	IV			Mm7	False	False	(0, 4, 1, -2)	(-1,)	0	0					F
+bartok_bagatelles	op06n10	106	42	42	164		1.0	1/2	1/2	2/2	2	1	V7(#13)/iii	F	I		V7(#13)/iii		V		7	#13	iii			Mm7	False	False	(5, 9, 6, 3)	(8,)	5	5					E
+bartok_bagatelles	op06n10	107	42	42	165		1.0	3/4	3/4	2/2	2	1	V7(#11#10)/bIII	F	I		V7(#11#10)/bIII		V		7	#11#10	bIII			Mm7	False	False	(-2, 2, -1, -4)	(4, 9)	-2	-2					Eb
+bartok_bagatelles	op06n10	108	43	43	166		1.0	0	0	2/2	2	1	V7(13)/ii	F	I		V7(13)/ii		V		7	13	ii			Mm7	False	False	(3, 7, 4, 1)	(-1,)	3	3					D
+bartok_bagatelles	op06n10	145	67	67	262		1.0	0	0	2/2	2	1	V7(13)/iii	F	I		V7(13)/iii		V		7	13	iii			Mm7	False	False	(5, 9, 6, 3)	(1,)	5	5					E
+bartok_bagatelles	op06n10	146	67	67	263		1.0	1/4	1/4	2/2	2	1	V7(b6b4)/bIII	F	I		V7(b6b4)/bIII		V		7	b6b4	bIII			Mm7	False	False	(-2, -10, -6, -4)	()	-2	-2					Eb
+bartok_bagatelles	op06n10	147	67	67	264		1.0	1/2	1/2	2/2	2	1	V7(13)/ii	F	I		V7(13)/ii		V		7	13	ii			Mm7	False	False	(3, 7, 4, 1)	(-1,)	3	3					D
+bartok_bagatelles	op06n10	148	67	67	265		1.0	3/4	3/4	2/2	2	1	Fr43	F	I		Fr43	Fr	V		43	b5	V			Fr	False	False	(-4, 0, 2, 6)	()	2	-4					Db
+bartok_bagatelles	op06n10	149	68	68	266		1.0	0	0	2/2	2	1	Fr43/V	F	I		Fr43/V	Fr	V		43	b5	V/V			Fr	False	False	(-3, 1, 3, 7)	()	3	-3					Ab
+bartok_bagatelles	op06n10	150	68	68	267		1.0	1/4	1/4	2/2	2	1	V7(#11#9)/V	F	I		V7(#11#9)/V		V		7	#11#9	V			Mm7	False	False	(2, 6, 3, 0)	(8, 11)	2	2					G
+bartok_bagatelles	op06n10	151	68	68	268		1.0	1/2	1/2	2/2	2	1	Fr43/IV	F	I		Fr43/IV	Fr	V		43	b5	V/IV			Fr	False	False	(-5, -1, 1, 5)	()	1	-5					Gb
+bartok_bagatelles	op06n10	152	68	68	269		1.0	3/4	3/4	2/2	2	1	Fr7/bVII	F	I		Fr7/bVII	Fr	V		7	b5	V/bVII			Fr	False	False	(0, 4, -6, -2)	()	0	0					F
+bartok_bagatelles	op06n10	153	69	69	270		1.0	0	0	2/2	2	1	I64(#119)	F	I		I64(#119)		I		64	#119				M	False	False	(1, 0, 4)	(6, 2)	0	1					C
+bartok_bagatelles	op06n10	154	69	69	271		1.0	1/4	1/4	2/2	2	1	VIIM43(9)	F	I		VIIM43(9)		VII	M	43	9				MM7	False	False	(6, 10, 5, 9)	(0,)	5	6					B
+bartok_bagatelles	op06n10	155	69	69	272		1.0	1/2	1/2	2/2	2	1	bVII64(#119)	F	I		bVII64(#119)		bVII		64	#119				M	False	False	(-1, -2, 2)	(11, 0)	-2	-1					Bb
+bartok_bagatelles	op06n10	156	69	69	273		1.0	3/4	3/4	2/2	2	1	VIM43(9)	F	I		VIM43(9)		VI	M	43	9				MM7	False	False	(4, 8, 3, 7)	(5,)	3	4					A
+bartok_bagatelles	op06n10	157	70	70	274		1.0	0	0	2/2	2	1	V64(#119)	F	I		V64(#119)		V		64	#119				M	False	False	(2, 1, 5)	(7, 3)	1	2					G
+bartok_bagatelles	op06n10	158	70	70	275		1.0	1/4	1/4	2/2	2	1	#IVM43(9)	F	I		#IVM43(9)		#IV	M	43	9				MM7	False	False	(7, 11, 6, 10)	(1,)	6	7					F#
+bartok_bagatelles	op06n10	159	70	70	276		1.0	1/2	1/2	2/2	2	1	IV64(#119)	F	I		IV64(#119)		IV		64	#119				M	False	False	(0, -1, 3)	(12, 1)	-1	0					F
+bartok_bagatelles	op06n10	160	70	70	277		1.0	3/4	3/4	2/2	2	1	IIIM43(9)	F	I		IIIM43(9)		III	M	43	9				MM7	False	False	(5, 9, 4, 8)	(-1,)	4	5					E
+bartok_bagatelles	op06n10	161	71	71	278		1.0	0	0	2/2	2	1	bIII64(119)	F	I		bIII64(119)		bIII		64	119				M	False	False	(-2, -3, 1)	(3, -1)	-3	-2					Eb
+bartok_bagatelles	op06n14	131	128	128	193		0.5	1/4	1/4	3/8	2	1	III+/vi	D	bVII		III+/vi		III	+			vi			+	False	False	(0, 4, 8)	()	0	0					C
+bartok_bagatelles	op06n14	132	129	129	387/2		21.5	0	0	3/8	2	1	ii%7/vi	D	bVII		ii%7/vi		ii	%	7		vi			%7	False	False	(5, 2, -1, 3)	()	5	5					B
+bartok_bagatelles	op06n14	133	143	143	215		3.0	1/8	1/8	3/8	2	1	V7/iii	D	bVII		V7/iii		V		7		iii			Mm7	False	False	(5, 9, 6, 3)	()	5	5					B
+bartok_bagatelles	op06n14	134	145	145	218		3.0	1/8	1/8	3/8	2	1	viio7/V/iii	D	bVII		viio7/V/iii		vii	o	7		V/iii			o7	False	False	(10, 7, 4, 1)	()	10	10					A#
+bartok_bagatelles	op06n14	135	147	147	221		5.5	1/8	1/8	3/8	2	1	I/VI	D	bVII		I/VI		I				VI			M	False	False	(3, 7, 4)	()	3	3					A
+bartok_bagatelles	op06n14	136	151	151	453/2		1.5	0	0	3/8	2	1	vii%7/VI}{	D	bVII		vii%7/VI		vii	%	7		VI		}{	%7	False	False	(8, 5, 2, 6)	()	8	8					G#
+bartok_bagatelles	op06n14	137	152	152	228		1.5	0	0	3/8	2	1	IVM7/bIII	D	bVII		IVM7/bIII		IV	M	7		bIII			MM7	False	False	(-4, 0, -3, 1)	()	-4	-4					Ab
 beethoven_piano_sonatas	01-1	74	48	47	185	185	4.0	0	0	2/2	2	1	I(974)}	f	III		I(974)		I			974			}	M	True	False	(0, -1, 1)	(2, 5)	0	0					Ab
 beethoven_piano_sonatas	01-1	75	49	48	189	189	12.0	0	0	2/2	2	1	I|PAC	f	III		I		I					PAC		M	True	False	(0, 4, 1)	()	0	0					Ab
 beethoven_piano_sonatas	01-1	77	53	51	201	201	8.0	0	0	2/2	2	1	V65	f	III		V65		V		65					Mm7	True	False	(5, 2, -1, 1)	()	1	5					G

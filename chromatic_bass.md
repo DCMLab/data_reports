@@ -40,10 +40,6 @@ CORPUS_PATH = "~/distant_listening_corpus"                # for running the note
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
-RESULTS_PATH = os.path.abspath("results")
-os.makedirs(RESULTS_PATH, exist_ok=True)
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell} ipython3

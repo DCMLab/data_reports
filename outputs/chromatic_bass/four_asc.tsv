@@ -276,50 +276,43 @@ bach_en_fr_suites	BWV816_01_Allemande	87	18	16	245/4		0.5	1/4	1/4	4/4	2	1	V(9)	G
 bach_en_fr_suites	BWV816_01_Allemande	88	18	16	247/4		0.5	3/8	3/8	4/4	2	1	V6/vi	G	I		V6/vi		V		6		vi			M	False	False	(8, 5, 4)	()	4	8					D#
 bach_en_fr_suites	BWV816_01_Allemande	89	18	16	249/4		0.5	1/2	1/2	4/4	2	1	vi(4)	G	I		vi(4)		vi			4				m	False	False	(3, 2, 4)	()	3	3					E
 bach_en_fr_suites	BWV816_01_Allemande	90	18	16	251/4		0.5	5/8	5/8	4/4	2	1	IV6	G	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					E
-bach_solo	BWV1005_02_Fuga	440	207	206	822	822	2.0	0	0	2/2	1	1	II	C	I		II		II							M	False	False	(2, 6, 3)	()	2	2					D
-bach_solo	BWV1005_02_Fuga	441	207	206	824	824	2.0	1/2	1/2	2/2	1	1	V6/iii	C	I		V6/iii		V		6		iii			M	False	False	(9, 6, 5)	()	5	9					D#
-bach_solo	BWV1005_02_Fuga	442	208	207	826	826	2.0	0	0	2/2	1	1	iii	C	I		iii		iii							m	False	False	(4, 1, 5)	()	4	4					E
-bach_solo	BWV1005_02_Fuga	443	208	207	828	828	2.0	1/2	1/2	2/2	1	1	I6	C	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					E
-bach_solo	BWV1005_02_Fuga	444	209	208	830	830	3.0	0	0	2/2	1	1	IV	C	I		IV		IV							M	False	False	(-1, 3, 0)	()	-1	-1					F
-bach_solo	BWV1005_02_Fuga	445	209	208	833	833	1.0	3/4	3/4	2/2	1	1	viio/V	C	I		viio/V		vii	o			V			o	False	False	(6, 3, 0)	()	6	6					F#
-bach_solo	BWV1005_02_Fuga	446	210	209	834	834	2.0	0	0	2/2	1	1	V	C	I		V		V							M	False	False	(1, 5, 2)	()	1	1					G
-bach_solo	BWV1005_02_Fuga	501	236	235	940	940	2.0	1/2	1/2	2/2	1	1	V	C	I		V		V							M	False	False	(1, 5, 2)	()	1	1					G
-bach_solo	BWV1005_02_Fuga	502	237	236	942	942	2.0	0	0	2/2	1	1	iv6(2)	C	I		iv6(2)		iv		6	2				m	False	False	(-4, 0, 1)	()	-1	-4					Ab
-bach_solo	BWV1005_02_Fuga	503	237	236	944	944	2.0	1/2	1/2	2/2	1	1	V65/bVII	C	I		V65/bVII		V		65		bVII			Mm7	False	False	(3, 0, -3, -1)	()	-1	3					A
-bach_solo	BWV1005_02_Fuga	504	238	237	946	946	3.0	0	0	2/2	1	1	bVII	C	I		bVII		bVII							M	False	False	(-2, 2, -1)	()	-2	-2					Bb
-bach_solo	BWV1005_02_Fuga	505	238	237	949	949	1.0	3/4	3/4	2/2	1	1	V65	C	I		V65		V		65					Mm7	False	False	(5, 2, -1, 1)	()	1	5					B
-bach_solo	BWV1005_02_Fuga	506	239	238	950	950	3.0	0	0	2/2	1	1	I	C	I		I		I							M	False	False	(0, 4, 1)	()	0	0					C
-bach_solo	BWV1005_02_Fuga	507	239	238	953	953	1.0	3/4	3/4	2/2	1	1	#viio7/ii	C	I		#viio7/ii		#vii	o	7		ii			o7	False	False	(7, 4, 1, -2)	()	7	7					C#
-bach_solo	BWV1005_02_Fuga	508	240	239	954	954	2.0	0	0	2/2	1	1	ii	C	I		ii		ii							m	False	False	(2, -1, 3)	()	2	2					D
-bach_solo	BWV1005_02_Fuga	509	240	239	956	956	1.0	1/2	1/2	2/2	1	1	viio6	C	I		viio6		vii	o	6					o	False	False	(2, -1, 5)	()	5	2					D
-bach_solo	BWV1007_07_Gique	45	31	29	86	86	0.5	3/8	3/8	6/8	1	1	I6	G	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					B
-bach_solo	BWV1007_07_Gique	46	31	29	173/2	173/2	1.0	1/2	1/2	6/8	1	1	IV	G	I		IV		IV							M	False	False	(-1, 3, 0)	()	-1	-1					C
-bach_solo	BWV1007_07_Gique	47	32	30	175/2	175/2	1.5	0	0	6/8	1	1	ii6	G	I		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					C
-bach_solo	BWV1007_07_Gique	48	32	30	89	89	0.5	3/8	3/8	6/8	1	1	V6/V	G	I		V6/V		V		6		V			M	False	False	(6, 3, 2)	()	2	6					C#
-bach_solo	BWV1007_07_Gique	49	32	30	179/2	179/2	1.0	1/2	1/2	6/8	1	1	V	G	I		V		V							M	False	False	(1, 5, 2)	()	1	1					D
-bach_solo	BWV1007_07_Gique	50	33	31	181/2	181/2	1.5	0	0	6/8	1	1	iii6	G	I		iii6		iii		6					m	False	False	(1, 5, 4)	()	4	1					D
-bach_solo	BWV1007_07_Gique	51	33	31	92	92	0.5	3/8	3/8	6/8	1	1	V6/vi	G	I		V6/vi		V		6		vi			M	False	False	(8, 5, 4)	()	4	8					D#
-bach_solo	BWV1007_07_Gique	52	33	31	185/2	185/2	1.5	1/2	1/2	6/8	1	1	IV6	G	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					E
-bach_solo	BWV1008_04_Sarabande	44	25	25	72	72	1.0	0	0	3/4	1	1	III	d	i		III		III							M	True	True	(-3, 1, -2)	()	-3	-3					F
-bach_solo	BWV1008_04_Sarabande	45	25	25	73	73	2.0	1/4	1/4	3/4	1	1	viio/IV	d	i		viio/IV		vii	o			IV			o	True	True	(4, 1, -2)	()	4	4					F#
-bach_solo	BWV1008_04_Sarabande	46	26	26	75	75	1.0	0	0	3/4	1	1	IV	d	i		IV		IV							M	True	True	(-1, 3, 0)	()	-1	-1					G
-bach_solo	BWV1008_04_Sarabande	47	26	26	76	76	2.0	1/4	1/4	3/4	1	1	viio/V	d	i		viio/V		vii	o			V			o	True	True	(6, 3, 0)	()	6	6					G#
-bach_solo	BWV1008_04_Sarabande	48	27	27	78	78	1.0	0	0	3/4	1	1	V(64)	d	i		V(64)		V			64				M	True	True	(1, 0, -3)	()	1	1					A
-bach_solo	BWV1008_04_Sarabande	49	27	27	79	79	1.0	1/4	1/4	3/4	1	1	V(4)	d	i		V(4)		V			4				M	True	True	(1, 0, 2)	()	1	1					A
-bach_solo	BWV1008_04_Sarabande	50	27	27	80	80	1.0	1/2	1/2	3/4	1	1	V	d	i		V		V							M	True	True	(1, 5, 2)	()	1	1					A
-bach_solo	BWV1011_01_Prelude	315	215	215	386	386	1.5	0	0	3/8	1	1	#viio6	c	i		#viio6		#vii	o	6					o	True	True	(2, -1, 5)	()	5	2					D
-bach_solo	BWV1011_01_Prelude	316	216	216	775/2	775/2	1.5	0	0	3/8	1	1	i6	c	i		i6		i		6					m	True	True	(-3, 1, 0)	()	0	-3					Eb
-bach_solo	BWV1011_01_Prelude	317	217	217	389	389	1.5	0	0	3/8	1	1	V65/IV	c	i		V65/IV		V		65		IV			Mm7	True	True	(4, 1, -2, 0)	()	0	4					E
-bach_solo	BWV1011_01_Prelude	318	218	218	781/2	781/2	1.5	0	0	3/8	1	1	IV	c	i		IV		IV							M	True	True	(-1, 3, 0)	()	-1	-1					F
-bach_solo	BWV1011_01_Prelude	319	219	219	392	392	1.5	0	0	3/8	1	1	viio7/V	c	i		viio7/V		vii	o	7		V			o7	True	True	(6, 3, 0, -3)	()	6	6					F#
-bach_solo	BWV1011_01_Prelude	320	220	220	787/2	787/2	4.0	0	0	3/8	1	1	V(64)	c	i		V(64)		V			64				M	True	True	(1, 0, -3)	()	1	1					G
-bach_solo	BWV1011_01_Prelude	321	222	222	795/2	795/2	0.5	1/4	1/4	3/8	1	1	V7	c	i		V7		V		7					Mm7	True	True	(1, 5, 2, -1)	()	1	1					G
-bartok_bagatelles	op06n11	54	44	44	86	86	2.0	0	0	2/4	2	1	IIIM7/bV	b	i		IIIM7/bV		III	M	7		bV			MM7	True	True	(-2, 2, -1, 3)	()	-2	-2					A
-bartok_bagatelles	op06n11	55	45	45	88	88	2.0	0	0	2/4	2	1	IVM7(4)/bV	b	i		IVM7(4)/bV		IV	M	7	4	bV			MM7	True	True	(-7, -1, -6, -2)	()	-7	-7					Bb
-bartok_bagatelles	op06n11	56	46	46	90	90	2.0	0	0	2/4	2	1	IM7(9)	b	i		IM7(9)		I	M	7	9				MM7	True	True	(0, 4, 1, 5)	(2,)	0	0					B
-bartok_bagatelles	op06n11	57	47	47	92	92	2.0	0	0	2/4	2	1	bIIM7(4)	b	i		bIIM7(4)		bII	M	7	4				MM7	True	True	(-5, 1, -4, 0)	()	-5	-5					C
-bartok_bagatelles	op06n11	58	48	48	94	94	2.0	0	0	2/4	2	1	iv6(11)/bV	b	i		iv6(11)/bV		iv		6	11	bV			m	True	True	(-10, -6, -7)	(-1,)	-7	-10					Db
-bartok_bagatelles	op06n11	59	49	49	96	96	2.0	0	0	2/4	2	1	viio65(9)/ii	b	i		viio65(9)/ii		vii	o	65	9	ii			o7	True	True	(-3, -6, -9, 0)	(2,)	0	-3					D
+bach_solo	BWV1005_02_Fuga	440	207	207	822		2.0	0	0	2/2	1	1	II	C	I		II		II							M	False	False	(2, 6, 3)	()	2	2					D
+bach_solo	BWV1005_02_Fuga	441	207	207	824		2.0	1/2	1/2	2/2	1	1	V6/iii	C	I		V6/iii		V		6		iii			M	False	False	(9, 6, 5)	()	5	9					D#
+bach_solo	BWV1005_02_Fuga	442	208	208	826		2.0	0	0	2/2	1	1	iii	C	I		iii		iii							m	False	False	(4, 1, 5)	()	4	4					E
+bach_solo	BWV1005_02_Fuga	443	208	208	828		2.0	1/2	1/2	2/2	1	1	I6	C	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					E
+bach_solo	BWV1005_02_Fuga	444	209	209	830		3.0	0	0	2/2	1	1	IV	C	I		IV		IV							M	False	False	(-1, 3, 0)	()	-1	-1					F
+bach_solo	BWV1005_02_Fuga	445	209	209	833		1.0	3/4	3/4	2/2	1	1	viio/V	C	I		viio/V		vii	o			V			o	False	False	(6, 3, 0)	()	6	6					F#
+bach_solo	BWV1005_02_Fuga	446	210	210	834		2.0	0	0	2/2	1	1	V	C	I		V		V							M	False	False	(1, 5, 2)	()	1	1					G
+bach_solo	BWV1005_02_Fuga	501	236	236	940		2.0	1/2	1/2	2/2	1	1	V	C	I		V		V							M	False	False	(1, 5, 2)	()	1	1					G
+bach_solo	BWV1005_02_Fuga	502	237	237	942		2.0	0	0	2/2	1	1	iv6(2)	C	I		iv6(2)		iv		6	2				m	False	False	(-4, 0, 1)	()	-1	-4					Ab
+bach_solo	BWV1005_02_Fuga	503	237	237	944		2.0	1/2	1/2	2/2	1	1	V65/bVII	C	I		V65/bVII		V		65		bVII			Mm7	False	False	(3, 0, -3, -1)	()	-1	3					A
+bach_solo	BWV1005_02_Fuga	504	238	238	946		3.0	0	0	2/2	1	1	.bVII	C	I		bVII		bVII							M	False	False	(-2, 2, -1)	()	-2	-2					Bb
+bach_solo	BWV1005_02_Fuga	505	238	238	949		1.0	3/4	3/4	2/2	1	1	V65	C	I		V65		V		65					Mm7	False	False	(5, 2, -1, 1)	()	1	5					B
+bach_solo	BWV1005_02_Fuga	506	239	239	950		3.0	0	0	2/2	1	1	I	C	I		I		I							M	False	False	(0, 4, 1)	()	0	0					C
+bach_solo	BWV1005_02_Fuga	507	239	239	953		1.0	3/4	3/4	2/2	1	1	#viio7/ii	C	I		#viio7/ii		#vii	o	7		ii			o7	False	False	(7, 4, 1, -2)	()	7	7					C#
+bach_solo	BWV1005_02_Fuga	508	240	240	954		2.0	0	0	2/2	1	1	ii	C	I		ii		ii							m	False	False	(2, -1, 3)	()	2	2					D
+bach_solo	BWV1005_02_Fuga	509	240	240	956		1.0	1/2	1/2	2/2	1	1	viio6	C	I		viio6		vii	o	6					o	False	False	(2, -1, 5)	()	5	2					D
+bach_solo	BWV1007_07_Gique	45	31	29	86		0.5	3/8	3/8	6/8	1	1	I6	G	I		I6		I		6					M	False	False	(4, 1, 0)	()	0	4					B
+bach_solo	BWV1007_07_Gique	46	31	29	173/2		1.0	1/2	1/2	6/8	1	1	IV	G	I		IV		IV							M	False	False	(-1, 3, 0)	()	-1	-1					C
+bach_solo	BWV1007_07_Gique	47	32	30	175/2		1.5	0	0	6/8	1	1	ii6	G	I		ii6		ii		6					m	False	False	(-1, 3, 2)	()	2	-1					C
+bach_solo	BWV1007_07_Gique	48	32	30	89		0.5	3/8	3/8	6/8	1	1	V6/V	G	I		V6/V		V		6		V			M	False	False	(6, 3, 2)	()	2	6					C#
+bach_solo	BWV1007_07_Gique	49	32	30	179/2		1.0	1/2	1/2	6/8	1	1	V	G	I		V		V							M	False	False	(1, 5, 2)	()	1	1					D
+bach_solo	BWV1007_07_Gique	50	33	31	181/2		1.5	0	0	6/8	1	1	iii6	G	I		iii6		iii		6					m	False	False	(1, 5, 4)	()	4	1					D
+bach_solo	BWV1007_07_Gique	51	33	31	92		0.5	3/8	3/8	6/8	1	1	V6/vi	G	I		V6/vi		V		6		vi			M	False	False	(8, 5, 4)	()	4	8					D#
+bach_solo	BWV1007_07_Gique	52	33	31	185/2		1.5	1/2	1/2	6/8	1	1	IV6	G	I		IV6		IV		6					M	False	False	(3, 0, -1)	()	-1	3					E
+bach_solo	BWV1011_01_Prelude	315	215	215	386		1.5	0	0	3/8	1	1	#viio6	c	i		#viio6		#vii	o	6					o	True	True	(2, -1, 5)	()	5	2					D
+bach_solo	BWV1011_01_Prelude	316	216	216	775/2		1.5	0	0	3/8	1	1	i6	c	i		i6		i		6					m	True	True	(-3, 1, 0)	()	0	-3					Eb
+bach_solo	BWV1011_01_Prelude	317	217	217	389		1.5	0	0	3/8	1	1	V65/IV	c	i		V65/IV		V		65		IV			Mm7	True	True	(4, 1, -2, 0)	()	0	4					E
+bach_solo	BWV1011_01_Prelude	318	218	218	781/2		1.5	0	0	3/8	1	1	IV	c	i		IV		IV							M	True	True	(-1, 3, 0)	()	-1	-1					F
+bach_solo	BWV1011_01_Prelude	319	219	219	392		1.5	0	0	3/8	1	1	viio7/V	c	i		viio7/V		vii	o	7		V			o7	True	True	(6, 3, 0, -3)	()	6	6					F#
+bach_solo	BWV1011_01_Prelude	320	220	220	787/2		4.0	0	0	3/8	1	1	V(64)	c	i		V(64)		V			64				M	True	True	(1, 0, -3)	()	1	1					G
+bach_solo	BWV1011_01_Prelude	321	222	222	795/2		0.5	1/4	1/4	3/8	1	1	V7	c	i		V7		V		7					Mm7	True	True	(1, 5, 2, -1)	()	1	1					G
+bartok_bagatelles	op06n11	54	44	44	86		2.0	0	0	2/4	2	1	IIIM7/bV	b	i		IIIM7/bV		III	M	7		bV			MM7	True	True	(-2, 2, -1, 3)	()	-2	-2					A
+bartok_bagatelles	op06n11	55	45	45	88		2.0	0	0	2/4	2	1	IVM7(4)/bV	b	i		IVM7(4)/bV		IV	M	7	4	bV			MM7	True	True	(-7, -1, -6, -2)	()	-7	-7					Bb
+bartok_bagatelles	op06n11	56	46	46	90		2.0	0	0	2/4	2	1	IM7(9)	b	i		IM7(9)		I	M	7	9				MM7	True	True	(0, 4, 1, 5)	(2,)	0	0					B
+bartok_bagatelles	op06n11	57	47	47	92		2.0	0	0	2/4	2	1	bIIM7(4)	b	i		bIIM7(4)		bII	M	7	4				MM7	True	True	(-5, 1, -4, 0)	()	-5	-5					C
+bartok_bagatelles	op06n11	58	48	48	94		2.0	0	0	2/4	2	1	iv6(11)/bV	b	i		iv6(11)/bV		iv		6	11	bV			m	True	True	(-10, -6, -7)	(-1,)	-7	-10					Db
+bartok_bagatelles	op06n11	59	49	49	96		2.0	0	0	2/4	2	1	viio65(9)/ii	b	i		viio65(9)/ii		vii	o	65	9	ii			o7	True	True	(-3, -6, -9, 0)	(2,)	0	-3					D
 beethoven_piano_sonatas	01-3	76	48	45	133	133	3.0	0	0	3/4	2	1	I6	f	I		I6		I		6					M	True	False	(4, 1, 0)	()	0	4					A
 beethoven_piano_sonatas	01-3	77	49	46	136	136	2.0	0	0	3/4	2	1	ii6	f	I		ii6		ii		6					m	True	False	(-1, 3, 2)	()	2	-1					Bb
 beethoven_piano_sonatas	01-3	78	49	46	138	138	1.0	1/2	1/2	3/4	2	1	V.V65	f	V		V65		V		65					Mm7	True	False	(5, 2, -1, 1)	()	1	5					B
