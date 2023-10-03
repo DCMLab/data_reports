@@ -86,12 +86,13 @@ la_mer_notes
 ```
 
 ```{code-cell} ipython3
-plot_pitch_class_distribution(
+fig = plot_pitch_class_distribution(
     df=la_mer_notes,
     modin=False,
     title="Pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
-    output=os.path.join(RESULTS_PATH, 'la_mer_distribution.png')
 )
+save_figure_as(fig, "debussy_la_mer_beginning_pitch_class_distribution_bars")
+fig.show()
 ```
 
 ```{code-cell} ipython3
@@ -104,10 +105,10 @@ fig = tpc_bubbles(
     x_axis=x_axis,
     title="measure-wise pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
     labels=dict(mn="Measure number", tpc="Tonal pitch class"),
-    output=os.path.join(RESULTS_PATH, "la_mer.png"),
     modin=False
 )
-fig
+save_figure_as(fig, "debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles")
+fig.show()
 ```
 
 ```{code-cell} ipython3
@@ -152,7 +153,9 @@ tpc_bubbles(test, modin=False)
 ```
 
 ```{code-cell} ipython3
-tpc_bubbles(id_distributions, modin=False)
+fig = tpc_bubbles(id_distributions, modin=False)
+save_figure_as(fig, "all_pitch_class_distributions_piecewise_bubbles")
+fig.show()
 ```
 
 ```{code-cell} ipython3
@@ -193,12 +196,12 @@ fig = tpc_bubbles(
     x_axis=x_axis,
     #title="measure-wise pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
     labels=dict(mn="Measure number", tpc="Tonal pitch class"),
-    output=os.path.join(RESULTS_PATH, "all_tpc_distributions.png"),
   modin=False
 )
 ```
 
 ```{code-cell} ipython3
-fig = plot_pitch_class_distribution(notes, output=os.path.join(RESULTS_PATH, "dl_corpus_tpc.png"), modin=False)
-fig
+fig = plot_pitch_class_distribution(notes, modin=False)
+save_figure_as(fig, "complete_pitch_class_distribution_absolute_bars")
+fig.show()
 ```
