@@ -39,7 +39,7 @@ pd.set_option('display.max_columns', 500)
 :tags: [hide-input]
 
 from utils import OUTPUT_FOLDER, write_image
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "results"))
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "notes_stats"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
@@ -144,6 +144,7 @@ fig.update_traces(spanmode='hard') # do not extend beyond outliers
 fig.update_layout(yaxis=yaxis,
                   **STD_LAYOUT,
                  showlegend=False)
+save_figure_as(fig, "ambitus_corpuswise_violins")
 fig.show()
 ```
 
@@ -184,6 +185,7 @@ fig.update_traces(spanmode='hard') # do not extend beyond outliers
 fig.update_layout(yaxis=yaxis,
                   **STD_LAYOUT,
                  showlegend=False)
+save_figure_as(fig, "pitch_class_distributions_corpuswise_violins")
 fig.show()
 ```
 
@@ -206,6 +208,7 @@ fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array',
                  tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black',
                  minor=dict(dtick=6, gridcolor='grey', showgrid=True),
                 )
+save_figure_as(fig, "pitch_class_distribution_absolute_bars")
 fig.show()
 ```
 
@@ -226,6 +229,7 @@ fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array',
                  tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black',
                  minor=dict(dtick=6, gridcolor='grey', showgrid=True),
                 )
+save_figure_as(fig, "pitch_class_distribution_corpuswise_absolute_bars")
 fig.show()
 ```
 
@@ -248,6 +252,7 @@ fig.update_layout(**STD_LAYOUT, showlegend=False)
 fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='lightgrey', tickmode='array', tickvals= [-12, -6, 0, 6, 12, 18],
     ticktext = ["Dbb", "Gb", "C", "F#", "B#", "E##"], visible=True, )
 fig.update_yaxes(gridcolor='lightgrey', zeroline=False, matches=None, showticklabels=True)
+save_figure_as(fig, "pitch_class_distribution_corpuswise_scatter")
 fig.show()
 ```
 
