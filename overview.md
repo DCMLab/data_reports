@@ -23,8 +23,9 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+%load_ext autoreload
+%autoreload 2
 import os
-
 from git import Repo
 import dimcat as dc
 import ms3
@@ -118,18 +119,26 @@ fig.show()
 
 hist_data = summary.reset_index()
 hist_data.corpus = hist_data.corpus.map(corpus_names)
-fig = px.histogram(hist_data, x='composed_end', color='corpus',
-                   labels=dict(composed_end='decade',
-                               count='pieces',
-                              ),
-                   color_discrete_map=corpus_name_colors,
+N = len(hist_data)
+fig = px.histogram(
+    hist_data,
+    x='composed_end',
+    color='corpus',
+    labels=dict(composed_end='decade',
+               count='pieces',
+              ),
+    color_discrete_map=corpus_name_colors,
+    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus"
                   )
 fig.update_traces(xbins=dict(
     size=10
 ))
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
-save_figure_as(fig, "pieces_timeline_histogram")
+fig.update_legends(
+  font=dict(size=16)
+)
+save_figure_as(fig, "pieces_timeline_histogram", height=1250)
 fig.show()
 ```
 
