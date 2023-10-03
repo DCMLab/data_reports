@@ -88,7 +88,7 @@ H_LAYOUT.update({'legend': dict({'orientation': 'h', 'itemsizing':'constant', 'x
 
 ```{code-cell} ipython3
 fig = plot_cum(df.chord, x_log=True, markersize=4, left_range=(-0.03, 3.7), right_range=(-0.01, 1.11), **H_LAYOUT)
-save_figure_as(fig, 'type_distribution')
+save_figure_as(fig, 'chord_label_unigram_distribution')
 fig
 ```
 
@@ -105,7 +105,7 @@ major.chord.value_counts().iloc[:k]
 
 ```{code-cell} ipython3
 fig = plot_cum(major.chord, x_log=True, markersize=4, left_range=(-0.03, 3.7), right_range=(-0.01,1.11), **H_LAYOUT)
-save_figure_as(fig, 'unigrams_major')
+save_figure_as(fig, 'chord_label_unigram_distribution_in_major')
 fig.show()
 ```
 
@@ -121,7 +121,7 @@ minor.chord.value_counts().iloc[:k]
 
 ```{code-cell} ipython3
 fig = plot_cum(minor.chord, x_log=True, markersize=4, left_range=(-0.03, 3.7), right_range=(-0.01,1.11), **H_LAYOUT)
-save_figure_as(fig, 'unigrams_minor')
+save_figure_as(fig, 'chord_label_unigram_distribution_in_minor')
 fig.show()
 ```
 
