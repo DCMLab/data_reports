@@ -96,7 +96,7 @@ fig = plot_pitch_class_distribution(
     modin=False,
     title="Pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
 )
-save_figure_as(fig, "debussy_la_mer_beginning_pitch_class_distribution_bars")
+save_figure_as(fig, "debussy_la_mer_beginning_pitch_class_distribution_bars", height=800)
 fig.show()
 ```
 
@@ -108,11 +108,11 @@ x_axis = dict(tickvals=x_vals, ticktext=x_names)
 fig = tpc_bubbles(
     la_mer_mn_dist,
     x_axis=x_axis,
-    title="measure-wise pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
+    title="measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
     labels=dict(mn="Measure number", tpc="Tonal pitch class"),
     modin=False
 )
-save_figure_as(fig, "debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles")
+save_figure_as(fig, "debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles", width=1200)
 fig.show()
 ```
 
