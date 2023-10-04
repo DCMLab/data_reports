@@ -31,12 +31,12 @@ COLOR_SCALE_SETTINGS = dict(
     color_continuous_scale="RdBu_r", color_continuous_midpoint=2
 )
 TPC_DISCRETE_COLOR_MAP = dict(zip(range(-15, 20), sample_colorscale("RdBu_r", 35)))
-STD_LAYOUT = {
-    "paper_bgcolor": "#FFFFFF",
-    "plot_bgcolor": "#FFFFFF",
-    "margin": {"l": 40, "r": 0, "b": 0, "t": 80, "pad": 0},
-    "font": {"size": 25},
-}
+STD_LAYOUT = dict(
+    paper_bgcolor="rgba(0,0,0,0)",
+    plot_bgcolor="rgba(0,0,0,0)",
+    margin={"l": 40, "r": 0, "b": 0, "t": 80, "pad": 0},
+    font={"size": 25},
+)
 
 CADENCE_COLORS = dict(
     zip(("HC", "PAC", "PC", "IAC", "DC", "EC"), colorlover.scales["6"]["qual"]["Set1"])

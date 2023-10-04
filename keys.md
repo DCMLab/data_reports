@@ -152,16 +152,19 @@ maj_min_ratio_per_dataset
 ```
 
 ```{code-cell}
-fig = px.bar(maj_min_ratio_per_dataset.reset_index(),
-       x="corpus_name",
-       y="duration_qb",
-       color="mode",
-       text='fraction',
-       labels=dict(dataset='', duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
-       category_orders=dict(dataset=chronological_order)
+fig = px.bar(
+    maj_min_ratio_per_dataset.reset_index(),
+    x="corpus_name",
+    y="duration_qb",
+    title="Fractions of summed corpus duration that are in major vs. minor",
+    color="mode",
+    text='fraction',
+    labels=dict(duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
+    category_orders=dict(corpus_name=chronological_corpus_names)
     )
 fig.update_layout(**STD_LAYOUT)
-save_figure_as(fig, 'major_minor_key_segments_corpuswise_absolute_stacked_bars', height=800)
+fig.update_xaxes(tickangle=45)
+save_figure_as(fig, 'major_minor_key_segments_corpuswise_absolute_stacked_bars', height=900)
 fig.show()
 ```
 
@@ -220,18 +223,25 @@ legend=dict(
     xanchor="right",
     x=0.99
 )
-fig = px.bar(mode_tpcs,
-       x='tpc',
-       y='duration_pct',
-       color='mode',
-       barmode='group',
-       labels=dict(duration_pct='normalized duration',
-                   tpc="Notes transposed to the local key, as major-scale degrees",
-                  ),
-       #log_y=True,
-       #category_orders=dict(sd=sd_order)
-      )
-fig.update_layout(**STD_LAYOUT, xaxis=xaxis, legend=legend)
+fig = px.bar(
+    mode_tpcs,
+    x='tpc',
+    y='duration_pct',
+    title="Scale degree distribution over major and minor segments",
+    color='mode',
+    barmode='group',
+    labels=dict(
+        duration_pct='normalized duration',
+        tpc="Notes transposed to the local key, as major-scale degrees",
+        ),
+    #log_y=True,
+    #category_orders=dict(sd=sd_order)
+    )
+fig.update_layout(
+    **STD_LAYOUT,
+    xaxis=xaxis,
+    legend=legend,
+)
 save_figure_as(fig, 'scale_degree_distribution_maj_min_normalized_grouped_bars', height=600)
 fig.show()
 ```
