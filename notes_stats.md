@@ -126,6 +126,7 @@ fig = px.violin(weighted_midi,
                 x='dataset',
                 y='midi',
                 color='dataset',
+                title="Corpus-wise distribution over registers (ambitus)",
                 box=True,
                 labels=dict(
                     dataset='',
@@ -138,11 +139,12 @@ fig = px.violin(weighted_midi,
 fig.update_traces(spanmode='hard') # do not extend beyond outliers
 fig.update_layout(**STD_LAYOUT,
                  showlegend=False)
-fig.udate_yaxes(
+fig.update_yaxes(
     tickmode= 'array',
     tickvals= [12, 24, 36, 48, 60, 72, 84, 96],
     ticktext = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7"],
 )
+fig.update_xaxes(tickangle=45)
 save_figure_as(fig, "ambitus_corpuswise_violins")
 fig.show()
 ```
@@ -162,6 +164,7 @@ fig = px.violin(weighted_tpc,
                 x='dataset',
                 y='tpc',
                 color='dataset',
+                title="Corpus-wise distribution over line of fifths (tonal pitch classes)",
                 box=True,
                 labels=dict(
                     dataset='',
@@ -182,6 +185,7 @@ fig.update_yaxes(
     zerolinecolor='grey',
     zeroline=True
 )
+fig.update_xaxes(tickangle=45)
 save_figure_as(fig, "pitch_class_distributions_corpuswise_violins")
 fig.show()
 ```
