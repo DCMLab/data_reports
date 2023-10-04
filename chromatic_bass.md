@@ -54,7 +54,7 @@ print(f"ms3 version {ms3.__version__}")
 parse_obj = ms3.Parse(CORPUS_PATH)
 annotated_view = parse_obj.get_view('annotated')
 annotated_view.include('facets', 'expanded')
-annotated_view.fnames_with_incomplete_facets = False
+annotated_view.pieces_with_incomplete_facets = False
 parse_obj.set_view(annotated_view)
 parse_obj.parse_tsv(choose='auto')
 parse_obj

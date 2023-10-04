@@ -74,7 +74,7 @@ dataset.load(directory=CORPUS_PATH, parse_tsv=False)
 
 annotated_view = dataset.data.get_view('annotated')
 annotated_view.include('facets', 'expanded')
-annotated_view.fnames_with_incomplete_facets = False
+annotated_view.pieces_with_incomplete_facets = False
 dataset.data.set_view(annotated_view)
 dataset.data.parse_tsv(choose='auto')
 dataset.get_indices()
