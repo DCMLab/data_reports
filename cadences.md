@@ -31,7 +31,8 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 
-from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, get_repo_name, print_heading, resolve_dir
+from utils import STD_LAYOUT, CADENCE_COLORS, color_background, value_count_df, get_repo_name, print_heading, \
+  resolve_dir, get_corpus_display_name
 ```
 
 ```{code-cell}
@@ -127,7 +128,7 @@ corpora
 ```{code-cell}
 all_labels = hascadence.get_facet('expanded')
 
-print(f"{len(all_labels.index)} hand-annotated harmony labels:")
+print(f"{len(all_labels.cadence_fraction_per_dataset)} hand-annotated harmony labels:")
 all_labels.iloc[:10, 13:].style.apply(color_background, subset="chord")
 ```
 
@@ -136,13 +137,15 @@ all_labels.iloc[:10, 13:].style.apply(color_background, subset="chord")
 ```{code-cell}
 dataset_metadata = hascadence.data.metadata()
 hascadence_metadata = dataset_metadata.loc[hascadence.indices[()]]
-hascadence_metadata.index.rename('dataset', level=0, inplace=True)
+hascadence_metadata.cadence_fraction_per_dataset.rename('dataset', level=0, inplace=True)
 hascadence_metadata.head()
 ```
 
 ```{code-cell}
 mean_composition_years = hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
-chronological_order = mean_composition_years.index.to_list()
+chronological_order = mean_composition_years.cadence_fraction_per_dataset.to_list()
+corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
+chronological_corpus_names = list(corpus_names.values())
 bar_data = pd.concat([mean_composition_years.rename('year'),
                       hascadence_metadata.groupby(level='dataset').size().rename('pieces')],
                      axis=1
@@ -166,10 +169,20 @@ value_count_df(all_labels.cadence)
 ```
 
 ```{code-cell}
-fig = px.pie(all_labels[all_labels.cadence.notna()], names="cadence", color="cadence",
-             color_discrete_map=CADENCE_COLORS)
-
-save_figure_as(fig, 'all_cadences_pie')
+fig = px.pie(
+    all_labels[all_labels.cadence.notna()],
+    title="Distribution of cadence types over the DLC",
+    names="cadence",
+    color="cadence",
+    color_discrete_map=CADENCE_COLORS
+)
+fig.update_layout(**STD_LAYOUT,)
+fig.update_traces(
+  textposition='auto',
+  textinfo='percent+label',
+textfont_size=30
+)
+save_figure_as(fig, 'all_cadences_pie', width=1000, height=1000)
 fig.show()
 ```
 
@@ -178,9 +191,20 @@ fig.show()
 ```{code-cell}
 cadence_count_per_dataset = all_labels.groupby("corpus").cadence.value_counts()
 cadence_fraction_per_dataset = cadence_count_per_dataset / cadence_count_per_dataset.groupby(level=0).sum()
-fig = px.bar(cadence_fraction_per_dataset.rename('count').reset_index(), x='corpus', y='count', color='cadence',
-      color_discrete_map=CADENCE_COLORS, category_orders=dict(dataset=chronological_order))
-save_figure_as(fig, 'all_cadences_corpuswise_stacked_bars')
+cadence_fraction_per_dataset = cadence_fraction_per_dataset.rename('fraction').reset_index()
+cadence_fraction_per_dataset["corpus_name"] = cadence_fraction_per_dataset.corpus.map(corpus_names)
+fig = px.bar(
+    cadence_fraction_per_dataset,
+    x='corpus_name',
+    y='fraction',
+    title="Distribution of cadence types per corpus",
+    color='cadence',
+    color_discrete_map=CADENCE_COLORS,
+    labels=dict(corpus_name="", fraction="Fraction of all cadences"),
+    category_orders=dict(corpus_name=chronological_corpus_names)
+)
+fig.update_layout(**STD_LAYOUT)
+save_figure_as(fig, 'all_cadences_corpuswise_stacked_bars', height=1000)
 fig.show()
 ```
 
@@ -190,7 +214,7 @@ fig = px.pie(cadence_count_per_dataset.rename('count').reset_index(), names='cad
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, 'all_cadences_corpuswise_pies')
-fig.show()
+fig.show
 ```
 
 ## Per phrase
