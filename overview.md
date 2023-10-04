@@ -114,7 +114,6 @@ fig = px.bar(
 )
 fig.update_traces(width=5)
 fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
 fig.update_traces(width=5)
 save_figure_as(fig, "pieces_timeline_bars")
 fig.show()
@@ -141,7 +140,6 @@ fig.update_traces(xbins=dict(
     size=10
 ))
 fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
 fig.update_legends(
   font=dict(size=16)
 )

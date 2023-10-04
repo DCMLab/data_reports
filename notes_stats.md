@@ -122,11 +122,6 @@ weighted_midi
 ```
 
 ```{code-cell}
-yaxis=dict(tickmode= 'array',
-           tickvals= [12, 24, 36, 48, 60, 72, 84, 96],
-           ticktext = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7"],
-           gridcolor='lightgrey',
-           )
 fig = px.violin(weighted_midi,
                 x='dataset',
                 y='midi',
@@ -141,9 +136,13 @@ fig = px.violin(weighted_midi,
                 width=1000, height=600,
                )
 fig.update_traces(spanmode='hard') # do not extend beyond outliers
-fig.update_layout(yaxis=yaxis,
-                  **STD_LAYOUT,
+fig.update_layout(**STD_LAYOUT,
                  showlegend=False)
+fig.udate_yaxes(
+    tickmode= 'array',
+    tickvals= [12, 24, 36, 48, 60, 72, 84, 96],
+    ticktext = ["C0", "C1", "C2", "C3", "C4", "C5", "C6", "C7"],
+)
 save_figure_as(fig, "ambitus_corpuswise_violins")
 fig.show()
 ```
@@ -159,14 +158,6 @@ weighted_tpc
 ### As violin plot
 
 ```{code-cell}
-yaxis=dict(
-    tickmode= 'array',
-    tickvals= [-12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18],
-    ticktext = ["Dbb", "Bbb", "Gb", "Eb", "C", "A", "F#", "D#", "B#", "G##", "E##"],
-    gridcolor='lightgrey',
-    zerolinecolor='lightgrey',
-    zeroline=True
-           )
 fig = px.violin(weighted_tpc,
                 x='dataset',
                 y='tpc',
@@ -182,9 +173,15 @@ fig = px.violin(weighted_tpc,
                 height=600,
                )
 fig.update_traces(spanmode='hard') # do not extend beyond outliers
-fig.update_layout(yaxis=yaxis,
-                  **STD_LAYOUT,
+fig.update_layout(**STD_LAYOUT,
                  showlegend=False)
+fig.update_yaxes(
+    tickmode= 'array',
+    tickvals= [-12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18],
+    ticktext = ["Dbb", "Bbb", "Gb", "Eb", "C", "A", "F#", "D#", "B#", "G##", "E##"],
+    zerolinecolor='grey',
+    zeroline=True
+)
 save_figure_as(fig, "pitch_class_distributions_corpuswise_violins")
 fig.show()
 ```
@@ -203,8 +200,7 @@ fig = px.bar(bar_data, x='tpc', y='duration_qb',
              width=1000, height=300,
              )
 fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
-fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array',
+fig.update_xaxes(zerolinecolor='grey', tickmode='array',
                  tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black',
                  minor=dict(dtick=6, gridcolor='grey', showgrid=True),
                 )
@@ -224,8 +220,7 @@ fig = px.bar(scatter_data, x='tpc', y='duration_qb', color='corpus_name',
                  width=1000, height=500,
                 )
 fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
-fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='grey', tickmode='array',
+fig.update_xaxes(zerolinecolor='grey', tickmode='array',
                  tickvals=x_values, ticktext = x_names, dtick=1, ticks='outside', tickcolor='black',
                  minor=dict(dtick=6, gridcolor='grey', showgrid=True),
                 )
@@ -249,9 +244,9 @@ fig = px.scatter(scatter_data, x='tpc', y='duration_qb', color='corpus_name',
 fig.update_traces(mode='lines+markers')
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_layout(**STD_LAYOUT, showlegend=False)
-fig.update_xaxes(gridcolor='lightgrey', zerolinecolor='lightgrey', tickmode='array', tickvals= [-12, -6, 0, 6, 12, 18],
+fig.update_xaxes(zerolinecolor='grey', tickmode='array', tickvals= [-12, -6, 0, 6, 12, 18],
     ticktext = ["Dbb", "Gb", "C", "F#", "B#", "E##"], visible=True, )
-fig.update_yaxes(gridcolor='lightgrey', zeroline=False, matches=None, showticklabels=True)
+fig.update_yaxes(zeroline=False, matches=None, showticklabels=True)
 save_figure_as(fig, "pitch_class_distribution_corpuswise_scatter")
 fig.show()
 ```

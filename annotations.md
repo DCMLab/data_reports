@@ -289,7 +289,6 @@ fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mod
              color_discrete_sequence=CORPUS_COLOR_SCALE,
              )
 fig.update_layout(**STD_LAYOUT)
-fig.update_yaxes(gridcolor='lightgrey')
 save_figure_as(fig, 'scale_degree_distributions_maj_min_absolute_bars')
 fig.show()
 ```
@@ -444,7 +443,6 @@ fig.update_layout(**STD_LAYOUT,
                       y=1,
                   )
                  )
-fig.update_yaxes(gridcolor='lightgrey')
 save_figure_as(fig, 'chord_type_distribution_over_scale_degrees_absolute_grouped_bars')
 fig.show()
 ```
