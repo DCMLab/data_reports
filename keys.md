@@ -160,8 +160,8 @@ fig = px.bar(maj_min_ratio_per_dataset.reset_index(),
        labels=dict(dataset='', duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
        category_orders=dict(dataset=chronological_order)
     )
-fig.update_layout(**STD_LAYOUT, height=270, width=1200)
-save_figure_as(fig, 'major_minor_key_segments_corpuswise_absolute_stacked_bars')
+fig.update_layout(**STD_LAYOUT)
+save_figure_as(fig, 'major_minor_key_segments_corpuswise_absolute_stacked_bars', height=800)
 fig.show()
 ```
 
@@ -231,7 +231,7 @@ fig = px.bar(mode_tpcs,
        #log_y=True,
        #category_orders=dict(sd=sd_order)
       )
-fig.update_layout(**STD_LAYOUT, xaxis=xaxis, legend=legend, height=210, width=1200)
-save_figure_as(fig, 'scale_degree_distribution_maj_min_normalized_grouped_bars')
+fig.update_layout(**STD_LAYOUT, xaxis=xaxis, legend=legend)
+save_figure_as(fig, 'scale_degree_distribution_maj_min_normalized_grouped_bars', height=600)
 fig.show()
 ```
