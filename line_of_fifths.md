@@ -29,7 +29,11 @@ import ms3
 from utils import (
     get_pitch_class_distribution,
     plot_pitch_class_distribution,
-    tpc_bubbles, resolve_dir, print_heading, get_repo_name
+    tpc_bubbles,
+    resolve_dir,
+    print_heading,
+    get_repo_name,
+    get_middle_composition_year
 )
 import pandas as pd
 # import modin.pandas as pd
@@ -38,6 +42,7 @@ import pandas as pd
 ```
 
 ```{code-cell} ipython3
+
 from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
@@ -112,18 +117,18 @@ fig.show()
 ```
 
 ```{code-cell} ipython3
-id_notes = pd.concat({i: df for i, (_, df) in enumerate(notes.groupby(['corpus', 'piece']))})
+sorted_composition_years = get_middle_composition_year(metadata).sort_values()
+order_of_pieces = sorted_composition_years.index.to_list()
+notes_piece_groups = notes.groupby(['corpus', 'piece'])
+# aligned_integer_index = np.concatenate([notes_piece_groups.indices[piece_id] for piece_id in order_of_pieces])
+# notes_chronological_piece_order = notes.take(aligned_integer_index)
+id_notes = pd.concat({ID: notes_piece_groups.get_group(piece_id) for ID, piece_id in enumerate(order_of_pieces)})
 id_notes.index.rename(['ID', 'corpus', 'piece',  'i'], inplace=True)
 id_notes
 ```
 
 ```{code-cell} ipython3
-notes.groupby(['corpus', 'piece']).ngroups
-```
-
-```{code-cell} ipython3
-all_distributions = notes.groupby(['corpus', 'piece','tpc']).duration_qb.sum().to_frame()
-piece_distributions = pd.concat({i: df for i, (idx, df) in enumerate(all_distributions.groupby(['corpus', 'piece']))}, names=['ID', 'corpus', 'piece', 'tpc'])
+piece_distributions = id_notes.groupby(['ID', 'corpus', 'piece', 'tpc']).duration_qb.sum()
 piece_distributions
 ```
 
