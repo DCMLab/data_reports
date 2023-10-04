@@ -36,6 +36,8 @@ STD_LAYOUT = dict(
     plot_bgcolor="rgba(0,0,0,0)",
     margin={"l": 40, "r": 0, "b": 0, "t": 80, "pad": 0},
     font={"size": 25},
+    xaxis=dict(gridcolor="lightgrey"),
+    yaxis=dict(gridcolor="lightgrey"),
 )
 
 CADENCE_COLORS = dict(

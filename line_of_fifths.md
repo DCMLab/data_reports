@@ -42,7 +42,6 @@ import pandas as pd
 ```
 
 ```{code-cell} ipython3
-
 from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)

@@ -181,8 +181,7 @@ fig.update_traces(xbins=dict( # bins used for histogram
         size=1
     ))
 fig.update_layout(**STD_LAYOUT)
-fig.update_xaxes(dtick=4, gridcolor='lightgrey')
-fig.update_yaxes(gridcolor='lightgrey')
+fig.update_xaxes(dtick=4)
 save_figure_as(fig, 'phrase_lengths_in_measures_histogram')
 fig.show()
 ```
@@ -256,9 +255,24 @@ key_resolved_durations
 
 ```{code-cell} ipython3
 pie_data = replace_boolean_mode_by_strings(key_resolved_durations.reset_index())
-fig = px.pie(pie_data, names='localkey', values='duration_qb', facet_col='globalkey_mode')
-save_figure_as(fig, 'localkey_distributiona_major_minor_pies')
-fig.show
+fig = px.pie(
+  pie_data,
+  title="Distribution of local keys for major vs. minor pieces",
+  names='localkey',
+  values='duration_qb',
+  facet_col='globalkey_mode',
+  labels=dict(globalkey_mode="Mode of global key")
+)
+fig.update_layout(**STD_LAYOUT)
+fig.update_traces(
+  textposition='inside',
+  textinfo='percent+label',
+)
+fig.update_legends(
+  orientation='h',
+)
+save_figure_as(fig, 'localkey_distributions_major_minor_pies', height=700, width=900)
+fig.show()
 ```
 
 #### Distribution of intervals between localkey tonic and global tonic
@@ -336,11 +350,6 @@ mode_tpcs['mode'] = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'mino
 ```{code-cell} ipython3
 #mode_tpcs = mode_tpcs[mode_tpcs['duration_pct'] > 0.001]
 #sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', 'b4', '4', '#4', '##4', 'b5', '5', '#5', 'b6','6', '#6', 'b7', '7']
-xaxis = dict(
-        tickmode = 'array',
-        tickvals = mode_tpcs.tpc,
-        ticktext = mode_tpcs.sd
-    )
 legend=dict(
     yanchor="top",
     y=0.99,
@@ -348,18 +357,25 @@ legend=dict(
     x=0.99
 )
 fig = px.bar(mode_tpcs,
-       x='tpc',
-       y='duration_pct',
-       color='mode',
-       barmode='group',
-       labels=dict(duration_pct='normalized duration',
-                   tpc="Notes transposed to the local key, as major-scale degrees",
-                  ),
-       #log_y=True,
-       #category_orders=dict(sd=sd_order)
-      )
-fig.update_layout(**STD_LAYOUT, xaxis=xaxis, legend=legend)
-save_figure_as(fig, 'scale_degree_distributions_maj_min_normalized_bars')
+    x='tpc',
+    y='duration_pct',
+    title="Scale degree distribution over major and minor segments",
+    color='mode',
+    barmode='group',
+    labels=dict(
+        duration_pct='normalized duration',
+        tpc="Notes transposed to the local key, as major-scale degrees",
+        ),
+    #log_y=True,
+    #category_orders=dict(sd=sd_order)
+    )
+fig.update_layout(**STD_LAYOUT, legend=legend)
+fig.update_xaxes(
+    tickmode='array',
+    tickvals=mode_tpcs.tpc,
+    ticktext=mode_tpcs.sd
+)
+save_figure_as(fig, 'scale_degree_distributions_maj_min_normalized_bars', height=600)
 fig.show()
 ```
 
@@ -373,8 +389,21 @@ root_durations = all_chords[all_chords.root.between(-5,6)].groupby(['root', 'cho
 #root_durations = root_durations.sort_values(key=lambda S: S.index.get_level_values(0).map(S.groupby(level=0).sum()), ascending=False)
 bar_data = root_durations.reset_index()
 bar_data.root = bar_data.root.map(ms3.fifths2iv)
+fig = px.bar(
+  bar_data,
+  x='root',
+  y='duration_qb',
+  color='chord_type',
+  title="Distribution of chord types over chord roots",
+  labels=dict(root="Chord root expressed as interval above the local (or secondary) tonic",
+              duration_qb="duration in quarter notes",
+              chord_type="chord type",
+             ),
+
+)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, 'chord_type_distribution_over_scale_degrees_absolute_stacked_bars')
-px.bar(bar_data, x='root', y='duration_qb', color='chord_type')
+fig.show()
 ```
 
 ```{code-cell} ipython3
