@@ -92,18 +92,26 @@ print(f"Composition dates range from {int(valid_composed_start.min())} {valid_co
 ```{code-cell}
 :tags: [hide-input]
 
-summary = all_metadata.copy()
-summary.length_qb = all_measures.groupby(level=[0,1]).act_dur.sum() * 4.0
+piece_is_annotated = all_metadata.label_count > 0
+summary = all_metadata[piece_is_annotated].copy()
+summary.length_qb = all_measures[piece_is_annotated].groupby(level=[0,1]).act_dur.sum() * 4.0
 summary = pd.concat([summary,
-                     all_notes.groupby(level=[0,1]).size().rename('notes'),
+                     all_notes[piece_is_annotated].groupby(level=[0,1]).size().rename('notes'),
                     ], axis=1)
 bar_data = pd.concat([mean_composition_years.rename('year'),
                       summary.groupby(level='corpus').size().rename('pieces')],
                      axis=1
                     ).reset_index()
-fig = px.bar(bar_data, x='year', y='pieces', color='corpus',
-             color_discrete_map=corpus_colors,
-            )
+
+N = len(summary)
+fig = px.bar(
+    bar_data,
+    x='year',
+    y='pieces',
+    color='corpus',
+    color_discrete_map=corpus_colors,
+    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus"
+)
 fig.update_traces(width=5)
 fig.update_layout(**STD_LAYOUT)
 fig.update_yaxes(gridcolor='lightgrey')
@@ -119,7 +127,6 @@ fig.show()
 
 hist_data = summary.reset_index()
 hist_data.corpus = hist_data.corpus.map(corpus_names)
-N = len(hist_data)
 fig = px.histogram(
     hist_data,
     x='composed_end',
