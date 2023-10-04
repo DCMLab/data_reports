@@ -883,7 +883,7 @@ def sorted_gram_counts(lists_of_symbols, n=2, k=25):
 
 
 def tpc_bubbles(
-    df,
+    df: pd.Series | pd.DataFrame,
     normalize=True,
     width=1200,
     height=1500,
@@ -894,10 +894,14 @@ def tpc_bubbles(
     labels=None,
     output=None,
     flip=False,
-    modin=True,
+    modin=False,
+    **kwargs,
 ):
     """
-    Expecting a long format DataFrame with two index levels where the first level groups pitch class distributions.
+    Expecting a long format DataFrame/Series with two index levels where the first level groups pitch class
+    distributions: Pitch classes are the second index level and the distribution values are contained in the Series
+    or the first column. Additional columns may serve, e.g. to add more hover_data fields (by passing the column name(s)
+    as keyword argument 'hover_data'.
     """
     layout = dict(STD_LAYOUT)
     if flip:
@@ -918,20 +922,26 @@ def tpc_bubbles(
         color_col = x
         layout.update(dict(height=height, width=width))
     if normalize:
-        df = (
-            df.groupby(level=0, group_keys=False)
-            .apply(lambda S: S / S.sum())
-            .reset_index()
-        )
+        if isinstance(df, pd.Series):
+            df = df.groupby(level=0, group_keys=False).apply(lambda S: S / S.sum())
+        else:
+            df.iloc[:, 0] = (
+                df.iloc[:, 0]
+                .groupby(level=0, group_keys=False)
+                .apply(lambda S: S / S.sum())
+            )
         title = "Normalized " + title
-    else:
-        df = df.reset_index()
+    df = df.reset_index()
     if modin:
         size_column = 2
     else:
         size_column = duration_column
-    hover_data = ms3.fifths2name(list(df.tpc))
-    df["pitch class"] = hover_data
+    tpc_names = ms3.fifths2name(list(df.tpc))
+    df["pitch class"] = tpc_names
+    hover_data = kwargs.pop("hover_data", [])
+    if isinstance(hover_data, str):
+        hover_data = [hover_data]
+    hover_data += ["pitch class"]
     fig = px.scatter(
         df,
         x=x,
@@ -941,6 +951,8 @@ def tpc_bubbles(
         **COLOR_SCALE_SETTINGS,
         labels=labels,
         title=title,
+        hover_data=hover_data,
+        **kwargs,
     )
     fig.update_traces(TRACES_SETTINGS)
 

@@ -153,60 +153,41 @@ fig
 ```
 
 ```{code-cell} ipython3
-test = id_distributions.loc[(slice(0,1),),]
-tpc_bubbles(test, modin=False)
-```
-
-```{code-cell} ipython3
-fig = tpc_bubbles(id_distributions, modin=False)
-save_figure_as(fig, "all_pitch_class_distributions_piecewise_bubbles")
+fig = tpc_bubbles(
+    id_distributions,
+    title="piece-wise pitch-class distributions for the DLC",
+    x_axis=x_axis,)
+save_figure_as(fig, "all_pitch_class_distributions_piecewise_bubbles", width=1200)
 fig.show()
 ```
 
 ```{code-cell} ipython3
-distributions = id_distributions.reset_index()
-distributions
+year_notes = pd.concat({year: notes_piece_groups.get_group(piece_id)
+                        for piece_id, year in sorted_composition_years.items()})
+year_notes.index.rename(['year', 'corpus', 'piece',  'i'], inplace=True)
+year_notes
 ```
 
 ```{code-cell} ipython3
-fig = go.Figure(data=go.Scatter(
-    x=distributions.tpc.values,
-    y=distributions.ID.values,
-    mode='markers'))
-    # marker=dict(
-    #     size=durations_normalized.values,)))
-
-fig.update_layout(
-    autosize=False,
-    width=500,
-    height=500,
-    margin=dict(
-        l=50,
-        r=50,
-        b=100,
-        t=100,
-        pad=4
-    ),
-    paper_bgcolor="LightSteelBlue",
-)
-fig
-```
-
-```{code-cell} ipython3
-x_vals = sorted(notes.tpc.unique())
-x_names = ms3.fifths2name(x_vals)
-x_axis = dict(tickvals=x_vals, ticktext=x_names)
+year_groupby = year_notes.reset_index().groupby(['year', 'tpc'])
+year_distributions = year_groupby.duration_qb.sum()
+year_distributions = pd.concat([year_distributions, year_groupby.corpus.unique().rename('corpora')], axis=1)
 fig = tpc_bubbles(
-    piece_distributions,
-    x_axis=x_axis,
-    #title="measure-wise pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
-    labels=dict(mn="Measure number", tpc="Tonal pitch class"),
-  modin=False
-)
+  year_distributions,
+  title="year-wise pitch-class distributions for the DLC",
+  x_axis=x_axis,
+  hover_data="corpora",
+  normalize=True,
+  modin=False)
+save_figure_as(fig, "all_pitch_class_distributions_yearwise_bubbles", width=1200)
+fig.show()
 ```
 
 ```{code-cell} ipython3
-fig = plot_pitch_class_distribution(notes, modin=False)
-save_figure_as(fig, "complete_pitch_class_distribution_absolute_bars")
+fig = plot_pitch_class_distribution(
+  notes,
+  title="Pitch class distribution over the Distant Listening Corpus",
+  modin=False)
+save_figure_as(fig, "complete_pitch_class_distribution_absolute_bars", height=800)
 fig.show()
 ```
