@@ -2,7 +2,7 @@ import os
 import re
 from collections import Counter, defaultdict
 from functools import cache
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import colorlover
 import frictionless as fl
@@ -675,10 +675,12 @@ def plot_bigram_tables(
 def plot_cum(
     S=None,
     cum=None,
-    x_log=False,
-    markersize=2,
-    left_range=(-0.1, 4.40),
-    right_range=(-0.023, 1.099),
+    x_log: bool = True,
+    markersize: int = 4,
+    n_labels: int = 10,
+    font_size: Optional[int] = None,
+    left_range: Optional[Tuple[float, float]] = None,
+    right_range: Optional[Tuple[float, float]] = None,
     **kwargs,
 ):
     """Pass either a Series or cumulative_fraction(S).reset_index()"""
@@ -695,22 +697,37 @@ def plot_cum(
         ]
     )
     ix = cum.index
+    scatter_args = dict(
+        x=ix,
+        y=cum.x,
+        name="Absolute count",
+        marker=dict(size=markersize),
+    )
+    if n_labels > 0:
+        text_labels, text_positions = [], []
+        for i, chrd in enumerate(cum.chord):
+            if i < n_labels:
+                text_labels.append(chrd)
+                if i % 2:
+                    text_positions.append("top center")
+                else:
+                    text_positions.append("bottom center")
+            else:
+                text_labels.append("")
+                text_positions.append("top center")
+        scatter_args["text"] = text_labels
+        scatter_args["textposition"] = text_positions
+        scatter_args["mode"] = "markers+text"
+    else:
+        scatter_args["mode"] = "markers"
     fig.add_trace(
-        go.Scatter(
-            x=ix,
-            y=cum.x,
-            text=cum["index"],
-            name="Absolute count",
-            mode="markers",
-            marker=dict(size=markersize),
-        ),
+        go.Scatter(**scatter_args),
         secondary_y=False,
     )
     fig.add_trace(
         go.Scatter(
             x=ix,
             y=cum.y,
-            text=cum["index"],
             name="Cumulative fraction",
             mode="markers",
             marker=dict(size=markersize),
@@ -726,24 +743,33 @@ def plot_cum(
     else:
         ranks = len(ix)
         fig.update_xaxes(range=(-0.02 * ranks, 1.02 * ranks))
-    fig.update_yaxes(
+    left_y_axis = dict(
         title_text="Absolute label count",
         secondary_y=False,
         type="log",
-        gridcolor="grey",
+        gridcolor="lightgrey",
         zeroline=True,
         dtick=1,
-        range=left_range,
     )
-    fig.update_yaxes(
+    right_y_axis = dict(
         title_text="Cumulative fraction",
         secondary_y=True,
-        gridcolor="lightgrey",
+        gridcolor="lightpink",
         zeroline=False,
-        dtick=0.1,
-        range=right_range,
+        dtick=0.25,
     )
-    fig.update_layout(**kwargs)
+    if left_range is not None:
+        left_y_axis["range"] = left_range
+    if right_range is not None:
+        right_y_axis["range"] = right_range
+    layout_args = dict(
+        kwargs, legend=dict(orientation="h", itemsizing="constant", x=-0.05)
+    )
+    if font_size is not None:
+        layout_args["font"] = dict(size=font_size)
+    fig.update_layout(**layout_args)
+    fig.update_yaxes(**left_y_axis)
+    fig.update_yaxes(**right_y_axis)
     return fig
 
 
