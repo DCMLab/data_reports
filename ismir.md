@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: corpus_docs
+  display_name: revamp
   language: python
-  name: corpus_docs
+  name: revamp
 ---
 
 # Plots for ISMIR 2023
@@ -23,8 +23,9 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+%load_ext autoreload
+%autoreload 2
 import os
-from fractions import Fraction
 
 from git import Repo
 import dimcat as dc
@@ -32,7 +33,8 @@ import ms3
 import pandas as pd
 import plotly.express as px
 
-from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
+from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, \
+  get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir, plot_cum
 ```
 
 ```{code-cell} ipython3
@@ -44,54 +46,21 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```
 
 ```{code-cell} ipython3
-:tags: [hide-input]
+:tags: [remove-output]
 
-# CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
-CORPUS_PATH = "~/dcml_corpora"                # for running the notebook locally
-print_heading("Notebook settings")
-print(f"CORPUS_PATH: {CORPUS_PATH!r}")
-CORPUS_PATH = resolve_dir(CORPUS_PATH)
-```
-
-```{code-cell} ipython3
-:tags: [hide-input]
-
-repo = Repo(CORPUS_PATH)
+package_path = resolve_dir("~/dcml_corpora/dcml_corpora.datapackage.json")
+repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
+D = dc.Dataset.from_package(package_path)
+D
 ```
 
 ```{code-cell} ipython3
-:tags: [remove-output]
-
-dataset = dc.Dataset()
-dataset.load(directory=CORPUS_PATH, parse_tsv=False)
-```
-
-```{code-cell} ipython3
-:tags: [remove-input]
-
-annotated_view = dataset.data.get_view('annotated')
-annotated_view.include('facets', 'measures', 'notes$', 'expanded')
-annotated_view.pieces_with_incomplete_facets = False
-dataset.data.set_view(annotated_view)
-dataset.data.parse_tsv(choose='auto')
-dataset.get_indices()
-dataset.data
-```
-
-```{code-cell} ipython3
-:tags: [remove-input]
-
-print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
-```
-
-```{code-cell} ipython3
-all_metadata = dataset.data.metadata()
+all_metadata = D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
-print(f"Metadata covers {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
 mean_composition_years = corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
@@ -106,7 +75,8 @@ corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors
 :tags: [hide-input]
 
 try:
-    all_annotations = dataset.get_facet('expanded')
+    labels = D.get_feature('harmonylabels')
+    all_annotations = labels.df
 except Exception:
     all_annotations = pd.DataFrame()
 n_annotations = len(all_annotations.index)
@@ -125,6 +95,17 @@ else:
     print(f"Dataset contains no annotations.")
 ```
 
+```{code-cell} ipython3
+#font_dict = {'font': {'size': 20}}2
+fig = plot_cum(
+  all_chords.chord,
+  font_size=35,
+  markersize=10,
+  **STD_LAYOUT)
+save_figure_as(fig, 'chord_type_distribution_cumulative')
+fig.show()
+```
+
 ## Phrases
 ### Presence of phrase annotation symbols per dataset:
 
@@ -132,103 +113,11 @@ else:
 all_annotations.groupby(["corpus"]).phraseend.value_counts()
 ```
 
-### Presence of legacy phrase endings
-
-```{code-cell} ipython3
-legacy = all_annotations[all_annotations.phraseend == r'\\']
-legacy.groupby(level=0).size()
-```
-
-### A table with the extents of all annotated phrases
-**Relevant columns:**
-* `quarterbeats`: start position for each phrase
-* `duration_qb`: duration of each phrase, measured in quarter notes
-* `phrase_slice`: time interval of each annotated phrases (for segmenting chord progressions and notes)
-
-```{code-cell} ipython3
-phrase_segmented = dc.PhraseSlicer().process_data(dataset)
-phrases = phrase_segmented.get_slice_info()
-print(f"Overall number of phrases is {len(phrases.index)}")
-phrases.head(10).style.apply(color_background, subset=["quarterbeats", "duration_qb"])
-```
-
-### A table with the chord sequences of all annotated phrases
-
-```{code-cell} ipython3
-phrase_segments = phrase_segmented.get_facet('expanded')
-phrase_segments
-```
-
-```{code-cell} ipython3
-:tags: [hide-input]
-
-phrase2timesigs = phrase_segments.groupby(level=[0,1,2]).timesig.unique()
-n_timesignatures_per_phrase = phrase2timesigs.map(len)
-uniform_timesigs = phrase2timesigs[n_timesignatures_per_phrase == 1].map(lambda l: l[0])
-more_than_one = n_timesignatures_per_phrase > 1
-print(f"Filtered out the {more_than_one.sum()} phrases incorporating more than one time signature.")
-n_timesigs = n_timesignatures_per_phrase.value_counts()
-display(n_timesigs.reset_index().rename(columns=dict(index='#time signatures', timesig='#phrases')))
-uniform_timesig_phrases = phrases.loc[uniform_timesigs.index]
-timesig_in_quarterbeats = uniform_timesigs.map(Fraction) * 4
-exact_measure_lengths = uniform_timesig_phrases.duration_qb / timesig_in_quarterbeats
-uniform_timesigs = pd.concat([exact_measure_lengths.rename('duration_measures'), uniform_timesig_phrases], axis=1)
-fig = px.histogram(uniform_timesigs, x='duration_measures', log_y=True,
-                   labels=dict(duration_measures='phrase length bin in number of measures'),
-                   color_discrete_sequence=CORPUS_COLOR_SCALE,
-                  )
-fig.update_traces(xbins=dict( # bins used for histogram
-        #start=0.0,
-        #end=100.0,
-        size=1
-    ))
-fig.update_layout(**STD_LAYOUT)
-fig.update_xaxes(dtick=4)
-save_figure_as(fig, 'phrase_lengths_in_measures_histogram')
-fig.show()
-```
-
-### Local keys per phrase
-
-```{code-cell} ipython3
-local_keys_per_phrase = phrase_segments.groupby(level=[0,1,2]).localkey.unique().map(tuple)
-n_local_keys_per_phrase = local_keys_per_phrase.map(len)
-phrases_with_keys = pd.concat([n_local_keys_per_phrase.rename('n_local_keys'),
-                               local_keys_per_phrase.rename('local_keys'),
-                               phrases], axis=1)
-phrases_with_keys.head(10).style.apply(color_background, subset=['n_local_keys', 'local_keys'])
-```
-
-#### Number of unique local keys per phrase
-
-```{code-cell} ipython3
-count_n_keys = phrases_with_keys.n_local_keys.value_counts().rename("#phrases").to_frame()
-count_n_keys.index.rename("unique keys", inplace=True)
-count_n_keys
-```
-
-#### The most frequent keys for non-modulating phrases
-
-```{code-cell} ipython3
-unique_key_selector = phrases_with_keys.n_local_keys == 1
-phrases_with_unique_key = phrases_with_keys[unique_key_selector].copy()
-phrases_with_unique_key.local_keys = phrases_with_unique_key.local_keys.map(lambda t: t[0])
-value_count_df(phrases_with_unique_key.local_keys, counts="#phrases")
-```
-
-#### Most frequent modulations within one phrase
-
-```{code-cell} ipython3
-two_keys_selector = phrases_with_keys.n_local_keys > 1
-phrases_with_unique_key = phrases_with_keys[two_keys_selector].copy()
-value_count_df(phrases_with_unique_key.local_keys, "modulations")
-```
-
 ## Key areas
 
 ```{code-cell} ipython3
 from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
-keys_segmented = dc.LocalKeySlicer().process_data(dataset)
+keys_segmented = dc.LocalKeySlicer().process_data(D)
 keys = keys_segmented.get_slice_info()
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
