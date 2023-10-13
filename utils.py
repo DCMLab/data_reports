@@ -466,31 +466,31 @@ def make_sunburst(chords, mode, inspect=False):
 
 
 def make_transition_heatmap_plots(
-    major_unigrams,
-    minor_unigrams,
-    major_bigrams,
-    minor_bigrams,
-    top,
-    two_col_width=1,
-    frequencies=False,
+    left_bigrams: pd.DataFrame,
+    left_unigrams: pd.DataFrame,
+    right_bigrams: Optional[pd.DataFrame] = None,
+    right_unigrams: Optional[pd.DataFrame] = None,
+    top: int = 30,
+    two_col_width=12,
+    frequencies: bool = False,
 ):
     """
 
     Args:
-        major_unigrams:
-        minor_unigrams:
-        major_bigrams:
-        minor_bigrams:
+        left_unigrams:
+        right_unigrams:
+        left_bigrams:
+        right_bigrams:
         top:
         two_col_width:
         frequencies: If set to True, the values of the unigram Series are interpreted as normalized frequencies and
             are multiplied with 100 for display on the y-axis.
 
     """
-    if isinstance(major_unigrams, pd.core.frame.DataFrame):
-        major_unigrams = major_unigrams.iloc[:, 0]
-    if isinstance(minor_unigrams, pd.core.frame.DataFrame):
-        minor_unigrams = minor_unigrams.iloc[:, 0]
+    if isinstance(left_unigrams, pd.core.frame.DataFrame):
+        left_unigrams = left_unigrams.iloc[:, 0]
+    if isinstance(right_unigrams, pd.core.frame.DataFrame):
+        right_unigrams = right_unigrams.iloc[:, 0]
     # set custom context for this plot
     with plt.rc_context(
         {
@@ -592,46 +592,51 @@ def make_transition_heatmap_plots(
         ax1 = plt.subplot(gs1[0, 0])
 
         add_entropy_bars(
-            major_unigrams,
-            major_bigrams,
+            left_unigrams,
+            left_bigrams,
             ax1,
         )
 
         ax2 = plt.subplot(gs1[0, 1])
 
         add_heatmap(
-            major_bigrams[major_bigrams > 0].iloc[
+            left_bigrams[left_bigrams > 0].iloc[
                 :top, :top
             ],  # only display non-zero values
             axis=ax2,
             colormap="Blues",
         )
 
-        # ## MINOR BIGRAMS
+        # ## RIGHT BIGRAMS
 
-        gs2 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
-        gs2.update(
-            left=0.5 + left_margin,
-            right=1.0 - right_margin,
-            wspace=wspace,
-            hspace=hspace,
-            bottom=bottom_margin,
-            top=top_margin,
-        )
+        if right_bigrams is not None:
+            assert (
+                right_unigrams is not None
+            ), "right_unigrams must be provided if right_bigrams is provided"
 
-        ax3 = plt.subplot(gs2[0, 0])
-        add_entropy_bars(
-            minor_unigrams,
-            minor_bigrams,
-            ax3,
-        )
+            gs2 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
+            gs2.update(
+                left=0.5 + left_margin,
+                right=1.0 - right_margin,
+                wspace=wspace,
+                hspace=hspace,
+                bottom=bottom_margin,
+                top=top_margin,
+            )
 
-        ax4 = plt.subplot(gs2[0, 1])
-        add_heatmap(
-            minor_bigrams[minor_bigrams > 0].iloc[:top, :top],
-            axis=ax4,
-            colormap="Reds",
-        )
+            ax3 = plt.subplot(gs2[0, 0])
+            add_entropy_bars(
+                right_unigrams,
+                right_bigrams,
+                ax3,
+            )
+
+            ax4 = plt.subplot(gs2[0, 1])
+            add_heatmap(
+                right_bigrams[right_bigrams > 0].iloc[:top, :top],
+                axis=ax4,
+                colormap="Reds",
+            )
 
         fig.align_labels()
     return fig
@@ -787,32 +792,41 @@ def plot_pitch_class_distribution(
 
 
 def plot_transition_heatmaps(
-    full_grams_major,
-    full_grams_minor,
+    full_grams_left: List[tuple],
+    full_grams_right: Optional[List[tuple]] = None,
     top=25,
     two_col_width=12,
     frequencies=True,
     remove_repeated: bool = False,
 ):
-    minor_unigrams = pd.Series(Counter(sum(full_grams_minor, []))).sort_values(
+    left_bigrams = transition_matrix(
+        full_grams_left, dist_only=remove_repeated, normalize=frequencies, percent=True
+    )
+    left_unigrams = pd.Series(Counter(sum(full_grams_left, []))).sort_values(
         ascending=False
     )
-    minor_unigrams_norm = minor_unigrams / minor_unigrams.sum()
-    major_unigrams = pd.Series(Counter(sum(full_grams_major, []))).sort_values(
-        ascending=False
-    )
-    major_unigrams_norm = major_unigrams / major_unigrams.sum()
-    minor_bigrams = transition_matrix(
-        full_grams_minor, dist_only=remove_repeated, normalize=frequencies, percent=True
-    )
-    major_bigrams = transition_matrix(
-        full_grams_major, dist_only=remove_repeated, normalize=frequencies, percent=True
-    )
+    left_unigrams_norm = left_unigrams / left_unigrams.sum()
+
+    if full_grams_right is None:
+        right_bigrams = None
+        right_unigrams_norm = None
+    else:
+        right_bigrams = transition_matrix(
+            full_grams_right,
+            dist_only=remove_repeated,
+            normalize=frequencies,
+            percent=True,
+        )
+        right_unigrams = pd.Series(Counter(sum(full_grams_right, []))).sort_values(
+            ascending=False
+        )
+        right_unigrams_norm = right_unigrams / right_unigrams.sum()
+
     make_transition_heatmap_plots(
-        major_unigrams_norm,
-        minor_unigrams_norm,
-        major_bigrams,
-        minor_bigrams,
+        left_bigrams,
+        left_unigrams_norm,
+        right_bigrams,
+        right_unigrams_norm,
         top=top,
         two_col_width=two_col_width,
         frequencies=frequencies,
