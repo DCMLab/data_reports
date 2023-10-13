@@ -587,14 +587,24 @@ def make_transition_heatmap_plots(
             axis.tick_params(bottom=False)
 
         single_col_width = two_col_width / 2
-        fig = plt.figure(figsize=(two_col_width, single_col_width))
+        plot_two_sides = right_bigrams is not None
+        if plot_two_sides:
+            assert (
+                right_unigrams is not None
+            ), "right_unigrams must be provided if right_bigrams is provided"
+            fig = plt.figure(figsize=(two_col_width, single_col_width))
+            gs1 = make_gridspec(
+                left=left_margin,
+                right=0.5 - right_margin,
+            )
+        else:
+            fig = plt.figure(figsize=(single_col_width, single_col_width))
+            gs1 = make_gridspec(
+                left=left_margin,
+                right=1.0 - right_margin,
+            )
 
         # LEFT-HAND SIDE
-
-        gs1 = make_gridspec(
-            left=left_margin,
-            right=0.5 - right_margin,
-        )
 
         ax1 = plt.subplot(gs1[0, 0])
 
