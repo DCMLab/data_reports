@@ -473,6 +473,8 @@ def make_transition_heatmap_plots(
     top: int = 30,
     two_col_width=12,
     frequencies: bool = False,
+    fontsize=8,
+    labelsize=12,
     top_margin=0.99,
     bottom_margin=0.10,
     right_margin=0.005,
@@ -553,7 +555,7 @@ def make_transition_heatmap_plots(
                     p.get_y() + 0.3,
                     f"${totals_min[i]}$",
                     color="w",
-                    fontsize=4,
+                    fontsize=fontsize,
                     verticalalignment="center",
                     horizontalalignment="left",
                 )
@@ -569,6 +571,7 @@ def make_transition_heatmap_plots(
                 right=False,
                 bottom=False,
                 labelleft=True,
+                labelsize=labelsize,
             )
 
         def add_heatmap(transition_value_matrix, axis, colormap):
@@ -580,7 +583,7 @@ def make_transition_heatmap_plots(
                 ax=axis,
                 # vmin=vmin,
                 # vmax=vmax,
-                annot_kws={"fontsize": 6.5, "rotation": 60},
+                annot_kws={"fontsize": fontsize, "rotation": 60},
                 cbar=False,
             )
             axis.set_yticks([])

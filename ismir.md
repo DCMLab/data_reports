@@ -108,9 +108,9 @@ piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(ke
 ```{code-cell} ipython3
 plot_transition_heatmaps(
   piecewise_localkey_transitions.to_list(),
-  top=20,
+  top=10,
   bottom_margin=0.05,
-  left_margin=0.13)
+  left_margin=0.14)
 save_pdf_path = os.path.join(RESULTS_PATH, 'localkey_transition_matrix.pdf')
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
