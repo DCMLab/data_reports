@@ -308,15 +308,15 @@ maj_min_ratio
 ```{code-cell} ipython3
 segment_duration_per_dataset = keys.groupby(["corpus", "localkey_is_minor"]).duration_qb.sum().round(2)
 norm_segment_duration_per_dataset = 100 * segment_duration_per_dataset / segment_duration_per_dataset.groupby(level="corpus").sum()
-maj_min_ratio_per_dataset = pd.concat([segment_duration_per_dataset,
+maj_min_ratio_per_corpus = pd.concat([segment_duration_per_dataset,
                                       norm_segment_duration_per_dataset.rename('fraction').round(1).astype(str)+" %"],
                                      axis=1)
-maj_min_ratio_per_dataset['corpus_name'] = maj_min_ratio_per_dataset.index.get_level_values('corpus').map(corpus_names)
-maj_min_ratio_per_dataset['mode'] = maj_min_ratio_per_dataset.index.get_level_values('localkey_is_minor').map({False: 'major', True: 'minor'})
+maj_min_ratio_per_corpus['corpus_name'] = maj_min_ratio_per_corpus.index.get_level_values('corpus').map(corpus_names)
+maj_min_ratio_per_corpus['mode'] = maj_min_ratio_per_corpus.index.get_level_values('localkey_is_minor').map({False: 'major', True: 'minor'})
 ```
 
 ```{code-cell} ipython3
-fig = px.bar(maj_min_ratio_per_dataset.reset_index(),
+fig = px.bar(maj_min_ratio_per_corpus.reset_index(),
        x="corpus_name",
        y="duration_qb",
        color="mode",
