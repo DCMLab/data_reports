@@ -467,12 +467,14 @@ def make_sunburst(chords, mode, inspect=False):
 
 def make_transition_heatmap_plots(
     left_bigrams: pd.DataFrame,
-    left_unigrams: pd.DataFrame,
+    left_unigrams: pd.Series,
     right_bigrams: Optional[pd.DataFrame] = None,
-    right_unigrams: Optional[pd.DataFrame] = None,
+    right_unigrams: Optional[pd.Series] = None,
     top: int = 30,
     two_col_width=12,
     frequencies: bool = False,
+    right_margin=0.005,
+    left_margin=0.085,
 ):
     """
 
@@ -487,10 +489,6 @@ def make_transition_heatmap_plots(
             are multiplied with 100 for display on the y-axis.
 
     """
-    if isinstance(left_unigrams, pd.core.frame.DataFrame):
-        left_unigrams = left_unigrams.iloc[:, 0]
-    if isinstance(right_unigrams, pd.core.frame.DataFrame):
-        right_unigrams = right_unigrams.iloc[:, 0]
     # set custom context for this plot
     with plt.rc_context(
         {
@@ -502,35 +500,34 @@ def make_transition_heatmap_plots(
             "font.family": "sans-serif",
         }
     ):
-        # settings for margins etc.
-        barsize = [0.0, 0.7]
-        gridspec_ratio = [0.25, 2.0]
-        top_margin = 0.99
-        bottom_margin = 0.12
-        hspace = None
-        wspace = 0.0
-        right_margin = 0.005
-        left_margin = 0.085
 
-        fig = plt.figure(figsize=(two_col_width, two_col_width * 0.5))
-
-        # ## MAJOR BIGRAMS
-
-        gs1 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
-        gs1.update(
-            left=left_margin,
-            right=0.5 - right_margin,
-            wspace=wspace,
-            hspace=hspace,
-            bottom=bottom_margin,
-            top=top_margin,
-        )
+        def make_gridspec(
+            left,
+            right,
+        ):
+            gridspec_ratio = [0.25, 2.0]
+            top_margin = 0.99
+            bottom_margin = 0.12
+            hspace = None
+            wspace = 0.0
+            gs = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
+            gs.update(
+                left=left,
+                right=right,
+                wspace=wspace,
+                hspace=hspace,
+                bottom=bottom_margin,
+                top=top_margin,
+            )
+            return gs
 
         def add_entropy_bars(
             unigrams,
             bigrams,
             axis,
         ):
+            # settings for margins etc.
+            barsize = [0.0, 0.7]
             s_min = pd.Series(
                 (
                     bigrams.apply(lambda x: entropy(x, base=2), axis=1)
@@ -589,6 +586,16 @@ def make_transition_heatmap_plots(
             axis.set_yticks([])
             axis.tick_params(bottom=False)
 
+        single_col_width = two_col_width / 2
+        fig = plt.figure(figsize=(two_col_width, single_col_width))
+
+        # LEFT-HAND SIDE
+
+        gs1 = make_gridspec(
+            left=left_margin,
+            right=0.5 - right_margin,
+        )
+
         ax1 = plt.subplot(gs1[0, 0])
 
         add_entropy_bars(
@@ -607,21 +614,17 @@ def make_transition_heatmap_plots(
             colormap="Blues",
         )
 
-        # ## RIGHT BIGRAMS
+        # RIGHT-HAND SIDE
 
-        if right_bigrams is not None:
+        plot_two_sides = right_bigrams is not None
+        if plot_two_sides:
             assert (
                 right_unigrams is not None
             ), "right_unigrams must be provided if right_bigrams is provided"
 
-            gs2 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
-            gs2.update(
+            gs2 = make_gridspec(
                 left=0.5 + left_margin,
                 right=1.0 - right_margin,
-                wspace=wspace,
-                hspace=hspace,
-                bottom=bottom_margin,
-                top=top_margin,
             )
 
             ax3 = plt.subplot(gs2[0, 0])
