@@ -465,21 +465,7 @@ def make_sunburst(chords, mode, inspect=False):
     return fig
 
 
-def nest_level(obj, include_tuples=False):
-    """Recursively calculate the depth of a nested list."""
-    if obj.__class__ != list:
-        if include_tuples:
-            if obj.__class__ != tuple:
-                return 0
-        else:
-            return 0
-    max_level = 0
-    for item in obj:
-        max_level = max(max_level, nest_level(item, include_tuples=include_tuples))
-    return max_level + 1
-
-
-def plot_bigram_tables(
+def make_transition_heatmap_plots(
     major_unigrams,
     minor_unigrams,
     major_bigrams,
@@ -651,6 +637,20 @@ def plot_bigram_tables(
     return fig
 
 
+def nest_level(obj, include_tuples=False):
+    """Recursively calculate the depth of a nested list."""
+    if obj.__class__ != list:
+        if include_tuples:
+            if obj.__class__ != tuple:
+                return 0
+        else:
+            return 0
+    max_level = 0
+    for item in obj:
+        max_level = max(max_level, nest_level(item, include_tuples=include_tuples))
+    return max_level + 1
+
+
 def plot_cum(
     S=None,
     cum=None,
@@ -808,7 +808,7 @@ def plot_transition_heatmaps(
     major_bigrams = transition_matrix(
         full_grams_major, dist_only=remove_repeated, normalize=frequencies, percent=True
     )
-    plot_bigram_tables(
+    make_transition_heatmap_plots(
         major_unigrams_norm,
         minor_unigrams_norm,
         major_bigrams,

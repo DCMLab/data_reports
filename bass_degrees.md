@@ -23,7 +23,7 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
-from utils import cnt, plot_bigram_tables, prettify_counts, resolve_dir, sorted_gram_counts, transition_matrix, \
+from utils import cnt, make_transition_heatmap_plots, prettify_counts, resolve_dir, sorted_gram_counts, transition_matrix, \
   remove_none_labels, remove_non_chord_labels, write_image, plot_transition_heatmaps
 import dimcat as dc
 

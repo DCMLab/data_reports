@@ -177,13 +177,197 @@ plt.show()
 ```
 
 ```{code-cell} ipython3
+from utils import transition_matrix
+import numpy as np
+from scipy.stats import entropy
+from matplotlib import gridspec
+from collections import Counter
+import seaborn as sns
+
+def plot_transition_heatmap(
+    major_unigrams,
+    minor_unigrams,
+    major_bigrams,
+    minor_bigrams,
+    top,
+    two_col_width=1,
+    frequencies=False,
+):
+    """
+
+    Args:
+        major_unigrams:
+        minor_unigrams:
+        major_bigrams:
+        minor_bigrams:
+        top:
+        two_col_width:
+        frequencies: If set to True, the values of the unigram Series are interpreted as normalized frequencies and
+            are multiplied with 100 for display on the y-axis.
+
+    """
+    if isinstance(major_unigrams, pd.core.frame.DataFrame):
+        major_unigrams = major_unigrams.iloc[:, 0]
+    if isinstance(minor_unigrams, pd.core.frame.DataFrame):
+        minor_unigrams = minor_unigrams.iloc[:, 0]
+    # set custom context for this plot
+    with plt.rc_context(
+        {
+            # disable spines for entropy bars
+            "axes.spines.top": False,
+            "axes.spines.left": False,
+            "axes.spines.bottom": False,
+            "axes.spines.right": False,
+            "font.family": "sans-serif",
+        }
+    ):
+        # settings for margins etc.
+        barsize = [0.0, 0.7]
+        gridspec_ratio = [0.25, 2.0]
+        top_margin = 0.99
+        bottom_margin = 0.12
+        hspace = None
+        wspace = 0.0
+        right_margin = 0.005
+        left_margin = 0.085
+
+        fig = plt.figure(figsize=(two_col_width, two_col_width * 0.5))
+
+        # ## MAJOR BIGRAMS
+
+        gs1 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
+        gs1.update(
+            left=left_margin,
+            right=0.5 - right_margin,
+            wspace=wspace,
+            hspace=hspace,
+            bottom=bottom_margin,
+            top=top_margin,
+        )
+
+        def add_entropy_bars(
+            unigrams,
+            bigrams,
+            axis,
+        ):
+            s_min = pd.Series(
+                (
+                    bigrams.apply(lambda x: entropy(x, base=2), axis=1)
+                    / np.log2(bigrams.shape[0])
+                )[:top].values,
+                index=[
+                    i + f" ({str(round(fr * 100, 1))})" if frequencies else i
+                    for i, fr in zip(bigrams.index, unigrams[:top].values)
+                ],
+            )
+            ax = s_min.plot(kind="barh", ax=axis, color="k")
+
+            # create a list to collect the plt.patches data
+            totals_min = []
+
+            # find the values and append to list
+            for i in ax.patches:
+                totals_min.append(round(i.get_width(), 2))
+
+            for i, p in enumerate(ax.patches):
+                axis.text(
+                    totals_min[i] - 0.01,
+                    p.get_y() + 0.3,
+                    f"${totals_min[i]}$",
+                    color="w",
+                    fontsize=4,
+                    verticalalignment="center",
+                    horizontalalignment="left",
+                )
+            axis.set_xlim(barsize)
+
+            axis.invert_yaxis()
+            axis.invert_xaxis()
+            axis.set_xticklabels([])
+            axis.tick_params(
+                axis="both",  # changes apply to the x-axis
+                which="both",  # both major and minor ticks are affected
+                left=False,  # ticks along the bottom edge are off
+                right=False,
+                bottom=False,
+                labelleft=True,
+            )
+
+        def add_heatmap(transition_value_matrix, axis, colormap):
+            sns.heatmap(
+                transition_value_matrix,
+                annot=True,
+                fmt=".1f",
+                cmap=colormap,
+                ax=axis,
+                # vmin=vmin,
+                # vmax=vmax,
+                annot_kws={"fontsize": 6.5, "rotation": 60},
+                cbar=False,
+            )
+            axis.set_yticks([])
+            axis.tick_params(bottom=False)
+
+        ax1 = plt.subplot(gs1[0, 0])
+
+        add_entropy_bars(
+            major_unigrams,
+            major_bigrams,
+            ax1,
+        )
+
+        ax2 = plt.subplot(gs1[0, 1])
+
+        add_heatmap(
+            major_bigrams[major_bigrams > 0].iloc[
+                :top, :top
+            ],  # only display non-zero values
+            axis=ax2,
+            colormap="Blues",
+        )
+
+        # ## MINOR BIGRAMS
+
+        # gs2 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
+        # gs2.update(
+        #     left=0.5 + left_margin,
+        #     right=1.0 - right_margin,
+        #     wspace=wspace,
+        #     hspace=hspace,
+        #     bottom=bottom_margin,
+        #     top=top_margin,
+        # )
+        #
+        # ax3 = plt.subplot(gs2[0, 0])
+        # add_entropy_bars(
+        #     minor_unigrams,
+        #     minor_bigrams,
+        #     ax3,
+        # )
+        #
+        # ax4 = plt.subplot(gs2[0, 1])
+        # add_heatmap(
+        #     minor_bigrams[minor_bigrams > 0].iloc[:top, :top],
+        #     axis=ax4,
+        #     colormap="Reds",
+        # )
+
+        fig.align_labels()
+    return fig
+
+major_unigrams = pd.Series(Counter(sum(full_grams_major, []))).sort_values(ascending=False)
+major_bigrams = transition_matrix(full_grams_major)
+plot_transition_heatmap(major_unigrams, major_unigrams, major_bigrams, major_bigrams, top=20, two_col_width=12,)
+```
+
+```{code-cell} ipython3
 #font_dict = {'font': {'size': 20}}2
 fig = plot_cum(
   all_chords.chord,
   font_size=35,
   markersize=10,
   **STD_LAYOUT)
-save_figure_as(fig, 'chord_type_distribution_cumulative')
+save_figure_as(fig, 'chord_type_distribution_cumulative', )
 fig.show()
 ```
 
