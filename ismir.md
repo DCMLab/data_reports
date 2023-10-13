@@ -23,7 +23,6 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
-
 from matplotlib import pyplot as plt
 %load_ext autoreload
 %autoreload 2
@@ -83,6 +82,38 @@ fig = plot_pitch_class_distribution(
   modin=False)
 save_figure_as(fig, "complete_pitch_class_distribution_absolute_bars", height=800)
 fig.show()
+```
+
+## Slicer
+
+```{code-cell} ipython3
+def globalminor_localkey_expressed_in_globalmajor(key):
+    return ms3.abs2rel_key(key, 'I', True)
+
+def map_GLEIG_to_list(globalminor_localkeys):
+    return list(map(globalminor_localkey_expressed_in_globalmajor, globalminor_localkeys))
+
+def piecewise_localkeys_expressed_in_globalmajor(localkeys):
+    gpb = localkeys.groupby(["corpus", "piece"])
+    piecewise_localkeys = gpb.localkey.apply(list)
+    is_major_mask = ~gpb.globalkey_is_minor.first()
+    expressed_in_globalmajor = piecewise_localkeys.apply(map_GLEIG_to_list)
+    return piecewise_localkeys.where(is_major_mask, expressed_in_globalmajor)
+
+keys = D.get_feature('keyannotations')
+keys.load()
+piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(keys)
+```
+
+```{code-cell} ipython3
+plot_transition_heatmaps(
+  piecewise_localkey_transitions.to_list(),
+  top=20,
+  bottom_margin=0.05,
+  left_margin=0.13)
+save_pdf_path = os.path.join(RESULTS_PATH, 'localkey_transition_matrix.pdf')
+plt.savefig(save_pdf_path, dpi=400)
+plt.show()
 ```
 
 ## Groupers
@@ -174,190 +205,6 @@ plot_transition_heatmaps(full_grams_major, full_grams_minor, top=20)
 save_pdf_path = os.path.join(RESULTS_PATH, 'bass_degree_bigrams.pdf')
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
-```
-
-```{code-cell} ipython3
-from utils import transition_matrix
-import numpy as np
-from scipy.stats import entropy
-from matplotlib import gridspec
-from collections import Counter
-import seaborn as sns
-
-def plot_transition_heatmap(
-    major_unigrams,
-    minor_unigrams,
-    major_bigrams,
-    minor_bigrams,
-    top,
-    two_col_width=1,
-    frequencies=False,
-):
-    """
-
-    Args:
-        major_unigrams:
-        minor_unigrams:
-        major_bigrams:
-        minor_bigrams:
-        top:
-        two_col_width:
-        frequencies: If set to True, the values of the unigram Series are interpreted as normalized frequencies and
-            are multiplied with 100 for display on the y-axis.
-
-    """
-    if isinstance(major_unigrams, pd.core.frame.DataFrame):
-        major_unigrams = major_unigrams.iloc[:, 0]
-    if isinstance(minor_unigrams, pd.core.frame.DataFrame):
-        minor_unigrams = minor_unigrams.iloc[:, 0]
-    # set custom context for this plot
-    with plt.rc_context(
-        {
-            # disable spines for entropy bars
-            "axes.spines.top": False,
-            "axes.spines.left": False,
-            "axes.spines.bottom": False,
-            "axes.spines.right": False,
-            "font.family": "sans-serif",
-        }
-    ):
-        # settings for margins etc.
-        barsize = [0.0, 0.7]
-        gridspec_ratio = [0.25, 2.0]
-        top_margin = 0.99
-        bottom_margin = 0.12
-        hspace = None
-        wspace = 0.0
-        right_margin = 0.005
-        left_margin = 0.085
-
-        fig = plt.figure(figsize=(two_col_width, two_col_width * 0.5))
-
-        # ## MAJOR BIGRAMS
-
-        gs1 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
-        gs1.update(
-            left=left_margin,
-            right=0.5 - right_margin,
-            wspace=wspace,
-            hspace=hspace,
-            bottom=bottom_margin,
-            top=top_margin,
-        )
-
-        def add_entropy_bars(
-            unigrams,
-            bigrams,
-            axis,
-        ):
-            s_min = pd.Series(
-                (
-                    bigrams.apply(lambda x: entropy(x, base=2), axis=1)
-                    / np.log2(bigrams.shape[0])
-                )[:top].values,
-                index=[
-                    i + f" ({str(round(fr * 100, 1))})" if frequencies else i
-                    for i, fr in zip(bigrams.index, unigrams[:top].values)
-                ],
-            )
-            ax = s_min.plot(kind="barh", ax=axis, color="k")
-
-            # create a list to collect the plt.patches data
-            totals_min = []
-
-            # find the values and append to list
-            for i in ax.patches:
-                totals_min.append(round(i.get_width(), 2))
-
-            for i, p in enumerate(ax.patches):
-                axis.text(
-                    totals_min[i] - 0.01,
-                    p.get_y() + 0.3,
-                    f"${totals_min[i]}$",
-                    color="w",
-                    fontsize=4,
-                    verticalalignment="center",
-                    horizontalalignment="left",
-                )
-            axis.set_xlim(barsize)
-
-            axis.invert_yaxis()
-            axis.invert_xaxis()
-            axis.set_xticklabels([])
-            axis.tick_params(
-                axis="both",  # changes apply to the x-axis
-                which="both",  # both major and minor ticks are affected
-                left=False,  # ticks along the bottom edge are off
-                right=False,
-                bottom=False,
-                labelleft=True,
-            )
-
-        def add_heatmap(transition_value_matrix, axis, colormap):
-            sns.heatmap(
-                transition_value_matrix,
-                annot=True,
-                fmt=".1f",
-                cmap=colormap,
-                ax=axis,
-                # vmin=vmin,
-                # vmax=vmax,
-                annot_kws={"fontsize": 6.5, "rotation": 60},
-                cbar=False,
-            )
-            axis.set_yticks([])
-            axis.tick_params(bottom=False)
-
-        ax1 = plt.subplot(gs1[0, 0])
-
-        add_entropy_bars(
-            major_unigrams,
-            major_bigrams,
-            ax1,
-        )
-
-        ax2 = plt.subplot(gs1[0, 1])
-
-        add_heatmap(
-            major_bigrams[major_bigrams > 0].iloc[
-                :top, :top
-            ],  # only display non-zero values
-            axis=ax2,
-            colormap="Blues",
-        )
-
-        # ## MINOR BIGRAMS
-
-        # gs2 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
-        # gs2.update(
-        #     left=0.5 + left_margin,
-        #     right=1.0 - right_margin,
-        #     wspace=wspace,
-        #     hspace=hspace,
-        #     bottom=bottom_margin,
-        #     top=top_margin,
-        # )
-        #
-        # ax3 = plt.subplot(gs2[0, 0])
-        # add_entropy_bars(
-        #     minor_unigrams,
-        #     minor_bigrams,
-        #     ax3,
-        # )
-        #
-        # ax4 = plt.subplot(gs2[0, 1])
-        # add_heatmap(
-        #     minor_bigrams[minor_bigrams > 0].iloc[:top, :top],
-        #     axis=ax4,
-        #     colormap="Reds",
-        # )
-
-        fig.align_labels()
-    return fig
-
-major_unigrams = pd.Series(Counter(sum(full_grams_major, []))).sort_values(ascending=False)
-major_bigrams = transition_matrix(full_grams_major)
-plot_transition_heatmap(major_unigrams, major_unigrams, major_bigrams, major_bigrams, top=20, two_col_width=12,)
 ```
 
 ```{code-cell} ipython3

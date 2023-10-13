@@ -473,6 +473,8 @@ def make_transition_heatmap_plots(
     top: int = 30,
     two_col_width=12,
     frequencies: bool = False,
+    top_margin=0.99,
+    bottom_margin=0.10,
     right_margin=0.005,
     left_margin=0.085,
 ):
@@ -506,8 +508,6 @@ def make_transition_heatmap_plots(
             right,
         ):
             gridspec_ratio = [0.25, 2.0]
-            top_margin = 0.99
-            bottom_margin = 0.12
             hspace = None
             wspace = 0.0
             gs = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
@@ -807,10 +807,9 @@ def plot_pitch_class_distribution(
 def plot_transition_heatmaps(
     full_grams_left: List[tuple],
     full_grams_right: Optional[List[tuple]] = None,
-    top=25,
-    two_col_width=12,
     frequencies=True,
     remove_repeated: bool = False,
+    **kwargs,
 ):
     left_bigrams = transition_matrix(
         full_grams_left, dist_only=remove_repeated, normalize=frequencies, percent=True
@@ -840,9 +839,8 @@ def plot_transition_heatmaps(
         left_unigrams_norm,
         right_bigrams,
         right_unigrams_norm,
-        top=top,
-        two_col_width=two_col_width,
         frequencies=frequencies,
+        **kwargs,
     )
 
 
