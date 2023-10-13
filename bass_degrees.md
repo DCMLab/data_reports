@@ -24,7 +24,7 @@ import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
 from utils import cnt, plot_bigram_tables, prettify_counts, resolve_dir, sorted_gram_counts, transition_matrix, \
-  remove_none_labels, remove_non_chord_labels, write_image
+  remove_none_labels, remove_non_chord_labels, write_image, plot_transition_heatmaps
 import dimcat as dc
 
 pd.set_option('display.max_rows', 1000)
@@ -428,24 +428,12 @@ full_grams[1]
 minor_region_selector = key_regions.localkey.str.islower()
 minor_regions = key_regions[minor_region_selector].localkey.to_dict()
 major_regions = key_regions[~minor_region_selector].localkey.to_dict()
-```
-
-```{code-cell} ipython3
 full_grams_minor = [ms3.fifths2sd(full_grams[i], True) + ['∅'] for i in minor_regions]
 full_grams_major = [ms3.fifths2sd(full_grams[i], False) + ['∅'] for i in major_regions]
-minor_unigrams = pd.Series(Counter(sum(full_grams_minor, []))).sort_values(ascending=False)
-minor_unigrams_norm = minor_unigrams / minor_unigrams.sum()
-major_unigrams = pd.Series(Counter(sum(full_grams_major, []))).sort_values(ascending=False)
-major_unigrams_norm = major_unigrams / major_unigrams.sum()
 ```
 
 ```{code-cell} ipython3
-minor_bigrams = transition_matrix(full_grams_minor, dist_only=True, normalize=True, percent=True)
-major_bigrams = transition_matrix(full_grams_major, dist_only=True, normalize=True, percent=True)
-```
-
-```{code-cell} ipython3
-plot_bigram_tables(major_unigrams_norm, minor_unigrams_norm, major_bigrams, minor_bigrams, top=25, two_col_width=12, frequencies=True)
+plot_transition_heatmaps(full_grams_major, full_grams_minor)
 save_pdf_path = os.path.join(RESULTS_PATH, 'bass_degree_bigrams.pdf')
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()

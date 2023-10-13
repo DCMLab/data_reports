@@ -488,6 +488,19 @@ def plot_bigram_tables(
     two_col_width=1,
     frequencies=False,
 ):
+    """
+
+    Args:
+        major_unigrams:
+        minor_unigrams:
+        major_bigrams:
+        minor_bigrams:
+        top:
+        two_col_width:
+        frequencies: If set to True, the values of the unigram Series are interpreted as normalized frequencies and
+            are multiplied with 100 for display on the y-axis.
+
+    """
     if isinstance(major_unigrams, pd.core.frame.DataFrame):
         major_unigrams = major_unigrams.iloc[:, 0]
     if isinstance(minor_unigrams, pd.core.frame.DataFrame):
@@ -807,6 +820,39 @@ def plot_pitch_class_distribution(
     )
 
 
+def plot_transition_heatmaps(
+    full_grams_major,
+    full_grams_minor,
+    top=25,
+    two_col_width=12,
+    frequencies=True,
+    remove_repeated: bool = False,
+):
+    minor_unigrams = pd.Series(Counter(sum(full_grams_minor, []))).sort_values(
+        ascending=False
+    )
+    minor_unigrams_norm = minor_unigrams / minor_unigrams.sum()
+    major_unigrams = pd.Series(Counter(sum(full_grams_major, []))).sort_values(
+        ascending=False
+    )
+    major_unigrams_norm = major_unigrams / major_unigrams.sum()
+    minor_bigrams = transition_matrix(
+        full_grams_minor, dist_only=remove_repeated, normalize=frequencies, percent=True
+    )
+    major_bigrams = transition_matrix(
+        full_grams_major, dist_only=remove_repeated, normalize=frequencies, percent=True
+    )
+    plot_bigram_tables(
+        major_unigrams_norm,
+        minor_unigrams_norm,
+        major_bigrams,
+        minor_bigrams,
+        top=top,
+        two_col_width=two_col_width,
+        frequencies=frequencies,
+    )
+
+
 def prepare_sunburst_data(sliced_harmonies_table: pd.DataFrame) -> pd.DataFrame:
     """"""
     chord_data = sliced_harmonies_table[
@@ -1062,9 +1108,9 @@ def transition_matrix(
     consequent = pd.Index(set([ix[1] for ix in ngrams.index]))
     df = pd.DataFrame(smooth, index=context, columns=consequent)
 
-    for i, (cont, cons) in enumerate(ngrams.index):
+    for (cont, cons), n_gram_count in ngrams.items():
         try:
-            df.loc[cont, cons] += ngrams[i]
+            df.loc[cont, cons] += n_gram_count
         except Exception:
             continue
 
@@ -1111,15 +1157,22 @@ def transition_matrix(
     return df
 
 
-def value_count_df(S, thing=None, counts="counts"):
-    """Value counts as DataFrame where the index has the name of the given Series or ``thing`` and where the counts
+def value_count_df(
+    S: pd.Series,
+    name: Optional[str] = None,
+    counts_column: str = "counts",
+    round: Optional[int] = 2,
+):
+    """Value counts as DataFrame where the index has the name of the given Series or ``name`` and where the counts
     are given in the column ``counts``.
     """
-    thing = S.name if thing is None else thing
-    vc = S.value_counts().rename(counts)
-    normalized = vc / vc.sum()
+    name = S.name if name is None else name
+    vc = S.value_counts().rename(counts_column)
+    normalized = 100 * vc / vc.sum()
+    if round is not None:
+        normalized = normalized.round(round)
     df = pd.concat([vc.to_frame(), normalized.rename("%")], axis=1)
-    df.index.rename(thing, inplace=True)
+    df.index.rename(name, inplace=True)
     return df
 
 

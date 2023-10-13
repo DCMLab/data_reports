@@ -23,18 +23,22 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+
+from matplotlib import pyplot as plt
 %load_ext autoreload
 %autoreload 2
 import os
 
-from git import Repo
 import dimcat as dc
+from dimcat.steps import groupers
 import ms3
 import pandas as pd
 import plotly.express as px
+from git import Repo
 
 from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, \
-  get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir, plot_cum
+  get_corpus_display_name, get_repo_name, print_heading, resolve_dir, plot_cum, value_count_df, \
+  plot_pitch_class_distribution, remove_none_labels, remove_non_chord_labels, plot_transition_heatmaps
 ```
 
 ```{code-cell} ipython3
@@ -42,7 +46,7 @@ from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "ismir"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+    write_image(fig, filename, directory, format=".pdf", **kwargs)
 ```
 
 ```{code-cell} ipython3
@@ -69,7 +73,61 @@ chronological_corpus_names = list(corpus_names.values())
 corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
 ```
 
-## DCML harmony labels
+## FeatureExtractor
+
+```{code-cell} ipython3
+notes = D.get_feature('notes')
+fig = plot_pitch_class_distribution(
+  notes.df,
+  title=None,
+  modin=False)
+save_figure_as(fig, "complete_pitch_class_distribution_absolute_bars", height=800)
+fig.show()
+```
+
+## Groupers
+
+```{code-cell} ipython3
+grouping = dc.Pipeline([
+    groupers.CorpusGrouper(),
+    groupers.ModeGrouper(),
+])
+GD = grouping.process(D)
+grouped_keys = GD.get_feature('keyannotations')
+grouped_keys_df = grouped_keys.df
+grouped_keys_df
+```
+
+```{code-cell} ipython3
+segment_duration_per_dataset = grouped_keys.groupby(["corpus", "mode"]).duration_qb.sum().round(2)
+norm_segment_duration_per_dataset = 100 * segment_duration_per_dataset / segment_duration_per_dataset.groupby("corpus").sum()
+maj_min_ratio_per_dataset = pd.concat([segment_duration_per_dataset,
+                                      norm_segment_duration_per_dataset.rename('fraction').round(1).astype(str)+" %"],
+                                     axis=1)
+maj_min_ratio_per_dataset['corpus_name'] = maj_min_ratio_per_dataset.index.get_level_values('corpus').map(corpus_names)
+fig = px.bar(
+    maj_min_ratio_per_dataset.reset_index(),
+    x="corpus_name",
+    y="duration_qb",
+    title=None, #f"Fractions of summed corpus duration that are in major vs. minor",
+    color="mode",
+    text='fraction',
+    labels=dict(duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
+    category_orders=dict(corpus_name=chronological_corpus_names)
+    )
+fig.update_layout(**STD_LAYOUT)
+fig.update_xaxes(tickangle=45)
+save_figure_as(fig, 'major_minor_key_segments_corpuswise_absolute_stacked_bars', height=800)
+fig.show()
+```
+
+```{raw-cell}
+to_be_filled = grouped_keys_df.quarterbeats_all_endings == ''
+grouped_keys_df.quarterbeats_all_endings = grouped_keys_df.quarterbeats_all_endings.where(~to_be_filled, grouped_keys_df.quarterbeats)
+ms3.make_interval_index_from_durations(grouped_keys_df, position_col="quarterbeats_all_endings")
+```
+
+## Slicer
 
 ```{code-cell} ipython3
 :tags: [hide-input]
@@ -79,20 +137,43 @@ try:
     all_annotations = labels.df
 except Exception:
     all_annotations = pd.DataFrame()
-n_annotations = len(all_annotations.index)
+n_annotations = len(all_annotations)
 includes_annotations = n_annotations > 0
 if includes_annotations:
-    display(all_annotations.head())
-    print(f"Concatenated annotation tables contain {all_annotations.shape[0]} rows.")
+    all_chords = remove_none_labels(all_annotations)
+    all_chords = remove_non_chord_labels(all_chords)
+    display(all_chords.head())
+    print(f"Concatenated annotation tables contain {n_annotations} rows.")
     no_chord = all_annotations.root.isna()
-    if no_chord.sum() > 0:
-        print(f"{no_chord.sum()} of them are not chords. Their values are: {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}")
-    all_chords = all_annotations[~no_chord].copy()
-    print(f"Dataset contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
+    print(f"Dataset contains {len(all_chords)} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
     all_annotations['corpus_name'] = all_annotations.index.get_level_values(0).map(corpus_names)
     all_chords['corpus_name'] = all_chords.index.get_level_values(0).map(corpus_names)
 else:
     print(f"Dataset contains no annotations.")
+```
+
+```{code-cell} ipython3
+group_keys, group_dict = dc.data.resources.utils.make_adjacency_groups(
+            all_chords.localkey, groupby=["corpus", "piece"]
+        )
+segment2bass_note_series = {seg: bn for seg, bn in all_chords.groupby(group_keys).bass_note}
+full_grams = {i: S[( S!=S.shift() ).fillna(True)].to_list() for i, S in segment2bass_note_series.items()}
+full_grams_major, full_grams_minor = [], []
+for i, bass_notes in segment2bass_note_series.items():
+    #progression = bass_notes[(bass_notes != bass_notes.shift()).fillna(True)].to_list()
+    is_minor = group_dict[i].islower()
+    progression = ms3.fifths2sd(bass_notes.to_list(), is_minor) + ['∅']
+    if is_minor:
+        full_grams_minor.append(progression)
+    else:
+        full_grams_major.append(progression)
+```
+
+```{code-cell} ipython3
+plot_transition_heatmaps(full_grams_major, full_grams_minor, top=20)
+save_pdf_path = os.path.join(RESULTS_PATH, 'bass_degree_bigrams.pdf')
+plt.savefig(save_pdf_path, dpi=400)
+plt.show()
 ```
 
 ```{code-cell} ipython3
@@ -106,17 +187,29 @@ save_figure_as(fig, 'chord_type_distribution_cumulative')
 fig.show()
 ```
 
-## Phrases
-### Presence of phrase annotation symbols per dataset:
+```{code-cell} ipython3
+grouped_chords = groupers.ModeGrouper().process(labels)
+grouped_chords.get_default_groupby()
+```
 
 ```{code-cell} ipython3
-all_annotations.groupby(["corpus"]).phraseend.value_counts()
+value_count_df(grouped_chords.chord)
+```
+
+```{code-cell} ipython3
+ugs_dict = {mode: value_count_df(chords).reset_index() for mode, chords in
+            grouped_chords.groupby("mode").chord}
+ugs_df = pd.concat(ugs_dict, axis=1)
+ugs_df.columns = ['_'.join(map(str, col)) for col in ugs_df.columns]
+ugs_df.index = (ugs_df.index + 1).rename('k')
+ugs_df
 ```
 
 ## Key areas
 
 ```{code-cell} ipython3
 from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
+
 keys_segmented = dc.LocalKeySlicer().process_data(D)
 keys = keys_segmented.get_slice_info()
 print(f"Overall number of key segments is {len(keys.index)}")
@@ -300,7 +393,7 @@ fig.show()
 relative_roots = all_chords[['numeral', 'duration_qb', 'relativeroot', 'localkey_is_minor', 'chord_type']].copy()
 relative_roots['relativeroot_resolved'] = transform(relative_roots, ms3.resolve_relative_keys, ['relativeroot', 'localkey_is_minor'])
 has_rel = relative_roots.relativeroot_resolved.notna()
-relative_roots.loc[has_rel, 'localkey_is_minor'] = relative_roots.loc[has_rel, 'relativeroot_resolved'].str.islower()
+relative_roots.loc[has_rel, 'localkey_is_minor'] = relative_roots.loc[has_rel, 'relativeroot_resolved'].str.is_minor()
 relative_roots['root'] = transform(relative_roots, roman_numeral2fifths, ['numeral', 'localkey_is_minor'])
 chord_type_frequency = all_chords.chord_type.value_counts()
 replace_rare = ms3.map_dict({t: 'other' for t in chord_type_frequency[chord_type_frequency < 500].index})

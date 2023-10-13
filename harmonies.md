@@ -13,9 +13,9 @@ kernelspec:
 ---
 
 ```{code-cell} ipython3
-from git import Repo
 %load_ext autoreload
 %autoreload 2
+from git import Repo
 import os
 from collections import Counter
 import pandas as pd
