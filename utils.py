@@ -540,70 +540,86 @@ def plot_bigram_tables(
             top=top_margin,
         )
 
+        def add_entropy_bars(
+            unigrams,
+            bigrams,
+            axis,
+        ):
+            s_min = pd.Series(
+                (
+                    bigrams.apply(lambda x: entropy(x, base=2), axis=1)
+                    / np.log2(bigrams.shape[0])
+                )[:top].values,
+                index=[
+                    i + f" ({str(round(fr * 100, 1))})" if frequencies else i
+                    for i, fr in zip(bigrams.index, unigrams[:top].values)
+                ],
+            )
+            ax = s_min.plot(kind="barh", ax=axis, color="k")
+
+            # create a list to collect the plt.patches data
+            totals_min = []
+
+            # find the values and append to list
+            for i in ax.patches:
+                totals_min.append(round(i.get_width(), 2))
+
+            for i, p in enumerate(ax.patches):
+                axis.text(
+                    totals_min[i] - 0.01,
+                    p.get_y() + 0.3,
+                    f"${totals_min[i]}$",
+                    color="w",
+                    fontsize=4,
+                    verticalalignment="center",
+                    horizontalalignment="left",
+                )
+            axis.set_xlim(barsize)
+
+            axis.invert_yaxis()
+            axis.invert_xaxis()
+            axis.set_xticklabels([])
+            axis.tick_params(
+                axis="both",  # changes apply to the x-axis
+                which="both",  # both major and minor ticks are affected
+                left=False,  # ticks along the bottom edge are off
+                right=False,
+                bottom=False,
+                labelleft=True,
+            )
+
+        def add_heatmap(transition_value_matrix, axis, colormap):
+            sns.heatmap(
+                transition_value_matrix,
+                annot=True,
+                fmt=".1f",
+                cmap=colormap,
+                ax=axis,
+                # vmin=vmin,
+                # vmax=vmax,
+                annot_kws={"fontsize": 6.5, "rotation": 60},
+                cbar=False,
+            )
+            axis.set_yticks([])
+            axis.tick_params(bottom=False)
+
         ax1 = plt.subplot(gs1[0, 0])
 
-        # vmin = 0
-        # vmax = 5
-
-        s_maj = pd.Series(
-            (
-                major_bigrams.apply(lambda x: entropy(x, base=2), axis=1)
-                / np.log2(major_bigrams.shape[0])
-            )[:top].values,
-            index=[
-                i + f" ({str(round(fr*100, 1))})" if frequencies else i
-                for i, fr in zip(major_bigrams.index[:top], major_unigrams.values[:top])
-            ],
-        )
-        ax = s_maj.plot(kind="barh", ax=ax1, color="k")
-
-        # create a list to collect the plt.patches data
-        totals_maj = []
-        # find the values and append to list
-        for i in ax.patches:
-            totals_maj.append(round(i.get_width(), 2))
-
-        for i, p in enumerate(ax.patches):
-            # entropy values
-            ax1.text(
-                totals_maj[i] - 0.01,
-                p.get_y() + 0.3,
-                f"${totals_maj[i]}$",
-                color="w",
-                fontsize=4,
-                verticalalignment="center",
-                horizontalalignment="left",
-            )
-        ax1.set_xlim(barsize)
-        ax1.invert_yaxis()
-        ax1.invert_xaxis()
-        ax1.set_xticklabels([])
-        ax1.tick_params(
-            axis="both",  # changes apply to the x-axis
-            which="both",  # both major and minor ticks are affected
-            left=False,  # ticks along the bottom edge are off
-            right=False,
-            bottom=False,
-            labelleft=True,
+        add_entropy_bars(
+            major_unigrams,
+            major_bigrams,
+            ax1,
         )
 
         ax2 = plt.subplot(gs1[0, 1])
 
-        sns.heatmap(
+        add_heatmap(
             major_bigrams[major_bigrams > 0].iloc[
                 :top, :top
             ],  # only display non-zero values
-            annot=True,
-            fmt=".1f",
-            cmap="Blues",
-            ax=ax2,
-            # vmin=vmin,
-            # vmax=vmax,
-            annot_kws={"fontsize": 6.5, "rotation": 60},
-            cbar=False,
+            axis=ax2,
+            colormap="Blues",
         )
-        ax2.set_yticks([])
-        ax2.tick_params(bottom=False)
 
         # ## MINOR BIGRAMS
 
@@ -618,68 +634,18 @@ def plot_bigram_tables(
         )
 
         ax3 = plt.subplot(gs2[0, 0])
-
-        s_min = pd.Series(
-            (
-                minor_bigrams.apply(lambda x: entropy(x, base=2), axis=1)
-                / np.log2(minor_bigrams.shape[0])
-            )[:top].values,
-            index=[
-                i + f" ({str(round(fr*100, 1))})" if frequencies else i
-                for i, fr in zip(minor_bigrams.index, minor_unigrams[:top].values)
-            ],
-        )
-        ax = s_min.plot(kind="barh", ax=ax3, color="k")
-
-        # create a list to collect the plt.patches data
-        totals_min = []
-
-        # find the values and append to list
-        for i in ax.patches:
-            totals_min.append(round(i.get_width(), 2))
-
-        for i, p in enumerate(ax.patches):
-            ax3.text(
-                totals_min[i] - 0.01,
-                p.get_y() + 0.3,
-                f"${totals_min[i]}$",
-                color="w",
-                fontsize=4,
-                verticalalignment="center",
-                horizontalalignment="left",
-            )
-        ax3.set_xlim(barsize)
-
-        ax3.invert_yaxis()
-        ax3.invert_xaxis()
-        ax3.set_xticklabels([])
-        ax3.tick_params(
-            axis="both",  # changes apply to the x-axis
-            which="both",  # both major and minor ticks are affected
-            left=False,  # ticks along the bottom edge are off
-            right=False,
-            bottom=False,
-            labelleft=True,
+        add_entropy_bars(
+            minor_unigrams,
+            minor_bigrams,
+            ax3,
         )
 
         ax4 = plt.subplot(gs2[0, 1])
-
-        sns.heatmap(
-            minor_bigrams[minor_bigrams > 0].iloc[
-                :top, :top
-            ],  # only display non-zero values
-            annot=True,
-            fmt=".1f",
-            cmap="Reds",
-            ax=ax4,
-            # vmin=vmin,
-            # vmax=vmax,
-            annot_kws={"fontsize": 6.5, "rotation": 60},
-            cbar=False,
+        add_heatmap(
+            minor_bigrams[minor_bigrams > 0].iloc[:top, :top],
+            axis=ax4,
+            colormap="Reds",
         )
-
-        ax4.set_yticks([])
-        ax4.tick_params(bottom=False)
 
         fig.align_labels()
     return fig
