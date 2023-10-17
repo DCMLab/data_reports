@@ -55,6 +55,14 @@ labels = D.get_feature('harmonylabels')
 labels
 ```
 
+```{code-cell} ipython3
+metadata = D.get_metadata()
+is_annotated_mask = metadata.label_count > 0
+is_annotated_index = dc.PieceIndex(metadata.index[is_annotated_mask])
+annotated_notes = notes[is_annotated_index]
+print(f"The annotated pieces have {len(annotated_notes)} notes.")
+```
+
 #### Delete @none labels
 This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
 

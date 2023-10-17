@@ -51,7 +51,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell} ipython3
 :tags: [remove-output]
 
-package_path = resolve_dir("~/dcml_corpora/dcml_corpora.datapackage.json")
+package_path = resolve_dir("dcml_corpora.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -202,7 +202,9 @@ for i, bass_notes in segment2bass_note_series.items():
 
 ```{code-cell} ipython3
 plot_transition_heatmaps(full_grams_major, full_grams_minor, top=20)
+save_pdf_path = os.path.join(RESULTS_PATH, 'bass_degree_bigrams.png')
 save_pdf_path = os.path.join(RESULTS_PATH, 'bass_degree_bigrams.pdf')
+save_pdf_path = os.path.join(RESULTS_PATH, 'bass_degree_bigrams.svg')
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
 ```

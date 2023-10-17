@@ -23,8 +23,8 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
-from utils import cnt, make_transition_heatmap_plots, prettify_counts, resolve_dir, sorted_gram_counts, transition_matrix, \
-  remove_none_labels, remove_non_chord_labels, write_image, plot_transition_heatmaps
+from utils import cnt, prettify_counts, resolve_dir, sorted_gram_counts, \
+  remove_none_labels, remove_non_chord_labels, plot_transition_heatmaps, DEFAULT_OUTPUT_FORMAT
 import dimcat as dc
 
 pd.set_option('display.max_rows', 1000)
@@ -434,7 +434,7 @@ full_grams_major = [ms3.fifths2sd(full_grams[i], False) + ['∅'] for i in major
 
 ```{code-cell} ipython3
 plot_transition_heatmaps(full_grams_major, full_grams_minor)
-save_pdf_path = os.path.join(RESULTS_PATH, 'bass_degree_bigrams.pdf')
+save_pdf_path = os.path.join(RESULTS_PATH, f'bass_degree_bigrams.{DEFAULT_OUTPUT_FORMAT}')
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
 ```
