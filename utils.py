@@ -109,7 +109,7 @@ COLUMN2SUNBURST_TITLE = dict(
 )
 
 
-def cnt(
+def count_subsequent_occurrences(
     S: pd.Series,
     interval: int | List[int],
     k_min: int = 1,
@@ -143,19 +143,20 @@ def cnt(
     ix_chunks = pd.DataFrame(columns=["ixs", "n"]) if df else []
     current = []
     n = 0
-    s = pd.concat([S, pd.Series([pd.NA])])  # so that else is executed in the end
-    for i, iv in s.items():
-        if not pd.isnull(iv) and iv in interval_list:
-            current.append(i)
-            if iv != 0:
+    for ix, value in S.items():
+        if not pd.isnull(value) and value in interval_list:
+            current.append(ix)
+            if value != 0:
                 n += 1
         else:
+            if not pd.isnull(value):
+                current.append(ix)
             if n >= k_min:
                 if df:
                     ix_chunks.loc[len(ix_chunks)] = (current, n)
                 else:
                     ix_chunks.append((current, n))
-            current = [i]
+            current = []
             n = 0
     return ix_chunks
 

@@ -289,11 +289,11 @@ def get_cols(df, ix, cols):
 
 def summarize(df):
     norepeat = (df.bass_note != df.bass_note.shift()).fillna(True)
-    seconds_asc = cnt(df.bass_interval_pc, [1, 2])
+    seconds_asc = count_subsequent_occurrences(df.bass_interval_pc, [1, 2])
     seconds_asc_vals = ix_segments2values(df, seconds_asc.ixs)
-    seconds_desc = cnt(df.bass_interval_pc, [-1, -2])
+    seconds_desc = count_subsequent_occurrences(df.bass_interval_pc, [-1, -2])
     seconds_desc_vals = ix_segments2values(df, seconds_desc.ixs)
-    both = cnt(df.bass_interval_pc, [1, 2, -1, -2])
+    both = count_subsequent_occurrences(df.bass_interval_pc, [1, 2, -1, -2])
     both_vals = ix_segments2values(df, both.ixs)
     n_stepwise = both.n.sum()
     length_norepeat = norepeat.sum()

@@ -126,7 +126,7 @@ pc_ivs.value_counts()
 ### Successive descending semitones
 
 ```{code-cell}
-desc = cnt(pc_ivs, -1)
+desc = count_subsequent_occurrences(pc_ivs, -1)
 desc.n.value_counts()
 ```
 
@@ -149,7 +149,7 @@ four_desc.head(30)
 ### Successive ascending semitones
 
 ```{code-cell}
-asc = cnt(pc_ivs, 1)
+asc = count_subsequent_occurrences(pc_ivs, 1)
 asc.n.value_counts()
 ```
 
