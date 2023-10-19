@@ -2,7 +2,7 @@ import os
 import re
 from collections import Counter, defaultdict
 from functools import cache
-from typing import List, Optional
+from typing import List, Optional, Tuple
 
 import colorlover
 import frictionless as fl
@@ -465,6 +465,199 @@ def make_sunburst(chords, mode, inspect=False):
     return fig
 
 
+def make_transition_heatmap_plots(
+    left_bigrams: pd.DataFrame,
+    left_unigrams: pd.Series,
+    right_bigrams: Optional[pd.DataFrame] = None,
+    right_unigrams: Optional[pd.Series] = None,
+    top: int = 30,
+    two_col_width=12,
+    frequencies: bool = False,
+    fontsize=8,
+    labelsize=12,
+    top_margin=0.99,
+    bottom_margin=0.10,
+    right_margin=0.005,
+    left_margin=0.085,
+):
+    """
+
+    Args:
+        left_unigrams:
+        right_unigrams:
+        left_bigrams:
+        right_bigrams:
+        top:
+        two_col_width:
+        frequencies: If set to True, the values of the unigram Series are interpreted as normalized frequencies and
+            are multiplied with 100 for display on the y-axis.
+
+    """
+    # set custom context for this plot
+    with plt.rc_context(
+        {
+            # disable spines for entropy bars
+            "axes.spines.top": False,
+            "axes.spines.left": False,
+            "axes.spines.bottom": False,
+            "axes.spines.right": False,
+            "font.family": "sans-serif",
+        }
+    ):
+
+        def make_gridspec(
+            left,
+            right,
+        ):
+            gridspec_ratio = [0.25, 2.0]
+            hspace = None
+            wspace = 0.0
+            gs = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
+            gs.update(
+                left=left,
+                right=right,
+                wspace=wspace,
+                hspace=hspace,
+                bottom=bottom_margin,
+                top=top_margin,
+            )
+            return gs
+
+        def add_entropy_bars(
+            unigrams,
+            bigrams,
+            axis,
+        ):
+            # settings for margins etc.
+            barsize = [0.0, 0.7]
+            s_min = pd.Series(
+                (
+                    bigrams.apply(lambda x: entropy(x, base=2), axis=1)
+                    / np.log2(bigrams.shape[0])
+                )[:top].values,
+                index=[
+                    i + f" ({str(round(fr * 100, 1))})" if frequencies else i
+                    for i, fr in zip(bigrams.index, unigrams[:top].values)
+                ],
+            )
+            ax = s_min.plot(kind="barh", ax=axis, color="k")
+
+            # create a list to collect the plt.patches data
+            totals_min = []
+
+            # find the values and append to list
+            for i in ax.patches:
+                totals_min.append(round(i.get_width(), 2))
+
+            for i, p in enumerate(ax.patches):
+                axis.text(
+                    totals_min[i] - 0.01,
+                    p.get_y() + 0.3,
+                    f"${totals_min[i]}$",
+                    color="w",
+                    fontsize=fontsize,
+                    verticalalignment="center",
+                    horizontalalignment="left",
+                )
+            axis.set_xlim(barsize)
+
+            axis.invert_yaxis()
+            axis.invert_xaxis()
+            axis.set_xticklabels([])
+            axis.tick_params(
+                axis="both",  # changes apply to the x-axis
+                which="both",  # both major and minor ticks are affected
+                left=False,  # ticks along the bottom edge are off
+                right=False,
+                bottom=False,
+                labelleft=True,
+                labelsize=labelsize,
+            )
+
+        def add_heatmap(transition_value_matrix, axis, colormap):
+            sns.heatmap(
+                transition_value_matrix,
+                annot=True,
+                fmt=".1f",
+                cmap=colormap,
+                ax=axis,
+                # vmin=vmin,
+                # vmax=vmax,
+                annot_kws={"fontsize": fontsize, "rotation": 60},
+                cbar=False,
+            )
+            axis.set_yticks([])
+            axis.tick_params(bottom=False)
+
+        single_col_width = two_col_width / 2
+        plot_two_sides = right_bigrams is not None
+        if plot_two_sides:
+            assert (
+                right_unigrams is not None
+            ), "right_unigrams must be provided if right_bigrams is provided"
+            fig = plt.figure(figsize=(two_col_width, single_col_width))
+            gs1 = make_gridspec(
+                left=left_margin,
+                right=0.5 - right_margin,
+            )
+        else:
+            fig = plt.figure(figsize=(single_col_width, single_col_width))
+            gs1 = make_gridspec(
+                left=left_margin,
+                right=1.0 - right_margin,
+            )
+
+        # LEFT-HAND SIDE
+
+        ax1 = plt.subplot(gs1[0, 0])
+
+        add_entropy_bars(
+            left_unigrams,
+            left_bigrams,
+            ax1,
+        )
+
+        ax2 = plt.subplot(gs1[0, 1])
+
+        add_heatmap(
+            left_bigrams[left_bigrams > 0].iloc[
+                :top, :top
+            ],  # only display non-zero values
+            axis=ax2,
+            colormap="Blues",
+        )
+
+        # RIGHT-HAND SIDE
+
+        plot_two_sides = right_bigrams is not None
+        if plot_two_sides:
+            assert (
+                right_unigrams is not None
+            ), "right_unigrams must be provided if right_bigrams is provided"
+
+            gs2 = make_gridspec(
+                left=0.5 + left_margin,
+                right=1.0 - right_margin,
+            )
+
+            ax3 = plt.subplot(gs2[0, 0])
+            add_entropy_bars(
+                right_unigrams,
+                right_bigrams,
+                ax3,
+            )
+
+            ax4 = plt.subplot(gs2[0, 1])
+            add_heatmap(
+                right_bigrams[right_bigrams > 0].iloc[:top, :top],
+                axis=ax4,
+                colormap="Reds",
+            )
+
+        fig.align_labels()
+    return fig
+
+
 def nest_level(obj, include_tuples=False):
     """Recursively calculate the depth of a nested list."""
     if obj.__class__ != list:
@@ -479,206 +672,15 @@ def nest_level(obj, include_tuples=False):
     return max_level + 1
 
 
-def plot_bigram_tables(
-    major_unigrams,
-    minor_unigrams,
-    major_bigrams,
-    minor_bigrams,
-    top,
-    two_col_width=1,
-    frequencies=False,
-):
-    if isinstance(major_unigrams, pd.core.frame.DataFrame):
-        major_unigrams = major_unigrams.iloc[:, 0]
-    if isinstance(minor_unigrams, pd.core.frame.DataFrame):
-        minor_unigrams = minor_unigrams.iloc[:, 0]
-    # set custom context for this plot
-    with plt.rc_context(
-        {
-            # disable spines for entropy bars
-            "axes.spines.top": False,
-            "axes.spines.left": False,
-            "axes.spines.bottom": False,
-            "axes.spines.right": False,
-            "font.family": "sans-serif",
-        }
-    ):
-        # settings for margins etc.
-        barsize = [0.0, 0.7]
-        gridspec_ratio = [0.25, 2.0]
-        top_margin = 0.99
-        bottom_margin = 0.12
-        hspace = None
-        wspace = 0.0
-        right_margin = 0.005
-        left_margin = 0.085
-
-        fig = plt.figure(figsize=(two_col_width, two_col_width * 0.5))
-
-        # ## MAJOR BIGRAMS
-
-        gs1 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
-        gs1.update(
-            left=left_margin,
-            right=0.5 - right_margin,
-            wspace=wspace,
-            hspace=hspace,
-            bottom=bottom_margin,
-            top=top_margin,
-        )
-
-        ax1 = plt.subplot(gs1[0, 0])
-
-        # vmin = 0
-        # vmax = 5
-
-        s_maj = pd.Series(
-            (
-                major_bigrams.apply(lambda x: entropy(x, base=2), axis=1)
-                / np.log2(major_bigrams.shape[0])
-            )[:top].values,
-            index=[
-                i + f" ({str(round(fr*100, 1))})" if frequencies else i
-                for i, fr in zip(major_bigrams.index[:top], major_unigrams.values[:top])
-            ],
-        )
-        ax = s_maj.plot(kind="barh", ax=ax1, color="k")
-
-        # create a list to collect the plt.patches data
-        totals_maj = []
-        # find the values and append to list
-        for i in ax.patches:
-            totals_maj.append(round(i.get_width(), 2))
-
-        for i, p in enumerate(ax.patches):
-            # entropy values
-            ax1.text(
-                totals_maj[i] - 0.01,
-                p.get_y() + 0.3,
-                f"${totals_maj[i]}$",
-                color="w",
-                fontsize=4,
-                verticalalignment="center",
-                horizontalalignment="left",
-            )
-        ax1.set_xlim(barsize)
-        ax1.invert_yaxis()
-        ax1.invert_xaxis()
-        ax1.set_xticklabels([])
-        ax1.tick_params(
-            axis="both",  # changes apply to the x-axis
-            which="both",  # both major and minor ticks are affected
-            left=False,  # ticks along the bottom edge are off
-            right=False,
-            bottom=False,
-            labelleft=True,
-        )
-
-        ax2 = plt.subplot(gs1[0, 1])
-
-        sns.heatmap(
-            major_bigrams[major_bigrams > 0].iloc[
-                :top, :top
-            ],  # only display non-zero values
-            annot=True,
-            fmt=".1f",
-            cmap="Blues",
-            ax=ax2,
-            # vmin=vmin,
-            # vmax=vmax,
-            annot_kws={"fontsize": 6.5, "rotation": 60},
-            cbar=False,
-        )
-        ax2.set_yticks([])
-        ax2.tick_params(bottom=False)
-
-        # ## MINOR BIGRAMS
-
-        gs2 = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
-        gs2.update(
-            left=0.5 + left_margin,
-            right=1.0 - right_margin,
-            wspace=wspace,
-            hspace=hspace,
-            bottom=bottom_margin,
-            top=top_margin,
-        )
-
-        ax3 = plt.subplot(gs2[0, 0])
-
-        s_min = pd.Series(
-            (
-                minor_bigrams.apply(lambda x: entropy(x, base=2), axis=1)
-                / np.log2(minor_bigrams.shape[0])
-            )[:top].values,
-            index=[
-                i + f" ({str(round(fr*100, 1))})" if frequencies else i
-                for i, fr in zip(minor_bigrams.index, minor_unigrams[:top].values)
-            ],
-        )
-        ax = s_min.plot(kind="barh", ax=ax3, color="k")
-
-        # create a list to collect the plt.patches data
-        totals_min = []
-
-        # find the values and append to list
-        for i in ax.patches:
-            totals_min.append(round(i.get_width(), 2))
-
-        for i, p in enumerate(ax.patches):
-            ax3.text(
-                totals_min[i] - 0.01,
-                p.get_y() + 0.3,
-                f"${totals_min[i]}$",
-                color="w",
-                fontsize=4,
-                verticalalignment="center",
-                horizontalalignment="left",
-            )
-        ax3.set_xlim(barsize)
-
-        ax3.invert_yaxis()
-        ax3.invert_xaxis()
-        ax3.set_xticklabels([])
-        ax3.tick_params(
-            axis="both",  # changes apply to the x-axis
-            which="both",  # both major and minor ticks are affected
-            left=False,  # ticks along the bottom edge are off
-            right=False,
-            bottom=False,
-            labelleft=True,
-        )
-
-        ax4 = plt.subplot(gs2[0, 1])
-
-        sns.heatmap(
-            minor_bigrams[minor_bigrams > 0].iloc[
-                :top, :top
-            ],  # only display non-zero values
-            annot=True,
-            fmt=".1f",
-            cmap="Reds",
-            ax=ax4,
-            # vmin=vmin,
-            # vmax=vmax,
-            annot_kws={"fontsize": 6.5, "rotation": 60},
-            cbar=False,
-        )
-
-        ax4.set_yticks([])
-        ax4.tick_params(bottom=False)
-
-        fig.align_labels()
-    return fig
-
-
 def plot_cum(
     S=None,
     cum=None,
-    x_log=False,
-    markersize=2,
-    left_range=(-0.1, 4.40),
-    right_range=(-0.023, 1.099),
+    x_log: bool = True,
+    markersize: int = 4,
+    n_labels: int = 10,
+    font_size: Optional[int] = None,
+    left_range: Optional[Tuple[float, float]] = None,
+    right_range: Optional[Tuple[float, float]] = None,
     **kwargs,
 ):
     """Pass either a Series or cumulative_fraction(S).reset_index()"""
@@ -695,22 +697,37 @@ def plot_cum(
         ]
     )
     ix = cum.index
+    scatter_args = dict(
+        x=ix,
+        y=cum.x,
+        name="Absolute count",
+        marker=dict(size=markersize),
+    )
+    if n_labels > 0:
+        text_labels, text_positions = [], []
+        for i, chrd in enumerate(cum.chord):
+            if i < n_labels:
+                text_labels.append(chrd)
+                if i % 2:
+                    text_positions.append("top center")
+                else:
+                    text_positions.append("bottom center")
+            else:
+                text_labels.append("")
+                text_positions.append("top center")
+        scatter_args["text"] = text_labels
+        scatter_args["textposition"] = text_positions
+        scatter_args["mode"] = "markers+text"
+    else:
+        scatter_args["mode"] = "markers"
     fig.add_trace(
-        go.Scatter(
-            x=ix,
-            y=cum.x,
-            text=cum["index"],
-            name="Absolute count",
-            mode="markers",
-            marker=dict(size=markersize),
-        ),
+        go.Scatter(**scatter_args),
         secondary_y=False,
     )
     fig.add_trace(
         go.Scatter(
             x=ix,
             y=cum.y,
-            text=cum["index"],
             name="Cumulative fraction",
             mode="markers",
             marker=dict(size=markersize),
@@ -726,24 +743,33 @@ def plot_cum(
     else:
         ranks = len(ix)
         fig.update_xaxes(range=(-0.02 * ranks, 1.02 * ranks))
-    fig.update_yaxes(
+    left_y_axis = dict(
         title_text="Absolute label count",
         secondary_y=False,
         type="log",
-        gridcolor="grey",
+        gridcolor="lightgrey",
         zeroline=True,
         dtick=1,
-        range=left_range,
     )
-    fig.update_yaxes(
+    right_y_axis = dict(
         title_text="Cumulative fraction",
         secondary_y=True,
-        gridcolor="lightgrey",
+        gridcolor="lightpink",
         zeroline=False,
-        dtick=0.1,
-        range=right_range,
+        dtick=0.25,
     )
-    fig.update_layout(**kwargs)
+    if left_range is not None:
+        left_y_axis["range"] = left_range
+    if right_range is not None:
+        right_y_axis["range"] = right_range
+    layout_args = dict(
+        kwargs, legend=dict(orientation="h", itemsizing="constant", x=-0.05)
+    )
+    if font_size is not None:
+        layout_args["font"] = dict(size=font_size)
+    fig.update_layout(**layout_args)
+    fig.update_yaxes(**left_y_axis)
+    fig.update_yaxes(**right_y_axis)
     return fig
 
 
@@ -778,6 +804,46 @@ def plot_pitch_class_distribution(
         width=width,
         height=height,
         output=output,
+    )
+
+
+def plot_transition_heatmaps(
+    full_grams_left: List[tuple],
+    full_grams_right: Optional[List[tuple]] = None,
+    frequencies=True,
+    remove_repeated: bool = False,
+    **kwargs,
+):
+    left_bigrams = transition_matrix(
+        full_grams_left, dist_only=remove_repeated, normalize=frequencies, percent=True
+    )
+    left_unigrams = pd.Series(Counter(sum(full_grams_left, []))).sort_values(
+        ascending=False
+    )
+    left_unigrams_norm = left_unigrams / left_unigrams.sum()
+
+    if full_grams_right is None:
+        right_bigrams = None
+        right_unigrams_norm = None
+    else:
+        right_bigrams = transition_matrix(
+            full_grams_right,
+            dist_only=remove_repeated,
+            normalize=frequencies,
+            percent=True,
+        )
+        right_unigrams = pd.Series(Counter(sum(full_grams_right, []))).sort_values(
+            ascending=False
+        )
+        right_unigrams_norm = right_unigrams / right_unigrams.sum()
+
+    make_transition_heatmap_plots(
+        left_bigrams,
+        left_unigrams_norm,
+        right_bigrams,
+        right_unigrams_norm,
+        frequencies=frequencies,
+        **kwargs,
     )
 
 
@@ -1036,9 +1102,9 @@ def transition_matrix(
     consequent = pd.Index(set([ix[1] for ix in ngrams.index]))
     df = pd.DataFrame(smooth, index=context, columns=consequent)
 
-    for i, (cont, cons) in enumerate(ngrams.index):
+    for (cont, cons), n_gram_count in ngrams.items():
         try:
-            df.loc[cont, cons] += ngrams[i]
+            df.loc[cont, cons] += n_gram_count
         except Exception:
             continue
 
@@ -1085,15 +1151,22 @@ def transition_matrix(
     return df
 
 
-def value_count_df(S, thing=None, counts="counts"):
-    """Value counts as DataFrame where the index has the name of the given Series or ``thing`` and where the counts
+def value_count_df(
+    S: pd.Series,
+    name: Optional[str] = None,
+    counts_column: str = "counts",
+    round: Optional[int] = 2,
+):
+    """Value counts as DataFrame where the index has the name of the given Series or ``name`` and where the counts
     are given in the column ``counts``.
     """
-    thing = S.name if thing is None else thing
-    vc = S.value_counts().rename(counts)
-    normalized = vc / vc.sum()
+    name = S.name if name is None else name
+    vc = S.value_counts().rename(counts_column)
+    normalized = 100 * vc / vc.sum()
+    if round is not None:
+        normalized = normalized.round(round)
     df = pd.concat([vc.to_frame(), normalized.rename("%")], axis=1)
-    df.index.rename(thing, inplace=True)
+    df.index.rename(name, inplace=True)
     return df
 
 

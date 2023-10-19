@@ -123,19 +123,19 @@ maj_min_ratio
 ### By dataset
 
 ```{code-cell}
-segment_duration_per_dataset = key_segments.groupby(level=["corpus", "localkey_is_minor"]).duration_qb.sum().round(2)
-norm_segment_duration_per_dataset = 100 * segment_duration_per_dataset / segment_duration_per_dataset.groupby(level="corpus").sum()
-maj_min_ratio_per_dataset = pd.concat([segment_duration_per_dataset,
-                                      norm_segment_duration_per_dataset.rename('fraction').round(1).astype(str)+" %"],
+segment_duration_per_corpus = key_segments.groupby(level=["corpus", "localkey_is_minor"]).duration_qb.sum().round(2)
+norm_segment_duration_per_corpus = 100 * segment_duration_per_corpus / segment_duration_per_corpus.groupby(level="corpus").sum()
+maj_min_ratio_per_corpus = pd.concat([segment_duration_per_corpus,
+                                      norm_segment_duration_per_corpus.rename('fraction').round(1).astype(str)+" %"],
                                      axis=1)
 ```
 
 ```{code-cell}
-segment_duration_per_dataset = key_segments.groupby(level=["corpus", "localkey_is_minor"]).duration_qb.sum().reset_index()
+segment_duration_per_corpus = key_segments.groupby(level=["corpus", "localkey_is_minor"]).duration_qb.sum().reset_index()
 ```
 
 ```{code-cell}
-maj_min_ratio_per_dataset
+maj_min_ratio_per_corpus
 ```
 
 ```{code-cell}
@@ -143,17 +143,17 @@ chronological_order = chronological_corpus_order(all_metadata)
 corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
 chronological_corpus_names = list(corpus_names.values())
 #corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
-maj_min_ratio_per_dataset['corpus_name'] = maj_min_ratio_per_dataset.index.get_level_values('corpus').map(corpus_names)
-maj_min_ratio_per_dataset['mode'] = maj_min_ratio_per_dataset.index.get_level_values('localkey_is_minor').map({False: 'major', True: 'minor'})
+maj_min_ratio_per_corpus['corpus_name'] = maj_min_ratio_per_corpus.index.get_level_values('corpus').map(corpus_names)
+maj_min_ratio_per_corpus['mode'] = maj_min_ratio_per_corpus.index.get_level_values('localkey_is_minor').map({False: 'major', True: 'minor'})
 ```
 
 ```{code-cell}
-maj_min_ratio_per_dataset
+maj_min_ratio_per_corpus
 ```
 
 ```{code-cell}
 fig = px.bar(
-    maj_min_ratio_per_dataset.reset_index(),
+    maj_min_ratio_per_corpus.reset_index(),
     x="corpus_name",
     y="duration_qb",
     title="Fractions of summed corpus duration that are in major vs. minor",

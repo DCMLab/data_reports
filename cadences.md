@@ -128,7 +128,7 @@ corpora
 ```{code-cell}
 all_labels = hascadence.get_facet('expanded')
 
-print(f"{len(all_labels.cadence_fraction_per_dataset)} hand-annotated harmony labels:")
+print(f"{len(all_labels)} hand-annotated harmony labels:")
 all_labels.iloc[:10, 13:].style.apply(color_background, subset="chord")
 ```
 
@@ -137,13 +137,13 @@ all_labels.iloc[:10, 13:].style.apply(color_background, subset="chord")
 ```{code-cell}
 dataset_metadata = hascadence.data.metadata()
 hascadence_metadata = dataset_metadata.loc[hascadence.indices[()]]
-hascadence_metadata.cadence_fraction_per_dataset.rename('dataset', level=0, inplace=True)
+hascadence_metadata.index.rename('dataset', level=0, inplace=True)
 hascadence_metadata.head()
 ```
 
 ```{code-cell}
 mean_composition_years = hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
-chronological_order = mean_composition_years.cadence_fraction_per_dataset.to_list()
+chronological_order = mean_composition_years.index.to_list()
 corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
 chronological_corpus_names = list(corpus_names.values())
 bar_data = pd.concat([mean_composition_years.rename('year'),
@@ -235,7 +235,7 @@ phrases_with_cadences = pd.concat([
     phrase_gpb.cadence.unique().rename('cadences').map(lambda l: tuple(e for e in l if not pd.isnull(e))),
     phrases_with_keys
 ], axis=1)
-value_count_df(phrases_with_cadences.n_cadences, counts="#phrases")
+value_count_df(phrases_with_cadences.n_cadences, counts_column="#phrases")
 ```
 
 ```{code-cell}
@@ -426,7 +426,14 @@ value_count_df(bass_prog_no_dups)
 ```
 
 ```{code-cell}
-def make_sankey(data, labels, node_pos=None, margin={'l': 10, 'r': 10, 'b': 10, 't': 10}, pad=20, color='auto', **kwargs):
+def make_sankey(
+        data,
+        labels,
+        node_pos=None,
+        margin={'l': 10, 'r': 10, 'b': 10, 't': 10},
+        pad=20,
+        color='auto',
+        **kwargs):
     if color=='auto':
         unique_labels = set(labels)
         color_step = 100 / len(unique_labels)
@@ -474,22 +481,26 @@ def progressions2graph_data(progressions, cut_at_stage=None):
             previous_node = current_node
     return stage_nodes, edge_weights
 
-def graph_data2sankey(stage_nodes, edge_weights):
+def graph_data2sankey(stage_nodes, edge_weights, **kwargs):
     data = pd.DataFrame([(u, v, w) for (u, v), w in edge_weights.items()], columns = ['source', 'target', 'value'])
     node2label = {node: label for stage, nodes in stage_nodes.items() for label, node in nodes.items()}
     labels = [node2label[i] for i in range(len(node2label))]
-    return make_sankey(data, labels)
+    return make_sankey(data, labels, **kwargs)
 
-def plot_progressions(progressions, cut_at_stage=None):
+def plot_progressions(progressions, cut_at_stage=None, **kwargs):
     stage_nodes, edge_weights = progressions2graph_data(progressions, cut_at_stage=cut_at_stage)
-    return graph_data2sankey(stage_nodes, edge_weights)
+    return graph_data2sankey(stage_nodes, edge_weights, **kwargs)
 ```
 
 #### Chordal roots for the 3 last stages
 
 ```{code-cell}
-fig = plot_progressions(numeral_prog_no_dups, cut_at_stage=3)
-save_figure_as(fig, 'last_3_roots_before_pacs_ending_on_1_sankey')
+fig = plot_progressions(
+  numeral_prog_no_dups,
+  cut_at_stage=3,
+  font=dict(size=30),
+)
+save_figure_as(fig, 'last_3_roots_before_pacs_ending_on_1_sankey', height=800)
 fig.show()
 ```
 

@@ -13,9 +13,9 @@ kernelspec:
 ---
 
 ```{code-cell} ipython3
-from git import Repo
 %load_ext autoreload
 %autoreload 2
+from git import Repo
 import os
 from collections import Counter
 import pandas as pd
@@ -53,6 +53,14 @@ D
 ```{code-cell} ipython3
 labels = D.get_feature('harmonylabels')
 labels
+```
+
+```{code-cell} ipython3
+metadata = D.get_metadata()
+is_annotated_mask = metadata.label_count > 0
+is_annotated_index = dc.PieceIndex(metadata.index[is_annotated_mask])
+annotated_notes = notes[is_annotated_index]
+print(f"The annotated pieces have {len(annotated_notes)} notes.")
 ```
 
 #### Delete @none labels
