@@ -17,7 +17,7 @@ kernelspec:
 Use for the `couperin_concerts` corpus only. Headings and function calls have been programatically generated for that
 corpus.
 
-```{code-cell} ipython3
+```{code-cell}
 %load_ext autoreload
 %autoreload 2
 
@@ -35,7 +35,7 @@ pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "modulations"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
@@ -43,7 +43,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))  # for running the notebook in the homepage deployment
 # workflow
 CORPUS_PATH = "~/all_subcorpora/couperin_concerts"         # for running the notebook locally
@@ -52,7 +52,7 @@ print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 repo = Repo(CORPUS_PATH)
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -60,19 +60,19 @@ print("dimcat version [NOT USED]")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 corpus_obj = ms3.Corpus(CORPUS_PATH)
 corpus_obj.view.include('facet', 'expanded')
 corpus_obj.parse_tsv()
 corpus_obj
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 md = corpus_obj.metadata()
 md.head()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 def make_modulation_plans(
     corpus_obj: ms3.Corpus,
     yaxis: Literal['semitones', 'fifths', 'numeral'] = 'semitones',
@@ -103,78 +103,78 @@ def make_modulation_plans(
 
 ## c01
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c01')
 ```
 
 ## c02
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c02')
 ```
 
 ## c03
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c03')
 ```
 
 ## c04
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c04')
 ```
 
 ## c05
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c05')
 ```
 
 ## c06
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c06')
 ```
 
 ## c07
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c07')
 ```
 
 ## c08
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c08')
 ```
 
 ## c09
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c09')
 ```
 
 ## c10
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c10')
 ```
 
 ## c11
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c11')
 ```
 
 ## c14
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='c14')
 ```
 
 ## parnasse
 
-```{code-cell} ipython3
+```{code-cell}
 make_modulation_plans(corpus_obj, regex='parnasse')
 ```

@@ -47,7 +47,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")

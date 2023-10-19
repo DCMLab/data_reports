@@ -14,7 +14,7 @@ kernelspec:
 
 # Chromatic bass progressions
 
-```{code-cell} ipython3
+```{code-cell}
 import os
 import ms3
 import pandas as pd
@@ -26,7 +26,7 @@ pd.options.display.max_columns = 50
 pd.options.display.max_rows = 100
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "chromatic_bass"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
@@ -34,7 +34,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
 CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
 print_heading("Notebook settings")
@@ -42,7 +42,7 @@ print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 repo = Repo(CORPUS_PATH)
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -50,7 +50,7 @@ print("dimcat version [NOT USED]")
 print(f"ms3 version {ms3.__version__}")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 parse_obj = ms3.Parse(CORPUS_PATH)
 annotated_view = parse_obj.get_view('annotated')
 annotated_view.include('facets', 'expanded')
@@ -60,7 +60,7 @@ parse_obj.parse_tsv(choose='auto')
 parse_obj
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 labels = parse_obj.get_facet("expanded")
 labels
 ```
@@ -68,13 +68,13 @@ labels
 #### Delete @none labels
 This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
 
-```{code-cell} ipython3
+```{code-cell}
 labels = remove_none_labels(labels)
 ```
 
 #### Delete non-chord labels (typically, phrase labels)
 
-```{code-cell} ipython3
+```{code-cell}
 labels = remove_non_chord_labels(labels)
 ```
 
@@ -85,7 +85,7 @@ labels = remove_non_chord_labels(labels)
 ### Expressing all bass notes as scale degrees of global tonic
 Since all scale degrees are expressed as fifths-intervals, this is as easy as adding the local key expressed as fifths
 
-```{code-cell} ipython3
+```{code-cell}
 transpose_by = ms3.transform(labels, ms3.roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
 bass = labels.bass_note + transpose_by
 bass.head()
@@ -93,7 +93,7 @@ bass.head()
 
 ### Adding bass note names to DataFrame
 
-```{code-cell} ipython3
+```{code-cell}
 transpose_by = ms3.transform(labels, ms3.name2fifths, ['globalkey'])
 labels['bass_name'] = ms3.fifths2name(bass + transpose_by).values
 labels.head()
@@ -104,7 +104,7 @@ Sloppy version: Include intervals across movement boundaries
 
 #### Bass progressions expressed in fifths
 
-```{code-cell} ipython3
+```{code-cell}
 bass = bass.bfill()
 ivs = bass - bass.shift()
 ivs.value_counts()
@@ -112,7 +112,7 @@ ivs.value_counts()
 
 #### Bass progressions expressed in (enharmonic) semitones
 
-```{code-cell} ipython3
+```{code-cell}
 pc_ivs = ms3.fifths2pc(ivs)
 pc_ivs.index = ivs.index
 pc_ivs = pc_ivs.where(pc_ivs <= 6, pc_ivs % -6).fillna(0)
@@ -125,14 +125,14 @@ pc_ivs.value_counts()
 
 ### Successive descending semitones
 
-```{code-cell} ipython3
+```{code-cell}
 desc = cnt(pc_ivs, -1)
 desc.n.value_counts()
 ```
 
 #### Storing those with three or more
 
-```{code-cell} ipython3
+```{code-cell}
 three_desc = labels.loc[desc[desc.n > 2].ixs.sum()]
 three_desc.to_csv(os.path.join(RESULTS_PATH, 'three_desc.tsv'), sep='\t')
 three_desc.head(30)
@@ -140,7 +140,7 @@ three_desc.head(30)
 
 #### Storing those with four or more
 
-```{code-cell} ipython3
+```{code-cell}
 four_desc = labels.loc[desc[desc.n > 3].ixs.sum()]
 four_desc.to_csv(os.path.join(RESULTS_PATH, 'four_desc.tsv'), sep='\t')
 four_desc.head(30)
@@ -148,14 +148,14 @@ four_desc.head(30)
 
 ### Successive ascending semitones
 
-```{code-cell} ipython3
+```{code-cell}
 asc = cnt(pc_ivs, 1)
 asc.n.value_counts()
 ```
 
 #### Storing those with three or more
 
-```{code-cell} ipython3
+```{code-cell}
 three_asc = labels.loc[asc[asc.n > 2].ixs.sum()]
 three_asc.to_csv(os.path.join(RESULTS_PATH, 'three_asc.tsv'), sep='\t')
 three_asc.head(30)
@@ -163,7 +163,7 @@ three_asc.head(30)
 
 #### Storing those with four or more
 
-```{code-cell} ipython3
+```{code-cell}
 four_asc = labels.loc[asc[asc.n > 3].ixs.sum()]
 four_asc.to_csv(os.path.join(RESULTS_PATH, 'four_asc.tsv'), sep='\t')
 four_asc.head(30)
@@ -172,7 +172,7 @@ four_asc.head(30)
 ## Filtering for particular progressions with length >= 3
 Finding only direct successors
 
-```{code-cell} ipython3
+```{code-cell}
 def filtr(df, query, column='chord'):
     vals = df[column].to_list()
     n_grams = [t for t in zip(*(vals[i:] for i in range(len(query))))]
@@ -192,38 +192,38 @@ def show(df, query, column='chord'):
 
 ### Descending
 
-```{code-cell} ipython3
+```{code-cell}
 descending = pd.concat([labels.loc[ix_seq] for ix_seq in desc[desc.n > 2].ixs.values], keys=range((desc.n > 2).sum()))
 descending
 ```
 
 #### Looking for `Ger i64`
 
-```{code-cell} ipython3
+```{code-cell}
 show(descending, ('Ger', 'i64'))
 ```
 
 #### `i64`
 
-```{code-cell} ipython3
+```{code-cell}
 show(descending, ('i64',))
 ```
 
 #### `Ger V(64)`
 
-```{code-cell} ipython3
+```{code-cell}
 show(descending, ('Ger', 'V(64'))
 ```
 
 #### Bass degrees `b6 5 #4`
 
-```{code-cell} ipython3
+```{code-cell}
 show(descending, (-4, 1, 6), 'bass_note')
 ```
 
 ### Ascending
 
-```{code-cell} ipython3
+```{code-cell}
 ascending = pd.concat([labels.loc[ix_seq] for ix_seq in asc[asc.n > 2].ixs.values], keys=range((asc.n > 2).sum()))
 ascending = ascending[ascending.label != '@none']
 ascending
@@ -231,24 +231,24 @@ ascending
 
 #### `i64 Ger`
 
-```{code-cell} ipython3
+```{code-cell}
 show(ascending, ('i64', 'Ger'))
 ```
 
 #### `i64`
 
-```{code-cell} ipython3
+```{code-cell}
 show(ascending, ('i64',))
 ```
 
 #### `V(64) Ger`
 
-```{code-cell} ipython3
+```{code-cell}
 show(ascending, ('V(64)', 'Ger'))
 ```
 
 #### Bass degrees `#4 5 b6`
 
-```{code-cell} ipython3
+```{code-cell}
 show(ascending, (6, 1, -4), 'bass_note')
 ```

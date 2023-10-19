@@ -23,7 +23,8 @@ from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
 from scipy.stats import entropy
 
-OUTPUT_FOLDER = os.path.abspath("outputs")
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "..", "results"))
 DEFAULT_OUTPUT_FORMAT = ".png"
 AVAILABLE_FIGURE_FORMATS = PlotlyScope._all_formats
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
