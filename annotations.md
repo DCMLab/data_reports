@@ -45,7 +45,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 :tags: [hide-input]
 
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
-CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
+CORPUS_PATH = "~/distant_listening_corpus/couperin_concerts"                # for running the notebook locally
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
