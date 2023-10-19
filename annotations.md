@@ -211,7 +211,7 @@ count_n_keys
 unique_key_selector = phrases_with_keys.n_local_keys == 1
 phrases_with_unique_key = phrases_with_keys[unique_key_selector].copy()
 phrases_with_unique_key.local_keys = phrases_with_unique_key.local_keys.map(lambda t: t[0])
-value_count_df(phrases_with_unique_key.local_keys, counts="#phrases")
+value_count_df(phrases_with_unique_key.local_keys, counts_column="#phrases")
 ```
 
 #### Most frequent modulations within one phrase

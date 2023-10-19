@@ -23,9 +23,10 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
-from utils import cnt, prettify_counts, resolve_dir, sorted_gram_counts, \
+from utils import count_subsequent_occurrences, prettify_counts, resolve_dir, sorted_gram_counts, \
   remove_none_labels, remove_non_chord_labels, plot_transition_heatmaps, DEFAULT_OUTPUT_FORMAT
 import dimcat as dc
+from dimcat.data.resources.utils import make_adjacency_groups
 
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
@@ -108,7 +109,7 @@ df.groupby(level=0, group_keys=False).localkey.apply(lambda col: col != col.shif
 ```
 
 ```{code-cell}
-key_region_groups, key_region2key = ms3.adjacency_groups(df.localkey)
+key_region_groups, key_region2key = make_adjacency_groups(df.localkey, groupby='piece')
 df['key_regions'] = key_region_groups
 df['bass_degree'] = ms3.transform(df, ms3.fifths2sd, ['bass_note', 'localkey_is_minor'])
 ```
@@ -159,7 +160,7 @@ All scale degrees are expressed as fifth-intervals to the local tonic:
 ```{code-cell}
 bd_series = {seg: bn for seg, bn in  df.groupby('key_regions').bass_note}
 bd_intervals = {seg: bd - bd.shift() for seg, bd in bd_series.items()}
-df['bass_interval'] = df.groupby('key_regions', group_keys=False).bass_note.apply(lambda bd: bd - bd.shift(-1))
+df['bass_interval'] = df.groupby('key_regions', group_keys=False).bass_note.apply(lambda bd: bd.shift(-1) - bd)
 print("Example output for the intervals of the first key segment:")
 df.loc[df.key_regions==1, ['bass_note', 'bass_interval']]
 ```
@@ -236,7 +237,7 @@ df['bass_interval_pc'] = pc_ivs.where(pc_ivs <= 6, pc_ivs % -6)
 ```
 
 ```{code-cell}
-df[["mc", "mn", "bass_degree", "bass_interval", "bass_interval_pc"]].head(15)
+df[["mc", "mn", "chord", "bass_degree", "bass_interval", "bass_interval_pc"]].head(15)
 ```
 
 #### Create key region summary
@@ -434,7 +435,7 @@ full_grams_major = [ms3.fifths2sd(full_grams[i], False) + ['∅'] for i in major
 
 ```{code-cell}
 plot_transition_heatmaps(full_grams_major, full_grams_minor)
-save_pdf_path = os.path.join(RESULTS_PATH, f'bass_degree_bigrams.{DEFAULT_OUTPUT_FORMAT}')
+save_pdf_path = os.path.join(RESULTS_PATH, f'bass_degree_bigrams{DEFAULT_OUTPUT_FORMAT}')
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
 ```
