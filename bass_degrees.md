@@ -131,14 +131,14 @@ selected = segment_lengths[segment_lengths == L].index
 df[df.key_regions.isin(selected)]
 ```
 
-#### Delete @none labels
+**Delete @none labels**
 This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
 
 ```{code-cell}
 df = remove_none_labels(df)
 ```
 
-#### Delete non-chord labels (typically, phrase labels)
+**Delete non-chord labels (typically, phrase labels)**
 
 ```{code-cell}
 df = remove_non_chord_labels(df)

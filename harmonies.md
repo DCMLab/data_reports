@@ -12,6 +12,8 @@ kernelspec:
   name: revamp
 ---
 
+# Harmonies
+
 ```{code-cell}
 %load_ext autoreload
 %autoreload 2
@@ -26,6 +28,8 @@ import dimcat as dc
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 ```
+
+
 
 ```{code-cell}
 from utils import OUTPUT_FOLDER, write_image
@@ -63,14 +67,14 @@ annotated_notes = notes[is_annotated_index]
 print(f"The annotated pieces have {len(annotated_notes)} notes.")
 ```
 
-#### Delete @none labels
+**Delete @none labels**
 This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
 
 ```{code-cell}
 df = remove_none_labels(labels.df)
 ```
 
-#### Delete non-chord labels (typically, phrase labels)
+**Delete non-chord labels (typically, phrase labels)**
 
 ```{code-cell}
 df = remove_non_chord_labels(df)
@@ -81,7 +85,7 @@ key_region_groups, key_region2key = ms3.adjacency_groups(df.localkey)
 df['key_regions'] = key_region_groups
 ```
 
-# Unigrams
+## Unigrams
 
 ```{code-cell}
 k = 25
@@ -100,7 +104,7 @@ save_figure_as(fig, 'chord_label_unigram_distribution')
 fig
 ```
 
-## Unigrams in major segments
+### Unigrams in major segments
 
 ```{code-cell}
 minor, major = df[df.localkey_is_minor], df[~df.localkey_is_minor]
@@ -117,7 +121,7 @@ save_figure_as(fig, 'chord_label_unigram_distribution_in_major')
 fig.show()
 ```
 
-## Unigrams in minor segments
+### Unigrams in minor segments
 
 ```{code-cell}
 print(f"{len(major)} tokens ({len(major.chord.unique())} types) in major and {len(minor)} ({len(minor.chord.unique())} types) in minor.")
@@ -133,7 +137,7 @@ save_figure_as(fig, 'chord_label_unigram_distribution_in_minor')
 fig.show()
 ```
 
-# Bigrams
+## Bigrams
 
 ```{code-cell}
 chord_successions = [s.to_list() for _, s in df.groupby('key_regions').chord]
@@ -148,25 +152,25 @@ c = Counter(gs)
 dict(sorted(c.items(), key=lambda a: a[1], reverse=True)[:k])
 ```
 
-## Absolute Counts (read from index to column)
+### Absolute Counts (read from index to column)
 
 ```{code-cell}
 transition_matrix(chord_successions, k=k, dist_only=True)
 ```
 
-## Normalized Counts
+### Normalized Counts
 
 ```{code-cell}
 transition_matrix(chord_successions, k=k, dist_only=True, normalize=True, decimals=2)
 ```
 
-## Entropy
+### Entropy
 
 ```{code-cell}
 transition_matrix(chord_successions, k=k, IC=True, dist_only=True, smooth=1, decimals=2)
 ```
 
-## Minor vs. Major
+### Minor vs. Major
 
 ```{code-cell}
 region_is_minor = df.groupby('key_regions').localkey_is_minor.unique().map(lambda l: l[0]).to_dict()
@@ -188,7 +192,7 @@ transition_matrix(major, k=k, dist_only=True, normalize=True)
 transition_matrix(minor, k=k, dist_only=True, normalize=True)
 ```
 
-## Chord progressions without suspensions
+### Chord progressions without suspensions
 
 Here called *plain chords*, which consist only of numeral, inversion figures, and relative keys.
 
@@ -231,7 +235,7 @@ from statistics import mean
 print(f"Segments being in the same local key have a mean length of {round(mean(plain_chords_per_segment.values()), 2)} plain chords.")
 ```
 
-### Most frequent 3-, 4-, and 5-grams in major
+#### Most frequent 3-, 4-, and 5-grams in major
 
 ```{code-cell}
 sorted_gram_counts(major_plain, 3)
@@ -245,7 +249,7 @@ sorted_gram_counts(major_plain, 4)
 sorted_gram_counts(major_plain, 5)
 ```
 
-### Most frequent 3-, 4-, and 5-grams in minor
+#### Most frequent 3-, 4-, and 5-grams in minor
 
 ```{code-cell}
 sorted_gram_counts(minor_plain, 3)
@@ -259,7 +263,7 @@ sorted_gram_counts(minor_plain, 4)
 sorted_gram_counts(minor_plain, 5)
 ```
 
-## Counting particular progressions
+### Counting particular progressions
 
 ```{code-cell}
 MEMORY = {}
@@ -296,7 +300,7 @@ look_for(('i', 'V6', 'v6'))
 look_for(('V', 'IV6', 'V65'))
 ```
 
-## Chord progressions preceding phrase endings
+### Chord progressions preceding phrase endings
 
 ```{code-cell}
 def phraseending_progressions(df, n=3, k=k):
