@@ -197,7 +197,41 @@ fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'figbass', 'interval'], title="MINOR")
+def make_table(sd_major, sd_progression_major, sd_minor=None, sd_progression_minor=None):
+    selected_chords = chords_by_localkey_major[(
+        (chords_by_localkey_major.sd == sd_major) &
+        (chords_by_localkey_major.sd_progression == sd_progression_major)
+    )]
+    result = selected_chords.figbass.fillna('3').value_counts().rename(f"{sd_major} in major")
+    if sd_minor is not None:
+        selected_chords = chords_by_localkey_minor[(
+            (chords_by_localkey_minor.sd == sd_minor) &
+            (chords_by_localkey_minor.sd_progression == sd_progression_minor)
+        )]
+        minor_result = selected_chords.figbass.fillna('3').value_counts().rename(f"{sd_minor} in minor")
+        result = pd.concat([result, minor_result], axis=1).fillna(0).astype(int)
+    sum_row = pd.DataFrame(result.sum(), columns=["sum"]).T
+    result = pd.concat([result, sum_row], names=["figbass"])
+    return result
+
+comparison_table = make_table("4", 5, "4", -2)
+comparison_table #.to_clipboard()
+```
+
+```{code-cell}
+selector = (
+            (chords_by_localkey_minor.sd == "4") &
+            (chords_by_localkey_minor.sd_progression == -2) &
+            (chords_by_localkey_minor.figbass == "65")
+        )
+selector |= selector.shift()
+selected_chords = chords_by_localkey_minor[selector]
+selected_chords[["mn", "chord"]].droplevel([0, 2, 3]).to_clipboard()
+```
+
+```{code-cell}
+fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'figbass', 'interval'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "bass_degree-figbass-progression_minor_sunburst")
 fig.show()
 ```
