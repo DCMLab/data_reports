@@ -440,6 +440,13 @@ plt.savefig(save_pdf_path, dpi=400)
 plt.show()
 ```
 
+```{code-cell}
+plot_transition_heatmaps(full_grams_major, full_grams_minor, sort_scale_degrees=True)
+save_pdf_path = os.path.join(RESULTS_PATH, f'bass_degree_bigrams_scale_order{DEFAULT_OUTPUT_FORMAT}')
+plt.savefig(save_pdf_path, dpi=400)
+plt.show()
+```
+
 #### Most frequent 2-grams
 
 Select number of first k transitions to display:
