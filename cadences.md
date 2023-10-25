@@ -249,6 +249,17 @@ save_figure_as(fig, 'all_corelli_cadences_modewise_pies')
 fig.show()
 ```
 
+```{code-cell}
+combined_cadences = pd.concat([cadence_count_per_mode, corelli_cadence_count_per_mode], keys=["couperin", "corelli"], names=["corpus", None]).reset_index(level=0)
+fig = px.pie(combined_cadences, names='cadence', color='cadence', values='count',
+       facet_col='mode', facet_row='corpus', height=2000, color_discrete_map=CADENCE_COLORS)
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+updated_layout = dict(STD_LAYOUT, font=dict(size=40))
+fig.update_layout(**updated_layout)
+save_figure_as(fig, 'couperin_corelli_cadences_modewise_pies')
+fig.show()
+```
+
 ## Per phrase
 ### Number of cadences per phrase
 
