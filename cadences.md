@@ -214,7 +214,39 @@ fig = px.pie(cadence_count_per_dataset.rename('count').reset_index(), names='cad
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, 'all_cadences_corpuswise_pies')
-fig.show
+fig.show()
+```
+
+```{code-cell}
+cadence_count_per_mode = all_labels.groupby("localkey_is_minor").cadence.value_counts().reset_index()
+cadence_count_per_mode["mode"] = cadence_count_per_mode.localkey_is_minor.map({False: 'major', True: 'minor'})
+fig = px.pie(cadence_count_per_mode, names='cadence', color='cadence', values='count',
+       facet_col='mode', height=2000, color_discrete_map=CADENCE_COLORS)
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+fig.update_layout(**STD_LAYOUT)
+save_figure_as(fig, 'all_cadences_modewise_pies')
+fig.show()
+```
+
+```{code-cell}
+corelli = dc.Dataset()
+CORELLI_PATH = os.path.abspath(os.path.join(CORPUS_PATH, '..', 'corelli'))
+corelli.load(directory=CORELLI_PATH, parse_tsv=False)
+annotated_view = corelli.data.get_view('annotated')
+annotated_view.include('facets', 'expanded')
+annotated_view.pieces_with_incomplete_facets = False
+corelli.data.set_view(annotated_view)
+corelli.data.parse_tsv(choose='auto')
+corelli.get_indices()
+corelli_labels = corelli.get_facet('expanded')
+corelli_cadence_count_per_mode = corelli_labels.groupby("localkey_is_minor").cadence.value_counts().reset_index()
+corelli_cadence_count_per_mode["mode"] = corelli_cadence_count_per_mode.localkey_is_minor.map({False: 'major', True: 'minor'})
+fig = px.pie(corelli_cadence_count_per_mode, names='cadence', color='cadence', values='count',
+       facet_col='mode', height=2000, color_discrete_map=CADENCE_COLORS)
+fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
+fig.update_layout(**STD_LAYOUT)
+save_figure_as(fig, 'all_corelli_cadences_modewise_pies')
+fig.show()
 ```
 
 ## Per phrase
