@@ -30,7 +30,7 @@ import ms3
 import pandas as pd
 
 from utils import CORPUS_COLOR_SCALE, color_background, corpus_mean_composition_years, \
-  get_corpus_display_name, get_repo_name, print_heading, resolve_dir, make_sunburst, rectangular_sunburst
+  get_corpus_display_name, get_repo_name, print_heading, resolve_dir, make_sunburst, rectangular_sunburst, STD_LAYOUT
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 100)
@@ -40,7 +40,11 @@ pd.set_option('display.max_columns', 100)
 from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "scale_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+SUNBURST_WIDTH = 1620
+TERMINAL_SYMBOL = "∎"
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    if not "width" in kwargs:
+        kwargs['width'] = SUNBURST_WIDTH
     write_image(fig, filename, directory, **kwargs)
 ```
 
@@ -157,7 +161,7 @@ chords_by_localkey
 for is_minor, df in chords_by_localkey.groupby(level=0, group_keys=False):
     df = df.droplevel(0)
     df = df[df.bass_note.notna()]
-    sd = ms3.fifths2sd(df.bass_note).rename('sd')
+    sd = ms3.fifths2sd(df.bass_note, minor=is_minor).rename('sd')
     sd.index = df.index
     sd_progression = df.groupby(level=[0,1,2], group_keys=False).bass_note.apply(lambda S: S.shift(-1) - S).rename('sd_progression')
     if is_minor:
@@ -173,25 +177,29 @@ chords_by_localkey_minor
 ```
 
 ```{code-cell}
-fig = make_sunburst(chords_by_localkey_major, 'major')
+fig = make_sunburst(chords_by_localkey_major, parent='major', terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "bass_degree_major_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = make_sunburst(chords_by_localkey_minor, 'minor')
+fig = make_sunburst(chords_by_localkey_minor, parent='minor', terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "bass_degree_minor_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'figbass', 'interval'], title="MAJOR")
+fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'figbass', 'interval'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "bass_degree-figbass-progression_major_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass'], title="MAJOR")
+fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass_major_sunburst")
 fig.show()
 ```
@@ -237,19 +245,22 @@ fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass'], title="MINOR")
+fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass_minor_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MAJOR")
+fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass-subsequent_figbass_major_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MINOR")
+fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass-subsequent_figbass_minor_sunburst")
 fig.show()
 ```

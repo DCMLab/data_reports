@@ -433,18 +433,36 @@ def load_facets(
     return facets
 
 
-def make_sunburst(chords, mode, inspect=False):
+def make_sunburst(
+        chords: pd.DataFrame,
+        parent: str,
+        filter_accidentals: bool = False,
+        terminal_symbol: str = "⋉",
+        inspect=False
+):
+    """
+
+    Args:
+        chords: DataFrame containing columns "sd" and "sd_progression"
+        parent: Label to be displayed in the middle.
+        filter_accidentals:
+            If set to True, scale degrees with accidentals (precisely: with a length > 1) are replaced by white space.
+        inspect: Set to True to show a data sample instead of a sunburst plot.
+
+    Returns:
+
+    """
     in_scale = []
     sd2prog = defaultdict(Counter)
     for sd, sd_prog in chords[["sd", "sd_progression"]].itertuples(index=False):
-        if len(sd) == 1:
+        if not filter_accidentals or len(sd) == 1:
             in_scale.append(sd)
-            sd2prog[sd].update(["∎"] if pd.isnull(sd_prog) else [str(sd_prog)])
+            sd2prog[sd].update([terminal_symbol] if pd.isnull(sd_prog) else [str(sd_prog)])
     label_counts = Counter(in_scale)
     labels, values = list(label_counts.keys()), list(label_counts.values())
     # labels, values = zip(*list((sd, label_counts[sd]) for sd in sorted(label_counts)))
-    parents = [mode] * len(labels)
-    labels = [mode] + labels
+    parents = [parent] * len(labels)
+    labels = [parent] + labels
     parents = [""] + parents
     values = [len(chords)] + values
     # print(sd2prog)
@@ -870,22 +888,36 @@ def plot_transition_heatmaps(
     )
 
 
-def prepare_sunburst_data(sliced_harmonies_table: pd.DataFrame) -> pd.DataFrame:
-    """"""
-    chord_data = sliced_harmonies_table[
-        sliced_harmonies_table.sd.str.len() == 1
-    ].copy()  # scale degrees without
+def prepare_sunburst_data(
+        sliced_harmonies_table: pd.DataFrame,
+        filter_accidentals: bool = False,
+        terminal_symbol: str = "⋉",
+) -> pd.DataFrame:
+    """
+
+    Args:
+        sliced_harmonies_table: DataFrame containing the columns "sd", "sd_progression", "figbass",
+
+    Returns:
+
+    """
+    if filter_accidentals:
+        chord_data = sliced_harmonies_table[
+            sliced_harmonies_table.sd.str.len() == 1
+        ].copy()  # scale degrees without
+    else:
+        chord_data = sliced_harmonies_table.copy()
     # accidentals
     chord_data["interval"] = ms3.transform(
-        chord_data.sd_progression, safe_interval
-    ).fillna("∎")
+        chord_data.sd_progression, safe_interval, terminal_symbol=terminal_symbol
+    ).fillna(terminal_symbol)
     chord_data.figbass.fillna("3", inplace=True)
     chord_data["following_figbass"] = (
         chord_data.groupby(
             level=[0, 1, 2],
         )
         .figbass.shift(-1)
-        .fillna("∎")
+        .fillna(terminal_symbol)
     )
     return chord_data
 
@@ -940,8 +972,9 @@ def rectangular_sunburst(
     path,
     height=1500,
     title="Sunburst",
+    terminal_symbol: str = "⋉",
 ) -> go.Figure:
-    chord_data = prepare_sunburst_data(sliced_harmonies_table)
+    chord_data = prepare_sunburst_data(sliced_harmonies_table, terminal_symbol=terminal_symbol)
     title = f"{title} ({' - '.join(COLUMN2SUNBURST_TITLE[col] for col in path)})"
     fig = px.sunburst(
         chord_data,
@@ -962,9 +995,9 @@ def scale_degree_order(scale_degree: str | Iterable[str]) -> Tuple[int, int] | L
     accidental, degree = match.groups()
     return int(degree), accidental.find('#') - accidental.find('b')
 
-def safe_interval(fifths):
+def safe_interval(fifths, terminal_symbol="⋉"):
     if pd.isnull(fifths):
-        return "∎"
+        return terminal_symbol
     return ms3.fifths2iv(fifths, smallest=True)
 
 def sorted_gram_counts(lists_of_symbols, n=2, k=25):
