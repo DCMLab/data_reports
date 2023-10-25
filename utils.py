@@ -2,7 +2,7 @@ import os
 import re
 from collections import Counter, defaultdict
 from functools import cache
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Iterable
 
 import colorlover
 import frictionless as fl
@@ -810,19 +810,30 @@ def plot_pitch_class_distribution(
 
 
 def plot_transition_heatmaps(
-    full_grams_left: List[tuple],
-    full_grams_right: Optional[List[tuple]] = None,
-    frequencies=True,
-    remove_repeated: bool = False,
-    **kwargs,
+        full_grams_left: List[tuple],
+        full_grams_right: Optional[List[tuple]] = None,
+        frequencies=True,
+        remove_repeated: bool = False,
+        sort_scale_degrees: bool = False,
+        **kwargs,
 ):
     left_bigrams = transition_matrix(
         full_grams_left, dist_only=remove_repeated, normalize=frequencies, percent=True
     )
-    left_unigrams = pd.Series(Counter(sum(full_grams_left, []))).sort_values(
-        ascending=False
-    )
+    left_unigrams = pd.Series(Counter(sum(full_grams_left, [])))
+    if sort_scale_degrees:
+        left_unigrams = left_unigrams.sort_index(
+            key=scale_degree_order
+        )
+    else:
+        left_unigrams = left_unigrams.sort_values(
+            ascending=False
+        )
     left_unigrams_norm = left_unigrams / left_unigrams.sum()
+    ix_intersection = left_unigrams_norm.index.intersection(left_bigrams.index)
+    col_intersection = left_unigrams_norm.index.intersection(left_bigrams.columns)
+    left_bigrams = left_bigrams.loc[ix_intersection, col_intersection]
+    left_unigrams_norm = left_unigrams_norm.loc[ix_intersection]
 
     if full_grams_right is None:
         right_bigrams = None
@@ -834,10 +845,20 @@ def plot_transition_heatmaps(
             normalize=frequencies,
             percent=True,
         )
-        right_unigrams = pd.Series(Counter(sum(full_grams_right, []))).sort_values(
-            ascending=False
-        )
+        right_unigrams = pd.Series(Counter(sum(full_grams_right, [])))
+        if sort_scale_degrees:
+            right_unigrams = right_unigrams.sort_index(
+                key=scale_degree_order
+            )
+        else:
+            right_unigrams = right_unigrams.sort_values(
+                ascending=False
+            )
         right_unigrams_norm = right_unigrams / right_unigrams.sum()
+        ix_intersection = right_unigrams_norm.index.intersection(right_bigrams.index)
+        col_intersection = right_unigrams_norm.index.intersection(right_bigrams.columns)
+        right_bigrams = right_bigrams.loc[ix_intersection, col_intersection]
+        right_unigrams_norm = right_unigrams_norm.loc[ix_intersection]
 
     make_transition_heatmap_plots(
         left_bigrams,
@@ -931,11 +952,20 @@ def rectangular_sunburst(
     return fig
 
 
+def scale_degree_order(scale_degree: str | Iterable[str]) -> Tuple[int, int] | List[Tuple[int, int]]:
+    """Can be used as key function for sorting scale degrees."""
+    if not isinstance(scale_degree, str):
+        return list(map(scale_degree_order, scale_degree))
+    if scale_degree == '∅':
+        return (10,)
+    match = re.match(r"([#b]*)([1-7])", scale_degree)
+    accidental, degree = match.groups()
+    return int(degree), accidental.find('#') - accidental.find('b')
+
 def safe_interval(fifths):
     if pd.isnull(fifths):
         return "∎"
     return ms3.fifths2iv(fifths, smallest=True)
-
 
 def sorted_gram_counts(lists_of_symbols, n=2, k=25):
     return prettify_counts(
