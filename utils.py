@@ -2,7 +2,7 @@ import os
 import re
 from collections import Counter, defaultdict
 from functools import cache
-from typing import List, Optional, Tuple
+from typing import List, Optional, Tuple, Iterable
 
 import colorlover
 import frictionless as fl
@@ -23,7 +23,8 @@ from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
 from scipy.stats import entropy
 
-OUTPUT_FOLDER = os.path.abspath("outputs")
+HERE = os.path.dirname(os.path.abspath(__file__))
+OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
 DEFAULT_OUTPUT_FORMAT = ".png"
 AVAILABLE_FIGURE_FORMATS = PlotlyScope._all_formats
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
@@ -108,7 +109,7 @@ COLUMN2SUNBURST_TITLE = dict(
 )
 
 
-def cnt(
+def count_subsequent_occurrences(
     S: pd.Series,
     interval: int | List[int],
     k_min: int = 1,
@@ -142,19 +143,20 @@ def cnt(
     ix_chunks = pd.DataFrame(columns=["ixs", "n"]) if df else []
     current = []
     n = 0
-    s = pd.concat([S, pd.Series([pd.NA])])  # so that else is executed in the end
-    for i, iv in s.items():
-        if not pd.isnull(iv) and iv in interval_list:
-            current.append(i)
-            if iv != 0:
+    for ix, value in S.items():
+        if not pd.isnull(value) and value in interval_list:
+            current.append(ix)
+            if value != 0:
                 n += 1
         else:
+            if not pd.isnull(value):
+                current.append(ix)
             if n >= k_min:
                 if df:
                     ix_chunks.loc[len(ix_chunks)] = (current, n)
                 else:
                     ix_chunks.append((current, n))
-            current = [i]
+            current = []
             n = 0
     return ix_chunks
 
@@ -431,18 +433,36 @@ def load_facets(
     return facets
 
 
-def make_sunburst(chords, mode, inspect=False):
+def make_sunburst(
+        chords: pd.DataFrame,
+        parent: str,
+        filter_accidentals: bool = False,
+        terminal_symbol: str = "⋉",
+        inspect=False
+):
+    """
+
+    Args:
+        chords: DataFrame containing columns "sd" and "sd_progression"
+        parent: Label to be displayed in the middle.
+        filter_accidentals:
+            If set to True, scale degrees with accidentals (precisely: with a length > 1) are replaced by white space.
+        inspect: Set to True to show a data sample instead of a sunburst plot.
+
+    Returns:
+
+    """
     in_scale = []
     sd2prog = defaultdict(Counter)
     for sd, sd_prog in chords[["sd", "sd_progression"]].itertuples(index=False):
-        if len(sd) == 1:
+        if not filter_accidentals or len(sd) == 1:
             in_scale.append(sd)
-            sd2prog[sd].update(["∎"] if pd.isnull(sd_prog) else [str(sd_prog)])
+            sd2prog[sd].update([terminal_symbol] if pd.isnull(sd_prog) else [str(sd_prog)])
     label_counts = Counter(in_scale)
     labels, values = list(label_counts.keys()), list(label_counts.values())
     # labels, values = zip(*list((sd, label_counts[sd]) for sd in sorted(label_counts)))
-    parents = [mode] * len(labels)
-    labels = [mode] + labels
+    parents = [parent] * len(labels)
+    labels = [parent] + labels
     parents = [""] + parents
     values = [len(chords)] + values
     # print(sd2prog)
@@ -808,19 +828,30 @@ def plot_pitch_class_distribution(
 
 
 def plot_transition_heatmaps(
-    full_grams_left: List[tuple],
-    full_grams_right: Optional[List[tuple]] = None,
-    frequencies=True,
-    remove_repeated: bool = False,
-    **kwargs,
+        full_grams_left: List[tuple],
+        full_grams_right: Optional[List[tuple]] = None,
+        frequencies=True,
+        remove_repeated: bool = False,
+        sort_scale_degrees: bool = False,
+        **kwargs,
 ):
     left_bigrams = transition_matrix(
         full_grams_left, dist_only=remove_repeated, normalize=frequencies, percent=True
     )
-    left_unigrams = pd.Series(Counter(sum(full_grams_left, []))).sort_values(
-        ascending=False
-    )
+    left_unigrams = pd.Series(Counter(sum(full_grams_left, [])))
+    if sort_scale_degrees:
+        left_unigrams = left_unigrams.sort_index(
+            key=scale_degree_order
+        )
+    else:
+        left_unigrams = left_unigrams.sort_values(
+            ascending=False
+        )
     left_unigrams_norm = left_unigrams / left_unigrams.sum()
+    ix_intersection = left_unigrams_norm.index.intersection(left_bigrams.index)
+    col_intersection = left_unigrams_norm.index.intersection(left_bigrams.columns)
+    left_bigrams = left_bigrams.loc[ix_intersection, col_intersection]
+    left_unigrams_norm = left_unigrams_norm.loc[ix_intersection]
 
     if full_grams_right is None:
         right_bigrams = None
@@ -832,10 +863,20 @@ def plot_transition_heatmaps(
             normalize=frequencies,
             percent=True,
         )
-        right_unigrams = pd.Series(Counter(sum(full_grams_right, []))).sort_values(
-            ascending=False
-        )
+        right_unigrams = pd.Series(Counter(sum(full_grams_right, [])))
+        if sort_scale_degrees:
+            right_unigrams = right_unigrams.sort_index(
+                key=scale_degree_order
+            )
+        else:
+            right_unigrams = right_unigrams.sort_values(
+                ascending=False
+            )
         right_unigrams_norm = right_unigrams / right_unigrams.sum()
+        ix_intersection = right_unigrams_norm.index.intersection(right_bigrams.index)
+        col_intersection = right_unigrams_norm.index.intersection(right_bigrams.columns)
+        right_bigrams = right_bigrams.loc[ix_intersection, col_intersection]
+        right_unigrams_norm = right_unigrams_norm.loc[ix_intersection]
 
     make_transition_heatmap_plots(
         left_bigrams,
@@ -847,22 +888,36 @@ def plot_transition_heatmaps(
     )
 
 
-def prepare_sunburst_data(sliced_harmonies_table: pd.DataFrame) -> pd.DataFrame:
-    """"""
-    chord_data = sliced_harmonies_table[
-        sliced_harmonies_table.sd.str.len() == 1
-    ].copy()  # scale degrees without
+def prepare_sunburst_data(
+        sliced_harmonies_table: pd.DataFrame,
+        filter_accidentals: bool = False,
+        terminal_symbol: str = "⋉",
+) -> pd.DataFrame:
+    """
+
+    Args:
+        sliced_harmonies_table: DataFrame containing the columns "sd", "sd_progression", "figbass",
+
+    Returns:
+
+    """
+    if filter_accidentals:
+        chord_data = sliced_harmonies_table[
+            sliced_harmonies_table.sd.str.len() == 1
+        ].copy()  # scale degrees without
+    else:
+        chord_data = sliced_harmonies_table.copy()
     # accidentals
     chord_data["interval"] = ms3.transform(
-        chord_data.sd_progression, safe_interval
-    ).fillna("∎")
+        chord_data.sd_progression, safe_interval, terminal_symbol=terminal_symbol
+    ).fillna(terminal_symbol)
     chord_data.figbass.fillna("3", inplace=True)
     chord_data["following_figbass"] = (
         chord_data.groupby(
             level=[0, 1, 2],
         )
         .figbass.shift(-1)
-        .fillna("∎")
+        .fillna(terminal_symbol)
     )
     return chord_data
 
@@ -917,8 +972,9 @@ def rectangular_sunburst(
     path,
     height=1500,
     title="Sunburst",
+    terminal_symbol: str = "⋉",
 ) -> go.Figure:
-    chord_data = prepare_sunburst_data(sliced_harmonies_table)
+    chord_data = prepare_sunburst_data(sliced_harmonies_table, terminal_symbol=terminal_symbol)
     title = f"{title} ({' - '.join(COLUMN2SUNBURST_TITLE[col] for col in path)})"
     fig = px.sunburst(
         chord_data,
@@ -929,11 +985,20 @@ def rectangular_sunburst(
     return fig
 
 
-def safe_interval(fifths):
-    if pd.isnull(fifths):
-        return "∎"
-    return ms3.fifths2iv(fifths, smallest=True)
+def scale_degree_order(scale_degree: str | Iterable[str]) -> Tuple[int, int] | List[Tuple[int, int]]:
+    """Can be used as key function for sorting scale degrees."""
+    if not isinstance(scale_degree, str):
+        return list(map(scale_degree_order, scale_degree))
+    if scale_degree == '∅':
+        return (10,)
+    match = re.match(r"([#b]*)([1-7])", scale_degree)
+    accidental, degree = match.groups()
+    return int(degree), accidental.find('#') - accidental.find('b')
 
+def safe_interval(fifths, terminal_symbol="⋉"):
+    if pd.isnull(fifths):
+        return terminal_symbol
+    return ms3.fifths2iv(fifths, smallest=True)
 
 def sorted_gram_counts(lists_of_symbols, n=2, k=25):
     return prettify_counts(

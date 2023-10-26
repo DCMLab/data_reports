@@ -16,7 +16,7 @@ kernelspec:
 
 Notebook adapted from the one used for the presentation at HCI 2023 in Copenhagen
 
-```{code-cell} ipython3
+```{code-cell}
 %load_ext autoreload
 %autoreload 2
 import os
@@ -41,7 +41,7 @@ import pandas as pd
 # ray.init(runtime_env={'env_vars': {'__MODIN_AUTOIMPORT_PANDAS__': '1'}}, ignore_reinit_error=True)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
@@ -51,8 +51,8 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 **Loading data**
 
-```{code-cell} ipython3
-package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+```{code-cell}
+package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -62,34 +62,34 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 notes = D.get_feature("notes")
 notes.df
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 annotations = D.get_feature("harmonylabels")
 annotations.df
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 metadata = D.get_metadata()
 metadata
 ```
 
 ## Pitch class distribution
 
-```{code-cell} ipython3
+```{code-cell}
 tpc_distribution = get_pitch_class_distribution(notes)
 tpc_distribution
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 la_mer_notes = ms3.load_tsv("La_Mer_1-84.notes.tsv")
 la_mer_notes
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 fig = plot_pitch_class_distribution(
     df=la_mer_notes,
     modin=False,
@@ -99,7 +99,7 @@ save_figure_as(fig, "debussy_la_mer_beginning_pitch_class_distribution_bars", he
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 la_mer_mn_dist = la_mer_notes.groupby(['mn', 'tpc']).duration_qb.sum()
 x_vals = sorted(la_mer_notes.tpc.unique())
 x_names = ms3.fifths2name(x_vals)
@@ -115,7 +115,7 @@ save_figure_as(fig, "debussy_la_mer_beginning_barwise_pitch_class_distributions_
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 sorted_composition_years = get_middle_composition_year(metadata).sort_values()
 order_of_pieces = sorted_composition_years.index.to_list()
 notes_piece_groups = notes.groupby(['corpus', 'piece'])
@@ -126,32 +126,32 @@ id_notes.index.rename(['ID', 'corpus', 'piece',  'i'], inplace=True)
 id_notes
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 piece_distributions = id_notes.groupby(['ID', 'corpus', 'piece', 'tpc']).duration_qb.sum()
 piece_distributions
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 id_distributions = piece_distributions.copy()
 id_distributions.index = piece_distributions.index.droplevel([1,2])
 id_distributions
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 df = id_distributions.groupby(level=0, group_keys=False).apply(lambda S: S / S.sum()).reset_index()
 hover_data = ms3.fifths2name(list(df.tpc))
 df['pitch class'] = hover_data
 df
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 fig = px.scatter(df, x=list(df.tpc), y=list(df.ID),
                      size=list(df.duration_qb),
                      color=list(df.tpc))
 fig
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 fig = tpc_bubbles(
     id_distributions,
     title="piece-wise pitch-class distributions for the DLC",
@@ -160,14 +160,14 @@ save_figure_as(fig, "all_pitch_class_distributions_piecewise_bubbles", width=120
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 year_notes = pd.concat({year: notes_piece_groups.get_group(piece_id)
                         for piece_id, year in sorted_composition_years.items()})
 year_notes.index.rename(['year', 'corpus', 'piece',  'i'], inplace=True)
 year_notes
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 year_groupby = year_notes.reset_index().groupby(['year', 'tpc'])
 year_distributions = year_groupby.duration_qb.sum()
 year_distributions = pd.concat([year_distributions, year_groupby.corpus.unique().rename('corpora')], axis=1)
@@ -182,7 +182,7 @@ save_figure_as(fig, "all_pitch_class_distributions_yearwise_bubbles", width=1200
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 fig = plot_pitch_class_distribution(
   notes,
   title="Pitch class distribution over the Distant Listening Corpus",
