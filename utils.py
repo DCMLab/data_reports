@@ -1332,3 +1332,57 @@ def write_image(
         scale=scale,
         validate=validate,
     )
+
+
+def ix_segments2values(df, ix_segments, cols=['bass_degree', 'chord']):
+    res = {col: [] for col in cols}
+    for segment in ix_segments:
+        col2list = get_cols(df, segment, cols)
+        for col in cols:
+            res[col].append(col2list[col])
+    for col, list_of_lists in res.items():
+        res[col] = [' '.join(val) for val in list_of_lists]
+    return res
+
+
+def get_cols(df, ix, cols):
+    if isinstance(cols, str):
+        cols = [cols]
+    df = df.loc[ix]
+    return {col: df[col].to_list() for col in cols}
+
+
+def summarize(df):
+    norepeat = (df.bass_note != df.bass_note.shift()).fillna(True)
+    seconds_asc = count_subsequent_occurrences(df.bass_interval_pc, [1, 2])
+    seconds_asc_vals = ix_segments2values(df, seconds_asc.ixs)
+    seconds_desc = count_subsequent_occurrences(df.bass_interval_pc, [-1, -2])
+    seconds_desc_vals = ix_segments2values(df, seconds_desc.ixs)
+    both = count_subsequent_occurrences(df.bass_interval_pc, [1, 2, -1, -2])
+    both_vals = ix_segments2values(df, both.ixs)
+    n_stepwise = both.n.sum()
+    length_norepeat = norepeat.sum()
+    res = pd.Series({
+        'globalkey': df.globalkey.unique()[0],
+        'localkey': df.localkey.unique()[0],
+        'length': len(df),
+        'length_norepeat': length_norepeat,
+        'n_stepwise': n_stepwise,
+        '%_stepwise': round(100*n_stepwise/length_norepeat, 1),
+        'n_ascending': seconds_asc.n.sum(),
+        'n_descending': seconds_desc.n.sum(),
+        'bd': ' '.join(df.loc[norepeat, 'bass_degree'].to_list()),
+        'stepwise_bd': both_vals['bass_degree'],
+        'stepwise_chords': both_vals['chord'],
+        'ascending_bd': seconds_asc_vals['bass_degree'], #ix_segments2list(df, seconds_asc.ixs),
+        'ascending_chords': seconds_asc_vals['chord'],
+        'descending_bd': seconds_desc_vals['bass_degree'],
+        'descending_chords': seconds_desc_vals['chord'],
+        'ixa': df.index[0],
+        'ixb': df.index[-1]
+    })
+    return res
+
+
+def make_key_region_summary_table(df, *groupby_args, **groupby_kwargs):
+  return df.groupby(*groupby_args, **groupby_kwargs).apply(summarize)
