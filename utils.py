@@ -108,6 +108,14 @@ COLUMN2SUNBURST_TITLE = dict(
     following_figbass="subsequent figured bass",
 )
 
+def add_mode_column(df: pd.DataFrame) -> pd.DataFrame:
+    """Returns a copy of a DataFrame (which needs to have 'localkey_is_minor' boolean col) and adds a 'mode' column
+    containing 'major' and 'minor'.
+    """
+    assert 'localkey_is_minor' in df.columns, "df must have a 'localkey_is_minor' column"
+    mode_col = df.localkey_is_minor.map({True: "minor", False: "major"}).rename("mode")
+    return pd.concat([df, mode_col], axis=1)
+
 
 def count_subsequent_occurrences(
     S: pd.Series,
