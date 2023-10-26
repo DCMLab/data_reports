@@ -322,9 +322,9 @@ fig = px.bar(maj_min_ratio_per_corpus.reset_index(),
        color="mode",
        text='fraction',
        labels=dict(dataset='', duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
-       category_orders=dict(dataset=chronological_order)
+       category_orders=dict(corpus_name=chronological_corpus_names)
     )
-fig.update_layout(**STD_LAYOUT)
+#fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, 'major_minor_key_segments_corpuswise_bars')
 fig.show()
 ```
