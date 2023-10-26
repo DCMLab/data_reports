@@ -38,7 +38,7 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background,
 
 ```{code-cell}
 from utils import OUTPUT_FOLDER, write_image
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "annotations"))
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "reduction"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
@@ -131,7 +131,7 @@ keys_segmented = dc.LocalKeySlicer().process_data(dataset)
 keys = keys_segmented.get_slice_info()
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = ms3.transform(keys, ms3.roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
-keys.head(5).style.shifted_key_segments(color_background, subset="localkey")
+keys.head(5).style.apply(color_background, subset="localkey")
 ```
 
 ```{code-cell}
@@ -153,10 +153,6 @@ segment_bigrams
 ```
 
 ```{code-cell}
-segment_bigrams[[('a','bass_note'),('b','bass_note')]]
-```
-
-```{code-cell}
 from typing import List
 
 def get_bigrams(
@@ -169,21 +165,117 @@ def get_bigrams(
         b_columns = [b_columns]
     a_columns = [("a", col) for col in a_columns]
     b_columns = [("b", col) for col in b_columns]
-    selection = segment_bigrams.loc[:, a_columns + b_columns].dropna(how='any')
-    return list(zip(selection[a_columns].itertuples(index=False, name=None),
-                    selection[b_columns].itertuples(index=False, name=None)))
+    default_column_names = ("mc", "mc_onset")
+    default_columns = [("a", col) for col in default_column_names]
+    selection = segment_bigrams.loc[:,default_columns + a_columns + b_columns].dropna(how='any')
+    default_df = selection[default_columns]
+    default_df.columns = default_column_names
+    return pd.concat([
+        default_df,
+        pd.Series(selection[a_columns].itertuples(index=False, name=None), index=selection.index, name="a"),
+        pd.Series(selection[b_columns].itertuples(index=False, name=None), index=selection.index, name="b"),
+    ], axis=1)
 
-get_bigrams("bass_note", "bass_note")
+bass_note_bigrams = get_bigrams("bass_note", "bass_note")
+bass_note_bigrams.to_csv(os.path.join(RESULTS_PATH, 'bass_note_bigrams.tsv'), sep='\t')
 ```
 
 ```{code-cell}
-%%timeit
-grams(group_df[['localkey_is_minor', 'root']].shifted_key_segments(tuple, axis=1))
+import numpy as np
+from scipy.stats import entropy
+
+
+def bigram_matrix(bigrams):
+    """Expects columns 'a' and 'b'."""
+    return bigrams.groupby("a").b.value_counts().unstack().fillna(0).astype(int)
+
+
+bass_note_matrix = bigram_matrix(bass_note_bigrams)
+
+
+def normalized_entropy(matrix_or_series):
+    """For matrices, compute normalized entropy for each row."""
+    is_matrix = len(matrix_or_series.shape) > 1
+    if is_matrix:
+        result = matrix_or_series.apply(lambda x: entropy(x, base=2), axis=1)
+        normalize_by = matrix_or_series.shape[1]
+    else:
+        result = entropy(matrix_or_series, base=2)
+        normalize_by = matrix_or_series.shape[0]
+    return result / np.log2(normalize_by)
+
+
+def get_weighted_bigram_entropy(bigrams):
+    """Expects columns 'a' and 'b'."""
+    unigram_frequencies = bigrams.a.value_counts(normalize=True)
+    matrix = bigram_matrix(bigrams)
+    normalized_entropies = normalized_entropy(matrix)
+    return (unigram_frequencies * normalized_entropies).sum()
+
+
+def compute_information_gain(
+        column="bass_note",
+        remove_repetitions: bool = False
+):
+    """Compute information gain for knowing the previous token."""
+    bigrams = get_bigrams(column, column)
+    if remove_repetitions:
+        bigrams = bigrams[bigrams.a != bigrams.b]
+    return bigram_information_gain(bigrams)
+
+
+def bigram_information_gain(bigrams):
+    target_entropy = normalized_entropy(bigrams.b.value_counts())
+    conditioned_entropy = get_weighted_bigram_entropy(bigrams)
+    return target_entropy - conditioned_entropy
+
+
+get_weighted_bigram_entropy(bass_note_bigrams)
 ```
 
 ```{code-cell}
-%%timeit
-grams(list(group_df[['localkey_is_minor', 'root']].itertuples(index=False, name=None)))
+key_segments.bass_note.nunique()
+```
+
+```{code-cell}
+key_segments.root.nunique()
+```
+
+```{code-cell}
+compute_information_gain("bass_note")
+```
+
+```{code-cell}
+compute_information_gain("root")
+```
+
+```{code-cell}
+compute_information_gain("bass_note", remove_repetitions=True)
+```
+
+```{code-cell}
+compute_information_gain("root", remove_repetitions=True)
+```
+
+```{code-cell}
+compute_information_gain(["bass_note", "intervals_over_bass"])
+```
+
+```{code-cell}
+compute_information_gain(["root", "intervals_over_root"])
+```
+
+```{code-cell}
+for group, group_df in key_segments.groupby(level=[0,1,2], group_keys=False):
+    if not group_df.bass_note.isna().any():
+        continue
+    break
+
+group_df
+```
+
+```{code-cell}
+group_df.loc[group_df.bass_note.isna(), ["mc", "label"]]
 ```
 
 ```{code-cell}

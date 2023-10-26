@@ -1446,15 +1446,24 @@ def add_bass_degree_columns(
             df["bass_degree"] = bass_degree_column
         else:
             df = pd.concat([df, bass_degree_column.rename("bass_degree")], axis=1)
-    if "interval_structure" not in df.columns:
-        interval_structure_column = ms3.transform(
+    if "intervals_over_bass" not in df.columns:
+        intervals_over_bass_column = ms3.transform(
             df, chord_tones2interval_structure, ["chord_tones"]
         )
+        intervals_over_root_column = ms3.transform(
+            df, chord_tones2interval_structure, ["chord_tones", "root"]
+        )
         if mutate_dataframe:
-            df["interval_structure"] = interval_structure_column
+            df["intervals_over_bass"] = intervals_over_bass_column
+            df["intervals_over_root"] = intervals_over_root_column
         else:
             df = pd.concat(
-                [df, interval_structure_column.rename("interval_structure")], axis=1
+                [
+                    df,
+                    intervals_over_bass_column.rename("intervals_over_bass"),
+                    intervals_over_root_column.rename("intervals_over_root"),
+                ],
+                axis=1,
             )
     if mutate_dataframe:
         return df
@@ -1476,6 +1485,10 @@ def chord_tones2interval_structure(
         return ()
     if reference is None:
         reference = fifths[0]
+    elif reference in fifths:
+        position = fifths.index(reference)
+        if position > 0:
+            fifths = fifths[position:] + fifths[:position]
     adapted_intervals = [
         ms3.fifths2iv(adapted)
         for interval in fifths
