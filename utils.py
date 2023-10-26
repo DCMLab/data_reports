@@ -2,7 +2,7 @@ import os
 import re
 from collections import Counter, defaultdict
 from functools import cache
-from typing import List, Optional, Tuple, Iterable
+from typing import Iterable, List, Optional, Tuple
 
 import colorlover
 import frictionless as fl
@@ -108,11 +108,14 @@ COLUMN2SUNBURST_TITLE = dict(
     following_figbass="subsequent figured bass",
 )
 
+
 def add_mode_column(df: pd.DataFrame) -> pd.DataFrame:
     """Returns a copy of a DataFrame (which needs to have 'localkey_is_minor' boolean col) and adds a 'mode' column
     containing 'major' and 'minor'.
     """
-    assert 'localkey_is_minor' in df.columns, "df must have a 'localkey_is_minor' column"
+    assert (
+        "localkey_is_minor" in df.columns
+    ), "df must have a 'localkey_is_minor' column"
     mode_col = df.localkey_is_minor.map({True: "minor", False: "major"}).rename("mode")
     return pd.concat([df, mode_col], axis=1)
 
@@ -442,11 +445,11 @@ def load_facets(
 
 
 def make_sunburst(
-        chords: pd.DataFrame,
-        parent: str,
-        filter_accidentals: bool = False,
-        terminal_symbol: str = "⋉",
-        inspect=False
+    chords: pd.DataFrame,
+    parent: str,
+    filter_accidentals: bool = False,
+    terminal_symbol: str = "⋉",
+    inspect=False,
 ):
     """
 
@@ -465,7 +468,9 @@ def make_sunburst(
     for sd, sd_prog in chords[["sd", "sd_progression"]].itertuples(index=False):
         if not filter_accidentals or len(sd) == 1:
             in_scale.append(sd)
-            sd2prog[sd].update([terminal_symbol] if pd.isnull(sd_prog) else [str(sd_prog)])
+            sd2prog[sd].update(
+                [terminal_symbol] if pd.isnull(sd_prog) else [str(sd_prog)]
+            )
     label_counts = Counter(in_scale)
     labels, values = list(label_counts.keys()), list(label_counts.values())
     # labels, values = zip(*list((sd, label_counts[sd]) for sd in sorted(label_counts)))
@@ -836,25 +841,21 @@ def plot_pitch_class_distribution(
 
 
 def plot_transition_heatmaps(
-        full_grams_left: List[tuple],
-        full_grams_right: Optional[List[tuple]] = None,
-        frequencies=True,
-        remove_repeated: bool = False,
-        sort_scale_degrees: bool = False,
-        **kwargs,
+    full_grams_left: List[tuple],
+    full_grams_right: Optional[List[tuple]] = None,
+    frequencies=True,
+    remove_repeated: bool = False,
+    sort_scale_degrees: bool = False,
+    **kwargs,
 ):
     left_bigrams = transition_matrix(
         full_grams_left, dist_only=remove_repeated, normalize=frequencies, percent=True
     )
     left_unigrams = pd.Series(Counter(sum(full_grams_left, [])))
     if sort_scale_degrees:
-        left_unigrams = left_unigrams.sort_index(
-            key=scale_degree_order
-        )
+        left_unigrams = left_unigrams.sort_index(key=scale_degree_order)
     else:
-        left_unigrams = left_unigrams.sort_values(
-            ascending=False
-        )
+        left_unigrams = left_unigrams.sort_values(ascending=False)
     left_unigrams_norm = left_unigrams / left_unigrams.sum()
     ix_intersection = left_unigrams_norm.index.intersection(left_bigrams.index)
     col_intersection = left_unigrams_norm.index.intersection(left_bigrams.columns)
@@ -873,13 +874,9 @@ def plot_transition_heatmaps(
         )
         right_unigrams = pd.Series(Counter(sum(full_grams_right, [])))
         if sort_scale_degrees:
-            right_unigrams = right_unigrams.sort_index(
-                key=scale_degree_order
-            )
+            right_unigrams = right_unigrams.sort_index(key=scale_degree_order)
         else:
-            right_unigrams = right_unigrams.sort_values(
-                ascending=False
-            )
+            right_unigrams = right_unigrams.sort_values(ascending=False)
         right_unigrams_norm = right_unigrams / right_unigrams.sum()
         ix_intersection = right_unigrams_norm.index.intersection(right_bigrams.index)
         col_intersection = right_unigrams_norm.index.intersection(right_bigrams.columns)
@@ -897,9 +894,9 @@ def plot_transition_heatmaps(
 
 
 def prepare_sunburst_data(
-        sliced_harmonies_table: pd.DataFrame,
-        filter_accidentals: bool = False,
-        terminal_symbol: str = "⋉",
+    sliced_harmonies_table: pd.DataFrame,
+    filter_accidentals: bool = False,
+    terminal_symbol: str = "⋉",
 ) -> pd.DataFrame:
     """
 
@@ -945,18 +942,23 @@ def print_heading(heading: str, underline: chr = "-") -> None:
     print(f"{heading}\n{underline * len(heading)}\n")
 
 
-def remove_non_chord_labels(df):
+def remove_non_chord_labels(
+    df,
+    remove_erroneous_chords: bool = True,
+):
     print(f"Length before: {len(df.index)}")
     non_chord = df.chord.isna()
     print(f"There are {non_chord.sum()} non-chord labels which we are going to delete:")
     display(df.loc[non_chord, "label"].value_counts())
-    erroneous_chord = df.root.isna() & ~non_chord
-    if erroneous_chord.sum() > 0:
-        print(
-            f"There are {erroneous_chord.sum()} labels with erroneous chord annotations which we are going to delete:"
-        )
-        display(df.loc[erroneous_chord, "label"].value_counts())
-        non_chord |= erroneous_chord
+    if remove_erroneous_chords:
+        erroneous_chord = df.root.isna() & ~non_chord
+        if erroneous_chord.sum() > 0:
+            print(
+                f"There are {erroneous_chord.sum()} labels with erroneous chord annotations which we are going to "
+                f"delete:"
+            )
+            display(df.loc[erroneous_chord, "label"].value_counts())
+            non_chord |= erroneous_chord
     result = df.drop(df.index[non_chord])
     print(f"Length after: {len(result.index)}")
     return result
@@ -982,7 +984,9 @@ def rectangular_sunburst(
     title="Sunburst",
     terminal_symbol: str = "⋉",
 ) -> go.Figure:
-    chord_data = prepare_sunburst_data(sliced_harmonies_table, terminal_symbol=terminal_symbol)
+    chord_data = prepare_sunburst_data(
+        sliced_harmonies_table, terminal_symbol=terminal_symbol
+    )
     title = f"{title} ({' - '.join(COLUMN2SUNBURST_TITLE[col] for col in path)})"
     fig = px.sunburst(
         chord_data,
@@ -993,20 +997,24 @@ def rectangular_sunburst(
     return fig
 
 
-def scale_degree_order(scale_degree: str | Iterable[str]) -> Tuple[int, int] | List[Tuple[int, int]]:
+def scale_degree_order(
+    scale_degree: str | Iterable[str],
+) -> Tuple[int, int] | List[Tuple[int, int]]:
     """Can be used as key function for sorting scale degrees."""
     if not isinstance(scale_degree, str):
         return list(map(scale_degree_order, scale_degree))
-    if scale_degree == '∅':
+    if scale_degree == "∅":
         return (10,)
     match = re.match(r"([#b]*)([1-7])", scale_degree)
     accidental, degree = match.groups()
-    return int(degree), accidental.find('#') - accidental.find('b')
+    return int(degree), accidental.find("#") - accidental.find("b")
+
 
 def safe_interval(fifths, terminal_symbol="⋉"):
     if pd.isnull(fifths):
         return terminal_symbol
     return ms3.fifths2iv(fifths, smallest=True)
+
 
 def sorted_gram_counts(lists_of_symbols, n=2, k=25):
     return prettify_counts(
@@ -1334,14 +1342,14 @@ def write_image(
     )
 
 
-def ix_segments2values(df, ix_segments, cols=['bass_degree', 'chord']):
+def ix_segments2values(df, ix_segments, cols=["bass_degree", "chord"]):
     res = {col: [] for col in cols}
     for segment in ix_segments:
         col2list = get_cols(df, segment, cols)
         for col in cols:
             res[col].append(col2list[col])
     for col, list_of_lists in res.items():
-        res[col] = [' '.join(val) for val in list_of_lists]
+        res[col] = [" ".join(val) for val in list_of_lists]
     return res
 
 
@@ -1362,27 +1370,115 @@ def summarize(df):
     both_vals = ix_segments2values(df, both.ixs)
     n_stepwise = both.n.sum()
     length_norepeat = norepeat.sum()
-    res = pd.Series({
-        'globalkey': df.globalkey.unique()[0],
-        'localkey': df.localkey.unique()[0],
-        'length': len(df),
-        'length_norepeat': length_norepeat,
-        'n_stepwise': n_stepwise,
-        '%_stepwise': round(100*n_stepwise/length_norepeat, 1),
-        'n_ascending': seconds_asc.n.sum(),
-        'n_descending': seconds_desc.n.sum(),
-        'bd': ' '.join(df.loc[norepeat, 'bass_degree'].to_list()),
-        'stepwise_bd': both_vals['bass_degree'],
-        'stepwise_chords': both_vals['chord'],
-        'ascending_bd': seconds_asc_vals['bass_degree'], #ix_segments2list(df, seconds_asc.ixs),
-        'ascending_chords': seconds_asc_vals['chord'],
-        'descending_bd': seconds_desc_vals['bass_degree'],
-        'descending_chords': seconds_desc_vals['chord'],
-        'ixa': df.index[0],
-        'ixb': df.index[-1]
-    })
+    res = pd.Series(
+        {
+            "globalkey": df.globalkey.unique()[0],
+            "localkey": df.localkey.unique()[0],
+            "length": len(df),
+            "length_norepeat": length_norepeat,
+            "n_stepwise": n_stepwise,
+            "%_stepwise": round(100 * n_stepwise / length_norepeat, 1),
+            "n_ascending": seconds_asc.n.sum(),
+            "n_descending": seconds_desc.n.sum(),
+            "bd": " ".join(df.loc[norepeat, "bass_degree"].to_list()),
+            "stepwise_bd": both_vals["bass_degree"],
+            "stepwise_chords": both_vals["chord"],
+            "ascending_bd": seconds_asc_vals[
+                "bass_degree"
+            ],  # ix_segments2list(df, seconds_asc.ixs),
+            "ascending_chords": seconds_asc_vals["chord"],
+            "descending_bd": seconds_desc_vals["bass_degree"],
+            "descending_chords": seconds_desc_vals["chord"],
+            "ixa": df.index[0],
+            "ixb": df.index[-1],
+        }
+    )
     return res
 
 
-def make_key_region_summary_table(df, *groupby_args, **groupby_kwargs):
-  return df.groupby(*groupby_args, **groupby_kwargs).apply(summarize)
+def make_key_region_summary_table(
+    df, mutate_dataframe: bool = True, *groupby_args, **groupby_kwargs
+):
+    """Takes an extended harmonies table that is segmented by local keys. The segments are iterated over using the
+    *groupby_args and **groupby_kwargs arguments.
+    """
+    groupby_kwargs = dict(groupby_kwargs, group_keys=False)
+    if mutate_dataframe:
+        df = add_bass_degree_columns(
+            df, mutate_dataframe=mutate_dataframe, *groupby_args, **groupby_kwargs
+        )
+    else:
+        add_bass_degree_columns(
+            df, mutate_dataframe=mutate_dataframe, *groupby_args, **groupby_kwargs
+        )
+    if "bass_interval" not in df.columns:
+        bass_interval_column = df.groupby(
+            *groupby_args, **groupby_kwargs
+        ).bass_note.apply(lambda bd: bd.shift(-1) - bd)
+        pc_interval_column = ms3.transform(bass_interval_column, ms3.fifths2pc)
+        pc_interval_column = pc_interval_column.where(
+            pc_interval_column <= 6, pc_interval_column % -6
+        )
+        if mutate_dataframe:
+            df["bass_interval"] = bass_interval_column
+            df["bass_interval_pc"] = pc_interval_column
+        else:
+            df = pd.concat(
+                [
+                    df,
+                    bass_interval_column.rename("bass_interval"),
+                    pc_interval_column.rename("bass_interval_pc"),
+                ],
+                axis=1,
+            )
+    return df.groupby(*groupby_args, **groupby_kwargs).apply(summarize)
+
+
+def add_bass_degree_columns(
+    df,
+    mutate_dataframe: bool = True,
+):
+    if "bass_degree" not in df.columns:
+        bass_degree_column = ms3.transform(
+            df, ms3.fifths2sd, ["bass_note", "localkey_is_minor"]
+        )
+        if mutate_dataframe:
+            df["bass_degree"] = bass_degree_column
+        else:
+            df = pd.concat([df, bass_degree_column.rename("bass_degree")], axis=1)
+    if "interval_structure" not in df.columns:
+        interval_structure_column = ms3.transform(
+            df, chord_tones2interval_structure, ["chord_tones"]
+        )
+        if mutate_dataframe:
+            df["interval_structure"] = interval_structure_column
+        else:
+            df = pd.concat(
+                [df, interval_structure_column.rename("interval_structure")], axis=1
+            )
+    if mutate_dataframe:
+        return df
+
+
+def chord_tones2interval_structure(
+    fifths: Iterable[int], reference: Optional[int] = None
+) -> Tuple[str]:
+    """The fifth are interpreted as intervals expressing distances from the local tonic ("neutral degrees").
+    The result will be a tuple of strings that express the same intervals but expressed with respect to the given
+    reference (neutral degree), removing unisons.
+    If no reference is specified, the first degree (usually, the bass note) is used as such.
+    """
+    try:
+        fifths = tuple(fifths)
+        if len(fifths) == 0:
+            return ()
+    except Exception:
+        return ()
+    if reference is None:
+        reference = fifths[0]
+    adapted_intervals = [
+        ms3.fifths2iv(adapted)
+        for interval in fifths
+        if (adapted := interval - reference) != 0
+    ]
+    return tuple(adapted_intervals)

@@ -21,6 +21,9 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+%load_ext autoreload
+%autoreload 2
+
 import os
 from fractions import Fraction
 
@@ -30,7 +33,7 @@ import ms3
 import pandas as pd
 import plotly.express as px
 
-from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
+from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir, remove_non_chord_labels, make_key_region_summary_table, add_bass_degree_columns
 ```
 
 ```{code-cell}
@@ -123,6 +126,70 @@ else:
     print(f"Dataset contains no annotations.")
 ```
 
+```{code-cell}
+keys_segmented = dc.LocalKeySlicer().process_data(dataset)
+keys = keys_segmented.get_slice_info()
+print(f"Overall number of key segments is {len(keys.index)}")
+keys["localkey_fifths"] = ms3.transform(keys, ms3.roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
+keys.head(5).style.shifted_key_segments(color_background, subset="localkey")
+```
+
+```{code-cell}
+key_segments = keys_segmented.get_facet("expanded")
+# key_segments = remove_none_labels(key_segments) not removing @none, so we can exclude them from transitions
+key_segments = remove_non_chord_labels(key_segments, remove_erroneous_chords=False)
+#key_segments["notna_segment"] = key_segments.bass_note.isna().cumsum()
+add_bass_degree_columns(key_segments)
+key_segments
+```
+
+```{code-cell}
+shifted_key_segments = key_segments.groupby(level=[0, 1, 2], group_keys=False).apply(lambda df: df.shift(-1))
+segment_bigrams = pd.concat([
+  key_segments,
+    shifted_key_segments
+], keys=["a", "b"], axis=1)
+segment_bigrams
+```
+
+```{code-cell}
+segment_bigrams[[('a','bass_note'),('b','bass_note')]]
+```
+
+```{code-cell}
+from typing import List
+
+def get_bigrams(
+        a_columns: str | List[str],
+        b_columns: str | List[str],
+) -> List[tuple]:
+    if isinstance(a_columns, str):
+        a_columns = [a_columns]
+    if isinstance(b_columns, str):
+        b_columns = [b_columns]
+    a_columns = [("a", col) for col in a_columns]
+    b_columns = [("b", col) for col in b_columns]
+    selection = segment_bigrams.loc[:, a_columns + b_columns].dropna(how='any')
+    return list(zip(selection[a_columns].itertuples(index=False, name=None),
+                    selection[b_columns].itertuples(index=False, name=None)))
+
+get_bigrams("bass_note", "bass_note")
+```
+
+```{code-cell}
+%%timeit
+grams(group_df[['localkey_is_minor', 'root']].shifted_key_segments(tuple, axis=1))
+```
+
+```{code-cell}
+%%timeit
+grams(list(group_df[['localkey_is_minor', 'root']].itertuples(index=False, name=None)))
+```
+
+```{code-cell}
+key_regions = make_key_region_summary_table(key_segments, level=[0,1,2], group_keys=False)
+```
+
 ## Phrases
 ### Presence of phrase annotation symbols per dataset:
 
@@ -147,7 +214,7 @@ legacy.groupby(level=0).size()
 phrase_segmented = dc.PhraseSlicer().process_data(dataset)
 phrases = phrase_segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
-phrases.head(10).style.apply(color_background, subset=["quarterbeats", "duration_qb"])
+phrases.head(10).style.shifted_key_segments(color_background, subset=["quarterbeats", "duration_qb"])
 ```
 
 ### A table with the chord sequences of all annotated phrases
@@ -158,8 +225,6 @@ phrase_segments
 ```
 
 ```{code-cell}
-:tags: [hide-input]
-
 phrase2timesigs = phrase_segments.groupby(level=[0,1,2]).timesig.unique()
 n_timesignatures_per_phrase = phrase2timesigs.map(len)
 uniform_timesigs = phrase2timesigs[n_timesignatures_per_phrase == 1].map(lambda l: l[0])
@@ -344,21 +409,10 @@ major_phrase_segments = phrase_segments[mask].copy()
 major_phrase_segments
 ```
 
-```{code-cell}
-phrase_segments.loc[major_phrases.index.to_list()]
-```
-
 # Older stuff (remains from this being a copy of the original `annotations.md`)
 ## Key areas
 
-```{code-cell}
-from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
-keys_segmented = dc.LocalKeySlicer().process_data(dataset)
-keys = keys_segmented.get_slice_info()
-print(f"Overall number of key segments is {len(keys.index)}")
-keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
-keys.head(5).style.apply(color_background, subset="localkey")
-```
++++
 
 ### Durational distribution of local keys
 
@@ -370,7 +424,7 @@ print(f"{len(key_durations)} keys overall including hierarchical such as 'III/v'
 ```
 
 ```{code-cell}
-keys_resolved = resolve_all_relative_numerals(keys)
+keys_resolved = ms3.resolve_all_relative_numerals(keys)
 key_resolved_durations = keys_resolved.groupby(['globalkey_is_minor', 'localkey']).duration_qb.sum().sort_values(ascending=False)
 print(f"{len(key_resolved_durations)} keys overall after resolving hierarchical ones.")
 key_resolved_durations
@@ -381,7 +435,7 @@ key_resolved_durations
 `globalkey_mode=minor` => Piece is in Minor
 
 ```{code-cell}
-pie_data = replace_boolean_mode_by_strings(key_resolved_durations.reset_index())
+pie_data = ms3.replace_boolean_mode_by_strings(key_resolved_durations.reset_index())
 fig = px.pie(
   pie_data,
   title="Distribution of local keys for major vs. minor pieces",
@@ -406,7 +460,7 @@ fig.show()
 
 ```{code-cell}
 localkey_fifths_durations = keys.groupby(['localkey_fifths', 'localkey_is_minor']).duration_qb.sum()
-bar_data = replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
+bar_data = ms3.replace_boolean_mode_by_strings(localkey_fifths_durations.reset_index())
 bar_data.localkey_fifths = bar_data.localkey_fifths.map(ms3.fifths2iv)
 fig = px.bar(bar_data, x='localkey_fifths', y='duration_qb', color='localkey_mode', log_y=True, barmode='group',
              labels=dict(localkey_fifths='Roots of local keys as intervallic distance from the global tonic',
@@ -469,7 +523,7 @@ notes_joined_with_keys = notes_by_keys.join(keys, on=keys.index.names)
 notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
 mode_tpcs = notes_by_keys_transposed.reset_index(drop=True).groupby(['localkey_is_minor', 'tpc']).duration_qb.sum().reset_index(-1).sort_values('tpc').reset_index()
 mode_tpcs['sd'] = ms3.fifths2sd(mode_tpcs.tpc)
-mode_tpcs['duration_pct'] = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum())
+mode_tpcs['duration_pct'] = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.shifted_key_segments(lambda S: S / S.sum())
 mode_tpcs['mode'] = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'})
 ```
 
@@ -534,10 +588,10 @@ fig.show()
 
 ```{code-cell}
 relative_roots = all_chords[['numeral', 'duration_qb', 'relativeroot', 'localkey_is_minor', 'chord_type']].copy()
-relative_roots['relativeroot_resolved'] = transform(relative_roots, ms3.resolve_relative_keys, ['relativeroot', 'localkey_is_minor'])
+relative_roots['relativeroot_resolved'] = ms3.transform(relative_roots, ms3.resolve_relative_keys, ['relativeroot', 'localkey_is_minor'])
 has_rel = relative_roots.relativeroot_resolved.notna()
 relative_roots.loc[has_rel, 'localkey_is_minor'] = relative_roots.loc[has_rel, 'relativeroot_resolved'].str.islower()
-relative_roots['root'] = transform(relative_roots, roman_numeral2fifths, ['numeral', 'localkey_is_minor'])
+relative_roots['root'] = ms3.transform(relative_roots, ms3.roman_numeral2fifths, ['numeral', 'localkey_is_minor'])
 chord_type_frequency = all_chords.chord_type.value_counts()
 replace_rare = ms3.map_dict({t: 'other' for t in chord_type_frequency[chord_type_frequency < 500].index})
 relative_roots['type_reduced'] = relative_roots.chord_type.map(replace_rare)
@@ -717,7 +771,7 @@ transitions_from_shared_types = {
     True: {}
 }
 for (is_minor, corpus_name), bgs in corpus_wise_bigrams.iter():
-    transitions_normalized_per_from = bgs.groupby(level="from", group_keys=False).apply(lambda S: (100 * S / S.sum()).round(1))
+    transitions_normalized_per_from = bgs.groupby(level="from", group_keys=False).shifted_key_segments(lambda S: (100 * S / S.sum()).round(1))
     most_frequent_transition_per_from = transitions_normalized_per_from.rename('fraction').reset_index(level=1).groupby(level=0).nth(0)
     most_frequent_transition_per_shared = most_frequent_transition_per_from.loc[types_shared_between_corpora[is_minor]]
     unigram_frequency_of_shared = normalized_corpus_unigrams[(is_minor, corpus_name)].loc[types_shared_between_corpora[is_minor]]
