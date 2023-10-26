@@ -42,7 +42,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 **Loading data**
 
-```{code-cell} ipython3
+```{code-cell}
 package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 D = dc.Dataset.from_package(package_path)
 D
