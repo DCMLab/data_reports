@@ -26,6 +26,7 @@ from scipy.stats import entropy
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
 DEFAULT_OUTPUT_FORMAT = ".png"
+DEFAULT_COLUMNS = ["mc", "mc_onset"]  # always added to bigram dataframes
 AVAILABLE_FIGURE_FORMATS = PlotlyScope._all_formats
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
 COLOR_SCALE_SETTINGS = dict(
@@ -390,7 +391,7 @@ def get_repo_name(repo: Repo) -> str:
     return remote.url.split(".git")[0].split("/")[-1]
 
 
-def grams(lists_of_symbols, n=2):
+def grams(lists_of_symbols, n=2, to_string: bool = False):
     """Returns a list of n-gram tuples for given list. List can be nested.
 
     Use nesting to exclude transitions between pieces or other units.
@@ -401,11 +402,11 @@ def grams(lists_of_symbols, n=2):
         no_sublists = []
         for item in lists_of_symbols:
             if isinstance(item, list):
-                ngrams.extend(grams(item, n))
+                ngrams.extend(grams(item, n, to_string=to_string))
             else:
                 no_sublists.append(item)
         if len(no_sublists) > 0:
-            ngrams.extend(grams(no_sublists, n))
+            ngrams.extend(grams(no_sublists, n, to_string=to_string))
         return ngrams
     else:
         # if len(l) < n:
@@ -413,7 +414,10 @@ def grams(lists_of_symbols, n=2):
         # ngrams = [l[i:(i+n)] for i in range(len(l)-n+1)]
         ngrams = list(zip(*(lists_of_symbols[i:] for i in range(n))))
         # convert to tuple of strings
-        return [tuple(str(g) for g in gram) for gram in ngrams]
+        if to_string:
+            return [tuple(str(g) for g in gram) for gram in ngrams]
+        else:
+            return ngrams
 
 
 def load_facets(
@@ -1022,7 +1026,7 @@ def sorted_gram_counts(lists_of_symbols, n=2, k=25):
             {
                 t: count
                 for t, count in sorted(
-                    Counter(grams(lists_of_symbols, n=n)).items(),
+                    Counter(grams(lists_of_symbols, n=n, to_string=True)).items(),
                     key=lambda a: a[1],
                     reverse=True,
                 )[:k]
@@ -1169,7 +1173,7 @@ def transition_matrix(
     """
     if gs is None:
         assert n > 0, f"Cannot print {n}-grams"
-        gs = grams(l, n=n)
+        gs = grams(l, n=n, to_string=True)
     elif l is not None:
         assert True, "Specify either l or gs, not both."
 

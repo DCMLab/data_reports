@@ -33,7 +33,9 @@ import ms3
 import pandas as pd
 import plotly.express as px
 
-from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir, remove_non_chord_labels, make_key_region_summary_table, add_bass_degree_columns
+from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, DEFAULT_COLUMNS, TYPE_COLORS, color_background, \
+  corpus_mean_composition_years, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir, \
+  remove_non_chord_labels, make_key_region_summary_table, add_bass_degree_columns, grams, add_mode_column
 ```
 
 ```{code-cell}
@@ -139,18 +141,17 @@ key_segments = keys_segmented.get_facet("expanded")
 # key_segments = remove_none_labels(key_segments) not removing @none, so we can exclude them from transitions
 key_segments = remove_non_chord_labels(key_segments, remove_erroneous_chords=False)
 #key_segments["notna_segment"] = key_segments.bass_note.isna().cumsum()
+key_segments = add_mode_column(key_segments)
 add_bass_degree_columns(key_segments)
 key_segments
 ```
 
 ```{code-cell}
-shifted_key_segments = key_segments.groupby(level=[0, 1, 2], group_keys=False).apply(lambda df: df.shift(-1))
-segment_bigrams = pd.concat([
-  key_segments,
-    shifted_key_segments
-], keys=["a", "b"], axis=1)
-segment_bigrams
+bass_degree2intervals = key_segments.groupby(["mode", "bass_degree"]).intervals_over_bass.value_counts()
+bass_degree2intervals.sort_values(ascending=False)
 ```
+
+## Bigrams (fast)
 
 ```{code-cell}
 from typing import List
@@ -165,19 +166,32 @@ def get_bigrams(
         b_columns = [b_columns]
     a_columns = [("a", col) for col in a_columns]
     b_columns = [("b", col) for col in b_columns]
-    default_column_names = ("mc", "mc_onset")
-    default_columns = [("a", col) for col in default_column_names]
+    default_columns = [("a", col) for col in DEFAULT_COLUMNS]
     selection = segment_bigrams.loc[:,default_columns + a_columns + b_columns].dropna(how='any')
     default_df = selection[default_columns]
-    default_df.columns = default_column_names
+    default_df.columns = DEFAULT_COLUMNS
     return pd.concat([
         default_df,
         pd.Series(selection[a_columns].itertuples(index=False, name=None), index=selection.index, name="a"),
         pd.Series(selection[b_columns].itertuples(index=False, name=None), index=selection.index, name="b"),
     ], axis=1)
 
-bass_note_bigrams = get_bigrams("bass_note", "bass_note")
+shifted_key_segments = key_segments.groupby(level=[0, 1, 2], group_keys=False).apply(lambda df: df.shift(-1))
+segment_bigrams = pd.concat([
+  key_segments,
+    shifted_key_segments
+], keys=["a", "b"], axis=1)
+segment_bigrams
+```
+
+```{code-cell}
+bass_note_bigrams = get_bigrams(["bass_note", "intervals_over_bass"], ["bass_note", "intervals_over_bass"])
 bass_note_bigrams.to_csv(os.path.join(RESULTS_PATH, 'bass_note_bigrams.tsv'), sep='\t')
+```
+
+```{code-cell}
+bass_note_bigram_counts = bass_note_bigrams[["a", "b"]].apply(lambda row: tuple(row), axis=1).value_counts()
+bass_note_bigram_counts.to_csv(os.path.join(RESULTS_PATH, 'bass_note_bigram_counts.tsv'), sep='\t')
 ```
 
 ```{code-cell}
@@ -213,7 +227,7 @@ def get_weighted_bigram_entropy(bigrams):
     return (unigram_frequencies * normalized_entropies).sum()
 
 
-def compute_information_gain(
+def compute_bigram_information_gain(
         column="bass_note",
         remove_repetitions: bool = False
 ):
@@ -242,40 +256,117 @@ key_segments.root.nunique()
 ```
 
 ```{code-cell}
-compute_information_gain("bass_note")
+compute_bigram_information_gain("bass_note")
 ```
 
 ```{code-cell}
-compute_information_gain("root")
+compute_bigram_information_gain("root")
 ```
 
 ```{code-cell}
-compute_information_gain("bass_note", remove_repetitions=True)
+compute_bigram_information_gain("bass_note", remove_repetitions=True)
 ```
 
 ```{code-cell}
-compute_information_gain("root", remove_repetitions=True)
+compute_bigram_information_gain("root", remove_repetitions=True)
 ```
 
 ```{code-cell}
-compute_information_gain(["bass_note", "intervals_over_bass"])
+compute_bigram_information_gain(["bass_note", "intervals_over_bass"])
 ```
 
 ```{code-cell}
-compute_information_gain(["root", "intervals_over_root"])
+compute_bigram_information_gain(["root", "intervals_over_root"])
+```
+
+## N-grams (slower)
+
+```{code-cell}
+def get_grams_from_segment(
+        segment_df: pd.DataFrame,
+        columns: str | List[str] = "bass_note",
+        n: int = 2,
+        fast: bool = True
+) -> pd.DataFrame:
+    """Assumes that NA values occur only at the beginning. Fast means without retaining default columns."""
+    if isinstance(columns, str):
+        columns = [columns]
+    if fast:
+        selection = segment_df[columns].dropna(how='any')
+    else:
+        selection = segment_df[DEFAULT_COLUMNS + columns].dropna(how='any')
+    value_sequence = list(selection[columns].itertuples(index=False, name=None))
+    n_grams = grams(value_sequence, n=n)
+    if len(n_grams) == 0:
+      return pd.DataFrame()
+    if n > 2:
+        n_gram_iterator = list((tup[:-1], tup[-1]) for tup in n_grams)
+    else:
+        n_gram_iterator = n_grams
+    if fast:
+        return pd.DataFrame.from_records(n_gram_iterator, columns=["a", "b"])
+    else:
+        result = selection.iloc[:-n+1][DEFAULT_COLUMNS]
+        n_grams = pd.DataFrame.from_records(n_gram_iterator, columns=["a", "b"], index=result.index)
+        return pd.concat([result, n_grams], axis=1)
+
+def make_columns(S, n):
+    list_of_tuples = S.iloc[0]
+    if len(list_of_tuples) == 0:
+        return pd.DataFrame()
+    if n > 2:
+        n_gram_iterator = list((tup[:-1], tup[-1]) for tup in list_of_tuples)
+    else:
+        n_gram_iterator = list_of_tuples
+    return pd.DataFrame.from_records(n_gram_iterator, columns=["a", "b"])
+
+
+def get_n_grams(
+        df: pd.DataFrame,
+        columns: str | List[str] = "bass_note",
+        n: int = 2,
+        fast: bool = True,
+        **groupby_kwargs
+):
+    if isinstance(columns, str):
+        columns = [columns]
+    groupby_kwargs = dict(groupby_kwargs, group_keys=fast)
+    return df.groupby(**groupby_kwargs).apply(lambda df: get_grams_from_segment(df, columns=columns, n=n, fast=fast))
+    lists_of_tuples = df.groupby(**groupby_kwargs).apply(lambda df: list(df[columns].dropna(how='any').itertuples(index=False, name=None)))
+    n_grams = lists_of_tuples.map(lambda l: grams(l, n=n))
+    return n_grams
+
+def compute_n_gram_information_gain(
+        df: pd.DataFrame,
+        columns: str | List[str] = "bass_note",
+        n: int = 2,
+        fast: bool = True,
+        **groupby_kwargs
+):
+    if isinstance(columns, str):
+        columns = [columns]
+    groupby_kwargs = dict(groupby_kwargs, group_keys=fast)
+    n_grams = get_n_grams(df, columns=columns, n=n, fast=fast, **groupby_kwargs)
+    return bigram_information_gain(n_grams)
+
+key_segments["notna_segment"] = key_segments.bass_note.isna().cumsum()
+default_groupby = ["corpus", "fname", "localkey_slice", "notna_segment"]
 ```
 
 ```{code-cell}
-for group, group_df in key_segments.groupby(level=[0,1,2], group_keys=False):
-    if not group_df.bass_note.isna().any():
-        continue
-    break
-
-group_df
+compute_n_gram_information_gain(key_segments, columns="bass_note", by=default_groupby, n=3)
 ```
 
 ```{code-cell}
-group_df.loc[group_df.bass_note.isna(), ["mc", "label"]]
+compute_n_gram_information_gain(key_segments, columns="root", by=default_groupby, n=3)
+```
+
+```{code-cell}
+compute_n_gram_information_gain(key_segments, columns=["bass_note", "intervals_over_bass"], by=default_groupby, n=3)
+```
+
+```{code-cell}
+compute_n_gram_information_gain(key_segments, columns=["root", "intervals_over_root"], by=default_groupby, n=3)
 ```
 
 ```{code-cell}
