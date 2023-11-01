@@ -49,7 +49,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
+package_path = resolve_dir("dcml_corpora.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -97,12 +97,16 @@ fig.show()
 ```
 
 ```{code-cell}
+from dimcat.plotting import make_tpc_bubble_plot
+
 la_mer_mn_dist = la_mer_notes.groupby(['mn', 'tpc']).duration_qb.sum()
 x_vals = sorted(la_mer_notes.tpc.unique())
 x_names = ms3.fifths2name(x_vals)
 x_axis = dict(tickvals=x_vals, ticktext=x_names)
-fig = make_bubble_plot(
-    la_mer_mn_dist, title="measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
+fig = make_tpc_bubble_plot(
+    la_mer_mn_dist, 
+  y_col="mn",
+  title="measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
     labels=dict(mn="Measure number", tpc="Tonal pitch class"), x_axis=x_axis
     )
 save_figure_as(fig, "debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles", width=1200)
@@ -118,9 +122,6 @@ notes_piece_groups = notes.groupby(['corpus', 'piece'])
 id_notes = pd.concat({ID: notes_piece_groups.get_group(piece_id) for ID, piece_id in enumerate(order_of_pieces)})
 id_notes.index.rename(['ID', 'corpus', 'piece',  'i'], inplace=True)
 id_notes
-```
-
-```{code-cell}
 piece_distributions = id_notes.groupby(['ID', 'corpus', 'piece', 'tpc']).duration_qb.sum()
 piece_distributions
 ```
@@ -146,7 +147,11 @@ fig
 ```
 
 ```{code-cell}
-fig = make_bubble_plot(id_distributions, title="piece-wise pitch-class distributions for the DLC", x_axis=x_axis)
+fig = make_tpc_bubble_plot(
+    id_distributions,
+    y_col="ID",
+    title="piece-wise pitch-class distributions for the DLC", x_axis=x_axis
+)
 save_figure_as(fig, "all_pitch_class_distributions_piecewise_bubbles", width=1200)
 fig.show()
 ```
@@ -162,16 +167,23 @@ year_notes
 year_groupby = year_notes.reset_index().groupby(['year', 'tpc'])
 year_distributions = year_groupby.duration_qb.sum()
 year_distributions = pd.concat([year_distributions, year_groupby.corpus.unique().rename('corpora')], axis=1)
-fig = make_bubble_plot(
-    year_distributions, normalize=True, title="year-wise pitch-class distributions for the DLC", hover_data="corpora",
+fig = make_tpc_bubble_plot(
+    year_distributions,
+    y_col="year",
+    normalize=True, title="year-wise pitch-class distributions for the DLC", hover_data="corpora",
     x_axis=x_axis
-    )
+)
 save_figure_as(fig, "all_pitch_class_distributions_yearwise_bubbles", width=1200)
 fig.show()
 ```
 
 ```{code-cell}
-fig = notes.plot(title="Pitch class distribution over the Distant Listening Corpus")
+from dimcat.steps import analyzers
+fig = notes.plot()
 save_figure_as(fig, "complete_pitch_class_distribution_absolute_bars", height=800)
 fig.show()
+```
+
+```{code-cell}
+
 ```
