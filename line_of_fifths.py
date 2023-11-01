@@ -33,7 +33,7 @@ from utils import (
     get_repo_name,
     get_middle_composition_year
 )
-from dimcat.plotting import get_pitch_class_distribution, plot_pitch_class_distribution, tpc_bubbles
+from dimcat.plotting import get_pitch_class_distribution, plot_pitch_class_distribution, make_bubble_plot
 import pandas as pd
 # import modin.pandas as pd
 # import ray
@@ -97,13 +97,10 @@ la_mer_mn_dist = la_mer_notes.groupby(['mn', 'tpc']).duration_qb.sum()
 x_vals = sorted(la_mer_notes.tpc.unique())
 x_names = ms3.fifths2name(x_vals)
 x_axis = dict(tickvals=x_vals, ticktext=x_names)
-fig = tpc_bubbles(
-    la_mer_mn_dist,
-    x_axis=x_axis,
-    title="measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
-    labels=dict(mn="Measure number", tpc="Tonal pitch class"),
-    modin=False
-)
+fig = make_bubble_plot(
+    la_mer_mn_dist, title="measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
+    labels=dict(mn="Measure number", tpc="Tonal pitch class"), x_axis=x_axis
+    )
 save_figure_as(fig, "debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles", width=1200)
 fig.show()
 
@@ -139,10 +136,7 @@ fig = px.scatter(df, x=list(df.tpc), y=list(df.ID),
 fig
 
 # %%
-fig = tpc_bubbles(
-    id_distributions,
-    title="piece-wise pitch-class distributions for the DLC",
-    x_axis=x_axis,)
+fig = make_bubble_plot(id_distributions, title="piece-wise pitch-class distributions for the DLC", x_axis=x_axis)
 save_figure_as(fig, "all_pitch_class_distributions_piecewise_bubbles", width=1200)
 fig.show()
 
@@ -156,13 +150,10 @@ year_notes
 year_groupby = year_notes.reset_index().groupby(['year', 'tpc'])
 year_distributions = year_groupby.duration_qb.sum()
 year_distributions = pd.concat([year_distributions, year_groupby.corpus.unique().rename('corpora')], axis=1)
-fig = tpc_bubbles(
-  year_distributions,
-  title="year-wise pitch-class distributions for the DLC",
-  x_axis=x_axis,
-  hover_data="corpora",
-  normalize=True,
-  modin=False)
+fig = make_bubble_plot(
+    year_distributions, normalize=True, title="year-wise pitch-class distributions for the DLC", hover_data="corpora",
+    x_axis=x_axis
+    )
 save_figure_as(fig, "all_pitch_class_distributions_yearwise_bubbles", width=1200)
 fig.show()
 

@@ -25,7 +25,7 @@ import os
 from matplotlib import pyplot as plt
 
 import dimcat as dc
-from dimcat.steps import groupers
+from dimcat.steps import groupers, analyzers
 import ms3
 import pandas as pd
 import plotly.express as px
@@ -36,9 +36,12 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background,
     remove_none_labels, remove_non_chord_labels, plot_transition_heatmaps
 
 # %%
+from docs.notebooks.utils import DEFAULT_OUTPUT_FORMAT
 from utils import OUTPUT_FOLDER, write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "ismir"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def make_output_path(filename):
+    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, format=".pdf", **kwargs)
 
@@ -68,9 +71,11 @@ corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors
 
 # %%
 notes = D.get_feature('notes')
-fig = notes.plot()
-save_figure_as(fig, "complete_pitch_class_distribution_absolute_bars", height=800)
-fig.show()
+notes.plot() #(output=make_output_path("complete_pitch_class_distribution_absolute_bars"))
+
+# %%
+labels = D.get_feature('harmonylabels')
+labels.plot()
 
 
 # %% [markdown]
