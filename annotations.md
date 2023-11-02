@@ -34,7 +34,8 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background,
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER, write_image
+from utils import OUTPUT_FOLDER
+from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "annotations"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):

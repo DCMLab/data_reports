@@ -34,7 +34,8 @@ pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER, write_image
+from utils import OUTPUT_FOLDER
+from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "bass_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -271,7 +272,6 @@ editable: true
 slideshow:
   slide_type: ''
 ---
-
 
 
 key_regions = make_key_region_summary_table(df, 'key_regions')

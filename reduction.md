@@ -39,7 +39,8 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, DEFAULT_COLUMNS, TYPE_COLORS, 
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER, write_image
+from utils import OUTPUT_FOLDER
+from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "reduction"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -498,7 +499,6 @@ print(f"{len(major_phrases)} of the {len(non_modulatory_phrases)} are in major."
 ```
 
 ```{code-cell}
-
 from operator import itemgetter
 from typing import Set, Optional, Iterable, List, Tuple
 

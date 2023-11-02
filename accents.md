@@ -16,7 +16,7 @@ kernelspec:
 
 This notebook gives a general overview of the features included in the dataset.
 
-```{code-cell} ipython3
+```{code-cell}
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -36,34 +36,34 @@ from utils import (CORPUS_COLOR_SCALE, STD_LAYOUT, corpus_mean_composition_years
                    get_corpus_display_name, get_repo_name, print_heading, resolve_dir)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 D = dc.Dataset.from_package("/home/laser/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 D
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 all_metadata = D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
 mean_composition_years = corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 controls = D.get_feature("Articulation")
 controls.df
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 chords = controls[controls.event == "Chord"]
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 articulation_counts = chords.articulation.value_counts(dropna=False).reset_index()
 #articulation_counts.iat[0,0] = "no articulation"
 articulation_counts
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 def print_accented_ratio(articulation_column, selected_accents):
     accent_mask = articulation_column.isin(selected_accents)
     n_accented = accent_mask.sum()
@@ -87,12 +87,12 @@ selected_accents = {
 print_accented_ratio(chords.articulation, selected_accents)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 selected_including_staccatissimo = selected_accents.union({"articStaccatissimoAbove", "articStaccatissimoBelow"})
 print_accented_ratio(chords.articulation, selected_including_staccatissimo)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 def accented_ratio(articulation_column, selected_accents):
     accent_mask = articulation_column.isin(selected_accents)
     n_accented = accent_mask.sum()
@@ -100,31 +100,32 @@ def accented_ratio(articulation_column, selected_accents):
     return n_accented / n_chords
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 piecewise_ratios = chords.articulation.groupby(["corpus", "piece"]).apply(accented_ratio, selected_accents=selected_accents)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 gpb = piecewise_ratios.groupby("corpus")
 corpus_wise = pd.concat([gpb.mean().rename("mean"), gpb.sem().rename("stderr")], axis=1)
 corpus_wise
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 px.bar(corpus_wise, y="mean")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 symbols = events_df[events_df.event == "Symbol"].dropna(how='all', axis="columns")
 symbols
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 symbols["Symbol/name"].value_counts()
 ```
 
-```{code-cell} ipython3
-from utils import OUTPUT_FOLDER, write_image
+```{code-cell}
+from utils import OUTPUT_FOLDER
+from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -133,7 +134,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 **Loading data**
 
-```{code-cell} ipython3
+```{code-cell}
 package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
@@ -144,7 +145,7 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 ---
 mystnb:
   code_prompt_hide: Hide data loading
@@ -163,16 +164,16 @@ chronological_corpus_names = list(corpus_names.values())
 corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 articulation = D.get_feature("Articulation")
 articulation.df
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 articulation.columns
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 articulation.event.value_counts()
 ```
 
@@ -180,7 +181,7 @@ articulation.event.value_counts()
 
 This section relies on the dataset's metadata.
 
-```{code-cell} ipython3
+```{code-cell}
 valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors='coerce')
 valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors='coerce')
 print(f"Composition dates range from {int(valid_composed_start.min())} {valid_composed_start.idxmin()} "
@@ -189,7 +190,7 @@ print(f"Composition dates range from {int(valid_composed_start.min())} {valid_co
 
 ### Mean composition years per corpus
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 piece_is_annotated = all_metadata.label_count > 0
@@ -221,7 +222,7 @@ fig.show()
 
 ### Composition years histogram
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 hist_data = summary.reset_index()
@@ -251,7 +252,7 @@ fig.show()
 
 ### Overview
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 corpus_metadata = summary.groupby(level=0)
@@ -275,12 +276,12 @@ complete_summary
 
 ### Measures
 
-```{code-cell} ipython3
+```{code-cell}
 print(f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files.")
 all_measures.head()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 print("Distribution of time signatures per XML measure (MC):")
 all_measures.timesig.value_counts(dropna=False)
 ```
@@ -289,7 +290,7 @@ all_measures.timesig.value_counts(dropna=False)
 
 All symbols, independent of the local key (the mode of which changes their semantics).
 
-```{code-cell} ipython3
+```{code-cell}
 try:
     all_annotations = D.get_feature("harmonylabels").df
 except Exception:

@@ -33,7 +33,7 @@ from utils import (
     get_repo_name
 )
 from dimcat.utils import get_middle_composition_year
-from dimcat.plotting import get_pitch_class_distribution, plot_pitch_class_distribution
+from dimcat.plotting import write_image
 from dimcat.data import resources
 import pandas as pd
 # import modin.pandas as pd
@@ -41,7 +41,7 @@ import pandas as pd
 # ray.init(runtime_env={'env_vars': {'__MODIN_AUTOIMPORT_PANDAS__': '1'}}, ignore_reinit_error=True)
 
 # %%
-from utils import OUTPUT_FOLDER, write_image, DEFAULT_OUTPUT_FORMAT
+from utils import OUTPUT_FOLDER, DEFAULT_OUTPUT_FORMAT
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def make_output_path(filename):

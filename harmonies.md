@@ -29,10 +29,9 @@ pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 ```
 
-
-
 ```{code-cell}
-from utils import OUTPUT_FOLDER, write_image
+from utils import OUTPUT_FOLDER
+from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "harmonies"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -41,7 +40,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 **Loading data**
 
-```{code-cell} ipython3
+```{code-cell}
 package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
