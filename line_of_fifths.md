@@ -31,7 +31,8 @@ from utils import (
     get_repo_name,
     get_middle_composition_year
 )
-from dimcat.plotting import get_pitch_class_distribution, plot_pitch_class_distribution, make_bubble_plot
+from dimcat.plotting import get_pitch_class_distribution, plot_pitch_class_distribution
+from dimcat.data import resources
 import pandas as pd
 # import modin.pandas as pd
 # import ray
@@ -39,9 +40,11 @@ import pandas as pd
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER, write_image
+from utils import OUTPUT_FOLDER, write_image, DEFAULT_OUTPUT_FORMAT
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def make_output_path(filename):
+    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
@@ -77,23 +80,17 @@ metadata
 ## Pitch class distribution
 
 ```{code-cell}
-tpc_distribution = get_pitch_class_distribution(notes)
-tpc_distribution
-```
-
-```{code-cell}
-la_mer_notes = ms3.load_tsv("La_Mer_1-84.notes.tsv")
+la_mer_notes = resources.Notes.from_descriptor_path("La_Mer_1-84.notes.resource.json")
+la_mer_notes.load()
 la_mer_notes
 ```
 
 ```{code-cell}
-fig = plot_pitch_class_distribution(
-    df=la_mer_notes,
-    modin=False,
-    title="Pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
+la_mer_notes.plot_grouped(
+  title="Pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
+  output=make_output_path("debussy_la_mer_beginning_pitch_class_distribution_bars",),
+  height=800,
 )
-save_figure_as(fig, "debussy_la_mer_beginning_pitch_class_distribution_bars", height=800)
-fig.show()
 ```
 
 ```{code-cell}
@@ -133,10 +130,24 @@ id_distributions
 ```
 
 ```{code-cell}
-df = id_distributions.groupby(level=0, group_keys=False).apply(lambda S: S / S.sum()).reset_index()
+df = id_distributions.groupby(level=0, group_keys=False).apply(lambda S: S / S.sum())
 hover_data = ms3.fifths2name(list(df.tpc))
 df['pitch class'] = hover_data
 df
+```
+
+```{code-cell}
+result = resources.results.Result.from_dataframe(df, "dcml_corpora_pitch_class_distributions")
+result.index.rename("piece", inplace=True)
+result
+```
+
+```{code-cell}
+result.plot()
+```
+
+```{code-cell}
+result.plot_grouped()
 ```
 
 ```{code-cell}
