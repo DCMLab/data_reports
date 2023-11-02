@@ -94,13 +94,13 @@ la_mer_notes.plot_grouped(
 ```
 
 ```{code-cell}
-from dimcat.plotting import make_tpc_bubble_plot
+from dimcat.plotting import make_lof_bubble_plot
 
 la_mer_mn_dist = la_mer_notes.groupby(['mn', 'tpc']).duration_qb.sum()
 x_vals = sorted(la_mer_notes.tpc.unique())
 x_names = ms3.fifths2name(x_vals)
 x_axis = dict(tickvals=x_vals, ticktext=x_names)
-fig = make_tpc_bubble_plot(
+fig = make_lof_bubble_plot(
     la_mer_mn_dist, 
   y_col="mn",
   title="measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
@@ -158,7 +158,7 @@ fig
 ```
 
 ```{code-cell}
-fig = make_tpc_bubble_plot(
+fig = make_lof_bubble_plot(
     id_distributions,
     y_col="ID",
     title="piece-wise pitch-class distributions for the DLC", x_axis=x_axis
@@ -178,7 +178,7 @@ year_notes
 year_groupby = year_notes.reset_index().groupby(['year', 'tpc'])
 year_distributions = year_groupby.duration_qb.sum()
 year_distributions = pd.concat([year_distributions, year_groupby.corpus.unique().rename('corpora')], axis=1)
-fig = make_tpc_bubble_plot(
+fig = make_lof_bubble_plot(
     year_distributions,
     y_col="year",
     normalize=True, title="year-wise pitch-class distributions for the DLC", hover_data="corpora",
