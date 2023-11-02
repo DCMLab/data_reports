@@ -287,19 +287,6 @@ def get_corpus_display_name(repo_name: str) -> str:
     return name
 
 
-def get_middle_composition_year(
-    metadata: pd.DataFrame,
-    composed_start_column: str = "composed_start",
-    composed_end_column: str = "composed_end",
-) -> pd.Series:
-    """Returns the middle of the composition year range."""
-    composed_start = pd.to_numeric(metadata[composed_start_column], errors="coerce")
-    composed_end = pd.to_numeric(metadata[composed_end_column], errors="coerce")
-    composed_start.fillna(composed_end, inplace=True)
-    composed_end.fillna(composed_start, inplace=True)
-    return (composed_start + composed_end) / 2
-
-
 def get_modin_dtypes(path):
     descriptor_path = os.path.join(path, "all_subcorpora.datapackage.json")
     fl_package = fl.Package(descriptor_path)

@@ -30,9 +30,9 @@ import ms3
 from utils import (
     resolve_dir,
     print_heading,
-    get_repo_name,
-    get_middle_composition_year
+    get_repo_name
 )
+from dimcat.utils import get_middle_composition_year
 from dimcat.plotting import get_pitch_class_distribution, plot_pitch_class_distribution
 from dimcat.data import resources
 import pandas as pd
