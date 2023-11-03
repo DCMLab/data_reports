@@ -21,7 +21,6 @@ Notebook adapted from the one used for the presentation at HCI 2023 in Copenhage
 %autoreload 2
 import os
 from git import Repo
-import plotly.express as px
 import dimcat as dc
 import ms3
 
@@ -30,13 +29,8 @@ from utils import (
     print_heading,
     get_repo_name
 )
-from dimcat.utils import get_middle_composition_year
-from dimcat.plotting import write_image
-from dimcat.data import resources
-import pandas as pd
-# import modin.pandas as pd
-# import ray
-# ray.init(runtime_env={'env_vars': {'__MODIN_AUTOIMPORT_PANDAS__': '1'}}, ignore_reinit_error=True)
+
+from dimcat import resources, groupers
 ```
 
 ```{code-cell}
@@ -45,8 +39,6 @@ RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def make_output_path(filename):
     return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
 ```
 
 **Loading data**
@@ -62,22 +54,7 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell}
-notes = D.get_feature("notes")
-notes.df
-```
-
-```{code-cell}
-annotations = D.get_feature("harmonylabels")
-annotations.df
-```
-
-```{code-cell}
-metadata = D.get_metadata()
-metadata
-```
-
-## Pitch class distribution
+## Pitch class distribution for the beginning of La Mer
 
 ```{code-cell}
 la_mer_notes = resources.Notes.from_descriptor_path("La_Mer_1-84.notes.resource.json")
@@ -94,107 +71,51 @@ la_mer_notes.plot_grouped(
 ```
 
 ```{code-cell}
-from dimcat.plotting import make_lof_bubble_plot
-
-la_mer_mn_dist = la_mer_notes.groupby(['mn', 'tpc']).duration_qb.sum()
-x_vals = sorted(la_mer_notes.tpc.unique())
-x_names = ms3.fifths2name(x_vals)
-x_axis = dict(tickvals=x_vals, ticktext=x_names)
-fig = make_lof_bubble_plot(
-    la_mer_mn_dist, 
-  y_col="mn",
-  title="measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
-    labels=dict(mn="Measure number", tpc="Tonal pitch class"), x_axis=x_axis
-    )
-save_figure_as(fig, "debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles", width=1200)
-fig.show()
+grouped_la_mer = groupers.MeasureGrouper().process(la_mer_notes)
+grouped_la_mer.plot_grouped(
+  title="Normalized measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
+  output=make_output_path("debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles"), 
+  width=1200)
 ```
 
-```{code-cell}
-sorted_composition_years = get_middle_composition_year(metadata).sort_values()
-order_of_pieces = sorted_composition_years.index.to_list()
-notes_piece_groups = notes.groupby(['corpus', 'piece'])
-# aligned_integer_index = np.concatenate([notes_piece_groups.indices[piece_id] for piece_id in order_of_pieces])
-# notes_chronological_piece_order = notes.take(aligned_integer_index)
-id_notes = pd.concat({ID: notes_piece_groups.get_group(piece_id) for ID, piece_id in enumerate(order_of_pieces)})
-id_notes.index.rename(['ID', 'corpus', 'piece',  'i'], inplace=True)
-id_notes
-piece_distributions = id_notes.groupby(['ID', 'corpus', 'piece', 'tpc']).duration_qb.sum()
-piece_distributions
-```
+## Pitch class distributions for the datapackage
 
 ```{code-cell}
-id_distributions = piece_distributions.copy()
-id_distributions.index = piece_distributions.index.droplevel([1,2])
-id_distributions
-```
-
-```{code-cell}
-df = id_distributions.groupby(level=0, group_keys=False).apply(lambda S: S / S.sum())
-hover_data = ms3.fifths2name(list(df.tpc))
-df['pitch class'] = hover_data
-df
-```
-
-```{code-cell}
-result = resources.results.Result.from_dataframe(df, "dcml_corpora_pitch_class_distributions")
-result.index.rename("piece", inplace=True)
+result = notes.get_default_analysis()
 result
 ```
 
 ```{code-cell}
-result.plot()
+result.unstack(fill_value=0.0).sum().rename("duration_qb")
 ```
 
 ```{code-cell}
-result.plot_grouped()
-```
-
-```{code-cell}
-fig = px.scatter(df, x=list(df.tpc), y=list(df.ID),
-                     size=list(df.duration_qb),
-                     color=list(df.tpc))
-fig
-```
-
-```{code-cell}
-fig = make_lof_bubble_plot(
-    id_distributions,
-    y_col="ID",
-    title="piece-wise pitch-class distributions for the DLC", x_axis=x_axis
+notes = D.get_feature("notes")
+notes.plot_grouped(
+  title=f"Pitch-class distribution for {notes.resource_name.split('.')[0]}",
+  output=make_output_path("complete_pitch_class_distribution_absolute_bars"),
+  height=800
 )
-save_figure_as(fig, "all_pitch_class_distributions_piecewise_bubbles", width=1200)
-fig.show()
 ```
 
 ```{code-cell}
-year_notes = pd.concat({year: notes_piece_groups.get_group(piece_id)
-                        for piece_id, year in sorted_composition_years.items()})
-year_notes.index.rename(['year', 'corpus', 'piece',  'i'], inplace=True)
-year_notes
+grouped_D = groupers.YearGrouper().process(D)
+grouped_notes = grouped_D.get_feature("notes")
+grouped_notes
 ```
 
 ```{code-cell}
-year_groupby = year_notes.reset_index().groupby(['year', 'tpc'])
-year_distributions = year_groupby.duration_qb.sum()
-year_distributions = pd.concat([year_distributions, year_groupby.corpus.unique().rename('corpora')], axis=1)
-fig = make_lof_bubble_plot(
-    year_distributions,
-    y_col="year",
-    normalize=True, title="year-wise pitch-class distributions for the DLC", hover_data="corpora",
-    x_axis=x_axis
+grouped_notes.plot(
+  output=make_output_path("all_pitch_class_distributions_piecewise_bubbles"),
+  title=f"Normalized piece-wise pitch-class distributions for {grouped_notes.resource_name.split('.')[0]}",
+  width=1200
 )
-save_figure_as(fig, "all_pitch_class_distributions_yearwise_bubbles", width=1200)
-fig.show()
 ```
 
 ```{code-cell}
-from dimcat.steps import analyzers
-fig = notes.plot()
-save_figure_as(fig, "complete_pitch_class_distribution_absolute_bars", height=800)
-fig.show()
-```
-
-```{code-cell}
-
+grouped_notes.plot_grouped(
+  output=make_output_path("all_pitch_class_distributions_yearwise_bubbles"),
+  title=f"Normalized year-wise pitch-class distributions for {grouped_notes.resource_name.split('.')[0]}",
+  width=1200
+)
 ```
