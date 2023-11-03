@@ -76,19 +76,23 @@ corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors
 ```
 
 ```{code-cell}
-gpb = all_metadata.groupby("workTitle", sort=False)
-n_movements = gpb.size().rename('movements')
-length_per_concert = gpb.length_qb.sum().round().astype('Int64').rename("length")
-measures_per_concert = gpb.last_mn.sum().rename("measures")
-notes_per_concert = gpb.n_onsets.sum().rename("notes")
-labels_per_concert = gpb.label_count.sum().rename("labels")
-overview_table = pd.concat([
-  n_movements,
-  measures_per_concert,
-  length_per_concert,
-  notes_per_concert,
-  labels_per_concert
-], axis=1)
+def make_overview_table(metadata: pd.DataFrame, groupby):
+    gpb = metadata.groupby(groupby, sort=False)
+    n_movements = gpb.size().rename('movements')
+    length_per_concert = gpb.length_qb.sum().round().astype('Int64').rename("length")
+    measures_per_concert = gpb.last_mn.sum().rename("measures")
+    notes_per_concert = gpb.n_onsets.sum().rename("notes")
+    labels_per_concert = gpb.label_count.sum().rename("labels")
+    overview_table = pd.concat([
+      n_movements,
+      measures_per_concert,
+      length_per_concert,
+      notes_per_concert,
+      labels_per_concert
+    ], axis=1)
+    return overview_table
+
+overview_table = make_overview_table(all_metadata, "workTitle")
 overview_table
 ```
 
