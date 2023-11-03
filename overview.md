@@ -157,19 +157,23 @@ fig.show()
 ```{code-cell}
 :tags: [hide-input]
 
-corpus_metadata = summary.groupby(level=0)
-n_pieces = corpus_metadata.size().rename('pieces')
-absolute_numbers = dict(
-    measures = corpus_metadata.last_mn.sum(),
-    length = corpus_metadata.length_qb.sum(),
-    notes = corpus_metadata.notes.sum(),
-    labels = corpus_metadata.label_count.sum(),
-)
-absolute = pd.DataFrame.from_dict(absolute_numbers)
-absolute = pd.concat([n_pieces, absolute], axis=1)
-sum_row = pd.DataFrame(absolute.sum(), columns=['sum']).T
-absolute = pd.concat([absolute, sum_row])
-relative = absolute.div(n_pieces, axis=0)
+def make_overview_table(groupby, group_name="pieces"):
+    n_groups = groupby.size().rename(group_name)
+    absolute_numbers = dict(
+        measures = groupby.last_mn.sum(),
+        length = groupby.length_qb.sum(),
+        notes = groupby.notes.sum(),
+        labels = groupby.label_count.sum(),
+    )
+    absolute = pd.DataFrame.from_dict(absolute_numbers)
+    absolute = pd.concat([n_groups, absolute], axis=1)
+    sum_row = pd.DataFrame(absolute.sum(), columns=['sum']).T
+    absolute = pd.concat([absolute, sum_row])
+    return absolute
+
+absolute = make_overview_table(summary.groupby(level=0))
+normalize_by = absolute.iloc[0]
+relative = absolute.div(normalize_by, axis=0)
 complete_summary = pd.concat([absolute, relative, absolute.iloc[:1,2:].div(absolute.measures, axis=0)], axis=1, keys=['absolute', 'per piece', 'per measure'])
 complete_summary = complete_summary.apply(pd.to_numeric).round(2)
 complete_summary.index = complete_summary.index.map(dict(corpus_names, sum='sum'))
