@@ -37,9 +37,12 @@ from utils import (CORPUS_COLOR_SCALE, STD_LAYOUT, corpus_mean_composition_years
 ```
 
 ```{code-cell}
+from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
 from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def make_output_path(filename):
+    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```

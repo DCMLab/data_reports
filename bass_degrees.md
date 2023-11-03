@@ -273,7 +273,6 @@ slideshow:
   slide_type: ''
 ---
 
-
 key_regions = make_key_region_summary_table(df, 'key_regions')
 key_regions.head(10)
 ```

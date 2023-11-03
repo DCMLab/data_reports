@@ -36,8 +36,7 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, corpus_mean_composition_years,
     remove_none_labels, remove_non_chord_labels, plot_transition_heatmaps
 
 # %%
-from docs.notebooks.utils import DEFAULT_OUTPUT_FORMAT
-from utils import OUTPUT_FOLDER
+from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
 from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "ismir"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
