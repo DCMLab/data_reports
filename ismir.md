@@ -109,6 +109,10 @@ piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(ke
 ```
 
 ```{code-cell}
+keys.plot(output=make_output_path("localkey_distributions"), height=5000)
+```
+
+```{code-cell}
 plot_transition_heatmaps(
   piecewise_localkey_transitions.to_list(),
   top=10,
