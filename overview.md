@@ -93,14 +93,15 @@ print(f"Composition dates range from {int(valid_composed_start.min())} {valid_co
 ### Mean composition years per corpus
 
 ```{code-cell}
+def make_summary(metadata_df):
+    piece_is_annotated = metadata_df.label_count > 0
+    return metadata_df[piece_is_annotated].copy()
+```
+
+```{code-cell}
 :tags: [hide-input]
 
-piece_is_annotated = all_metadata.label_count > 0
-summary = all_metadata[piece_is_annotated].copy()
-summary.length_qb = all_measures[piece_is_annotated].groupby(level=[0,1]).act_dur.sum() * 4.0
-summary = pd.concat([summary,
-                     all_notes[piece_is_annotated].groupby(level=[0,1]).size().rename('notes'),
-                    ], axis=1)
+summary = make_summary(all_metadata)
 bar_data = pd.concat([mean_composition_years.rename('year'),
                       summary.groupby(level='corpus').size().rename('pieces')],
                      axis=1
@@ -162,7 +163,7 @@ def make_overview_table(groupby, group_name="pieces"):
     absolute_numbers = dict(
         measures = groupby.last_mn.sum(),
         length = groupby.length_qb.sum(),
-        notes = groupby.notes.sum(),
+        notes = groupby.n_onsets.sum(),
         labels = groupby.label_count.sum(),
     )
     absolute = pd.DataFrame.from_dict(absolute_numbers)
@@ -172,12 +173,32 @@ def make_overview_table(groupby, group_name="pieces"):
     return absolute
 
 absolute = make_overview_table(summary.groupby(level=0))
-normalize_by = absolute.iloc[0]
+normalize_by = absolute.iloc[:,0]
 relative = absolute.div(normalize_by, axis=0)
 complete_summary = pd.concat([absolute, relative, absolute.iloc[:1,2:].div(absolute.measures, axis=0)], axis=1, keys=['absolute', 'per piece', 'per measure'])
 complete_summary = complete_summary.apply(pd.to_numeric).round(2)
 complete_summary.index = complete_summary.index.map(dict(corpus_names, sum='sum'))
 complete_summary
+```
+
+```{code-cell}
+public = dc.Dataset.from_package("/home/laser/git/meta_repositories/dcml_corpora/dcml_corpora.datapackage.json")
+public
+```
+
+```{code-cell}
+def summarize_dataset(D):
+    all_metadata = D.get_metadata()
+    summary = make_summary(all_metadata)
+    return make_overview_table(summary.groupby(level=0))
+
+dcml_corpora = summarize_dataset(public)
+print(dcml_corpora.astype(int).to_markdown())
+```
+
+```{code-cell}
+distant_listening = summarize_dataset(D)
+print(distant_listening.astype(int).to_markdown())
 ```
 
 ### Measures
