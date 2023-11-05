@@ -39,8 +39,94 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, DEFAULT_COLUMNS, TYPE_COLORS, 
 ```
 
 ```{code-cell}
+from typing import Optional
+import plotly.graph_objects as go
+from kaleido.scopes.plotly import PlotlyScope
+from utils import DEFAULT_OUTPUT_FORMAT
+AVAILABLE_FIGURE_FORMATS = PlotlyScope._all_formats
+
+def write_image(
+    fig: go.Figure,
+    filename: str,
+    directory: Optional[str] = None,
+    format=None,
+    scale=None,
+    width=2880,
+    height=1620,
+    validate=True,
+):
+    """
+    Convert a figure to a static image and write it to a file.
+    Args:
+        fig:
+            Figure object or dict representing a figure
+        file: str or writeable
+            A string representing a local file path or a writeable object
+            (e.g. a pathlib.Path object or an open file descriptor)
+        format: str or None
+            The desired image format. One of
+              - 'png'
+              - 'jpg' or 'jpeg'
+              - 'webp'
+              - 'svg'
+              - 'pdf'
+              - 'eps' (Requires the poppler library to be installed and on the PATH)
+            If not specified and `file` is a string then this will default to the
+            file extension. If not specified and `file` is not a string then this
+            will default to:
+                - `plotly.io.kaleido.scope.default_format` if engine is "kaleido"
+                - `plotly.io.orca.config.default_format` if engine is "orca"
+        width: int or None
+            The width of the exported image in layout pixels. If the `scale`
+            property is 1.0, this will also be the width of the exported image
+            in physical pixels.
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_width` if engine is "kaleido"
+                - `plotly.io.orca.config.default_width` if engine is "orca"
+        height: int or None
+            The height of the exported image in layout pixels. If the `scale`
+            property is 1.0, this will also be the height of the exported image
+            in physical pixels.
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_height` if engine is "kaleido"
+                - `plotly.io.orca.config.default_height` if engine is "orca"
+        scale: int or float or None
+            The scale factor to use when exporting the figure. A scale factor
+            larger than 1.0 will increase the image resolution with respect
+            to the figure's layout pixel dimensions. Whereas as scale factor of
+            less than 1.0 will decrease the image resolution.
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_scale` if engine is "kaleido"
+                - `plotly.io.orca.config.default_scale` if engine is "orca"
+        validate: bool
+            True if the figure should be validated before being converted to
+            an image, False otherwise.
+    """
+    fname, fext = os.path.splitext(filename)
+    if format is None:
+        has_allowed_extension = fext.lstrip(".") in AVAILABLE_FIGURE_FORMATS
+        output_filename = (
+            filename
+            if has_allowed_extension
+            else f"{filename}.{DEFAULT_OUTPUT_FORMAT.lstrip('.')}"
+        )
+    else:
+        output_filename = f"{filename}.{format.lstrip('.')}"
+    if directory is None:
+        output_filepath = os.path.join(OUTPUT_FOLDER, output_filename)
+    else:
+        output_filepath = os.path.join(directory, output_filename)
+    fig.write_image(
+        file=output_filepath,
+        width=width,
+        height=height,
+        scale=scale,
+        validate=validate,
+    )
+
+
+
 from utils import OUTPUT_FOLDER
-from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "reduction"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
