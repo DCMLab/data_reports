@@ -1,6 +1,6 @@
 ---
 jupytext:
-  formats: ipynb,md:myst
+  formats: md:myst,ipynb,py:percent
   text_representation:
     extension: .md
     format_name: myst
@@ -21,8 +21,9 @@ from git import Repo
 import os
 from collections import Counter
 import pandas as pd
-from utils import grams, plot_cum, sorted_gram_counts, transition_matrix, STD_LAYOUT, print_heading, resolve_dir, \
+from utils import grams, plot_cum, sorted_gram_counts, STD_LAYOUT, print_heading, resolve_dir, \
   get_repo_name, remove_none_labels, remove_non_chord_labels
+from dimcat.utils import make_transition_matrix
 import ms3
 import dimcat as dc
 pd.set_option('display.max_rows', 1000)
@@ -154,19 +155,19 @@ dict(sorted(c.items(), key=lambda a: a[1], reverse=True)[:k])
 ### Absolute Counts (read from index to column)
 
 ```{code-cell}
-transition_matrix(chord_successions, k=k, dist_only=True)
+make_transition_matrix(chord_successions, k=k, distinct_only=True)
 ```
 
 ### Normalized Counts
 
 ```{code-cell}
-transition_matrix(chord_successions, k=k, dist_only=True, normalize=True, decimals=2)
+make_transition_matrix(chord_successions, k=k, distinct_only=True, normalize=True, decimals=2)
 ```
 
 ### Entropy
 
 ```{code-cell}
-transition_matrix(chord_successions, k=k, IC=True, dist_only=True, smooth=1, decimals=2)
+make_transition_matrix(chord_successions, k=k, IC=True, distinct_only=True, smooth=1, decimals=2)
 ```
 
 ### Minor vs. Major
@@ -184,11 +185,11 @@ for chords, is_minor in zip(key_chords.values(), region_is_minor.values()):
 ```
 
 ```{code-cell}
-transition_matrix(major, k=k, dist_only=True, normalize=True)
+make_transition_matrix(major, k=k, distinct_only=True, normalize=True)
 ```
 
 ```{code-cell}
-transition_matrix(minor, k=k, dist_only=True, normalize=True)
+make_transition_matrix(minor, k=k, distinct_only=True, normalize=True)
 ```
 
 ### Chord progressions without suspensions

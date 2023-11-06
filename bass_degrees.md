@@ -1,6 +1,6 @@
 ---
 jupytext:
-  formats: ipynb,md:myst
+  formats: md:myst,ipynb,py:percent
   text_representation:
     extension: .md
     format_name: myst
@@ -272,7 +272,6 @@ editable: true
 slideshow:
   slide_type: ''
 ---
-
 key_regions = make_key_region_summary_table(df, 'key_regions')
 key_regions.head(10)
 ```

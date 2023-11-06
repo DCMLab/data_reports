@@ -12,16 +12,15 @@ import numpy as np
 # import modin.pandas as pd
 import pandas as pd
 import plotly.express as px
-import seaborn as sns
 from git import Repo
 from IPython.display import display
-from kaleido.scopes.plotly import PlotlyScope
-from matplotlib import gridspec as gridspec
-from matplotlib import pyplot as plt
 from plotly import graph_objects as go
 from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
-from scipy.stats import entropy
+from matplotlib.figure import Figure as MatplotlibFigure
+
+from dimcat.plotting import make_transition_heatmap_plots
+from dimcat.utils import make_transition_matrix
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
@@ -314,34 +313,6 @@ def get_repo_name(repo: Repo) -> str:
     return remote.url.split(".git")[0].split("/")[-1]
 
 
-def grams(lists_of_symbols, n=2, to_string: bool = False):
-    """Returns a list of n-gram tuples for given list. List can be nested.
-
-    Use nesting to exclude transitions between pieces or other units.
-
-    """
-    if nest_level(lists_of_symbols) > 1:
-        ngrams = []
-        no_sublists = []
-        for item in lists_of_symbols:
-            if isinstance(item, list):
-                ngrams.extend(grams(item, n, to_string=to_string))
-            else:
-                no_sublists.append(item)
-        if len(no_sublists) > 0:
-            ngrams.extend(grams(no_sublists, n, to_string=to_string))
-        return ngrams
-    else:
-        # if len(l) < n:
-        #    print(f"{l} is too small for a {n}-gram.")
-        # ngrams = [l[i:(i+n)] for i in range(len(l)-n+1)]
-        ngrams = list(zip(*(lists_of_symbols[i:] for i in range(n))))
-        # convert to tuple of strings
-        if to_string:
-            return [tuple(str(g) for g in gram) for gram in ngrams]
-        else:
-            return ngrams
-
 
 def load_facets(
     path,
@@ -425,211 +396,7 @@ def make_sunburst(
     return fig
 
 
-def make_transition_heatmap_plots(
-    left_bigrams: pd.DataFrame,
-    left_unigrams: pd.Series,
-    right_bigrams: Optional[pd.DataFrame] = None,
-    right_unigrams: Optional[pd.Series] = None,
-    top: int = 30,
-    two_col_width=12,
-    frequencies: bool = False,
-    fontsize=8,
-    labelsize=12,
-    top_margin=0.99,
-    bottom_margin=0.10,
-    right_margin=0.005,
-    left_margin=0.085,
-):
-    """
 
-    Args:
-        left_unigrams:
-        right_unigrams:
-        left_bigrams:
-        right_bigrams:
-        top:
-        two_col_width:
-        frequencies: If set to True, the values of the unigram Series are interpreted as normalized frequencies and
-            are multiplied with 100 for display on the y-axis.
-
-    """
-    # set custom context for this plot
-    with plt.rc_context(
-        {
-            # disable spines for entropy bars
-            "axes.spines.top": False,
-            "axes.spines.left": False,
-            "axes.spines.bottom": False,
-            "axes.spines.right": False,
-            "font.family": "sans-serif",
-        }
-    ):
-
-        def make_gridspec(
-            left,
-            right,
-        ):
-            gridspec_ratio = [0.25, 2.0]
-            hspace = None
-            wspace = 0.0
-            gs = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
-            gs.update(
-                left=left,
-                right=right,
-                wspace=wspace,
-                hspace=hspace,
-                bottom=bottom_margin,
-                top=top_margin,
-            )
-            return gs
-
-        def add_entropy_bars(
-            unigrams,
-            bigrams,
-            axis,
-        ):
-            # settings for margins etc.
-            barsize = [0.0, 0.7]
-            s_min = pd.Series(
-                (
-                    bigrams.apply(lambda x: entropy(x, base=2), axis=1)
-                    / np.log2(bigrams.shape[0])
-                )[:top].values,
-                index=[
-                    i + f" ({str(round(fr * 100, 1))})" if frequencies else i
-                    for i, fr in zip(bigrams.index, unigrams[:top].values)
-                ],
-            )
-            ax = s_min.plot(kind="barh", ax=axis, color="k")
-
-            # create a list to collect the plt.patches data
-            totals_min = []
-
-            # find the values and append to list
-            for i in ax.patches:
-                totals_min.append(round(i.get_width(), 2))
-
-            for i, p in enumerate(ax.patches):
-                axis.text(
-                    totals_min[i] - 0.01,
-                    p.get_y() + 0.3,
-                    f"${totals_min[i]}$",
-                    color="w",
-                    fontsize=fontsize,
-                    verticalalignment="center",
-                    horizontalalignment="left",
-                )
-            axis.set_xlim(barsize)
-
-            axis.invert_yaxis()
-            axis.invert_xaxis()
-            axis.set_xticklabels([])
-            axis.tick_params(
-                axis="both",  # changes apply to the x-axis
-                which="both",  # both major and minor ticks are affected
-                left=False,  # ticks along the bottom edge are off
-                right=False,
-                bottom=False,
-                labelleft=True,
-                labelsize=labelsize,
-            )
-
-        def add_heatmap(transition_value_matrix, axis, colormap):
-            sns.heatmap(
-                transition_value_matrix,
-                annot=True,
-                fmt=".1f",
-                cmap=colormap,
-                ax=axis,
-                # vmin=vmin,
-                # vmax=vmax,
-                annot_kws={"fontsize": fontsize, "rotation": 60},
-                cbar=False,
-            )
-            axis.set_yticks([])
-            axis.tick_params(bottom=False)
-
-        single_col_width = two_col_width / 2
-        plot_two_sides = right_bigrams is not None
-        if plot_two_sides:
-            assert (
-                right_unigrams is not None
-            ), "right_unigrams must be provided if right_bigrams is provided"
-            fig = plt.figure(figsize=(two_col_width, single_col_width))
-            gs1 = make_gridspec(
-                left=left_margin,
-                right=0.5 - right_margin,
-            )
-        else:
-            fig = plt.figure(figsize=(single_col_width, single_col_width))
-            gs1 = make_gridspec(
-                left=left_margin,
-                right=1.0 - right_margin,
-            )
-
-        # LEFT-HAND SIDE
-
-        ax1 = plt.subplot(gs1[0, 0])
-
-        add_entropy_bars(
-            left_unigrams,
-            left_bigrams,
-            ax1,
-        )
-
-        ax2 = plt.subplot(gs1[0, 1])
-
-        add_heatmap(
-            left_bigrams[left_bigrams > 0].iloc[
-                :top, :top
-            ],  # only display non-zero values
-            axis=ax2,
-            colormap="Blues",
-        )
-
-        # RIGHT-HAND SIDE
-
-        plot_two_sides = right_bigrams is not None
-        if plot_two_sides:
-            assert (
-                right_unigrams is not None
-            ), "right_unigrams must be provided if right_bigrams is provided"
-
-            gs2 = make_gridspec(
-                left=0.5 + left_margin,
-                right=1.0 - right_margin,
-            )
-
-            ax3 = plt.subplot(gs2[0, 0])
-            add_entropy_bars(
-                right_unigrams,
-                right_bigrams,
-                ax3,
-            )
-
-            ax4 = plt.subplot(gs2[0, 1])
-            add_heatmap(
-                right_bigrams[right_bigrams > 0].iloc[:top, :top],
-                axis=ax4,
-                colormap="Reds",
-            )
-
-        fig.align_labels()
-    return fig
-
-
-def nest_level(obj, include_tuples=False):
-    """Recursively calculate the depth of a nested list."""
-    if obj.__class__ != list:
-        if include_tuples:
-            if obj.__class__ != tuple:
-                return 0
-        else:
-            return 0
-    max_level = 0
-    for item in obj:
-        max_level = max(max_level, nest_level(item, include_tuples=include_tuples))
-    return max_level + 1
 
 
 def plot_cum(
@@ -740,9 +507,9 @@ def plot_transition_heatmaps(
     remove_repeated: bool = False,
     sort_scale_degrees: bool = False,
     **kwargs,
-):
-    left_bigrams = transition_matrix(
-        full_grams_left, dist_only=remove_repeated, normalize=frequencies, percent=True
+) -> MatplotlibFigure:
+    left_transition_matrix = make_transition_matrix(
+        full_grams_left, distinct_only=remove_repeated, normalize=frequencies, percent=True
     )
     left_unigrams = pd.Series(Counter(sum(full_grams_left, [])))
     if sort_scale_degrees:
@@ -750,18 +517,18 @@ def plot_transition_heatmaps(
     else:
         left_unigrams = left_unigrams.sort_values(ascending=False)
     left_unigrams_norm = left_unigrams / left_unigrams.sum()
-    ix_intersection = left_unigrams_norm.index.intersection(left_bigrams.index)
-    col_intersection = left_unigrams_norm.index.intersection(left_bigrams.columns)
-    left_bigrams = left_bigrams.loc[ix_intersection, col_intersection]
+    ix_intersection = left_unigrams_norm.index.intersection(left_transition_matrix.index)
+    col_intersection = left_unigrams_norm.index.intersection(left_transition_matrix.columns)
+    left_transition_matrix = left_transition_matrix.loc[ix_intersection, col_intersection]
     left_unigrams_norm = left_unigrams_norm.loc[ix_intersection]
 
     if full_grams_right is None:
-        right_bigrams = None
+        right_transition_matrix = None
         right_unigrams_norm = None
     else:
-        right_bigrams = transition_matrix(
+        right_transition_matrix = make_transition_matrix(
             full_grams_right,
-            dist_only=remove_repeated,
+            distinct_only=remove_repeated,
             normalize=frequencies,
             percent=True,
         )
@@ -771,15 +538,15 @@ def plot_transition_heatmaps(
         else:
             right_unigrams = right_unigrams.sort_values(ascending=False)
         right_unigrams_norm = right_unigrams / right_unigrams.sum()
-        ix_intersection = right_unigrams_norm.index.intersection(right_bigrams.index)
-        col_intersection = right_unigrams_norm.index.intersection(right_bigrams.columns)
-        right_bigrams = right_bigrams.loc[ix_intersection, col_intersection]
+        ix_intersection = right_unigrams_norm.index.intersection(right_transition_matrix.index)
+        col_intersection = right_unigrams_norm.index.intersection(right_transition_matrix.columns)
+        right_transition_matrix = right_transition_matrix.loc[ix_intersection, col_intersection]
         right_unigrams_norm = right_unigrams_norm.loc[ix_intersection]
 
-    make_transition_heatmap_plots(
-        left_bigrams,
+    return make_transition_heatmap_plots(
+        left_transition_matrix,
         left_unigrams_norm,
-        right_bigrams,
+        right_transition_matrix,
         right_unigrams_norm,
         frequencies=frequencies,
         **kwargs,
@@ -922,121 +689,6 @@ def sorted_gram_counts(lists_of_symbols, n=2, k=25):
             }
         )
     )
-
-
-
-def transition_matrix(
-    l=None,
-    gs=None,
-    n=2,
-    k=None,
-    smooth=0,
-    normalize=False,
-    IC=False,
-    filt=None,
-    dist_only=False,
-    sort=False,
-    percent=False,
-    decimals=None,
-):
-    """Returns a transition table from a list of symbols.
-
-    Column index is the last item of grams, row index the n-1 preceding items.
-
-    Parameters
-    ----------
-
-    l: list, optional
-        List of elements between which the transitions are calculated.
-        List can be nested.
-    gs: list, optional
-        List of tuples being n-grams
-    n: int, optional
-        get n-grams
-    k: int, optional
-        Number of rows and columns that you want to keep
-    smooth: number, optional
-        initial count value of all transitions
-    normalize: bool, optional
-        set True to divide every row by the sum of the row.
-    IC: bool, optional
-        Set True to calculate information content.
-    filt: list, optional
-        elements you want to exclude from the table. All ngrams containing at least one
-        of the elements will be filtered out.
-    dist_only: bool, optional
-        if True, n-grams consisting only of identical elements are filtered out
-    sort : bool, optional
-        By default, the indices are ordered by gram frequency. Pass True to sort
-        by bigram counts.
-    percent : bool, optional
-        Pass True to multiply the matrix by 100 before rounding to `decimals`
-    decimals : int, optional
-        To how many decimals you want to round the matrix.
-    """
-    if gs is None:
-        assert n > 0, f"Cannot print {n}-grams"
-        gs = grams(l, n=n, to_string=True)
-    elif l is not None:
-        assert True, "Specify either l or gs, not both."
-
-    if filt:
-        gs = list(filter(lambda n: not any(g in filt for g in n), gs))
-    if dist_only:
-        gs = list(filter(lambda tup: any(e != tup[0] for e in tup), gs))
-    ngrams = pd.Series(gs).value_counts()
-    ngrams.index = [(" ".join(t[:-1]), t[-1]) for t in ngrams.index.tolist()]
-    context = pd.Index(set([ix[0] for ix in ngrams.index]))
-    consequent = pd.Index(set([ix[1] for ix in ngrams.index]))
-    df = pd.DataFrame(smooth, index=context, columns=consequent)
-
-    for (cont, cons), n_gram_count in ngrams.items():
-        try:
-            df.loc[cont, cons] += n_gram_count
-        except Exception:
-            continue
-
-    if k is not None:
-        sort = True
-
-    if sort:
-        h_sort = list(df.max().sort_values(ascending=False).index.values)
-        v_sort = list(df.max(axis=1).sort_values(ascending=False).index.values)
-        df = df[h_sort].loc[v_sort]
-    else:
-        frequency = df.sum(axis=1).sort_values(ascending=False).index
-        aux_index = frequency.intersection(df.columns, sort=False)
-        aux_index = aux_index.union(
-            df.columns.difference(frequency, sort=False), sort=False
-        )
-        df = df[aux_index].loc[frequency]
-
-    SU = df.sum(axis=1)
-    if normalize or IC:
-        df = df.div(SU, axis=0)
-
-    if IC:
-        ic = np.log2(1 / df)
-        ic["entropy"] = (ic * df).sum(axis=1)
-        # ############# Identical calculations:
-        # ic['entropy2'] = scipy.stats.entropy(df.transpose(),base=2)
-        # ic['entropy3'] = -(df * np.log2(df)).sum(axis=1)
-        df = ic
-        if normalize:
-            df["entropy"] = df["entropy"] / np.log2(len(df.columns) - 1)
-    # else:
-    #     df['total'] = SU
-
-    if k is not None:
-        df = df.iloc[:k, :k]
-
-    if percent:
-        df.iloc[:, :-1] *= 100
-
-    if decimals is not None:
-        df = df.round(decimals)
-
-    return df
 
 
 def value_count_df(

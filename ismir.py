@@ -25,7 +25,7 @@ import os
 from matplotlib import pyplot as plt
 
 import dimcat as dc
-from dimcat import groupers
+from dimcat import groupers, analyzers
 import ms3
 import pandas as pd
 import plotly.express as px
@@ -57,6 +57,25 @@ D = dc.Dataset.from_package(package_path)
 D
 
 # %%
+bigramAnalyzer = analyzers.BigramAnalyzer(features='keyannotations')
+bigramAnalyzer.get_feature_specs()
+
+# %%
+analyzed_D = bigramAnalyzer.process(D)
+localkey_bigram_table = analyzed_D.get_result()
+localkey_bigram_table
+
+# %%
+localkey_bigram_table.make_bigram_tuples()
+
+# %%
+localkey_bigram_table.plot_grouped()
+
+# %%
+transitions = localkey_bigram_table.get_transitions("localkey_and_mode", as_string=True)
+transitions.p
+
+# %%
 all_metadata = D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
 mean_composition_years = corpus_mean_composition_years(all_metadata)
@@ -72,10 +91,6 @@ corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors
 # %%
 notes = D.get_feature('notes')
 notes.plot_grouped(output=make_output_path("complete_pitch_class_distribution_absolute_bars"), height=800)
-
-# %%
-labels = D.get_feature('harmonylabels')
-labels.plot(output=make_output_path("fun_fun_fun"))
 
 
 # %% [markdown]
@@ -101,6 +116,9 @@ piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(ke
 
 # %%
 keys.plot(output=make_output_path("localkey_distributions"), height=5000)
+
+# %%
+type(fig)
 
 # %%
 plot_transition_heatmaps(
