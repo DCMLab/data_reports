@@ -1,6 +1,6 @@
 ---
 jupytext:
-  formats: ipynb,md:myst
+  formats: md:myst,ipynb,py:percent
   text_representation:
     extension: .md
     format_name: myst
@@ -23,7 +23,7 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import matplotlib.pyplot as plt
-from utils import count_subsequent_occurrences, prettify_counts, resolve_dir, sorted_gram_counts, \
+from utils import prettify_counts, resolve_dir, sorted_gram_counts, make_key_region_summary_table,\
   remove_none_labels, remove_non_chord_labels, plot_transition_heatmaps, DEFAULT_OUTPUT_FORMAT
 import dimcat as dc
 from dimcat.data.resources.utils import make_adjacency_groups
@@ -33,7 +33,8 @@ pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER, write_image
+from utils import OUTPUT_FOLDER
+from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "bass_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -52,7 +53,7 @@ D
 
 ```{code-cell}
 labels = D.get_feature('harmonylabels')
-df = labels.df.droplevel(0)
+df = labels.df
 df.head(20)
 ```
 
@@ -270,56 +271,7 @@ editable: true
 slideshow:
   slide_type: ''
 ---
-def ix_segments2values(df, ix_segments, cols=['bass_degree', 'chord']):
-    res = {col: [] for col in cols}
-    for segment in ix_segments:
-        col2list = get_cols(df, segment, cols)
-        for col in cols:
-            res[col].append(col2list[col])
-    for col, list_of_lists in res.items():
-        res[col] = [' '.join(val) for val in list_of_lists]
-    return res
-
-
-def get_cols(df, ix, cols):
-    if isinstance(cols, str):
-        cols = [cols]
-    df = df.loc[ix]
-    return {col: df[col].to_list() for col in cols}
-
-
-def summarize(df):
-    norepeat = (df.bass_note != df.bass_note.shift()).fillna(True)
-    seconds_asc = count_subsequent_occurrences(df.bass_interval_pc, [1, 2])
-    seconds_asc_vals = ix_segments2values(df, seconds_asc.ixs)
-    seconds_desc = count_subsequent_occurrences(df.bass_interval_pc, [-1, -2])
-    seconds_desc_vals = ix_segments2values(df, seconds_desc.ixs)
-    both = count_subsequent_occurrences(df.bass_interval_pc, [1, 2, -1, -2])
-    both_vals = ix_segments2values(df, both.ixs)
-    n_stepwise = both.n.sum()
-    length_norepeat = norepeat.sum()
-    res = pd.Series({
-        'globalkey': df.globalkey.unique()[0],
-        'localkey': df.localkey.unique()[0],
-        'length': len(df),
-        'length_norepeat': length_norepeat,
-        'n_stepwise': n_stepwise,
-        '%_stepwise': round(100*n_stepwise/length_norepeat, 1),
-        'n_ascending': seconds_asc.n.sum(),
-        'n_descending': seconds_desc.n.sum(),
-        'bd': ' '.join(df.loc[norepeat, 'bass_degree'].to_list()),
-        'stepwise_bd': both_vals['bass_degree'],
-        'stepwise_chords': both_vals['chord'],
-        'ascending_bd': seconds_asc_vals['bass_degree'], #ix_segments2list(df, seconds_asc.ixs),
-        'ascending_chords': seconds_asc_vals['chord'],
-        'descending_bd': seconds_desc_vals['bass_degree'],
-        'descending_chords': seconds_desc_vals['chord'],
-        'ixa': df.index[0],
-        'ixb': df.index[-1]
-    })
-    return res
-
-key_regions = df.groupby('key_regions').apply(summarize)
+key_regions = make_key_region_summary_table(df, 'key_regions')
 key_regions.head(10)
 ```
 

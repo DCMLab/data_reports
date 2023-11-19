@@ -34,7 +34,8 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background,
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER, write_image
+from utils import OUTPUT_FOLDER
+from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "annotations"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -322,9 +323,9 @@ fig = px.bar(maj_min_ratio_per_corpus.reset_index(),
        color="mode",
        text='fraction',
        labels=dict(dataset='', duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
-       category_orders=dict(dataset=chronological_order)
+       category_orders=dict(corpus_name=chronological_corpus_names)
     )
-fig.update_layout(**STD_LAYOUT)
+#fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, 'major_minor_key_segments_corpuswise_bars')
 fig.show()
 ```

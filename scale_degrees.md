@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: corpus_docs
+  display_name: revamp
   language: python
-  name: corpus_docs
+  name: revamp
 ---
 
 # Annotations
@@ -37,7 +37,8 @@ pd.set_option('display.max_columns', 100)
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER, write_image
+from utils import OUTPUT_FOLDER
+from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "scale_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 SUNBURST_WIDTH = 1620
@@ -52,7 +53,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 :tags: [hide-input]
 
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
-CORPUS_PATH = "~/distant_listening_corpus/couperin_concerts"                # for running the notebook locally
+CORPUS_PATH = "~/distant_listening_corpus"                # for running the notebook locally
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
