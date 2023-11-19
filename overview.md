@@ -156,8 +156,6 @@ fig.show()
 ### Overview
 
 ```{code-cell}
-:tags: [hide-input]
-
 def make_overview_table(groupby, group_name="pieces"):
     n_groups = groupby.size().rename(group_name)
     absolute_numbers = dict(
@@ -172,13 +170,9 @@ def make_overview_table(groupby, group_name="pieces"):
     absolute = pd.concat([absolute, sum_row])
     return absolute
 
-absolute = make_overview_table(summary.groupby(level=0))
-normalize_by = absolute.iloc[:,0]
-relative = absolute.div(normalize_by, axis=0)
-complete_summary = pd.concat([absolute, relative, absolute.iloc[:1,2:].div(absolute.measures, axis=0)], axis=1, keys=['absolute', 'per piece', 'per measure'])
-complete_summary = complete_summary.apply(pd.to_numeric).round(2)
-complete_summary.index = complete_summary.index.map(dict(corpus_names, sum='sum'))
-complete_summary
+absolute = make_overview_table(summary.groupby("workTitle"))
+#print(absolute.astype(int).to_markdown())
+absolute.astype(int)
 ```
 
 ```{code-cell}
