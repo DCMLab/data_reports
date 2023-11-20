@@ -27,10 +27,13 @@ import matplotlib.pyplot as plt
 import ms3
 import pandas as pd
 import plotly.express as px
+from dimcat import groupers
 from dimcat.data.resources.utils import make_adjacency_groups
+from dimcat.plotting import write_image
 
 from utils import (
     DEFAULT_OUTPUT_FORMAT,
+    OUTPUT_FOLDER,
     make_key_region_summary_table,
     plot_transition_heatmaps,
     prettify_counts,
@@ -43,13 +46,13 @@ from utils import (
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
-from dimcat.plotting import write_image
-
 # %%
-from utils import OUTPUT_FOLDER
-
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "bass_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+
+
+def make_output_path(filename):
+    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
 
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -67,16 +70,32 @@ D = dc.Dataset.from_package(package_path)
 D
 
 # %% [markdown]
-# **All labels**
+# **Grouping data**
+
+# %%
+grouped_D = groupers.ModeGrouper().process(D)
+grouped_D
+
+# %%
+bass_notes = grouped_D.get_feature("bassnotes")
+bass_notes.df
+
+# %%
+bass_notes.plot(
+    output=make_output_path("piecewise_bass_degrees"), width=1100, height=2500
+)
+
+# %%
+bass_notes.plot_grouped(output=make_output_path("bass_degrees_major_minor"))
+
+# %% [markdown]
+# ## Bass degree unigrams
+# As expressed by the annotation labels.
 
 # %%
 labels = D.get_feature("harmonylabels")
 df = labels.df
 df.head(20)
-
-# %% [markdown]
-# ## Bass degree unigrams
-# As expressed by the annotation labels.
 
 # %%
 bd = df.bass_note.value_counts()
@@ -124,7 +143,8 @@ save_figure_as(fig, "bass_degree_unigrams_minor")
 fig.show()
 
 # %% [markdown]
-# **Note: When dropping immediate repetitions of the same bass degree (see transition matrices below), minor segments, too, have 1 as the most frequent bass degree. This can be linked to frequent suspensions over bass degree 5.**
+# **Note: When dropping immediate repetitions of the same bass degree (see transition matrices below), minor segments,
+# too, have 1 as the most frequent bass degree. This can be linked to frequent suspensions over bass degree 5.**
 
 # %% [markdown]
 # ## Intervals between adjacent bass notes
@@ -159,7 +179,8 @@ df[df.key_regions.isin(selected)]
 
 # %% [markdown]
 # **Delete @none labels**
-# This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
+# This creates progressions between the label before and after the `@none` label that might not actually be perceived
+# as transitions!
 
 # %%
 df = remove_none_labels(df)

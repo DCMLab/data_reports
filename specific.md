@@ -121,11 +121,17 @@ bass_notes.df
 ```
 
 ```{code-cell}
-bass_notes.get_default_groupby()
+bass_notes.plot_grouped(output=make_output_path("bass_note_distribution_couperin_corelli"), height=1000)
 ```
 
 ```{code-cell}
-bass_notes.plot_grouped(output=make_output_path("bass_note_distribution_couperin_corelli.png"), height=1000)
+bass_note_distribution = bass_notes.get_default_analysis()
+bass_note_distribution
+```
+
+```{code-cell}
+print(f"Fraction covered by P1, P4, and P5:")
+bass_note_distribution.combine().loc[pd.IndexSlice[:,:,[-1,0,1]]].groupby(level=[0,1]).proportion.sum().mul(100).round(1).astype(str).add(" %")
 ```
 
 ```{code-cell}
