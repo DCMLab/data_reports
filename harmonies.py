@@ -16,20 +16,22 @@
 # %% [markdown]
 # # Harmonies
 
+# %%
+# %load_ext autoreload
+# %autoreload 2
 import os
 from collections import Counter
+from statistics import mean
 
 import dimcat as dc
 import ms3
 import pandas as pd
+from dimcat.plotting import write_image
 from dimcat.utils import grams, make_transition_matrix
-
-# %%
-# %load_ext autoreload
-# %autoreload 2
 from git import Repo
 
 from utils import (
+    OUTPUT_FOLDER,
     STD_LAYOUT,
     get_repo_name,
     plot_cum,
@@ -43,11 +45,7 @@ from utils import (
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
-from dimcat.plotting import write_image
-
 # %%
-from utils import OUTPUT_FOLDER
-
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "harmonies"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -82,12 +80,13 @@ labels
 metadata = D.get_metadata()
 is_annotated_mask = metadata.label_count > 0
 is_annotated_index = dc.PieceIndex(metadata.index[is_annotated_mask])
-annotated_notes = notes[is_annotated_index]
+annotated_notes = D.get_feature("notes").subselect(is_annotated_index)
 print(f"The annotated pieces have {len(annotated_notes)} notes.")
 
 # %% [markdown]
 # **Delete @none labels**
-# This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
+# This creates progressions between the label before and after the `@none` label that might not actually be perceived
+# as transitions!
 
 # %%
 df = remove_none_labels(labels.df)
@@ -138,7 +137,8 @@ fig
 # %%
 minor, major = df[df.localkey_is_minor], df[~df.localkey_is_minor]
 print(
-    f"{len(major)} tokens ({len(major.chord.unique())} types) in major and {len(minor)} ({len(minor.chord.unique())} types) in minor."
+    f"{len(major)} tokens ({len(major.chord.unique())} types) in major and {len(minor)} "
+    f"({len(minor.chord.unique())} types) in minor."
 )
 
 # %%
@@ -161,7 +161,8 @@ fig.show()
 
 # %%
 print(
-    f"{len(major)} tokens ({len(major.chord.unique())} types) in major and {len(minor)} ({len(minor.chord.unique())} types) in minor."
+    f"{len(major)} tokens ({len(major.chord.unique())} types) in major and {len(minor)} "
+    f"({len(minor.chord.unique())} types) in minor."
 )
 
 # %%
@@ -219,9 +220,14 @@ make_transition_matrix(
 
 # %%
 region_is_minor = (
-    df.groupby("key_regions").localkey_is_minor.unique().map(lambda l: l[0]).to_dict()
+    df.groupby("key_regions")
+    .localkey_is_minor.unique()
+    .map(lambda values: values[0])
+    .to_dict()
 )
-region_key = df.groupby("key_regions").localkey.unique().map(lambda l: l[0]).to_dict()
+region_key = (
+    df.groupby("key_regions").localkey.unique().map(lambda values: values[0]).to_dict()
+)
 
 # %%
 key_chords = {
@@ -276,8 +282,9 @@ plain_chords_per_segment = {k: len(v) for k, v in key_plain_chords.items()}
 
 # %%
 print(
-    f"The local key segments have {sum(plain_chords_per_segment.values())} 'plain chords' without immediate repetitions, \
-yielding {len(grams(list(key_plain_chords.values())))} bigrams.\n{sum(map(len, major_plain))} chords are in major, {sum(map(len, minor_plain))} in minor."
+    f"The local key segments have {sum(plain_chords_per_segment.values())} 'plain chords' without immediate "
+    f"repetitions, yielding {len(grams(list(key_plain_chords.values())))} bigrams.\n{sum(map(len, major_plain))} "
+    f"chords are in major, {sum(map(len, minor_plain))} in minor."
 )
 
 # %%
@@ -295,10 +302,9 @@ yielding {len(grams(list(key_plain_chords.values())))} bigrams.\n{sum(map(len, m
 }
 
 # %%
-from statistics import mean
-
 print(
-    f"Segments being in the same local key have a mean length of {round(mean(plain_chords_per_segment.values()), 2)} plain chords."
+    f"Segments being in the same local key have a mean length of {round(mean(plain_chords_per_segment.values()), 2)} "
+    f"plain chords."
 )
 
 # %% [markdown]
@@ -330,7 +336,7 @@ sorted_gram_counts(minor_plain, 5)
 
 # %%
 MEMORY = {}
-l = list(key_plain_chords.values())
+chord_progressions = list(key_plain_chords.values())
 
 
 def look_for(n_gram):
@@ -338,7 +344,7 @@ def look_for(n_gram):
     if n in MEMORY:
         n_grams = MEMORY[n]
     else:
-        n_grams = grams(l, n)
+        n_grams = grams(chord_progressions, n)
         MEMORY[n] = n_grams
     matches = n_grams.count(n_gram)
     total = len(n_grams)

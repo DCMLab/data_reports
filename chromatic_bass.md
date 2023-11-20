@@ -19,16 +19,14 @@ import os
 import ms3
 import pandas as pd
 from git import Repo
-
-from utils import cnt, print_heading, resolve_dir, get_repo_name, remove_none_labels, remove_non_chord_labels
+from dimcat.plotting import write_image
+from utils import OUTPUT_FOLDER, count_subsequent_occurrences, print_heading, resolve_dir, get_repo_name, remove_none_labels, remove_non_chord_labels
 
 pd.options.display.max_columns = 50
 pd.options.display.max_rows = 100
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER
-from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "chromatic_bass"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
