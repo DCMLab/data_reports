@@ -30,16 +30,18 @@ from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
+from dimcat.steps import groupers
 
-from utils import (CORPUS_COLOR_SCALE, corpus_mean_composition_years,
-                   get_corpus_display_name, get_repo_name, print_heading, resolve_dir)
+from utils import get_repo_name, print_heading, resolve_dir
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER
+from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
 from dimcat.plotting import write_image
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "couperin_article"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def make_output_path(filename):
+    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
@@ -55,25 +57,6 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
-```
-
-```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide data loading
-  code_prompt_show: Show data loading
-tags: [hide-cell]
----
-all_metadata = ms3.load_tsv("couperin_metadata.tsv", index_col=0)
-assert len(all_metadata) > 0, "No pieces selected for analysis."
-all_notes = D.get_feature('notes').df
-all_measures = D.get_feature('measures').df
-mean_composition_years = corpus_mean_composition_years(all_metadata)
-chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
-chronological_corpus_names = list(corpus_names.values())
-corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
 ```
 
 ```{code-cell}
@@ -93,6 +76,7 @@ def make_overview_table(metadata: pd.DataFrame, groupby):
     ], axis=1)
     return overview_table
 
+all_metadata = D.get_metadata().df
 overview_table = make_overview_table(all_metadata, "workTitle")
 overview_table
 ```
@@ -104,11 +88,46 @@ absolute
 ```
 
 ```{code-cell}
-relative = absolute.div(n_movements, axis=0).round(1)
-complete_overview_table = pd.concat([absolute, relative], axis=1, keys=['per concert', 'per piece'])
-complete_overview_table
+absolute.to_clipboard()
 ```
 
 ```{code-cell}
-complete_overview_table.to_clipboard()
+import logging
+L = logging.getLogger("dimcat")
+L.setLevel(logging.WARNING)
+if not L.handlers:
+  L.addHandler(logging.StreamHandler())
+L.debug("TEST")
+```
+
+```{code-cell}
+package_path = resolve_dir("../couperin_corelli.datapackage.json")
+D = dc.Dataset.from_package(package_path)
+D
+```
+
+```{code-cell}
+CorpusG = groupers.CorpusGrouper()
+grouped_D = dc.Pipeline([
+    groupers.ModeGrouper(),
+    CorpusG
+]).process(D)
+grouped_D
+```
+
+```{code-cell}
+bass_notes = grouped_D.get_feature("bassnotes")
+bass_notes.df
+```
+
+```{code-cell}
+bass_notes.get_default_groupby()
+```
+
+```{code-cell}
+bass_notes.plot_grouped(output=make_output_path("bass_note_distribution_couperin_corelli.png"), height=1000)
+```
+
+```{code-cell}
+
 ```
