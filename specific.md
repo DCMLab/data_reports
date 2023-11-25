@@ -60,6 +60,11 @@ D
 ```
 
 ```{code-cell}
+notes = D.get_feature("notes")
+notes.plot()
+```
+
+```{code-cell}
 def make_overview_table(metadata: pd.DataFrame, groupby):
     gpb = metadata.groupby(groupby, sort=False)
     n_movements = gpb.size().rename('movements')
@@ -117,7 +122,12 @@ grouped_D
 
 ```{code-cell}
 bass_notes = grouped_D.get_feature("bassnotes")
-bass_notes.df
+result = bass_notes.get_default_analysis()
+result
+```
+
+```{code-cell}
+result.combine_results()
 ```
 
 ```{code-cell}
@@ -130,8 +140,17 @@ bass_note_distribution
 ```
 
 ```{code-cell}
+keys = grouped_D.get_feature("keyannotations")
+keys
+```
+
+```{code-cell}
+keys.plot_grouped()
+```
+
+```{code-cell}
 print(f"Fraction covered by P1, P4, and P5:")
-bass_note_distribution.combine().loc[pd.IndexSlice[:,:,[-1,0,1]]].groupby(level=[0,1]).proportion.sum().mul(100).round(1).astype(str).add(" %")
+bass_note_distribution.combine_results().loc[pd.IndexSlice[:,:,[-1,0,1]]].groupby(level=[0,1]).proportion.sum().mul(100).round(1).astype(str).add(" %")
 ```
 
 ```{code-cell}
