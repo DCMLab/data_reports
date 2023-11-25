@@ -98,7 +98,6 @@ result.plot_grouped()
 ```
 
 ```{code-cell}
-
 from ms3 import roman_numeral2fifths, transform
 
 keys_segmented = dc.LocalKeySlicer().process_data(D)

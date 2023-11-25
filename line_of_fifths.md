@@ -44,7 +44,7 @@ def make_output_path(filename):
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir("dcml_corpora.datapackage.json")
+package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -74,20 +74,11 @@ la_mer_notes.plot_grouped(
 grouped_la_mer = groupers.MeasureGrouper().process(la_mer_notes)
 grouped_la_mer.plot_grouped(
   title="Normalized measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
-  output=make_output_path("debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles"), 
+  output=make_output_path("debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles"),
   width=1200)
 ```
 
 ## Pitch class distributions for the datapackage
-
-```{code-cell}
-result = notes.get_default_analysis()
-result
-```
-
-```{code-cell}
-result.unstack(fill_value=0.0).sum().rename("duration_qb")
-```
 
 ```{code-cell}
 notes = D.get_feature("notes")
