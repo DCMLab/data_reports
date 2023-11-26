@@ -126,22 +126,13 @@ grouped_D
 ```
 
 ```{code-cell}
-bass_notes = grouped_D.get_feature("bassnotes")
+bass_notes = grouped_D.get_feature(dict(dtype="BassNotes", format="SCALE_DEGREE_MAJOR"))
 result = bass_notes.get_default_analysis()
 result
 ```
 
 ```{code-cell}
-result.combine_results()
-```
-
-```{code-cell}
-bass_notes.plot_grouped(output=make_output_path("bass_note_distribution_couperin_corelli"), height=1000)
-```
-
-```{code-cell}
-bass_note_distribution = bass_notes.get_default_analysis()
-bass_note_distribution
+result.make_bar_plot(output=make_output_path("bass_note_distribution_couperin_corelli"), height=1000)
 ```
 
 ```{code-cell}
