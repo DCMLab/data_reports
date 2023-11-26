@@ -39,9 +39,6 @@ STD_LAYOUT = dict(
     yaxis=dict(gridcolor="lightgrey"),
 )
 
-CADENCE_COLORS = dict(
-    zip(("HC", "PAC", "PC", "IAC", "DC", "EC"), colorlover.scales["6"]["qual"]["Set1"])
-)
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
 
 CORPUS_NAMES = {

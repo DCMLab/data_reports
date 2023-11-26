@@ -27,13 +27,12 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dimcat.plotting import write_image
+from dimcat.plotting import write_image, CADENCE_COLORS
 from dimcat.steps import groupers, slicers
 from git import Repo
 
 # %% tags=["hide-input"]
 from utils import (
-    CADENCE_COLORS,
     OUTPUT_FOLDER,
     STD_LAYOUT,
     get_corpus_display_name,
