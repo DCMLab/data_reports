@@ -1,28 +1,24 @@
----
-jupytext:
-  formats: md:myst,ipynb,py:percent
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.15.2
-kernelspec:
-  display_name: revamp
-  language: python
-  name: revamp
----
+# ---
+# jupyter:
+#   jupytext:
+#     formats: md:myst,ipynb,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.15.2
+#   kernelspec:
+#     display_name: revamp
+#     language: python
+#     name: revamp
+# ---
 
-# Cadences
+# %% [markdown]
+# # Cadences
 
-```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide imports
-  code_prompt_show: Show imports
-tags: [hide-cell]
----
-%load_ext autoreload
-%autoreload 2
+# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
+# %load_ext autoreload
+# %autoreload 2
 import os
 from collections import Counter, defaultdict
 
@@ -34,11 +30,8 @@ import plotly.graph_objects as go
 from dimcat.plotting import write_image
 from dimcat.steps import groupers, slicers
 from git import Repo
-```
 
-```{code-cell}
-:tags: [hide-input]
-
+# %% tags=["hide-input"]
 from utils import (
     CADENCE_COLORS,
     OUTPUT_FOLDER,
@@ -68,37 +61,33 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
-```
 
-```{code-cell}
+# %%
 cadence_labels = D.get_feature("cadencelabels")
 cadence_labels
-```
 
-```{code-cell}
+# %%
 cadence_labels.plot_grouped(
     title="Distribution of cadence types over the DLC",
     output="all_cadences_pie",
     width=1000,
     height=1000,
 )
-```
 
-### Metadata
+# %% [markdown]
+# ### Metadata
 
-```{code-cell}
+# %%
 cadence_filter = groupers.HasCadenceAnnotations()
 cadence_filter.fit_to_dataset(D)
 hascadence = cadence_filter.grouped_units.filter(False, drop_level=True)
-```
 
-```{code-cell}
+# %%
 all_metadata = D.get_metadata()
 hascadence_metadata = all_metadata.subselect(hascadence)
 hascadence_metadata.head()
-```
 
-```{code-cell}
+# %%
 mean_composition_years = (
     hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
 )
@@ -120,43 +109,42 @@ fig = px.bar(
     title="Pieces contained in the dataset",
 )
 fig.update_traces(width=5)
-```
 
-## Overall
+# %% [markdown]
+# ## Overall
+#
+# * **PAC**: Perfect Authentic Cadence
+# * **IAC**: Imperfect Authentic Cadence
+# * **HC**: Half Cadence
+# * **DC**: Deceptive Cadence
+# * **EC**: Evaded Cadence
+# * **PC**: Plagal Cadence
 
-* **PAC**: Perfect Authentic Cadence
-* **IAC**: Imperfect Authentic Cadence
-* **HC**: Half Cadence
-* **DC**: Deceptive Cadence
-* **EC**: Evaded Cadence
-* **PC**: Plagal Cadence
-
-```{code-cell}
+# %%
 print(f"{len(cadence_labels)} cadence labels.")
 value_count_df(cadence_labels.cadence)
-```
 
-```{raw-cell}
-fig = px.pie(
-    all_labels[all_labels.cadence.notna()],
-    title="Distribution of cadence types over the DLC",
-    names="cadence",
-    color="cadence",
-    color_discrete_map=CADENCE_COLORS
-)
-fig.update_layout(**STD_LAYOUT,)
-fig.update_traces(
-  textposition='auto',
-  textinfo='percent+label',
-  textfont_size=30
-)
-save_figure_as(fig, 'all_cadences_pie', width=1000, height=1000)
-fig.show()
-```
+# %% [raw]
+# fig = px.pie(
+#     all_labels[all_labels.cadence.notna()],
+#     title="Distribution of cadence types over the DLC",
+#     names="cadence",
+#     color="cadence",
+#     color_discrete_map=CADENCE_COLORS
+# )
+# fig.update_layout(**STD_LAYOUT,)
+# fig.update_traces(
+#   textposition='auto',
+#   textinfo='percent+label',
+#   textfont_size=30
+# )
+# save_figure_as(fig, 'all_cadences_pie', width=1000, height=1000)
+# fig.show()
 
-## Per dataset
+# %% [markdown]
+# ## Per dataset
 
-```{code-cell}
+# %%
 all_labels = D.get_feature("harmonylabels")
 cadence_count_per_dataset = all_labels.groupby("corpus").cadence.value_counts()
 cadence_fraction_per_dataset = (
@@ -181,9 +169,8 @@ fig = px.bar(
 fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "all_cadences_corpuswise_stacked_bars", height=1000)
 fig.show()
-```
 
-```{code-cell}
+# %%
 fig = px.pie(
     cadence_count_per_dataset.rename("count").reset_index(),
     names="cadence",
@@ -198,9 +185,8 @@ fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "all_cadences_corpuswise_pies")
 fig.show()
-```
 
-```{code-cell}
+# %%
 cadence_count_per_mode = (
     all_labels.groupby("localkey_is_minor").cadence.value_counts().reset_index()
 )
@@ -220,9 +206,8 @@ fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "all_cadences_modewise_pies")
 fig.show()
-```
 
-```{code-cell}
+# %%
 corelli = dc.Dataset()
 CORELLI_PATH = os.path.abspath(os.path.join("..", "corelli"))
 corelli.load(directory=CORELLI_PATH, parse_tsv=False)
@@ -254,9 +239,8 @@ fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "all_corelli_cadences_modewise_pies")
 fig.show()
-```
 
-```{code-cell}
+# %%
 combined_cadences = pd.concat(
     [cadence_count_per_mode, corelli_cadence_count_per_mode],
     keys=["couperin", "corelli"],
@@ -277,12 +261,12 @@ updated_layout = dict(STD_LAYOUT, font=dict(size=40))
 fig.update_layout(**updated_layout)
 save_figure_as(fig, "couperin_corelli_cadences_modewise_pies")
 fig.show()
-```
 
-## Per phrase
-### Number of cadences per phrase
+# %% [markdown]
+# ## Per phrase
+# ### Number of cadences per phrase
 
-```{code-cell}
+# %%
 grouped_by_corpus = groupers.CorpusGrouper().process(D)
 segmented = slicers.PhraseSlicer().process_data(grouped_by_corpus)
 phrases = segmented.get_slice_info()
@@ -309,9 +293,8 @@ phrases_with_cadences = pd.concat(
     axis=1,
 )
 value_count_df(phrases_with_cadences.n_cadences, counts_column="#phrases")
-```
 
-```{code-cell}
+# %%
 n_cad = (
     phrases_with_cadences.groupby(level="corpus")
     .n_cadences.value_counts()
@@ -332,17 +315,17 @@ fig = px.bar(
 )
 save_figure_as(fig, "n_cadences_per_phrase_corpuswise_absolute_grouped_bars")
 fig.show()
-```
 
-### Combinations of cadence types for phrases with more than one cadence
+# %% [markdown]
+# ### Combinations of cadence types for phrases with more than one cadence
 
-```{code-cell}
+# %%
 value_count_df(phrases_with_cadences[phrases_with_cadences.n_cadences > 1].cadences)
-```
 
-### Positioning of cadences within phrases
+# %% [markdown]
+# ### Positioning of cadences within phrases
 
-```{code-cell}
+# %%
 df_rows = []
 y_position = 0
 for ix in (
@@ -365,9 +348,8 @@ for ix in (
     #    df_rows.append((y_position, pd.NA, pd.NA, description))
 
 data = pd.DataFrame(df_rows, columns=["phrase_ix", "x", "marker", "description"])
-```
 
-```{code-cell}
+# %%
 fig = px.scatter(
     data[data.x.notna()],
     x="x",
@@ -382,11 +364,11 @@ fig.update_traces(marker_size=5)
 fig.update_yaxes(autorange="reversed")
 save_figure_as(fig, "cadence_positions_within_all_phrases")
 fig.show()
-```
 
-## Cadence ultima
+# %% [markdown]
+# ## Cadence ultima
 
-```{code-cell}
+# %%
 phrase_segments = segmented.get_facet("expanded")
 cadence_selector = phrase_segments.cadence.notna()
 missing_chord_selector = phrase_segments.chord.isna()
@@ -403,11 +385,13 @@ print(
     f"Ultima harmony missing for {(phrase_segments.cadence.notna() & phrase_segments.bass_note.isna()).sum()} cadence "
     f"labels."
 )
-```
 
-### Ultimae as Roman numeral
 
-```{code-cell}
+# %% [markdown]
+# ### Ultimae as Roman numeral
+
+
+# %%
 def highlight(row, color="#ffffb3"):
     if row.counts < 10:
         return [None, None, None, None]
@@ -427,9 +411,8 @@ ultima_root.localkey_is_minor = ultima_root.localkey_is_minor.map(
     {False: "in major", True: "in minor"}
 )
 # ultima_root.style.apply(highlight, axis=1)
-```
 
-```{code-cell}
+# %%
 fig = px.pie(
     ultima_root,
     names="numeral",
@@ -444,16 +427,15 @@ fig.update_traces(textposition="inside", textinfo="percent+label")
 fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "ultima_root_distributions_over_cadence_types_maj_min_pies")
 fig.show()
-```
 
-```{code-cell}
+# %%
 # phrase_segments.groupby(level=[0,1,2], group_keys=False).apply(lambda df: df if ((df.cadence == 'PAC') &
 # (df.numeral == 'V')).any() else None)
-```
 
-### Ultimae bass note as scale degree
+# %% [markdown]
+# ### Ultimae bass note as scale degree
 
-```{code-cell}
+# %%
 ultima_bass = (
     phrase_segments.groupby(["localkey_is_minor", "cadence"])
     .bass_note.value_counts()
@@ -467,9 +449,8 @@ ultima_bass.localkey_is_minor = ultima_bass.localkey_is_minor.map(
     {False: "in major", True: "in minor"}
 )
 # ultima_bass.style.apply(highlight, axis=1)
-```
 
-```{code-cell}
+# %%
 fig = px.pie(
     ultima_bass,
     names="bass_note",
@@ -484,15 +465,16 @@ fig.update_traces(textposition="inside", textinfo="percent+label")
 fig.update_layout(**STD_LAYOUT)
 save_figure_as(fig, "ultima_degree_distributions_over_cadence_types_maj_min_pies")
 fig.show()
-```
 
-## Chord progressions
 
-+++
+# %% [markdown]
+# ## Chord progressions
 
-### PACs with ultima I/i
+# %% [markdown]
+# ### PACs with ultima I/i
 
-```{code-cell}
+
+# %%
 def remove_immediate_duplicates(lst):
     return tuple(a for a, b in zip(lst, (None,) + lst) if a != b)
 
@@ -535,41 +517,38 @@ def get_progressions(
     if as_series:
         return pd.Series(progressions, dtype="object")
     return progressions
-```
 
-```{code-cell}
+
+# %%
 chord_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "chord")
 print(f"Progressions for {len(chord_progressions)} cadences:")
 value_count_df(chord_progressions, "chord progressions")
-```
 
-```{code-cell}
+# %%
 numeral_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "numeral")
 value_count_df(numeral_progressions, "numeral progressions")
-```
 
-```{code-cell}
+# %%
 numeral_prog_no_dups = numeral_progressions.map(remove_immediate_duplicates)
 value_count_df(numeral_prog_no_dups)
-```
 
-### PACs ending on scale degree 1
+# %% [markdown]
+# ### PACs ending on scale degree 1
+#
+# **Scale degrees expressed w.r.t. major scale, regardless of actual key.**
 
-**Scale degrees expressed w.r.t. major scale, regardless of actual key.**
-
-```{code-cell}
+# %%
 bass_progressions = get_progressions("PAC", dict(bass_note=0), "bass_note")
 bass_prog = bass_progressions.map(ms3.fifths2sd)
 print(f"Progressions for {len(bass_progressions)} cadences:")
 value_count_df(bass_prog, "bass progressions")
-```
 
-```{code-cell}
+# %%
 bass_prog_no_dups = bass_prog.map(remove_immediate_duplicates)
 value_count_df(bass_prog_no_dups)
-```
 
-```{code-cell}
+
+# %%
 def make_sankey(
     data,
     labels,
@@ -651,11 +630,12 @@ def plot_progressions(progressions, cut_at_stage=None, **kwargs):
         progressions, cut_at_stage=cut_at_stage
     )
     return graph_data2sankey(stage_nodes, edge_weights, **kwargs)
-```
 
-#### Chordal roots for the 3 last stages
 
-```{code-cell}
+# %% [markdown]
+# #### Chordal roots for the 3 last stages
+
+# %%
 fig = plot_progressions(
     numeral_prog_no_dups,
     cut_at_stage=3,
@@ -663,28 +643,30 @@ fig = plot_progressions(
 )
 save_figure_as(fig, "last_3_roots_before_pacs_ending_on_1_sankey", height=800)
 fig.show()
-```
 
-#### Complete chords for the last four stages in major
+# %% [markdown]
+# #### Complete chords for the last four stages in major
 
-```{code-cell}
+# %%
 pac_major = get_progressions("PAC", dict(numeral="I", localkey_is_minor=False), "chord")
 fig = plot_progressions(pac_major, cut_at_stage=4)
 save_figure_as(fig, "last_4_stages_before_pacs_in_major_sankey")
 fig.show()
-```
 
-#### Bass degrees for the last 6 stages.
+# %% [markdown]
+# #### Bass degrees for the last 6 stages.
 
-```{code-cell}
+# %%
 fig = plot_progressions(bass_prog_no_dups, cut_at_stage=7)
 save_figure_as(fig, "last_7_degrees_before_pacs_ending_on_1_sankey")
 fig.show()
-```
 
-#### Bass degrees without accidentals
 
-```{code-cell}
+# %% [markdown]
+# #### Bass degrees without accidentals
+
+
+# %%
 def remove_sd_accidentals(t):
     return tuple(map(lambda sd: sd[-1], t))
 
@@ -695,14 +677,13 @@ bass_prog_no_acc_no_dup = bass_prog.map(remove_sd_accidentals).map(
 fig = plot_progressions(bass_prog_no_acc_no_dup, cut_at_stage=7)
 save_figure_as(fig, "last_7_degrees_before_pacs_ending_on_1_without_accdentals_sankey")
 fig.show()
-```
 
-### HCs ending on V
+# %% [markdown]
+# ### HCs ending on V
 
-```{code-cell}
+# %%
 half = get_progressions("HC", dict(numeral="V"), "bass_note").map(ms3.fifths2sd)
 print(f"Progressions for {len(half)} cadences:")
 fig = plot_progressions(half.map(remove_immediate_duplicates), cut_at_stage=5)
 save_figure_as(fig, "last_7_degrees_before_hcs_ending_on_V_sankey")
 fig.show()
-```

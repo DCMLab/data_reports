@@ -145,6 +145,21 @@ keys
 ```
 
 ```{code-cell}
+
+```
+
+```{code-cell}
+from dimcat.steps import analyzers
+
+key_bigrams = analyzers.BigramAnalyzer().process(keys)
+key_bigrams.plot_grouped()
+```
+
+```{code-cell}
+key_bigrams.combine_results()
+```
+
+```{code-cell}
 keys.plot_grouped()
 ```
 
