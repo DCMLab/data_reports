@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.15.2
 kernelspec:
-  display_name: corpus_docs
+  display_name: revamp
   language: python
-  name: corpus_docs
+  name: revamp
 ---
 
 # Annotations
@@ -34,10 +34,12 @@ from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background,
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER
+from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
 from dimcat.plotting import write_image
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "annotations"))
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "couperin_article"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+def make_output_path(filename):
+    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
@@ -45,52 +47,19 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell}
 :tags: [hide-input]
 
-# CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
-CORPUS_PATH = "~/distant_listening_corpus/couperin_concerts"                # for running the notebook locally
-print_heading("Notebook settings")
-print(f"CORPUS_PATH: {CORPUS_PATH!r}")
-CORPUS_PATH = resolve_dir(CORPUS_PATH)
-```
-
-```{code-cell}
-:tags: [hide-input]
-
-repo = Repo(CORPUS_PATH)
+package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
+repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
+D = dc.Dataset.from_package(package_path)
+D
 ```
 
 ```{code-cell}
-:tags: [remove-output]
-
-dataset = dc.Dataset()
-dataset.load(directory=CORPUS_PATH, parse_tsv=False)
-```
-
-```{code-cell}
-:tags: [remove-input]
-
-annotated_view = dataset.data.get_view('annotated')
-annotated_view.include('facets', 'measures', 'notes$', 'expanded')
-annotated_view.pieces_with_incomplete_facets = False
-dataset.data.set_view(annotated_view)
-dataset.data.parse_tsv(choose='auto')
-dataset.get_indices()
-dataset.data
-```
-
-```{code-cell}
-:tags: [remove-input]
-
-print(f"N = {dataset.data.count_pieces()} annotated pieces, {dataset.data.count_parsed_tsvs()} parsed dataframes.")
-```
-
-```{code-cell}
-all_metadata = dataset.data.metadata()
+all_metadata = D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
-print(f"Metadata covers {len(all_metadata)} of the {dataset.data.count_pieces()} scores.")
 mean_composition_years = corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
@@ -104,24 +73,16 @@ corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors
 ```{code-cell}
 :tags: [hide-input]
 
-try:
-    all_annotations = dataset.get_facet('expanded')
-except Exception:
-    all_annotations = pd.DataFrame()
-n_annotations = len(all_annotations.index)
-includes_annotations = n_annotations > 0
-if includes_annotations:
-    display(all_annotations.head())
-    print(f"Concatenated annotation tables contain {all_annotations.shape[0]} rows.")
-    no_chord = all_annotations.root.isna()
-    if no_chord.sum() > 0:
-        print(f"{no_chord.sum()} of them are not chords. Their values are: {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}")
-    all_chords = all_annotations[~no_chord].copy()
-    print(f"Dataset contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
-    all_annotations['corpus_name'] = all_annotations.index.get_level_values(0).map(corpus_names)
-    all_chords['corpus_name'] = all_chords.index.get_level_values(0).map(corpus_names)
-else:
-    print(f"Dataset contains no annotations.")
+all_annotations = D.get_feature("DcmlAnnotations")
+is_annotated_mask = all_metadata.label_count > 0
+is_annotated_index = all_metadata.index[is_annotated_mask]
+annotated_notes = D.get_feature("notes").subselect(is_annotated_index)
+print(f"The annotated pieces have {len(annotated_notes)} notes.")
+```
+
+```{code-cell}
+all_chords = D.get_feature("harmonylabels")
+all_chords.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
 
 ## Phrases
@@ -129,6 +90,10 @@ else:
 
 ```{code-cell}
 all_annotations.groupby(["corpus"]).phraseend.value_counts()
+```
+
+```{code-cell}
+all_annotations.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
 
 ### Presence of legacy phrase endings
@@ -145,7 +110,7 @@ legacy.groupby(level=0).size()
 * `phrase_slice`: time interval of each annotated phrases (for segmenting chord progressions and notes)
 
 ```{code-cell}
-phrase_segmented = dc.PhraseSlicer().process_data(dataset)
+phrase_segmented = dc.PhraseSlicer().process_data(D)
 phrases = phrase_segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
 phrases.head(10).style.apply(color_background, subset=["quarterbeats", "duration_qb"])
@@ -227,7 +192,7 @@ value_count_df(phrases_with_unique_key.local_keys, "modulations")
 
 ```{code-cell}
 from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
-keys_segmented = dc.LocalKeySlicer().process_data(dataset)
+keys_segmented = dc.LocalKeySlicer().process_data(D)
 keys = keys_segmented.get_slice_info()
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
