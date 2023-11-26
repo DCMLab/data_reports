@@ -65,6 +65,11 @@ notes.plot()
 ```
 
 ```{code-cell}
+result = notes.get_default_analysis()
+result.make_pie_chart()
+```
+
+```{code-cell}
 def make_overview_table(metadata: pd.DataFrame, groupby):
     gpb = metadata.groupby(groupby, sort=False)
     n_movements = gpb.size().rename('movements')
@@ -140,32 +145,40 @@ bass_note_distribution
 ```
 
 ```{code-cell}
-keys = grouped_D.get_feature("keyannotations")
-keys
-```
-
-```{code-cell}
-
-```
-
-```{code-cell}
-from dimcat.steps import analyzers
-
-key_bigrams = analyzers.BigramAnalyzer().process(keys)
-key_bigrams.plot_grouped()
-```
-
-```{code-cell}
-key_bigrams.combine_results()
-```
-
-```{code-cell}
-keys.plot_grouped()
-```
-
-```{code-cell}
 print(f"Fraction covered by P1, P4, and P5:")
 bass_note_distribution.combine_results().loc[pd.IndexSlice[:,:,[-1,0,1]]].groupby(level=[0,1]).proportion.sum().mul(100).round(1).astype(str).add(" %")
+```
+
+```{code-cell}
+cadences = grouped_D.get_feature(dict(dtype="CadenceLabels", format="TYPE"))
+cadences
+```
+
+```{code-cell}
+cadences.plot_grouped(output=make_output_path("cadence_distribution_couperin_corelli"), font_size=40)
+```
+
+```{code-cell}
+cadences.get_default_analysis().groupby(level=[0,1,3]).sum()
+```
+
+```{code-cell}
+labels = D.load_feature("harmonylabels")
+labels.cadence.value_counts()
+```
+
+```{code-cell}
+labels.df["cadence_type"] = labels.cadence[labels.cadence.notna()].str.split('.',expand=True)[0]
+labels.groupby(["corpus", "localkey_is_minor"]).cadence_type.value_counts().sum()
+```
+
+```{code-cell}
+labels.groupby(["corpus", "localkey_is_minor"]).cadence.value_counts().sum()
+```
+
+```{code-cell}
+raw_cadences = D.get_feature(dict(dtype="CadenceLabels", format="TYPE"))
+raw_cadences.cadence_type.value_counts().sum()
 ```
 
 ```{code-cell}
