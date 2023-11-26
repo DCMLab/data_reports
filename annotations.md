@@ -21,6 +21,8 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+%load_ext autoreload
+%autoreload 2
 import os
 from fractions import Fraction
 
@@ -166,7 +168,12 @@ print(f"On diminished or augmented scale degrees: {dim_or_aug} / {complete} = {d
 ```
 
 ```{code-cell} ipython3
-mode_slices = groupers.ModeGrouper().process(keys_segmented)
+all_chords.formatted_column
+```
+
+```{code-cell} ipython3
+chords_by_mode = groupers.ModeGrouper().process(all_chords)
+chords_by_mode.get_default_analysis()
 ```
 
 +++ {"jp-MarkdownHeadingCollapsed": true}
@@ -174,31 +181,24 @@ mode_slices = groupers.ModeGrouper().process(keys_segmented)
 #### Whole dataset
 
 ```{code-cell} ipython3
-mode_slices.get_slice_info()
+unigram_proportions = chords_by_mode.get_default_analysis()
+unigram_proportions
 ```
 
 ```{code-cell} ipython3
-unigrams = dc.ChordSymbolUnigrams(once_per_group=True).process(mode_slices)
-```
-
-```{code-cell} ipython3
-unigrams.group2pandas = "group_of_series2series"
-```
-
-```{code-cell} ipython3
-unigrams.get(as_pandas=True)
+unigram_proportions.get(as_pandas=True)
 ```
 
 ```{code-cell} ipython3
 k = 20
 modes = {True: 'MINOR', False: 'MAJOR'}
-for (is_minor,), ugs in unigrams.iter():
+for (is_minor,), ugs in unigram_proportions.iter():
     print(f"TOP {k} {modes[is_minor]} UNIGRAMS\n{ugs.shape[0]} types, {ugs.sum()} tokens")
     print(ugs.head(k).to_string())
 ```
 
 ```{code-cell} ipython3
-ugs_dict = {modes[is_minor].lower(): (ugs/ugs.sum() * 100).round(2).rename('%').reset_index() for (is_minor,), ugs in unigrams.iter()}
+ugs_dict = {modes[is_minor].lower(): (ugs/ugs.sum() * 100).round(2).rename('%').reset_index() for (is_minor,), ugs in unigram_proportions.iter()}
 ugs_df = pd.concat(ugs_dict, axis=1)
 ugs_df.columns = ['_'.join(map(str, col)) for col in ugs_df.columns]
 ugs_df.index = (ugs_df.index + 1).rename('k')
@@ -228,7 +228,7 @@ for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
         types_shared_between_corpora[is_minor] = types_shared_between_corpora[is_minor].intersection(ugs.index)
     else:
         types_shared_between_corpora[is_minor] = set(ugs.index)
-types_shared_between_corpora = {k: sorted(v, key=lambda x: unigrams.get()[(k, x)], reverse=True) for k, v in types_shared_between_corpora.items()}
+types_shared_between_corpora = {k: sorted(v, key=lambda x: unigram_proportions.get()[(k, x)], reverse=True) for k, v in types_shared_between_corpora.items()}
 n_types = {k: len(v) for k, v in types_shared_between_corpora.items()}
 print(f"Chords which occur in all corpora, sorted by descending global frequency:\n{types_shared_between_corpora}\nCounts: {n_types}")
 ```
