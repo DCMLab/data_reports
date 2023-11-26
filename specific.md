@@ -30,7 +30,7 @@ from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
-from dimcat.steps import groupers
+from dimcat.steps import groupers, analyzers
 
 from utils import get_repo_name, print_heading, resolve_dir
 ```
@@ -126,13 +126,36 @@ grouped_D
 ```
 
 ```{code-cell}
-bass_notes = grouped_D.get_feature(dict(dtype="BassNotes", format="SCALE_DEGREE_MAJOR"))
-result = bass_notes.get_default_analysis()
-result
+chord_labels = grouped_D.get_feature("HarmonyLabels")
+unigram_durations = chord_labels.apply_step(analyzers.Proportions)
+duration_ranking = unigram_durations.make_ranking_table(
+  drop_cols=["chord_and_mode", "proportion"],
+  top_k=0
+)
+duration_ranking
 ```
 
 ```{code-cell}
-result.make_bar_plot(output=make_output_path("bass_note_distribution_couperin_corelli"), height=1000)
+unigram_occurrences = chord_labels.apply_step("Counter")
+occurrence_ranking = unigram_occurrences.make_ranking_table(
+  drop_cols=["chord_and_mode", "proportion"],
+  top_k=0
+)
+occurrence_ranking
+```
+
+```{code-cell}
+duration_ranking.to_clipboard()
+```
+
+```{code-cell}
+bass_notes = grouped_D.get_feature(dict(dtype="BassNotes", format="SCALE_DEGREE_MAJOR"))
+bass_note_distribution = bass_notes.get_default_analysis()
+bass_note_distribution
+```
+
+```{code-cell}
+bass_note_distribution.make_bar_plot(output=make_output_path("bass_note_distribution_couperin_corelli"), height=1000)
 ```
 
 ```{code-cell}
@@ -147,31 +170,4 @@ cadences
 
 ```{code-cell}
 cadences.plot_grouped(output=make_output_path("cadence_distribution_couperin_corelli"), font_size=40)
-```
-
-```{code-cell}
-cadences.get_default_analysis().groupby(level=[0,1,3]).sum()
-```
-
-```{code-cell}
-labels = D.load_feature("harmonylabels")
-labels.cadence.value_counts()
-```
-
-```{code-cell}
-labels.df["cadence_type"] = labels.cadence[labels.cadence.notna()].str.split('.',expand=True)[0]
-labels.groupby(["corpus", "localkey_is_minor"]).cadence_type.value_counts().sum()
-```
-
-```{code-cell}
-labels.groupby(["corpus", "localkey_is_minor"]).cadence.value_counts().sum()
-```
-
-```{code-cell}
-raw_cadences = D.get_feature(dict(dtype="CadenceLabels", format="TYPE"))
-raw_cadences.cadence_type.value_counts().sum()
-```
-
-```{code-cell}
-
 ```
