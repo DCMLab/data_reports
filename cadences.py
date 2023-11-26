@@ -39,17 +39,19 @@ from utils import (
     get_repo_name,
     print_heading,
     resolve_dir,
-    value_count_df,
+    value_count_df, DEFAULT_OUTPUT_FORMAT,
 )
 
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "cadences"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
-
+def make_output_path(filename):
+    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 
 
+# %%
 package_path = resolve_dir(
     "~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json"
 )
@@ -68,7 +70,7 @@ cadence_labels
 # %%
 cadence_labels.plot_grouped(
     title="Distribution of cadence types over the DLC",
-    output="all_cadences_pie",
+    output=make_output_path("all_cadences_pie"),
     width=1000,
     height=1000,
 )
