@@ -69,6 +69,8 @@ result = notes.get_default_analysis()
 result.make_pie_chart()
 ```
 
+## Overview table
+
 ```{code-cell}
 def make_overview_table(metadata: pd.DataFrame, groupby):
     gpb = metadata.groupby(groupby, sort=False)
@@ -110,6 +112,9 @@ if not L.handlers:
 L.debug("TEST")
 ```
 
+## Chords
+### Unigrams
+
 ```{code-cell}
 package_path = resolve_dir("../couperin_corelli.datapackage.json")
 D = dc.Dataset.from_package(package_path)
@@ -147,6 +152,16 @@ occurrence_ranking
 ```{code-cell}
 duration_ranking.to_clipboard()
 ```
+
+### Bigrams
+
+```{code-cell}
+chord_bigram_table = chord_labels.apply_step(analyzers.BigramAnalyzer)
+chord_bigrams = chord_bigram_table.make_bigram_tuples("chord", join_str="", fillna="", drop_identical=True)
+chord_bigrams.make_ranking_table()
+```
+
+## Bass degrees
 
 ```{code-cell}
 bass_notes = grouped_D.get_feature(dict(dtype="BassNotes", format="SCALE_DEGREE_MAJOR"))

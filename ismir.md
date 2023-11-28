@@ -76,7 +76,7 @@ localkey_bigram_table
 ```
 
 ```{code-cell}
-localkey_bigram_table.make_bigram_tuples()
+localkey_bigram_table.make_bigram_table()
 ```
 
 ```{code-cell}

@@ -81,6 +81,7 @@ la_mer_notes.plot_grouped(
 grouped_la_mer = groupers.MeasureGrouper().process(la_mer_notes)
 grouped_la_mer.plot_grouped(
     title="Normalized measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
+    layout=dict(yaxis_type="linear"),
     output=make_output_path(
         "debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles"
     ),

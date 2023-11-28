@@ -31,7 +31,7 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dimcat.plotting import write_image, CADENCE_COLORS
+from dimcat.plotting import CADENCE_COLORS, write_image
 from dimcat.steps import groupers, slicers
 from git import Repo
 ```
@@ -40,20 +40,24 @@ from git import Repo
 :tags: [hide-input]
 
 from utils import (
+    DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
     STD_LAYOUT,
     get_corpus_display_name,
     get_repo_name,
     print_heading,
     resolve_dir,
-    value_count_df, DEFAULT_OUTPUT_FORMAT,
+    value_count_df,
 )
 
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "cadences"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
+
 def make_output_path(filename):
     return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+
+
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
