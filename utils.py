@@ -12,18 +12,17 @@ import numpy as np
 # import modin.pandas as pd
 import pandas as pd
 import plotly.express as px
+from dimcat.plotting import make_transition_heatmap_plots
+from dimcat.utils import grams, make_transition_matrix
 from git import Repo
 from IPython.display import display
+from matplotlib.figure import Figure as MatplotlibFigure
 from plotly import graph_objects as go
 from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
-from matplotlib.figure import Figure as MatplotlibFigure
-
-from dimcat.plotting import make_transition_heatmap_plots
-from dimcat.utils import make_transition_matrix
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
+OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "..", "results"))
 DEFAULT_OUTPUT_FORMAT = ".png"
 DEFAULT_COLUMNS = ["mc", "mc_onset"]  # always added to bigram dataframes
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
@@ -40,9 +39,6 @@ STD_LAYOUT = dict(
     yaxis=dict(gridcolor="lightgrey"),
 )
 
-CADENCE_COLORS = dict(
-    zip(("HC", "PAC", "PC", "IAC", "DC", "EC"), colorlover.scales["6"]["qual"]["Set1"])
-)
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
 
 CORPUS_NAMES = {
@@ -313,7 +309,6 @@ def get_repo_name(repo: Repo) -> str:
     return remote.url.split(".git")[0].split("/")[-1]
 
 
-
 def load_facets(
     path,
     suffix="",
@@ -394,9 +389,6 @@ def make_sunburst(
     )
     fig.update_layout(margin=dict(t=0, l=0, r=0, b=0))
     return fig
-
-
-
 
 
 def plot_cum(
@@ -509,7 +501,10 @@ def plot_transition_heatmaps(
     **kwargs,
 ) -> MatplotlibFigure:
     left_transition_matrix = make_transition_matrix(
-        full_grams_left, distinct_only=remove_repeated, normalize=frequencies, percent=True
+        full_grams_left,
+        distinct_only=remove_repeated,
+        normalize=frequencies,
+        percent=True,
     )
     left_unigrams = pd.Series(Counter(sum(full_grams_left, [])))
     if sort_scale_degrees:
@@ -517,9 +512,15 @@ def plot_transition_heatmaps(
     else:
         left_unigrams = left_unigrams.sort_values(ascending=False)
     left_unigrams_norm = left_unigrams / left_unigrams.sum()
-    ix_intersection = left_unigrams_norm.index.intersection(left_transition_matrix.index)
-    col_intersection = left_unigrams_norm.index.intersection(left_transition_matrix.columns)
-    left_transition_matrix = left_transition_matrix.loc[ix_intersection, col_intersection]
+    ix_intersection = left_unigrams_norm.index.intersection(
+        left_transition_matrix.index
+    )
+    col_intersection = left_unigrams_norm.index.intersection(
+        left_transition_matrix.columns
+    )
+    left_transition_matrix = left_transition_matrix.loc[
+        ix_intersection, col_intersection
+    ]
     left_unigrams_norm = left_unigrams_norm.loc[ix_intersection]
 
     if full_grams_right is None:
@@ -538,9 +539,15 @@ def plot_transition_heatmaps(
         else:
             right_unigrams = right_unigrams.sort_values(ascending=False)
         right_unigrams_norm = right_unigrams / right_unigrams.sum()
-        ix_intersection = right_unigrams_norm.index.intersection(right_transition_matrix.index)
-        col_intersection = right_unigrams_norm.index.intersection(right_transition_matrix.columns)
-        right_transition_matrix = right_transition_matrix.loc[ix_intersection, col_intersection]
+        ix_intersection = right_unigrams_norm.index.intersection(
+            right_transition_matrix.index
+        )
+        col_intersection = right_unigrams_norm.index.intersection(
+            right_transition_matrix.columns
+        )
+        right_transition_matrix = right_transition_matrix.loc[
+            ix_intersection, col_intersection
+        ]
         right_unigrams_norm = right_unigrams_norm.loc[ix_intersection]
 
     return make_transition_heatmap_plots(

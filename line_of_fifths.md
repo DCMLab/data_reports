@@ -20,23 +20,26 @@ Notebook adapted from the one used for the presentation at HCI 2023 in Copenhage
 %load_ext autoreload
 %autoreload 2
 import os
-from git import Repo
+
 import dimcat as dc
 import ms3
-
-from utils import (
-    resolve_dir,
-    print_heading,
-    get_repo_name
-)
-
-from dimcat import resources, groupers
+from dimcat import groupers, resources
+from git import Repo
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER, DEFAULT_OUTPUT_FORMAT
+from utils import (
+    DEFAULT_OUTPUT_FORMAT,
+    OUTPUT_FOLDER,
+    get_repo_name,
+    print_heading,
+    resolve_dir,
+)
+
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+
+
 def make_output_path(filename):
     return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
 ```
@@ -44,7 +47,7 @@ def make_output_path(filename):
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir("dcml_corpora.datapackage.json")
+package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -64,37 +67,34 @@ la_mer_notes
 
 ```{code-cell}
 la_mer_notes.plot_grouped(
-  title="Pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
-  output=make_output_path("debussy_la_mer_beginning_pitch_class_distribution_bars",),
-  height=800,
+    title="Pitch-class distribution in Claude Debussy's 'La Mer' (mm. 1-84)",
+    output=make_output_path(
+        "debussy_la_mer_beginning_pitch_class_distribution_bars",
+    ),
+    height=800,
 )
 ```
 
 ```{code-cell}
 grouped_la_mer = groupers.MeasureGrouper().process(la_mer_notes)
 grouped_la_mer.plot_grouped(
-  title="Normalized measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
-  output=make_output_path("debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles"), 
-  width=1200)
+    title="Normalized measure-wise pitch-class distribution in 'La Mer' (mm. 1-84)",
+    layout=dict(yaxis_type="linear"),
+    output=make_output_path(
+        "debussy_la_mer_beginning_barwise_pitch_class_distributions_bubbles"
+    ),
+    width=1200,
+)
 ```
 
 ## Pitch class distributions for the datapackage
 
 ```{code-cell}
-result = notes.get_default_analysis()
-result
-```
-
-```{code-cell}
-result.unstack(fill_value=0.0).sum().rename("duration_qb")
-```
-
-```{code-cell}
 notes = D.get_feature("notes")
 notes.plot_grouped(
-  title=f"Pitch-class distribution for {notes.resource_name.split('.')[0]}",
-  output=make_output_path("complete_pitch_class_distribution_absolute_bars"),
-  height=800
+    title=f"Pitch-class distribution for {notes.resource_name.split('.')[0]}",
+    output=make_output_path("complete_pitch_class_distribution_absolute_bars"),
+    height=800,
 )
 ```
 
@@ -106,16 +106,16 @@ grouped_notes
 
 ```{code-cell}
 grouped_notes.plot(
-  output=make_output_path("all_pitch_class_distributions_piecewise_bubbles"),
-  title=f"Normalized piece-wise pitch-class distributions for {grouped_notes.resource_name.split('.')[0]}",
-  width=1200
+    output=make_output_path("all_pitch_class_distributions_piecewise_bubbles"),
+    title=f"Normalized piece-wise pitch-class distributions for {grouped_notes.resource_name.split('.')[0]}",
+    width=1200,
 )
 ```
 
 ```{code-cell}
 grouped_notes.plot_grouped(
-  output=make_output_path("all_pitch_class_distributions_yearwise_bubbles"),
-  title=f"Normalized year-wise pitch-class distributions for {grouped_notes.resource_name.split('.')[0]}",
-  width=1200
+    output=make_output_path("all_pitch_class_distributions_yearwise_bubbles"),
+    title=f"Normalized year-wise pitch-class distributions for {grouped_notes.resource_name.split('.')[0]}",
+    width=1200,
 )
 ```

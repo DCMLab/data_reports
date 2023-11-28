@@ -21,23 +21,40 @@
 # %autoreload 2
 import os
 from collections import Counter, defaultdict
+
+import dimcat as dc
+import matplotlib.pyplot as plt
 import ms3
 import pandas as pd
 import plotly.express as px
-import matplotlib.pyplot as plt
-from utils import prettify_counts, resolve_dir, sorted_gram_counts, make_key_region_summary_table,\
-  remove_none_labels, remove_non_chord_labels, plot_transition_heatmaps, DEFAULT_OUTPUT_FORMAT
-import dimcat as dc
+from dimcat import groupers
 from dimcat.data.resources.utils import make_adjacency_groups
+from dimcat.plotting import write_image
 
-pd.set_option('display.max_rows', 1000)
-pd.set_option('display.max_columns', 500)
+from utils import (
+    DEFAULT_OUTPUT_FORMAT,
+    OUTPUT_FOLDER,
+    make_key_region_summary_table,
+    plot_transition_heatmaps,
+    prettify_counts,
+    remove_non_chord_labels,
+    remove_none_labels,
+    resolve_dir,
+    sorted_gram_counts,
+)
+
+pd.set_option("display.max_rows", 1000)
+pd.set_option("display.max_columns", 500)
 
 # %%
-from utils import OUTPUT_FOLDER
-from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "bass_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+
+
+def make_output_path(filename):
+    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+
+
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 
@@ -46,58 +63,88 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 # **Loading data**
 
 # %%
-package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+package_path = resolve_dir(
+    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+)
 D = dc.Dataset.from_package(package_path)
 D
 
 # %% [markdown]
-# **All labels**
+# **Grouping data**
 
 # %%
-labels = D.get_feature('harmonylabels')
-df = labels.df
-df.head(20)
+grouped_D = groupers.ModeGrouper().process(D)
+grouped_D
+
+# %%
+bass_notes = grouped_D.get_feature("bassnotes")
+bass_notes.df
+
+# %%
+bass_notes.plot(
+    output=make_output_path("piecewise_bass_degrees"), width=1100, height=2500
+)
+
+# %%
+bass_notes.plot_grouped(output=make_output_path("bass_degrees_major_minor"))
 
 # %% [markdown]
 # ## Bass degree unigrams
 # As expressed by the annotation labels.
 
 # %%
+labels = D.get_feature("harmonylabels")
+df = labels.df
+df.head(20)
+
+# %%
 bd = df.bass_note.value_counts()
 print(f"N = {len(df)}")
-fig = px.bar(x=ms3.fifths2sd(bd.index.to_list()), y=bd.values,
-             labels=dict(x='Scale degree in relation to major scale', y='count'),
-             title="Distribution of all bass degrees",
-             color_discrete_sequence =['grey']*len(bd))
-fig.update_xaxes(type='category')
-save_figure_as(fig, 'bass_degree_unigrams')
+fig = px.bar(
+    x=ms3.fifths2sd(bd.index.to_list()),
+    y=bd.values,
+    labels=dict(x="Scale degree in relation to major scale", y="count"),
+    title="Distribution of all bass degrees",
+    color_discrete_sequence=["grey"] * len(bd),
+)
+fig.update_xaxes(type="category")
+save_figure_as(fig, "bass_degree_unigrams")
 fig.show()
 
 # %%
 localkey_is_major = ~df.localkey_is_minor
 print(f"N = {localkey_is_major.sum()}")
 bd_maj = df[localkey_is_major].bass_note.value_counts()
-fig = px.bar(bd_maj, x=ms3.fifths2sd(bd_maj.index.to_list(), minor=False), y=bd_maj.values,
-             labels=dict(x='Scale degree in relation to major scale', y='count'),
-             title="Distribution of bass degrees in major segments",
-             color_discrete_sequence =['blue']*len(bd_maj))
-fig.update_xaxes(type='category')
-save_figure_as(fig, 'bass_degree_unigrams_major')
+fig = px.bar(
+    bd_maj,
+    x=ms3.fifths2sd(bd_maj.index.to_list(), minor=False),
+    y=bd_maj.values,
+    labels=dict(x="Scale degree in relation to major scale", y="count"),
+    title="Distribution of bass degrees in major segments",
+    color_discrete_sequence=["blue"] * len(bd_maj),
+)
+fig.update_xaxes(type="category")
+save_figure_as(fig, "bass_degree_unigrams_major")
 fig.show()
 
 # %%
 print(f"N = {df.localkey_is_minor.sum()}")
 bd_min = df[df.localkey_is_minor].bass_note.value_counts()
-fig = px.bar(bd_min, x=ms3.fifths2sd(bd_min.index.to_list(), minor=True), y=bd_min.values,
-             labels=dict(x='Scale degree in relation to minor scale', y='count'),
-             title="Distribution of bass degrees in minor segments",
-             color_discrete_sequence =['red']*len(bd_min))
-fig.update_xaxes(type='category')
-save_figure_as(fig, 'bass_degree_unigrams_minor')
+fig = px.bar(
+    bd_min,
+    x=ms3.fifths2sd(bd_min.index.to_list(), minor=True),
+    y=bd_min.values,
+    labels=dict(x="Scale degree in relation to minor scale", y="count"),
+    title="Distribution of bass degrees in minor segments",
+    color_discrete_sequence=["red"] * len(bd_min),
+)
+fig.update_xaxes(type="category")
+save_figure_as(fig, "bass_degree_unigrams_minor")
 fig.show()
 
 # %% [markdown]
-# **Note: When dropping immediate repetitions of the same bass degree (see transition matrices below), minor segments, too, have 1 as the most frequent bass degree. This can be linked to frequent suspensions over bass degree 5.**
+# **Note: When dropping immediate repetitions of the same bass degree (see transition matrices below), minor segments,
+# too, have 1 as the most frequent bass degree. This can be linked to frequent suspensions over bass degree 5.**
 
 # %% [markdown]
 # ## Intervals between adjacent bass notes
@@ -105,20 +152,23 @@ fig.show()
 # #### Get localkey segments
 
 # %%
-df.groupby(level=0, group_keys=False).localkey.apply(lambda col: col != col.shift()).cumsum()
+df.groupby(level=0, group_keys=False).localkey.apply(
+    lambda col: col != col.shift()
+).cumsum()
 
 # %%
-key_region_groups, key_region2key = make_adjacency_groups(df.localkey, groupby='piece')
-df['key_regions'] = key_region_groups
-df['bass_degree'] = ms3.transform(df, ms3.fifths2sd, ['bass_note', 'localkey_is_minor'])
+key_region_groups, key_region2key = make_adjacency_groups(df.localkey, groupby="piece")
+df["key_regions"] = key_region_groups
+df["bass_degree"] = ms3.transform(df, ms3.fifths2sd, ["bass_note", "localkey_is_minor"])
 
 # %%
-segment_lengths = df.groupby('key_regions').size()
+segment_lengths = df.groupby("key_regions").size()
 fig = px.histogram(
-  segment_lengths,
-  log_y=True,
-  labels=dict(value='#labels in a key segment', count='number of key segments'),)
-save_figure_as(fig, 'n_labels_per_key_segment_histogram')
+    segment_lengths,
+    log_y=True,
+    labels=dict(value="#labels in a key segment", count="number of key segments"),
+)
+save_figure_as(fig, "n_labels_per_key_segment_histogram")
 fig.show()
 
 # %%
@@ -129,7 +179,8 @@ df[df.key_regions.isin(selected)]
 
 # %% [markdown]
 # **Delete @none labels**
-# This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
+# This creates progressions between the label before and after the `@none` label that might not actually be perceived
+# as transitions!
 
 # %%
 df = remove_none_labels(df)
@@ -155,11 +206,13 @@ df = remove_non_chord_labels(df)
 # | 3               | M6          |
 
 # %%
-bd_series = {seg: bn for seg, bn in  df.groupby('key_regions').bass_note}
+bd_series = {seg: bn for seg, bn in df.groupby("key_regions").bass_note}
 bd_intervals = {seg: bd - bd.shift() for seg, bd in bd_series.items()}
-df['bass_interval'] = df.groupby('key_regions', group_keys=False).bass_note.apply(lambda bd: bd.shift(-1) - bd)
+df["bass_interval"] = df.groupby("key_regions", group_keys=False).bass_note.apply(
+    lambda bd: bd.shift(-1) - bd
+)
 print("Example output for the intervals of the first key segment:")
-df.loc[df.key_regions==1, ['bass_note', 'bass_interval']]
+df.loc[df.key_regions == 1, ["bass_note", "bass_interval"]]
 
 # %% [markdown]
 # #### Count bass intervals
@@ -172,11 +225,14 @@ interval_counter
 
 # %%
 bar_data = pd.Series(interval_counter).sort_values(ascending=False)
-fig = px.bar(x=ms3.fifths2iv(bar_data.index.to_list()), y=bar_data.values,
-             labels=dict(x='Interval between adjacent bass notes', y='count'),
-             title="Distribution of all bass intervals (within the same localkey)",
-             color_discrete_sequence =['grey']*len(bd))
-fig.update_xaxes(type='category')
+fig = px.bar(
+    x=ms3.fifths2iv(bar_data.index.to_list()),
+    y=bar_data.values,
+    labels=dict(x="Interval between adjacent bass notes", y="count"),
+    title="Distribution of all bass intervals (within the same localkey)",
+    color_discrete_sequence=["grey"] * len(bd),
+)
+fig.update_xaxes(type="category")
 save_figure_as(fig, "bass_progression_intervals_within_all_key_segments_sorted_bars")
 fig.show()
 
@@ -184,21 +240,93 @@ fig.show()
 # **
 
 # %%
-px.bar(x=interval_counter.keys(), y=interval_counter.values(), labels=dict(x='interval in fifths', y='count'), title='Orderd on the line of fifths')
+px.bar(
+    x=interval_counter.keys(),
+    y=interval_counter.values(),
+    labels=dict(x="interval in fifths", y="count"),
+    title="Orderd on the line of fifths",
+)
 
 # %%
-iv_order = [-6, 1, 8, -11, -4, 3, 10, -9, -2, 5, 12, -7, 0, 7, -5, 2, 9, -10, -3, 4, 11, -8, -1, 6] # do not occur: -11, -10, 11
-iv_counter = {ms3.fifths2iv(i, True): interval_counter[i] for i in iv_order if i in interval_counter}
-px.bar(x=iv_counter.keys(), y=iv_counter.values(), labels=dict(x='interval', y='count'), title='Ordered by base '
-                                                                                               'interval')
+iv_order = [
+    -6,
+    1,
+    8,
+    -11,
+    -4,
+    3,
+    10,
+    -9,
+    -2,
+    5,
+    12,
+    -7,
+    0,
+    7,
+    -5,
+    2,
+    9,
+    -10,
+    -3,
+    4,
+    11,
+    -8,
+    -1,
+    6,
+]  # do not occur: -11, -10, 11
+iv_counter = {
+    ms3.fifths2iv(i, True): interval_counter[i]
+    for i in iv_order
+    if i in interval_counter
+}
+px.bar(
+    x=iv_counter.keys(),
+    y=iv_counter.values(),
+    labels=dict(x="interval", y="count"),
+    title="Ordered by base " "interval",
+)
 
 # %%
-iv_order = [12, 10, -9, -6, -7, 8, -4, 5, 1, 3, -2, 0, -1, 2, -5, 4, -3, 6, 7, -8, 9] # do not occur: -11, -10, 11
-iv_counter = {ms3.fifths2iv(i): interval_counter[i] for i in iv_order if i in interval_counter}
-px.bar(x=iv_counter.keys(), y=iv_counter.values(), labels=dict(x='interval', y='count'), title='Ordered around the unison')
+iv_order = [
+    12,
+    10,
+    -9,
+    -6,
+    -7,
+    8,
+    -4,
+    5,
+    1,
+    3,
+    -2,
+    0,
+    -1,
+    2,
+    -5,
+    4,
+    -3,
+    6,
+    7,
+    -8,
+    9,
+]  # do not occur: -11, -10, 11
+iv_counter = {
+    ms3.fifths2iv(i): interval_counter[i] for i in iv_order if i in interval_counter
+}
+px.bar(
+    x=iv_counter.keys(),
+    y=iv_counter.values(),
+    labels=dict(x="interval", y="count"),
+    title="Ordered around the unison",
+)
 
 # %%
-px.bar(x=sorted(iv_counter.keys(), key=lambda k: iv_counter[k], reverse=True), y=sorted(iv_counter.values(), reverse=True), labels=dict(x='interval', y='count'), title='Descending frequency')
+px.bar(
+    x=sorted(iv_counter.keys(), key=lambda k: iv_counter[k], reverse=True),
+    y=sorted(iv_counter.values(), reverse=True),
+    labels=dict(x="interval", y="count"),
+    title="Descending frequency",
+)
 
 # %% [markdown]
 # ### Checking rare intervals
@@ -215,8 +343,10 @@ px.bar(x=sorted(iv_counter.keys(), key=lambda k: iv_counter[k], reverse=True), y
 # %%
 # see all key regions containing a certain interval in the bass
 bass_interval = -9
-selected = df.loc[df.bass_interval==bass_interval].key_regions.unique()
-df.loc[df.key_regions.isin(selected), ["mc", "mn", "chord", "bass_degree", "bass_interval"]]
+selected = df.loc[df.bass_interval == bass_interval].key_regions.unique()
+df.loc[
+    df.key_regions.isin(selected), ["mc", "mn", "chord", "bass_degree", "bass_interval"]
+]
 
 # %% [markdown]
 # ### Inspecting stepwise bass movement
@@ -225,8 +355,8 @@ df.loc[df.key_regions.isin(selected), ["mc", "mn", "chord", "bass_degree", "bass
 # It's called `bass_interval_pc` as in "pitch class"
 
 # %%
-pc_ivs = ms3.transform(df, ms3.fifths2pc, ['bass_interval'])
-df['bass_interval_pc'] = pc_ivs.where(pc_ivs <= 6, pc_ivs % -6)
+pc_ivs = ms3.transform(df, ms3.fifths2pc, ["bass_interval"])
+df["bass_interval_pc"] = pc_ivs.where(pc_ivs <= 6, pc_ivs % -6)
 
 # %%
 df[["mc", "mn", "chord", "bass_degree", "bass_interval", "bass_interval_pc"]].head(15)
@@ -257,28 +387,30 @@ df[["mc", "mn", "chord", "bass_degree", "bass_interval", "bass_interval_pc"]].he
 # | **ixb**               | index of the segment's last row                                |
 
 # %% editable=true slideshow={"slide_type": ""}
-key_regions = make_key_region_summary_table(df, 'key_regions')
+key_regions = make_key_region_summary_table(df, "key_regions")
 key_regions.head(10)
 
 # %% [markdown]
 # **Store to file `key_regions.tsv` for easier inspection.**
 
 # %%
-key_regions.to_csv(os.path.join(RESULTS_PATH, 'key_regions.tsv'), sep='\t')
+key_regions.to_csv(os.path.join(RESULTS_PATH, "key_regions.tsv"), sep="\t")
 
 # %%
-print(f"{key_regions.n_stepwise.sum() / key_regions.length_norepeat.sum():.1%} of all bass movements are stepwise.")
+print(
+    f"{key_regions.n_stepwise.sum() / key_regions.length_norepeat.sum():.1%} of all bass movements are stepwise."
+)
 
 
 # %%
 def remove_immediate_repetitions(s):
     res = []
-    last = ''
+    last = ""
     for word in s.split():
         if word != last:
             res.append(word)
         last = word
-    return ' '.join(res)
+    return " ".join(res)
 
 
 # %%
@@ -293,13 +425,15 @@ major_regions = key_regions[~minor_selector]
 
 # %%
 ascending_minor = defaultdict(list)
-for bd, chord in zip(minor_regions.ascending_bd.sum(), minor_regions.ascending_chords.sum()):
+for bd, chord in zip(
+    minor_regions.ascending_bd.sum(), minor_regions.ascending_chords.sum()
+):
     ascending_minor[remove_immediate_repetitions(bd)].append(chord)
 ascending_minor_counts = Counter({k: len(v) for k, v in ascending_minor.items()})
 prettify_counts(ascending_minor_counts)
 
 # %%
-show_progression = '3 4 5'
+show_progression = "3 4 5"
 chords_3_4_5 = Counter(ascending_minor[show_progression])
 prettify_counts(chords_3_4_5)
 
@@ -308,13 +442,15 @@ prettify_counts(chords_3_4_5)
 
 # %%
 ascending_major = defaultdict(list)
-for bd, chord in zip(major_regions.ascending_bd.sum(), major_regions.ascending_chords.sum()):
+for bd, chord in zip(
+    major_regions.ascending_bd.sum(), major_regions.ascending_chords.sum()
+):
     ascending_major[remove_immediate_repetitions(bd)].append(chord)
 ascending_major_counts = Counter({k: len(v) for k, v in ascending_major.items()})
 prettify_counts(ascending_major_counts)
 
 # %%
-show_progression = '6 7 1'
+show_progression = "6 7 1"
 chords_6_7_1 = Counter(ascending_major[show_progression])
 prettify_counts(chords_6_7_1)
 
@@ -323,13 +459,15 @@ prettify_counts(chords_6_7_1)
 
 # %%
 descending_minor = defaultdict(list)
-for bd, chord in zip(minor_regions.descending_bd.sum(), minor_regions.descending_chords.sum()):
+for bd, chord in zip(
+    minor_regions.descending_bd.sum(), minor_regions.descending_chords.sum()
+):
     descending_minor[remove_immediate_repetitions(bd)].append(chord)
 descending_minor_counts = Counter({k: len(v) for k, v in descending_minor.items()})
 prettify_counts(descending_minor_counts)
 
 # %%
-show_progression = '3 2 1'
+show_progression = "3 2 1"
 chords_3_2_1 = Counter(descending_minor[show_progression])
 prettify_counts(chords_3_2_1)
 
@@ -338,13 +476,15 @@ prettify_counts(chords_3_2_1)
 
 # %%
 descending_major = defaultdict(list)
-for bd, chord in zip(major_regions.descending_bd.sum(), major_regions.descending_chords.sum()):
+for bd, chord in zip(
+    major_regions.descending_bd.sum(), major_regions.descending_chords.sum()
+):
     descending_major[remove_immediate_repetitions(bd)].append(chord)
 descending_major_counts = Counter({k: len(v) for k, v in descending_major.items()})
 prettify_counts(descending_major_counts)
 
 # %%
-show_progression = '5 4 3'
+show_progression = "5 4 3"
 chords_5_4_3 = Counter(descending_major[show_progression])
 prettify_counts(chords_5_4_3)
 
@@ -352,7 +492,9 @@ prettify_counts(chords_5_4_3)
 # ### Transitions between bass degrees
 
 # %%
-full_grams = {i: S[( S!=S.shift() ).fillna(True)].to_list() for i, S in bd_series.items()}
+full_grams = {
+    i: S[(S != S.shift()).fillna(True)].to_list() for i, S in bd_series.items()
+}
 print(bd_series[1])
 full_grams[1]
 
@@ -360,18 +502,22 @@ full_grams[1]
 minor_region_selector = key_regions.localkey.str.islower()
 minor_regions = key_regions[minor_region_selector].localkey.to_dict()
 major_regions = key_regions[~minor_region_selector].localkey.to_dict()
-full_grams_minor = [ms3.fifths2sd(full_grams[i], True) + ['∅'] for i in minor_regions]
-full_grams_major = [ms3.fifths2sd(full_grams[i], False) + ['∅'] for i in major_regions]
+full_grams_minor = [ms3.fifths2sd(full_grams[i], True) + ["∅"] for i in minor_regions]
+full_grams_major = [ms3.fifths2sd(full_grams[i], False) + ["∅"] for i in major_regions]
 
 # %%
 plot_transition_heatmaps(full_grams_major, full_grams_minor)
-save_pdf_path = os.path.join(RESULTS_PATH, f'bass_degree_bigrams{DEFAULT_OUTPUT_FORMAT}')
+save_pdf_path = os.path.join(
+    RESULTS_PATH, f"bass_degree_bigrams{DEFAULT_OUTPUT_FORMAT}"
+)
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
 
 # %%
 plot_transition_heatmaps(full_grams_major, full_grams_minor, sort_scale_degrees=True)
-save_pdf_path = os.path.join(RESULTS_PATH, f'bass_degree_bigrams_scale_order{DEFAULT_OUTPUT_FORMAT}')
+save_pdf_path = os.path.join(
+    RESULTS_PATH, f"bass_degree_bigrams_scale_order{DEFAULT_OUTPUT_FORMAT}"
+)
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
 
