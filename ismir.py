@@ -66,7 +66,7 @@ localkey_bigram_table = analyzed_D.get_result()
 localkey_bigram_table
 
 # %%
-localkey_bigram_table.make_bigram_tuples()
+localkey_bigram_table.make_bigram_table()
 
 # %%
 localkey_bigram_table.plot_grouped()
