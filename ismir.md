@@ -26,27 +26,44 @@ tags: [hide-cell]
 %load_ext autoreload
 %autoreload 2
 import os
-from matplotlib import pyplot as plt
 
 import dimcat as dc
-from dimcat import groupers, analyzers
 import ms3
 import pandas as pd
 import plotly.express as px
+from IPython.display import display
+from dimcat import analyzers, groupers
+from dimcat.plotting import write_image
 from git import Repo
-
-from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, corpus_mean_composition_years, \
-  get_corpus_display_name, get_repo_name, print_heading, resolve_dir, plot_cum, value_count_df, \
-    remove_none_labels, remove_non_chord_labels, plot_transition_heatmaps
+from matplotlib import pyplot as plt
 ```
 
 ```{code-cell}
-from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
-from dimcat.plotting import write_image
+from utils import (
+    CORPUS_COLOR_SCALE,
+    DEFAULT_OUTPUT_FORMAT,
+    OUTPUT_FOLDER,
+    STD_LAYOUT,
+    corpus_mean_composition_years,
+    get_corpus_display_name,
+    get_repo_name,
+    plot_cum,
+    plot_transition_heatmaps,
+    print_heading,
+    remove_non_chord_labels,
+    remove_none_labels,
+    resolve_dir,
+    value_count_df,
+)
+
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "ismir"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+
+
 def make_output_path(filename):
     return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+
+
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
@@ -65,7 +82,7 @@ D
 ```
 
 ```{code-cell}
-bigramAnalyzer = analyzers.BigramAnalyzer(features='keyannotations')
+bigramAnalyzer = analyzers.BigramAnalyzer(features="keyannotations")
 bigramAnalyzer.get_feature_specs()
 ```
 
@@ -96,24 +113,33 @@ chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
 corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
 chronological_corpus_names = list(corpus_names.values())
-corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
+corpus_name_colors = {
+    corpus_names[corp]: color for corp, color in corpus_colors.items()
+}
 ```
 
 ## FeatureExtractor
 
 ```{code-cell}
-notes = D.get_feature('notes')
-notes.plot_grouped(output=make_output_path("complete_pitch_class_distribution_absolute_bars"), height=800)
+notes = D.get_feature("notes")
+notes.plot_grouped(
+    output=make_output_path("complete_pitch_class_distribution_absolute_bars"),
+    height=800,
+)
 ```
 
 ## Slicer
 
 ```{code-cell}
 def globalminor_localkey_expressed_in_globalmajor(key):
-    return ms3.abs2rel_key(key, 'I', True)
+    return ms3.abs2rel_key(key, "I", True)
+
 
 def map_GLEIG_to_list(globalminor_localkeys):
-    return list(map(globalminor_localkey_expressed_in_globalmajor, globalminor_localkeys))
+    return list(
+        map(globalminor_localkey_expressed_in_globalmajor, globalminor_localkeys)
+    )
+
 
 def piecewise_localkeys_expressed_in_globalmajor(localkeys):
     gpb = localkeys.groupby(["corpus", "piece"])
@@ -122,26 +148,25 @@ def piecewise_localkeys_expressed_in_globalmajor(localkeys):
     expressed_in_globalmajor = piecewise_localkeys.apply(map_GLEIG_to_list)
     return piecewise_localkeys.where(is_major_mask, expressed_in_globalmajor)
 
-keys = D.get_feature('keyannotations')
+
+keys = D.get_feature("keyannotations")
 keys.load()
 piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(keys)
 ```
 
 ```{code-cell}
 keys.plot(output=make_output_path("localkey_distributions"), height=5000)
-```
 
-```{code-cell}
-type(fig)
 ```
 
 ```{code-cell}
 plot_transition_heatmaps(
-  piecewise_localkey_transitions.to_list(),
-  top=10,
-  bottom_margin=0.05,
-  left_margin=0.14)
-save_pdf_path = os.path.join(RESULTS_PATH, 'localkey_transition_matrix.pdf')
+    piecewise_localkey_transitions.to_list(),
+    top=10,
+    bottom_margin=0.05,
+    left_margin=0.14,
+)
+save_pdf_path = os.path.join(RESULTS_PATH, "localkey_transition_matrix.pdf")
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
 ```
@@ -149,42 +174,61 @@ plt.show()
 ## Groupers
 
 ```{code-cell}
-grouping = dc.Pipeline([
-    groupers.CorpusGrouper(),
-    groupers.ModeGrouper(),
-])
+grouping = dc.Pipeline(
+    [
+        groupers.CorpusGrouper(),
+        groupers.ModeGrouper(),
+    ]
+)
 GD = grouping.process(D)
-grouped_keys = GD.get_feature('keyannotations')
+grouped_keys = GD.get_feature("keyannotations")
 grouped_keys_df = grouped_keys.df
 grouped_keys_df
 ```
 
 ```{code-cell}
-segment_duration_per_corpus = grouped_keys.groupby(["corpus", "mode"]).duration_qb.sum().round(2)
-norm_segment_duration_per_corpus = 100 * segment_duration_per_corpus / segment_duration_per_corpus.groupby("corpus").sum()
-maj_min_ratio_per_corpus = pd.concat([segment_duration_per_corpus,
-                                      norm_segment_duration_per_corpus.rename('fraction').round(1).astype(str)+" %"],
-                                     axis=1)
-maj_min_ratio_per_corpus['corpus_name'] = maj_min_ratio_per_corpus.index.get_level_values('corpus').map(corpus_names)
+segment_duration_per_corpus = (
+    grouped_keys.groupby(["corpus", "mode"]).duration_qb.sum().round(2)
+)
+norm_segment_duration_per_corpus = (
+    100
+    * segment_duration_per_corpus
+    / segment_duration_per_corpus.groupby("corpus").sum()
+)
+maj_min_ratio_per_corpus = pd.concat(
+    [
+        segment_duration_per_corpus,
+        norm_segment_duration_per_corpus.rename("fraction").round(1).astype(str) + " %",
+    ],
+    axis=1,
+)
+maj_min_ratio_per_corpus[
+    "corpus_name"
+] = maj_min_ratio_per_corpus.index.get_level_values("corpus").map(corpus_names)
 fig = px.bar(
     maj_min_ratio_per_corpus.reset_index(),
     x="corpus_name",
     y="duration_qb",
-    title=None, #f"Fractions of summed corpus duration that are in major vs. minor",
+    title=None,  # f"Fractions of summed corpus duration that are in major vs. minor",
     color="mode",
-    text='fraction',
-    labels=dict(duration_qb="duration in 𝅘𝅥", corpus_name='Key segments grouped by corpus'),
-    category_orders=dict(corpus_name=chronological_corpus_names)
-    )
+    text="fraction",
+    labels=dict(
+        duration_qb="duration in 𝅘𝅥", corpus_name="Key segments grouped by corpus"
+    ),
+    category_orders=dict(corpus_name=chronological_corpus_names),
+)
 fig.update_layout(**STD_LAYOUT)
 fig.update_xaxes(tickangle=45)
-save_figure_as(fig, 'major_minor_key_segments_corpuswise_absolute_stacked_bars', height=800)
+save_figure_as(
+    fig, "major_minor_key_segments_corpuswise_absolute_stacked_bars", height=800
+)
 fig.show()
 ```
 
 ```{raw-cell}
 to_be_filled = grouped_keys_df.quarterbeats_all_endings == ''
-grouped_keys_df.quarterbeats_all_endings = grouped_keys_df.quarterbeats_all_endings.where(~to_be_filled, grouped_keys_df.quarterbeats)
+grouped_keys_df.quarterbeats_all_endings = grouped_keys_df.quarterbeats_all_endings.where(~to_be_filled,
+grouped_keys_df.quarterbeats)
 ms3.make_interval_index_from_durations(grouped_keys_df, position_col="quarterbeats_all_endings")
 ```
 
@@ -194,7 +238,7 @@ ms3.make_interval_index_from_durations(grouped_keys_df, position_col="quarterbea
 :tags: [hide-input]
 
 try:
-    labels = D.get_feature('harmonylabels')
+    labels = D.get_feature("harmonylabels")
     all_annotations = labels.df
 except Exception:
     all_annotations = pd.DataFrame()
@@ -206,24 +250,34 @@ if includes_annotations:
     display(all_chords.head())
     print(f"Concatenated annotation tables contain {n_annotations} rows.")
     no_chord = all_annotations.root.isna()
-    print(f"Dataset contains {len(all_chords)} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
-    all_annotations['corpus_name'] = all_annotations.index.get_level_values(0).map(corpus_names)
-    all_chords['corpus_name'] = all_chords.index.get_level_values(0).map(corpus_names)
+    print(
+        f"Dataset contains {len(all_chords)} tokens and {len(all_chords.chord.unique())} types over "
+        f"{len(all_chords.groupby(level=[0,1]))} documents."
+    )
+    all_annotations["corpus_name"] = all_annotations.index.get_level_values(0).map(
+        corpus_names
+    )
+    all_chords["corpus_name"] = all_chords.index.get_level_values(0).map(corpus_names)
 else:
-    print(f"Dataset contains no annotations.")
+    print("Dataset contains no annotations.")
 ```
 
 ```{code-cell}
 group_keys, group_dict = dc.data.resources.utils.make_adjacency_groups(
-            all_chords.localkey, groupby=["corpus", "piece"]
-        )
-segment2bass_note_series = {seg: bn for seg, bn in all_chords.groupby(group_keys).bass_note}
-full_grams = {i: S[( S!=S.shift() ).fillna(True)].to_list() for i, S in segment2bass_note_series.items()}
+    all_chords.localkey, groupby=["corpus", "piece"]
+)
+segment2bass_note_series = {
+    seg: bn for seg, bn in all_chords.groupby(group_keys).bass_note
+}
+full_grams = {
+    i: S[(S != S.shift()).fillna(True)].to_list()
+    for i, S in segment2bass_note_series.items()
+}
 full_grams_major, full_grams_minor = [], []
 for i, bass_notes in segment2bass_note_series.items():
-    #progression = bass_notes[(bass_notes != bass_notes.shift()).fillna(True)].to_list()
+    # progression = bass_notes[(bass_notes != bass_notes.shift()).fillna(True)].to_list()
     is_minor = group_dict[i].islower()
-    progression = ms3.fifths2sd(bass_notes.to_list(), is_minor) + ['∅']
+    progression = ms3.fifths2sd(bass_notes.to_list(), is_minor) + ["∅"]
     if is_minor:
         full_grams_minor.append(progression)
     else:
@@ -237,13 +291,12 @@ plt.show()
 ```
 
 ```{code-cell}
-#font_dict = {'font': {'size': 20}}2
-fig = plot_cum(
-  all_chords.chord,
-  font_size=35,
-  markersize=10,
-  **STD_LAYOUT)
-save_figure_as(fig, 'chord_type_distribution_cumulative', )
+# font_dict = {'font': {'size': 20}}2
+fig = plot_cum(all_chords.chord, font_size=35, markersize=10, **STD_LAYOUT)
+save_figure_as(
+    fig,
+    "chord_type_distribution_cumulative",
+)
 fig.show()
 ```
 
@@ -257,10 +310,12 @@ value_count_df(grouped_chords.chord)
 ```
 
 ```{code-cell}
-ugs_dict = {mode: value_count_df(chords).reset_index() for mode, chords in
-            grouped_chords.groupby("mode").chord}
+ugs_dict = {
+    mode: value_count_df(chords).reset_index()
+    for mode, chords in grouped_chords.groupby("mode").chord
+}
 ugs_df = pd.concat(ugs_dict, axis=1)
-ugs_df.columns = ['_'.join(map(str, col)) for col in ugs_df.columns]
-ugs_df.index = (ugs_df.index + 1).rename('k')
+ugs_df.columns = ["_".join(map(str, col)) for col in ugs_df.columns]
+ugs_df.index = (ugs_df.index + 1).rename("k")
 ugs_df
 ```

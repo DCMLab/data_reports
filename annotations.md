@@ -36,7 +36,7 @@ import plotly.express as px
 from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
 from dimcat.plotting import write_image
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "annotations"))
@@ -47,7 +47,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
@@ -60,7 +60,7 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 all_metadata = D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
 mean_composition_years = corpus_mean_composition_years(all_metadata)
@@ -83,7 +83,7 @@ annotated_notes = D.get_feature("notes").subselect(is_annotated_index)
 print(f"The annotated pieces have {len(annotated_notes)} notes.")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 all_chords = D.get_feature("harmonylabels")
 all_chords.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
@@ -92,7 +92,7 @@ all_chords.subselect([("couperin_concerts", "c03n06_musette_1")])
 ### Unigrams
 For computing unigram statistics, the tokens need to be grouped by their occurrence within a major or a minor key because this changes their meaning. To that aim, the annotated corpus needs to be sliced into contiguous localkey segments which are then grouped into a major (`is_minor=False`) and a minor group.
 
-```{code-cell} ipython3
+```{code-cell}
 root_durations = all_chords[all_chords.root.between(-5,6)].groupby(['root', 'chord_type']).duration_qb.sum()
 # sort by stacked bar length:
 #root_durations = root_durations.sort_values(key=lambda S: S.index.get_level_values(0).map(S.groupby(level=0).sum()), ascending=False)
@@ -115,7 +115,7 @@ save_figure_as(fig, 'chord_type_distribution_over_scale_degrees_absolute_stacked
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 relative_roots = all_chords[['numeral', 'duration_qb', 'relativeroot', 'localkey_is_minor', 'chord_type']].copy()
 relative_roots['relativeroot_resolved'] = ms3.transform(relative_roots, ms3.resolve_relative_keys, ['relativeroot', 'localkey_is_minor'])
 has_rel = relative_roots.relativeroot_resolved.notna()
@@ -128,7 +128,7 @@ relative_roots['type_reduced'] = relative_roots.chord_type.map(replace_rare)
 #relative_roots.loc[is_special, 'root'] = -4
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 root_durations = relative_roots.groupby(['root', 'type_reduced']).duration_qb.sum().sort_values(ascending=False)
 bar_data = root_durations.reset_index()
 bar_data.root = bar_data.root.map(ms3.fifths2iv)
@@ -157,21 +157,21 @@ save_figure_as(fig, 'chord_type_distribution_over_scale_degrees_absolute_grouped
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 print(f"Reduced to {len(set(bar_data.iloc[:,:2].itertuples(index=False, name=None)))} types. Paper cites the sum of types in major and types in minor (see below), treating them as distinct.")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 dim_or_aug = bar_data[bar_data.root.str.startswith("a") | bar_data.root.str.startswith("d")].duration_qb.sum()
 complete = bar_data.duration_qb.sum()
 print(f"On diminished or augmented scale degrees: {dim_or_aug} / {complete} = {dim_or_aug / complete}")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 all_chords.formatted_column
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 chords_by_mode = groupers.ModeGrouper().process(all_chords)
 chords_by_mode.get_default_analysis()
 ```
@@ -180,16 +180,16 @@ chords_by_mode.get_default_analysis()
 
 #### Whole dataset
 
-```{code-cell} ipython3
+```{code-cell}
 unigram_proportions = chords_by_mode.get_default_analysis()
 unigram_proportions
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 unigram_proportions.get(as_pandas=True)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 k = 20
 modes = {True: 'MINOR', False: 'MAJOR'}
 for (is_minor,), ugs in unigram_proportions.iter():
@@ -197,7 +197,7 @@ for (is_minor,), ugs in unigram_proportions.iter():
     print(ugs.head(k).to_string())
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 ugs_dict = {modes[is_minor].lower(): (ugs/ugs.sum() * 100).round(2).rename('%').reset_index() for (is_minor,), ugs in unigram_proportions.iter()}
 ugs_df = pd.concat(ugs_dict, axis=1)
 ugs_df.columns = ['_'.join(map(str, col)) for col in ugs_df.columns]
@@ -207,21 +207,21 @@ print(ugs_df.iloc[:50].to_markdown())
 
 #### Per corpus
 
-```{code-cell} ipython3
+```{code-cell}
 corpus_wise_unigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process(mode_slices)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 corpus_wise_unigrams.get()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
     print(f"{corpus_name} {modes[is_minor]} unigrams ({ugs.shape[0]} types, {ugs.sum()} tokens)")
     print(ugs.head(5).to_string())
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 types_shared_between_corpora = {}
 for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
     if is_minor in types_shared_between_corpora:
@@ -235,15 +235,15 @@ print(f"Chords which occur in all corpora, sorted by descending global frequency
 
 #### Per piece
 
-```{code-cell} ipython3
+```{code-cell}
 piece_wise_unigrams = dc.Pipeline([dc.PieceGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process(mode_slices)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 piece_wise_unigrams.get()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 types_shared_between_pieces = {}
 for (is_minor, corpus_name), ugs in piece_wise_unigrams.iter():
     if is_minor in types_shared_between_pieces:
@@ -259,12 +259,12 @@ print(types_shared_between_pieces)
 
 #### Tone profiles for all major and minor local keys
 
-```{code-cell} ipython3
+```{code-cell}
 notes_by_keys = keys_segmented.get_facet("notes")
 notes_by_keys
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 keys = keys[[col for col in keys.columns if col not in notes_by_keys]]
 notes_joined_with_keys = notes_by_keys.join(keys, on=keys.index.names)
 notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
@@ -274,7 +274,7 @@ mode_tpcs['duration_pct'] = mode_tpcs.groupby('localkey_is_minor', group_keys=Fa
 mode_tpcs['mode'] = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'})
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 #mode_tpcs = mode_tpcs[mode_tpcs['duration_pct'] > 0.001]
 #sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', 'b4', '4', '#4', '##4', 'b5', '5', '#5', 'b6','6', '#6', 'b7', '7']
 legend=dict(
@@ -308,15 +308,15 @@ fig.show()
 
 #### Whole dataset
 
-```{code-cell} ipython3
+```{code-cell}
 bigrams = dc.ChordSymbolBigrams(once_per_group=True).process(mode_slices)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 bigrams.get()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 modes = {True: 'MINOR', False: 'MAJOR'}
 for (is_minor,), ugs in bigrams.iter():
     print(f"{modes[is_minor]} BIGRAMS\n{ugs.shape[0]} transition types, {ugs.sum()} tokens")
@@ -325,25 +325,25 @@ for (is_minor,), ugs in bigrams.iter():
 
 #### Per corpus
 
-```{code-cell} ipython3
+```{code-cell}
 corpus_wise_bigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolBigrams(once_per_group=True)]).process(mode_slices)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 corpus_wise_bigrams.get()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 for (is_minor, corpus_name), ugs in corpus_wise_bigrams.iter():
     print(f"{corpus_name} {modes[is_minor]} bigrams ({ugs.shape[0]} transition types, {ugs.sum()} tokens)")
     print(ugs.head(5).to_string())
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 normalized_corpus_unigrams = {group: (100 * ugs / ugs.sum()).round(1).rename("frequency") for group, ugs in corpus_wise_unigrams.iter()}
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 transitions_from_shared_types = {
     False: {},
     True: {}
@@ -357,21 +357,21 @@ for (is_minor, corpus_name), bgs in corpus_wise_bigrams.iter():
     transitions_from_shared_types[is_minor][corpus_name] = combined
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 pd.concat(transitions_from_shared_types[False].values(), keys=transitions_from_shared_types[False].keys(), axis=1)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 pd.concat(transitions_from_shared_types[True].values(), keys=transitions_from_shared_types[False].keys(), axis=1)
 ```
 
 #### Per piece
 
-```{code-cell} ipython3
+```{code-cell}
 piece_wise_bigrams = dc.Pipeline([dc.PieceGrouper(), dc.ChordSymbolBigrams(once_per_group=True)]).process(mode_slices)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 piece_wise_bigrams.get()
 ```
 
@@ -384,7 +384,7 @@ piece_wise_bigrams.get()
 all_annotations.groupby(["corpus"]).phraseend.value_counts()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 all_annotations.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
 
@@ -401,7 +401,7 @@ legacy.groupby(level=0).size()
 * `duration_qb`: duration of each phrase, measured in quarter notes
 * `phrase_slice`: time interval of each annotated phrases (for segmenting chord progressions and notes)
 
-```{code-cell} ipython3
+```{code-cell}
 phrase_segmented = dc.PhraseSlicer().process(D)
 phrases = phrase_segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
