@@ -30,7 +30,7 @@ from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
-from dimcat.steps import groupers, analyzers
+from dimcat.steps import slicers, groupers, analyzers
 
 from utils import get_repo_name, print_heading, resolve_dir
 ```
@@ -124,6 +124,7 @@ D
 ```{code-cell}
 CorpusG = groupers.CorpusGrouper()
 grouped_D = dc.Pipeline([
+    slicers.KeySlicer(),
     groupers.ModeGrouper(),
     CorpusG
 ]).process(D)
@@ -156,9 +157,23 @@ duration_ranking.to_clipboard()
 ### Bigrams
 
 ```{code-cell}
-chord_bigram_table = chord_labels.apply_step(analyzers.BigramAnalyzer)
+chords_by_localkey = chord_labels
+chord_bigram_table = chords_by_localkey.apply_step(analyzers.BigramAnalyzer)
 chord_bigrams = chord_bigram_table.make_bigram_tuples("chord", join_str="", fillna="", drop_identical=True)
-chord_bigrams.make_ranking_table()
+bigram_ranking = chord_bigrams.make_ranking_table(drop_cols="proportion", top_k=None)
+bigram_ranking
+```
+
+```{code-cell}
+bigram_ranking.to_clipboard()
+```
+
+```{code-cell}
+chord_bigram_table.head(50)
+```
+
+```{code-cell}
+chord_bigram_table.get_transitions()
 ```
 
 ## Bass degrees

@@ -100,7 +100,7 @@ result.plot_grouped()
 ```{code-cell}
 from ms3 import roman_numeral2fifths, transform
 
-keys_segmented = dc.LocalKeySlicer().process_data(D)
+keys_segmented = dc.KeySlicer().process_data(D)
 keys = keys_segmented.get_slice_info()
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])

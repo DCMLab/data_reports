@@ -779,13 +779,9 @@ def make_key_region_summary_table(
     """
     groupby_kwargs = dict(groupby_kwargs, group_keys=False)
     if mutate_dataframe:
-        df = add_bass_degree_columns(
-            df, mutate_dataframe=mutate_dataframe, *groupby_args, **groupby_kwargs
-        )
+        df = add_bass_degree_columns(df, mutate_dataframe=mutate_dataframe)
     else:
-        add_bass_degree_columns(
-            df, mutate_dataframe=mutate_dataframe, *groupby_args, **groupby_kwargs
-        )
+        add_bass_degree_columns(df, mutate_dataframe=mutate_dataframe)
     if "bass_interval" not in df.columns:
         bass_interval_column = df.groupby(
             *groupby_args, **groupby_kwargs
