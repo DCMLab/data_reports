@@ -56,9 +56,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 
 # %%
-package_path = resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
+package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -395,7 +393,6 @@ print(
 # %% [markdown]
 # ### Ultimae as Roman numeral
 
-
 # %%
 def highlight(row, color="#ffffb3"):
     if row.counts < 10:
@@ -477,7 +474,6 @@ fig.show()
 
 # %% [markdown]
 # ### PACs with ultima I/i
-
 
 # %%
 def remove_immediate_duplicates(lst):
@@ -669,7 +665,6 @@ fig.show()
 
 # %% [markdown]
 # #### Bass degrees without accidentals
-
 
 # %%
 def remove_sd_accidentals(t):
