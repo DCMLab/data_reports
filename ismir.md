@@ -71,7 +71,9 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell}
 :tags: [remove-output]
 
-package_path = resolve_dir("dcml_corpora.datapackage.json")
+package_path = resolve_dir(
+    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+)
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -97,12 +99,16 @@ localkey_bigram_table.make_bigram_table()
 ```
 
 ```{code-cell}
-localkey_bigram_table.plot_grouped()
+localkey_bigram_table.make_ranking_table()
 ```
 
 ```{code-cell}
-transitions = localkey_bigram_table.get_transitions("localkey_and_mode", as_string=True)
-transitions.p
+localkey_bigram_table.plot(max_x=30, max_y=30)
+```
+
+```{code-cell}
+transitions = localkey_bigram_table.get_transitions()
+transitions
 ```
 
 ```{code-cell}
@@ -156,7 +162,6 @@ piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(ke
 
 ```{code-cell}
 keys.plot(output=make_output_path("localkey_distributions"), height=5000)
-
 ```
 
 ```{code-cell}

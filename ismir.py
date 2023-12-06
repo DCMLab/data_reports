@@ -27,10 +27,10 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
+from IPython.display import display
 from dimcat import analyzers, groupers
 from dimcat.plotting import write_image
 from git import Repo
-from IPython.display import display
 from matplotlib import pyplot as plt
 
 # %%
@@ -64,7 +64,9 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 
 # %% tags=["remove-output"]
-package_path = resolve_dir("dcml_corpora.datapackage.json")
+package_path = resolve_dir(
+    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+)
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -86,11 +88,14 @@ localkey_bigram_table
 localkey_bigram_table.make_bigram_table()
 
 # %%
-localkey_bigram_table.plot_grouped()
+localkey_bigram_table.make_ranking_table()
 
 # %%
-transitions = localkey_bigram_table.get_transitions("localkey_and_mode", as_string=True)
-transitions.p
+localkey_bigram_table.plot(max_x=30, max_y=30)
+
+# %%
+transitions = localkey_bigram_table.get_transitions()
+transitions
 
 # %%
 all_metadata = D.get_metadata()
@@ -118,7 +123,6 @@ notes.plot_grouped(
 # %% [markdown]
 # ## Slicer
 
-
 # %%
 def globalminor_localkey_expressed_in_globalmajor(key):
     return ms3.abs2rel_key(key, "I", True)
@@ -144,7 +148,6 @@ piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(ke
 
 # %%
 keys.plot(output=make_output_path("localkey_distributions"), height=5000)
-
 
 # %%
 plot_transition_heatmaps(
