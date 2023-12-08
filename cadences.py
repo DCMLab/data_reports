@@ -81,7 +81,7 @@ cadence_labels.plot_grouped(
 # ### Metadata
 
 # %%
-cadence_filter = groupers.HasCadenceAnnotations()
+cadence_filter = groupers.HasCadenceAnnotationsGrouper()
 cadence_filter.fit_to_dataset(D)
 hascadence = cadence_filter.grouped_units.filter(False, drop_level=True)
 
