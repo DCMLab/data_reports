@@ -37,7 +37,6 @@ from utils import (
     get_repo_name,
     make_key_region_summary_table,
     print_heading,
-    remove_non_chord_labels,
     resolve_dir,
 )
 
@@ -45,8 +44,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "reduction"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -70,133 +68,63 @@ print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
 
-# %% tags=["remove-input"]
-filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
-all_metadata = filtered_D.get_metadata()
-assert len(all_metadata) > 0, "No pieces selected for analysis."
-all_metadata
-
 # %% [markdown]
 # ## DCML harmony labels
 
 # %%
-all_annotations = filtered_D.get_feature("HarmonyLabels")
+pipeline = [
+    dict(dtype="HasHarmonyLabelsFilter", keep_values=[True]),
+    "KeySlicer",
+    dict(dtype="BigramAnalyzer", features="BassNotes"),
+]
+analyzed_D = D.apply_steps(pipeline)
+analyzed_D
 
 # %%
-key_slicer = slicers.KeySlicer()
-keys_segmented = key_slicer.process(filtered_D)
-keys = keys_segmented.get_slice_info()
-print(f"Overall number of key segments is {len(keys.index)}")
-keys["localkey_fifths"] = ms3.transform(
-    keys, ms3.roman_numeral2fifths, ["localkey", "globalkey_is_minor"]
-)
-keys.head(5).style.apply(color_background, subset="localkey")
-
-# %%
-filtered_D.get_metadata()
-
-# %%
-slice_df = pd.DataFrame(index=key_slicer.slice_intervals.index)
-slice_df
-
-# %%
-from dimcat.data.resources import DimcatIndex
-
-
-def join_df_on_index(
-    df: pd.DataFrame, index: DimcatIndex | pd.MultiIndex
-) -> pd.DataFrame:
-    if isinstance(index, DimcatIndex):
-        index = index.index
-    if df.columns.nlevels > 1:
-        # workaround because pandas enforces column indices to have same number of levels for merging
-        column_index = pd.MultiIndex.from_tuples(df.columns, names=df.columns.names)
-        grouping_df = pd.DataFrame(index=index, columns=column_index)
-        df_aligned = grouping_df.join(df, how="left", lsuffix="_")
-    else:
-        grouping_df = pd.DataFrame(index=index)
-        df_aligned = grouping_df.join(
-            df,
-            how="left",
-        )
-    return df_aligned
-
-
-join_df_on_index(filtered_D.get_metadata().df, key_slicer.slice_intervals.index)
-
-# %%
-key_segments = keys_segmented.get_facet("expanded")
-# key_segments = remove_none_labels(key_segments) not removing @none, so we can exclude them from transitions
-key_segments = remove_non_chord_labels(key_segments, remove_erroneous_chords=False)
-# key_segments["notna_segment"] = key_segments.bass_note.isna().cumsum()
-key_segments = add_mode_column(key_segments)
-add_bass_degree_columns(key_segments)
+key_segments = analyzed_D.get_feature("BassNotes")
 key_segments
 
 # %%
-bass_degree2intervals = key_segments.groupby(
-    ["mode", "bass_degree"]
-).intervals_over_bass.value_counts()
-bass_degree2intervals.sort_values(ascending=False)
+from dimcat.data.resources.results import NgramTable
+
+segment_bigrams: NgramTable = analyzed_D.get_result()
+segment_bigrams
+
+# %%
+segment_bigrams._convenience_column_names
 
 # %% [markdown]
 # ## Bigrams (fast)
 
 # %%
-from typing import List
-
-
-def get_bigrams(
-    a_columns: str | List[str],
-    b_columns: str | List[str],
-) -> List[tuple]:
-    if isinstance(a_columns, str):
-        a_columns = [a_columns]
-    if isinstance(b_columns, str):
-        b_columns = [b_columns]
-    a_columns = [("a", col) for col in a_columns]
-    b_columns = [("b", col) for col in b_columns]
-    default_columns = [("a", col) for col in DEFAULT_COLUMNS]
-    selection = segment_bigrams.loc[:, default_columns + a_columns + b_columns].dropna(
-        how="any"
-    )
-    default_df = selection[default_columns]
-    default_df.columns = DEFAULT_COLUMNS
-    return pd.concat(
-        [
-            default_df,
-            pd.Series(
-                selection[a_columns].itertuples(index=False, name=None),
-                index=selection.index,
-                name="a",
-            ),
-            pd.Series(
-                selection[b_columns].itertuples(index=False, name=None),
-                index=selection.index,
-                name="b",
-            ),
-        ],
-        axis=1,
-    )
-
-
-shifted_key_segments = key_segments.groupby(level=[0, 1, 2], group_keys=False).apply(
-    lambda df: df.shift(-1)
+segment_bigrams.make_bigram_table(
+    columns=("bass_note", "intervals_over_bass"),
+    join_str=True,
+    context_columns=("mc", "mc_onset"),
+    terminal_symbols=False,
 )
-segment_bigrams = pd.concat(
-    [key_segments, shifted_key_segments], keys=["a", "b"], axis=1
-)
-segment_bigrams
 
 # %%
-bass_note_bigrams = get_bigrams(
-    ["bass_note", "intervals_over_bass"], ["bass_note", "intervals_over_bass"]
+bass_note_bigrams = segment_bigrams.make_bigram_table(
+    columns=("bass_note", "intervals_over_bass"),
+    join_str=True,
+    context_columns=("mc", "mc_onset"),
+    terminal_symbols=False,
 )
 bass_note_bigrams.to_csv(os.path.join(RESULTS_PATH, "bass_note_bigrams.tsv"), sep="\t")
 
 # %%
-bass_note_bigram_counts = (
-    bass_note_bigrams[["a", "b"]].apply(lambda row: tuple(row), axis=1).value_counts()
+bigram_tuples = segment_bigrams.make_bigram_tuples(
+    columns=("bass_note", "intervals_over_bass"),
+    join_str=True,
+    context_columns=("mc", "mc_onset"),
+    terminal_symbols=False,
+)
+bigram_tuples
+
+# %%
+bass_note_bigram_counts = bigram_tuples.apply_step(
+    dict(dtype="Counter", smallest_unit="GROUP")
 )
 bass_note_bigram_counts.to_csv(
     os.path.join(RESULTS_PATH, "bass_note_bigram_counts.tsv"), sep="\t"
@@ -778,7 +706,7 @@ fig.show()
 # ### Tone profiles for all major and minor local keys
 
 # %%
-notes_by_keys = keys_segmented.get_facet("notes")
+notes_by_keys = sliced_D.get_facet("notes")
 notes_by_keys
 
 # %%
@@ -936,7 +864,7 @@ print(
 )
 
 # %%
-mode_slices = dc.ModeGrouper().process_data(keys_segmented)
+mode_slices = dc.ModeGrouper().process_data(sliced_D)
 
 # %% [markdown]
 # ### Whole dataset
