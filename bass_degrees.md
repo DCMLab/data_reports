@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.0
 kernelspec:
   display_name: revamp
   language: python
@@ -61,7 +61,9 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+package_path = resolve_dir(
+    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+)
 D = dc.Dataset.from_package(package_path)
 D
 ```

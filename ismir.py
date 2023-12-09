@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -27,10 +27,10 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-from IPython.display import display
 from dimcat import analyzers, groupers
 from dimcat.plotting import write_image
 from git import Repo
+from IPython.display import display
 from matplotlib import pyplot as plt
 
 # %%
@@ -85,6 +85,9 @@ localkey_bigram_table = analyzed_D.get_result()
 localkey_bigram_table
 
 # %%
+localkey_bigram_table.plot_grouped()
+
+# %%
 localkey_bigram_table.make_bigram_table()
 
 # %%
@@ -122,6 +125,7 @@ notes.plot_grouped(
 
 # %% [markdown]
 # ## Slicer
+
 
 # %%
 def globalminor_localkey_expressed_in_globalmajor(key):

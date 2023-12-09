@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -22,23 +22,37 @@
 # %load_ext autoreload
 # %autoreload 2
 import os
-from git import Repo
+
 import dimcat as dc
-from dimcat import filters
 import ms3
 import pandas as pd
 import plotly.express as px
-
-from utils import (CORPUS_COLOR_SCALE, STD_LAYOUT, corpus_mean_composition_years,
-                   get_corpus_display_name, get_repo_name, print_heading, resolve_dir)
+from dimcat import filters
+from dimcat.plotting import write_image
+from git import Repo
+from IPython.display import display
 
 # %%
-from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
-from dimcat.plotting import write_image
+from utils import (
+    CORPUS_COLOR_SCALE,
+    DEFAULT_OUTPUT_FORMAT,
+    OUTPUT_FOLDER,
+    STD_LAYOUT,
+    corpus_mean_composition_years,
+    get_corpus_display_name,
+    get_repo_name,
+    print_heading,
+    resolve_dir,
+)
+
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
+
+
 def make_output_path(filename):
     return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+
+
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 
@@ -47,7 +61,9 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 # **Loading data**
 
 # %%
-package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+package_path = resolve_dir(
+    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+)
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -68,7 +84,9 @@ chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
 corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
 chronological_corpus_names = list(corpus_names.values())
-corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
+corpus_name_colors = {
+    corpus_names[corp]: color for corp, color in corpus_colors.items()
+}
 
 # %%
 mean_composition_years
@@ -79,14 +97,17 @@ mean_composition_years
 # This section relies on the dataset's metadata.
 
 # %%
-valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors='coerce')
-valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors='coerce')
-print(f"Composition dates range from {int(valid_composed_start.min())} {valid_composed_start.idxmin()} "
-      f"to {int(valid_composed_end.max())} {valid_composed_end.idxmax()}.")
+valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors="coerce")
+valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors="coerce")
+print(
+    f"Composition dates range from {int(valid_composed_start.min())} {valid_composed_start.idxmin()} "
+    f"to {int(valid_composed_end.max())} {valid_composed_end.idxmax()}."
+)
 
 
 # %% [markdown]
 # ### Mean composition years per corpus
+
 
 # %%
 def make_summary(metadata_df):
@@ -96,19 +117,22 @@ def make_summary(metadata_df):
 
 # %% tags=["hide-input"]
 summary = make_summary(all_metadata)
-bar_data = pd.concat([mean_composition_years.rename('year'),
-                      summary.groupby(level='corpus').size().rename('pieces')],
-                     axis=1
-                    ).reset_index()
+bar_data = pd.concat(
+    [
+        mean_composition_years.rename("year"),
+        summary.groupby(level="corpus").size().rename("pieces"),
+    ],
+    axis=1,
+).reset_index()
 
 N = len(summary)
 fig = px.bar(
     bar_data,
-    x='year',
-    y='pieces',
-    color='corpus',
+    x="year",
+    y="pieces",
+    color="corpus",
     color_discrete_map=corpus_colors,
-    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus"
+    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
 )
 fig.update_traces(width=5)
 fig.update_layout(**STD_LAYOUT)
@@ -127,21 +151,18 @@ hist_data = summary.reset_index()
 hist_data.corpus = hist_data.corpus.map(corpus_names)
 fig = px.histogram(
     hist_data,
-    x='composed_end',
-    color='corpus',
-    labels=dict(composed_end='decade',
-               count='pieces',
-              ),
+    x="composed_end",
+    color="corpus",
+    labels=dict(
+        composed_end="decade",
+        count="pieces",
+    ),
     color_discrete_map=corpus_name_colors,
-    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus"
-                  )
-fig.update_traces(xbins=dict(
-    size=10
-))
-fig.update_layout(**STD_LAYOUT)
-fig.update_legends(
-  font=dict(size=16)
+    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
 )
+fig.update_traces(xbins=dict(size=10))
+fig.update_layout(**STD_LAYOUT)
+fig.update_legends(font=dict(size=16))
 save_figure_as(fig, "pieces_timeline_histogram", height=1250)
 fig.show()
 
@@ -151,27 +172,31 @@ fig.show()
 #
 # ### Overview
 
+
 # %%
 def make_overview_table(groupby, group_name="pieces"):
     n_groups = groupby.size().rename(group_name)
     absolute_numbers = dict(
-        measures = groupby.last_mn.sum(),
-        length = groupby.length_qb.sum(),
-        notes = groupby.n_onsets.sum(),
-        labels = groupby.label_count.sum(),
+        measures=groupby.last_mn.sum(),
+        length=groupby.length_qb.sum(),
+        notes=groupby.n_onsets.sum(),
+        labels=groupby.label_count.sum(),
     )
     absolute = pd.DataFrame.from_dict(absolute_numbers)
     absolute = pd.concat([n_groups, absolute], axis=1)
-    sum_row = pd.DataFrame(absolute.sum(), columns=['sum']).T
+    sum_row = pd.DataFrame(absolute.sum(), columns=["sum"]).T
     absolute = pd.concat([absolute, sum_row])
     return absolute
 
+
 absolute = make_overview_table(summary.groupby("workTitle"))
-#print(absolute.astype(int).to_markdown())
+# print(absolute.astype(int).to_markdown())
 absolute.astype(int)
 
 # %%
-public = dc.Dataset.from_package("/home/laser/git/meta_repositories/dcml_corpora/dcml_corpora.datapackage.json")
+public = dc.Dataset.from_package(
+    "/home/laser/git/meta_repositories/dcml_corpora/dcml_corpora.datapackage.json"
+)
 public
 
 
@@ -180,6 +205,7 @@ def summarize_dataset(D):
     all_metadata = D.get_metadata()
     summary = make_summary(all_metadata)
     return make_overview_table(summary.groupby(level=0))
+
 
 dcml_corpora = summarize_dataset(public)
 print(dcml_corpora.astype(int).to_markdown())
@@ -192,8 +218,10 @@ print(distant_listening.astype(int).to_markdown())
 # ### Measures
 
 # %%
-all_measures = D.get_feature('measures').df
-print(f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files.")
+all_measures = D.get_feature("measures").df
+print(
+    f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files."
+)
 all_measures.head()
 
 # %%
@@ -217,10 +245,20 @@ if includes_annotations:
     print(f"Concatenated annotation tables contains {all_annotations.shape[0]} rows.")
     no_chord = all_annotations.root.isna()
     if no_chord.sum() > 0:
-        print(f"{no_chord.sum()} of them are not chords. Their values are: {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}")
+        print(
+            f"{no_chord.sum()} of them are not chords. Their values are:"
+            f" {all_annotations.label[no_chord].value_counts(dropna=False).to_dict()}"
+        )
     all_chords = all_annotations[~no_chord].copy()
-    print(f"Dataset contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over {len(all_chords.groupby(level=[0,1]))} documents.")
-    all_annotations['corpus_name'] = all_annotations.index.get_level_values(0).map(get_corpus_display_name)
-    all_chords['corpus_name'] = all_chords.index.get_level_values(0).map(get_corpus_display_name)
+    print(
+        f"Dataset contains {all_chords.shape[0]} tokens and {len(all_chords.chord.unique())} types over "
+        f"{len(all_chords.groupby(level=[0,1]))} documents."
+    )
+    all_annotations["corpus_name"] = all_annotations.index.get_level_values(0).map(
+        get_corpus_display_name
+    )
+    all_chords["corpus_name"] = all_chords.index.get_level_values(0).map(
+        get_corpus_display_name
+    )
 else:
-    print(f"Dataset contains no annotations.")
+    print("Dataset contains no annotations.")
