@@ -814,68 +814,6 @@ def make_key_region_summary_table(
     return df.groupby(*groupby_args, **groupby_kwargs).apply(summarize)
 
 
-def add_bass_degree_columns(
-    df,
-    mutate_dataframe: bool = True,
-):
-    if "bass_degree" not in df.columns:
-        bass_degree_column = ms3.transform(
-            df, ms3.fifths2sd, ["bass_note", "localkey_is_minor"]
-        )
-        if mutate_dataframe:
-            df["bass_degree"] = bass_degree_column
-        else:
-            df = pd.concat([df, bass_degree_column.rename("bass_degree")], axis=1)
-    if "intervals_over_bass" not in df.columns:
-        intervals_over_bass_column = ms3.transform(
-            df, chord_tones2interval_structure, ["chord_tones"]
-        )
-        intervals_over_root_column = ms3.transform(
-            df, chord_tones2interval_structure, ["chord_tones", "root"]
-        )
-        if mutate_dataframe:
-            df["intervals_over_bass"] = intervals_over_bass_column
-            df["intervals_over_root"] = intervals_over_root_column
-        else:
-            df = pd.concat(
-                [
-                    df,
-                    intervals_over_bass_column.rename("intervals_over_bass"),
-                    intervals_over_root_column.rename("intervals_over_root"),
-                ],
-                axis=1,
-            )
-    if mutate_dataframe:
-        return df
-
-
-def chord_tones2interval_structure(
-    fifths: Iterable[int], reference: Optional[int] = None
-) -> Tuple[str]:
-    """The fifth are interpreted as intervals expressing distances from the local tonic ("neutral degrees").
-    The result will be a tuple of strings that express the same intervals but expressed with respect to the given
-    reference (neutral degree), removing unisons.
-    If no reference is specified, the first degree (usually, the bass note) is used as such.
-    """
-    try:
-        fifths = tuple(fifths)
-        if len(fifths) == 0:
-            return ()
-    except Exception:
-        return ()
-    if reference is None:
-        reference = fifths[0]
-    elif reference in fifths:
-        position = fifths.index(reference)
-        if position > 0:
-            fifths = fifths[position:] + fifths[:position]
-    adapted_intervals = [
-        ms3.fifths2iv(adapted)
-        for interval in fifths
-        if (adapted := interval - reference) != 0
-    ]
-    return tuple(adapted_intervals)
-
 
 def make_transition_heatmap_plots(
     left_transition_matrix: pd.DataFrame,
