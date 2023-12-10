@@ -311,7 +311,7 @@ fig.show()
 
 ```{code-cell}
 grouped_chords = groupers.ModeGrouper().process(labels)
-grouped_chords.get_default_groupby()
+grouped_chords.default_groupby
 ```
 
 ```{code-cell}

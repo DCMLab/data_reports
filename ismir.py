@@ -288,7 +288,7 @@ fig.show()
 
 # %%
 grouped_chords = groupers.ModeGrouper().process(labels)
-grouped_chords.get_default_groupby()
+grouped_chords.default_groupby
 
 # %%
 value_count_df(grouped_chords.chord)
