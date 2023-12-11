@@ -28,10 +28,10 @@ from typing import List
 
 import dimcat as dc
 import ms3
-import numpy as np
 import pandas as pd
 from dimcat.plotting import write_image
 from dimcat.utils import grams
+from dimcat import resources
 from git import Repo
 from scipy.stats import entropy
 
@@ -77,25 +77,77 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
+```{code-cell}
+
+def bigram_matrix(bigrams):
+    """Expects columns 'a' and 'b'."""
+    return (
+        bigrams.groupby("antecedent")
+        .consequent.value_counts()
+        .unstack()
+        .fillna(0)
+        .astype(int)
+    )
+
+
+# bass_note_matrix = bigram_matrix(bigrams_df)
+
+
+def normalized_entropy(matrix_or_series):
+    """For matrices, compute normalized entropy for each row."""
+    is_matrix = len(matrix_or_series.shape) > 1
+    if is_matrix:
+        result = matrix_or_series.apply(lambda x: entropy(x, base=2), axis=1)
+    else:
+        result = entropy(matrix_or_series, base=2)
+    return result
+
+
+def get_weighted_bigram_entropy(bigrams):
+    """Expects columns 'antecedent' and 'consequent'."""
+    unigram_frequencies = bigrams.antecedent.value_counts(normalize=True)
+    matrix = bigram_matrix(bigrams)
+    normalized_entropies = normalized_entropy(matrix)
+    return (unigram_frequencies * normalized_entropies).sum()
+
+
+def get_bigrams(column, remove_repetitions: bool = False):
+    return bigram_table.make_bigram_table(column, terminal_symbols="DROP")
+
+
+def compute_bigram_information_gain(
+    column="bass_degree", remove_repetitions: bool = False
+):
+    """Compute information gain for knowing the previous token."""
+    bigrams = get_bigrams(column)
+    if remove_repetitions:
+        bigrams = bigrams[bigrams.antecedent != bigrams.consequent]
+    return bigram_information_gain(bigrams)
+
+
+def bigram_information_gain(bigrams):
+    target_entropy = normalized_entropy(bigrams.consequent.value_counts().astype(int))
+    conditioned_entropy = get_weighted_bigram_entropy(bigrams)
+    return target_entropy - conditioned_entropy
+```
+
 ## DCML harmony labels
 
 ```{code-cell}
 pipeline = [
     dict(dtype="HasHarmonyLabelsFilter", keep_values=[True]),
     "KeySlicer",
+    "ModeGrouper",
     dict(dtype="BigramAnalyzer", features="BassNotes", format="FULL_WITHOUT_CONTEXT"),
 ]
-analyzed_D = D.apply_steps(pipeline)
+analyzed_D = D.apply_step(*pipeline)
 analyzed_D
-```
-
-```{code-cell}
 bass_notes = analyzed_D.get_feature("BassNotes")
 bass_notes
 ```
 
 ```{code-cell}
-bigram_table = analyzed_D.get_result()
+bigram_table: resources.NgramTable = analyzed_D.get_result()
 bigram_table
 ```
 
@@ -103,20 +155,24 @@ bigram_table
 
 ```{code-cell}
 bigrams_df = bigram_table.make_bigram_table(
-    columns=("bass_note", "intervals_over_bass"),
+    ("bass_degree", "intervals_over_bass"),
     join_str=True,
     context_columns=("mc", "mc_onset"),
-    terminal_symbols=False,
+    terminal_symbols="DROP",
 )
 bigrams_df.to_csv(os.path.join(RESULTS_PATH, "bass_note_bigrams.tsv"), sep="\t")
 ```
 
 ```{code-cell}
+bigrams_df.head()
+```
+
+```{code-cell}
 bigram_tuples = bigram_table.make_bigram_tuples(
-    columns=("bass_note", "intervals_over_bass"),
+    ("bass_degree", "intervals_over_bass"),
     join_str=True,
     context_columns=("mc", "mc_onset"),
-    terminal_symbols=False,
+    terminal_symbols="DROP",
 )
 bigram_tuples
 ```
@@ -131,56 +187,19 @@ bass_note_bigram_counts.to_csv(
 ```
 
 ```{code-cell}
+transitions = bigram_table.get_transitions(("bass_degree", "intervals_over_bass"), join_str=True)
+transitions
+```
 
+```{code-cell}
+transitions.compute_information_gain(None)
+```
 
-def bigram_matrix(bigrams):
-    """Expects columns 'a' and 'b'."""
-    return bigrams.groupby("a").b.value_counts().unstack().fillna(0).astype(int)
+```{code-cell}
+transitions.make_ranking_table(None)
+```
 
-
-bass_note_matrix = bigram_matrix(bigrams_df)
-
-
-def normalized_entropy(matrix_or_series):
-    """For matrices, compute normalized entropy for each row."""
-    is_matrix = len(matrix_or_series.shape) > 1
-    if is_matrix:
-        result = matrix_or_series.apply(lambda x: entropy(x, base=2), axis=1)
-        normalize_by = matrix_or_series.shape[1]
-    else:
-        result = entropy(matrix_or_series, base=2)
-        normalize_by = matrix_or_series.shape[0]
-    return result / np.log2(normalize_by)
-
-
-def get_weighted_bigram_entropy(bigrams):
-    """Expects columns 'a' and 'b'."""
-    unigram_frequencies = bigrams.a.value_counts(normalize=True)
-    matrix = bigram_matrix(bigrams)
-    normalized_entropies = normalized_entropy(matrix)
-    return (unigram_frequencies * normalized_entropies).sum()
-
-
-def get_bigrams(column):
-    return bigram_table.make_bigram_table(columns=column, terminal_symbols=False)
-
-
-def compute_bigram_information_gain(
-    column="bass_note", remove_repetitions: bool = False
-):
-    """Compute information gain for knowing the previous token."""
-    bigrams = get_bigrams(column)
-    if remove_repetitions:
-        bigrams = bigrams[bigrams.a != bigrams.b]
-    return bigram_information_gain(bigrams)
-
-
-def bigram_information_gain(bigrams):
-    target_entropy = normalized_entropy(bigrams.b.value_counts())
-    conditioned_entropy = get_weighted_bigram_entropy(bigrams)
-    return target_entropy - conditioned_entropy
-
-
+```{code-cell}
 get_weighted_bigram_entropy(bigrams_df)
 ```
 

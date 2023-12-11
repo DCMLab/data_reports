@@ -15,19 +15,23 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
-from matplotlib import pyplot as plt, gridspec
-from scipy.stats import entropy
-
+from dimcat.data.resources.features import (
+    add_chord_tone_intervals,
+    extend_bass_notes_feature,
+)
 from dimcat.utils import grams, make_transition_matrix
 from git import Repo
 from IPython.display import display
+from matplotlib import gridspec
+from matplotlib import pyplot as plt
 from matplotlib.figure import Figure as MatplotlibFigure
 from plotly import graph_objects as go
 from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
+from scipy.stats import entropy
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "..", "results"))
+OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
 DEFAULT_OUTPUT_FORMAT = ".png"
 DEFAULT_COLUMNS = ["mc", "mc_onset"]  # always added to bigram dataframes
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
@@ -776,6 +780,12 @@ def summarize(df):
     return res
 
 
+def add_bass_degree_columns(feature_df):
+    feature_df = extend_bass_notes_feature(feature_df)
+    feature_df = add_chord_tone_intervals(feature_df)
+    return feature_df
+
+
 def make_key_region_summary_table(
     df, mutate_dataframe: bool = True, *groupby_args, **groupby_kwargs
 ):
@@ -812,7 +822,6 @@ def make_key_region_summary_table(
                 axis=1,
             )
     return df.groupby(*groupby_args, **groupby_kwargs).apply(summarize)
-
 
 
 def make_transition_heatmap_plots(
