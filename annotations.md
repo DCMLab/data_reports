@@ -33,7 +33,7 @@ import ms3
 import pandas as pd
 import plotly.express as px
 
-from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, corpus_mean_composition_years, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
+from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
 ```
 
 ```{code-cell}
@@ -61,9 +61,13 @@ D
 ```
 
 ```{code-cell}
-all_metadata = D.get_metadata()
+filtered_D = D.apply_step("HasHarmonyLabelsFilter")
+all_metadata = filtered_D.get_metadata()
+```
+
+```{code-cell}
 assert len(all_metadata) > 0, "No pieces selected for analysis."
-mean_composition_years = corpus_mean_composition_years(all_metadata)
+mean_composition_years = all_metadata.get_composition_years(group_cols="corpus")
 chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
 corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
@@ -76,15 +80,15 @@ corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors
 ```{code-cell}
 :tags: [hide-input]
 
-all_annotations = D.get_feature("DcmlAnnotations")
+all_annotations = filtered_D.get_feature("DcmlAnnotations")
 is_annotated_mask = all_metadata.label_count > 0
 is_annotated_index = all_metadata.index[is_annotated_mask]
-annotated_notes = D.get_feature("notes").subselect(is_annotated_index)
+annotated_notes = filtered_D.get_feature("notes").subselect(is_annotated_index)
 print(f"The annotated pieces have {len(annotated_notes)} notes.")
 ```
 
 ```{code-cell}
-all_chords = D.get_feature("harmonylabels")
+all_chords = filtered_D.get_feature("harmonylabels")
 all_chords.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
 
@@ -168,12 +172,8 @@ print(f"On diminished or augmented scale degrees: {dim_or_aug} / {complete} = {d
 ```
 
 ```{code-cell}
-all_chords.formatted_column
-```
-
-```{code-cell}
 chords_by_mode = groupers.ModeGrouper().process(all_chords)
-chords_by_mode.get_default_analysis()
+chords_by_mode.format = "scale_degree"
 ```
 
 +++ {"jp-MarkdownHeadingCollapsed": true}
@@ -182,11 +182,20 @@ chords_by_mode.get_default_analysis()
 
 ```{code-cell}
 unigram_proportions = chords_by_mode.get_default_analysis()
-unigram_proportions
+unigram_proportions.make_ranking_table()
 ```
 
 ```{code-cell}
-unigram_proportions.get(as_pandas=True)
+chords_by_mode.apply_step("Counter")
+```
+
+```{code-cell}
+chords_by_mode.format = "scale_degree"
+chords_by_mode.get_default_analysis().make_ranking_table()
+```
+
+```{code-cell}
+unigram_proportions.plot_grouped()
 ```
 
 ```{code-cell}
@@ -402,7 +411,7 @@ legacy.groupby(level=0).size()
 * `phrase_slice`: time interval of each annotated phrases (for segmenting chord progressions and notes)
 
 ```{code-cell}
-phrase_segmented = dc.PhraseSlicer().process(D)
+phrase_segmented = dc.PhraseSlicer().process(filtered_D)
 phrases = phrase_segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
 phrases.head(10).style.apply(color_background, subset=["quarterbeats", "duration_qb"])
@@ -484,7 +493,7 @@ value_count_df(phrases_with_unique_key.local_keys, "modulations")
 
 ```{code-cell}
 from ms3 import roman_numeral2fifths, transform, resolve_all_relative_numerals, replace_boolean_mode_by_strings
-keys_segmented = dc.LocalKeySlicer().process(D)
+keys_segmented = dc.LocalKeySlicer().process(filtered_D)
 keys = keys_segmented.get_slice_info()
 print(f"Overall number of key segments is {len(keys.index)}")
 keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
