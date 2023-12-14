@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.0
 kernelspec:
   display_name: revamp
   language: python
@@ -173,7 +173,110 @@ chord_bigram_table.head(50)
 ```
 
 ```{code-cell}
-chord_bigram_table.get_transitions()
+transitions = chord_bigram_table.get_transitions(join_str=True, fillna="", group_cols="SLICE")
+transitions
+```
+
+```{code-cell}
+all_transitions = transitions.combine_results(group_cols=None)
+all_transitions
+```
+
+```{code-cell}
+from typing import Optional, Tuple
+
+D = pd.DataFrame
+
+def prepare_transitions(
+    df: D, max_x: Optional[int] = None, max_y: Optional[int] = None
+) -> Tuple[D, D, D]:
+    make_subset = (max_x is not None) or (max_y is not None)
+    x_slice = slice(None) if max_x is None else slice(None, max_x)
+    y_slice = slice(None) if max_y is None else slice(None, max_y)
+    counts = df["count"].unstack(sort=False)
+    proportions = df["proportion"].unstack(sort=False)
+    proportions_str = df["proportion_%"].unstack(sort=False)
+    if make_subset:
+        counts = counts.iloc[y_slice, x_slice]
+        proportions = proportions.iloc[y_slice, x_slice]
+        proportions_str = proportions_str.iloc[y_slice, x_slice]
+    return proportions, counts, proportions_str
+
+proportions, counts, proportions_str = prepare_transitions(all_transitions.df)
+counts
+```
+
+```{code-cell}
+counts = all_transitions.df["count"]
+counts
+```
+
+```{code-cell}
+counts.unstack(sort=False).loc["V", "i"]
+```
+
+```{code-cell}
+ix_df = counts.index.to_frame()
+ix_df.consequent.isna().any()
+```
+
+```{code-cell}
+counts.iloc[:2990].unstack(sort=False)
+```
+
+```{code-cell}
+ counts.iloc[2990:]
+```
+
+```{code-cell}
+import numpy as np
+index = pd.MultiIndex.from_tuples([('one', 'a'), ('one', 'b'),
+
+                                   ('two', 'a'), ('two', 'b')])
+
+s = pd.Series(np.arange(1.0, 5.0), index=index)
+s
+```
+
+```{code-cell}
+s.unstack()
+```
+
+```{code-cell}
+transitions.plot()
+```
+
+```{code-cell}
+grouped_transitions = transitions.combine_results(sort_order="DESCENDING", group_cols=None)
+grouped_transitions
+```
+
+```{code-cell}
+grouped_transitions.combine_results()
+```
+
+```{code-cell}
+grouped_transitions.to_clipboard()
+```
+
+```{code-cell}
+grouped_transitions.plot(output=make_output_path("test_transitions"), max_x=20, max_y=20)
+```
+
+```{code-cell}
+grouped_transitions.plot_grouped(output=make_output_path("test_grouped_transitions"), max_x=20, max_y=20)
+```
+
+```{code-cell}
+all_matrices = grouped_transitions["proportion"].groupby(["corpus", "mode"], group_keys=False).apply(lambda df: df.unstack().iloc[:30, :30])
+all_matrices
+```
+
+```{code-cell}
+for group, df in grouped_transitions.groupby(["corpus", "mode"], group_keys=False):
+  matrix = df["proportion"].unstack()
+  display(matrix.head())
+  break
 ```
 
 ## Bass degrees
@@ -190,7 +293,7 @@ bass_note_distribution.make_bar_plot(output=make_output_path("bass_note_distribu
 
 ```{code-cell}
 print(f"Fraction covered by P1, P4, and P5:")
-bass_note_distribution.combine_results().loc[pd.IndexSlice[:,:,[-1,0,1]]].groupby(level=[0,1]).proportion.sum().mul(100).round(1).astype(str).add(" %")
+bass_note_distribution.combine_results().loc[pd.IndexSlice[:,:,[-1,0,1]]].gpb(level=[0,1]).proportion.sum().mul(100).round(1).astype(str).add(" %")
 ```
 
 ```{code-cell}

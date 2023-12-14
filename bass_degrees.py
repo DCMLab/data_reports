@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -77,7 +77,7 @@ grouped_D = groupers.ModeGrouper().process(D)
 grouped_D
 
 # %%
-bass_notes = grouped_D.get_feature(dict(dtype="bassnotes", format="SCALE_DEGREE"))
+bass_notes = grouped_D.get_feature("bassnotes")
 bass_notes.df
 
 # %%
@@ -86,7 +86,7 @@ bass_notes.plot(
 )
 
 # %%
-bass_notes.make_bar_plot(output=make_output_path("bass_degrees_major_minor"))
+bass_notes.plot_grouped(output=make_output_path("bass_degrees_major_minor"))
 
 # %% [markdown]
 # ## Bass degree unigrams
@@ -387,9 +387,7 @@ df[["mc", "mn", "chord", "bass_degree", "bass_interval", "bass_interval_pc"]].he
 # | **ixb**               | index of the segment's last row                                |
 
 # %% editable=true slideshow={"slide_type": ""}
-key_regions = make_key_region_summary_table(
-    df, mutate_dataframe=False, by="key_regions"
-)
+key_regions = make_key_region_summary_table(df, "key_regions")
 key_regions.head(10)
 
 # %% [markdown]

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.0
 kernelspec:
   display_name: revamp
   language: python
@@ -76,7 +76,7 @@ grouped_D
 ```
 
 ```{code-cell}
-bass_notes = grouped_D.get_feature(dict(dtype="bassnotes", format="SCALE_DEGREE"))
+bass_notes = grouped_D.get_feature("bassnotes")
 bass_notes.df
 ```
 
@@ -87,7 +87,7 @@ bass_notes.plot(
 ```
 
 ```{code-cell}
-bass_notes.make_bar_plot(output=make_output_path("bass_degrees_major_minor"))
+bass_notes.plot_grouped(output=make_output_path("bass_degrees_major_minor"))
 ```
 
 ## Bass degree unigrams
@@ -405,7 +405,7 @@ editable: true
 slideshow:
   slide_type: ''
 ---
-key_regions = make_key_region_summary_table(df, mutate_dataframe=False, by="key_regions")
+key_regions = make_key_region_summary_table(df, "key_regions")
 key_regions.head(10)
 ```
 

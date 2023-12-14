@@ -1,30 +1,26 @@
----
-jupytext:
-  formats: ipynb,md:myst,py:percent
-  text_representation:
-    extension: .md
-    format_name: myst
-    format_version: 0.13
-    jupytext_version: 1.16.0
-kernelspec:
-  display_name: revamp
-  language: python
-  name: revamp
----
+# ---
+# jupyter:
+#   jupytext:
+#     formats: ipynb,md:myst,py:percent
+#     text_representation:
+#       extension: .py
+#       format_name: percent
+#       format_version: '1.3'
+#       jupytext_version: 1.16.0
+#   kernelspec:
+#     display_name: revamp
+#     language: python
+#     name: revamp
+# ---
 
-# Overview
+# %% [markdown]
+# # Overview
+#
+# This notebook gives a general overview of the features included in the dataset.
 
-This notebook gives a general overview of the features included in the dataset.
-
-```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide imports
-  code_prompt_show: Show imports
-tags: [hide-cell]
----
-%load_ext autoreload
-%autoreload 2
+# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
+# %load_ext autoreload
+# %autoreload 2
 import os
 
 import dimcat as dc
@@ -35,9 +31,8 @@ from dimcat import filters
 from dimcat.plotting import write_image
 from git import Repo
 from IPython.display import display
-```
 
-```{code-cell}
+# %%
 from utils import (
     CORPUS_COLOR_SCALE,
     DEFAULT_OUTPUT_FORMAT,
@@ -60,12 +55,15 @@ def make_output_path(filename):
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
-```
 
-**Loading data**
 
-```{code-cell}
-package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
+# %% [markdown]
+# **Loading data**
+
+# %%
+package_path = resolve_dir(
+    "~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json"
+)
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -73,16 +71,14 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
-```
 
-```{code-cell}
+# %%
 filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
 all_metadata = filtered_D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
 all_metadata
-```
 
-```{code-cell}
+# %%
 mean_composition_years = corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
@@ -91,36 +87,35 @@ chronological_corpus_names = list(corpus_names.values())
 corpus_name_colors = {
     corpus_names[corp]: color for corp, color in corpus_colors.items()
 }
-```
 
-```{code-cell}
+# %%
 mean_composition_years
-```
 
-## Composition dates
+# %% [markdown]
+# ## Composition dates
+#
+# This section relies on the dataset's metadata.
 
-This section relies on the dataset's metadata.
-
-```{code-cell}
+# %%
 valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors="coerce")
 valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors="coerce")
 print(
     f"Composition dates range from {int(valid_composed_start.min())} {valid_composed_start.idxmin()} "
     f"to {int(valid_composed_end.max())} {valid_composed_end.idxmax()}."
 )
-```
 
-### Mean composition years per corpus
 
-```{code-cell}
+# %% [markdown]
+# ### Mean composition years per corpus
+
+
+# %%
 def make_summary(metadata_df):
     piece_is_annotated = metadata_df.label_count > 0
     return metadata_df[piece_is_annotated].copy()
-```
 
-```{code-cell}
-:tags: [hide-input]
 
+# %% tags=["hide-input"]
 summary = make_summary(all_metadata)
 bar_data = pd.concat(
     [
@@ -144,17 +139,14 @@ fig.update_layout(**STD_LAYOUT)
 fig.update_traces(width=5)
 save_figure_as(fig, "pieces_timeline_bars")
 fig.show()
-```
 
-```{code-cell}
+# %%
 summary
-```
 
-### Composition years histogram
+# %% [markdown]
+# ### Composition years histogram
 
-```{code-cell}
-:tags: [hide-input]
-
+# %% tags=["hide-input"]
 hist_data = summary.reset_index()
 hist_data.corpus = hist_data.corpus.map(corpus_names)
 fig = px.histogram(
@@ -173,13 +165,15 @@ fig.update_layout(**STD_LAYOUT)
 fig.update_legends(font=dict(size=16))
 save_figure_as(fig, "pieces_timeline_histogram", height=1250)
 fig.show()
-```
 
-## Dimensions
 
-### Overview
+# %% [markdown]
+# ## Dimensions
+#
+# ### Overview
 
-```{code-cell}
+
+# %%
 def make_overview_table(groupby, group_name="pieces"):
     n_groups = groupby.size().rename(group_name)
     absolute_numbers = dict(
@@ -198,16 +192,15 @@ def make_overview_table(groupby, group_name="pieces"):
 absolute = make_overview_table(summary.groupby("workTitle"))
 # print(absolute.astype(int).to_markdown())
 absolute.astype(int)
-```
 
-```{code-cell}
+# %%
 public = dc.Dataset.from_package(
     "/home/laser/git/meta_repositories/dcml_corpora/dcml_corpora.datapackage.json"
 )
 public
-```
 
-```{code-cell}
+
+# %%
 def summarize_dataset(D):
     all_metadata = D.get_metadata()
     summary = make_summary(all_metadata)
@@ -216,33 +209,31 @@ def summarize_dataset(D):
 
 dcml_corpora = summarize_dataset(public)
 print(dcml_corpora.astype(int).to_markdown())
-```
 
-```{code-cell}
+# %%
 distant_listening = summarize_dataset(D)
 print(distant_listening.astype(int).to_markdown())
-```
 
-### Measures
+# %% [markdown]
+# ### Measures
 
-```{code-cell}
+# %%
 all_measures = D.get_feature("measures").df
 print(
     f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files."
 )
 all_measures.head()
-```
 
-```{code-cell}
+# %%
 print("Distribution of time signatures per XML measure (MC):")
 all_measures.timesig.value_counts(dropna=False)
-```
 
-### Harmony labels
+# %% [markdown]
+# ### Harmony labels
+#
+# All symbols, independent of the local key (the mode of which changes their semantics).
 
-All symbols, independent of the local key (the mode of which changes their semantics).
-
-```{code-cell}
+# %%
 try:
     all_annotations = D.get_feature("harmonylabels").df
 except Exception:
@@ -271,4 +262,3 @@ if includes_annotations:
     )
 else:
     print("Dataset contains no annotations.")
-```

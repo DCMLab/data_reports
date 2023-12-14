@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import os
 import re
 from collections import Counter, defaultdict
@@ -12,17 +14,24 @@ import numpy as np
 # import modin.pandas as pd
 import pandas as pd
 import plotly.express as px
-from dimcat.plotting import make_transition_heatmap_plots
+import seaborn as sns
+from dimcat.data.resources.features import (
+    add_chord_tone_intervals,
+    extend_bass_notes_feature,
+)
 from dimcat.utils import grams, make_transition_matrix
 from git import Repo
 from IPython.display import display
+from matplotlib import gridspec
+from matplotlib import pyplot as plt
 from matplotlib.figure import Figure as MatplotlibFigure
 from plotly import graph_objects as go
 from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
+from scipy.stats import entropy
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "..", "results"))
+OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
 DEFAULT_OUTPUT_FORMAT = ".png"
 DEFAULT_COLUMNS = ["mc", "mc_onset"]  # always added to bigram dataframes
 CORPUS_COLOR_SCALE = px.colors.qualitative.D3
@@ -771,6 +780,12 @@ def summarize(df):
     return res
 
 
+def add_bass_degree_columns(feature_df):
+    feature_df = extend_bass_notes_feature(feature_df)
+    feature_df = add_chord_tone_intervals(feature_df)
+    return feature_df
+
+
 def make_key_region_summary_table(
     df, mutate_dataframe: bool = True, *groupby_args, **groupby_kwargs
 ):
@@ -779,9 +794,13 @@ def make_key_region_summary_table(
     """
     groupby_kwargs = dict(groupby_kwargs, group_keys=False)
     if mutate_dataframe:
-        df = add_bass_degree_columns(df, mutate_dataframe=mutate_dataframe)
+        df = add_bass_degree_columns(
+            df, mutate_dataframe=mutate_dataframe, *groupby_args, **groupby_kwargs
+        )
     else:
-        add_bass_degree_columns(df, mutate_dataframe=mutate_dataframe)
+        add_bass_degree_columns(
+            df, mutate_dataframe=mutate_dataframe, *groupby_args, **groupby_kwargs
+        )
     if "bass_interval" not in df.columns:
         bass_interval_column = df.groupby(
             *groupby_args, **groupby_kwargs
@@ -805,64 +824,197 @@ def make_key_region_summary_table(
     return df.groupby(*groupby_args, **groupby_kwargs).apply(summarize)
 
 
-def add_bass_degree_columns(
-    df,
-    mutate_dataframe: bool = True,
-):
-    if "bass_degree" not in df.columns:
-        bass_degree_column = ms3.transform(
-            df, ms3.fifths2sd, ["bass_note", "localkey_is_minor"]
-        )
-        if mutate_dataframe:
-            df["bass_degree"] = bass_degree_column
-        else:
-            df = pd.concat([df, bass_degree_column.rename("bass_degree")], axis=1)
-    if "intervals_over_bass" not in df.columns:
-        intervals_over_bass_column = ms3.transform(
-            df, chord_tones2interval_structure, ["chord_tones"]
-        )
-        intervals_over_root_column = ms3.transform(
-            df, chord_tones2interval_structure, ["chord_tones", "root"]
-        )
-        if mutate_dataframe:
-            df["intervals_over_bass"] = intervals_over_bass_column
-            df["intervals_over_root"] = intervals_over_root_column
-        else:
-            df = pd.concat(
-                [
-                    df,
-                    intervals_over_bass_column.rename("intervals_over_bass"),
-                    intervals_over_root_column.rename("intervals_over_root"),
-                ],
-                axis=1,
-            )
-    if mutate_dataframe:
-        return df
-
-
-def chord_tones2interval_structure(
-    fifths: Iterable[int], reference: Optional[int] = None
-) -> Tuple[str]:
-    """The fifth are interpreted as intervals expressing distances from the local tonic ("neutral degrees").
-    The result will be a tuple of strings that express the same intervals but expressed with respect to the given
-    reference (neutral degree), removing unisons.
-    If no reference is specified, the first degree (usually, the bass note) is used as such.
+def make_transition_heatmap_plots(
+    left_transition_matrix: pd.DataFrame,
+    left_unigrams: pd.Series,
+    right_transition_matrix: Optional[pd.DataFrame] = None,
+    right_unigrams: Optional[pd.Series] = None,
+    top: int = 30,
+    two_col_width=12,
+    frequencies: bool = False,
+    fontsize=8,
+    labelsize=12,
+    top_margin=0.99,
+    bottom_margin=0.10,
+    right_margin=0.005,
+    left_margin=0.085,
+) -> MatplotlibFigure:
     """
-    try:
-        fifths = tuple(fifths)
-        if len(fifths) == 0:
-            return ()
-    except Exception:
-        return ()
-    if reference is None:
-        reference = fifths[0]
-    elif reference in fifths:
-        position = fifths.index(reference)
-        if position > 0:
-            fifths = fifths[position:] + fifths[:position]
-    adapted_intervals = [
-        ms3.fifths2iv(adapted)
-        for interval in fifths
-        if (adapted := interval - reference) != 0
-    ]
-    return tuple(adapted_intervals)
+    Adapted from https://zenodo.org/records/2764889/files/reproduce_ABC.ipynb?download=1 which is the Jupyter notebook
+    accompanying Moss FC, Neuwirth M, Harasim D, Rohrmeier M (2019) Statistical characteristics of tonal harmony: A
+    corpus study of Beethoven’s string quartets. PLOS ONE 14(6): e0217242. https://doi.org/10.1371/journal.pone.0217242
+
+    Args:
+        left_unigrams:
+        right_unigrams:
+        left_transition_matrix:
+        right_transition_matrix:
+        top:
+        two_col_width:
+        frequencies: If set to True, the values of the unigram Series are interpreted as normalized frequencies and
+            are multiplied with 100 for display on the y-axis.
+
+    """
+    # set custom context for this plot
+    with plt.rc_context(
+        {
+            # disable spines for entropy bars
+            "axes.spines.top": False,
+            "axes.spines.left": False,
+            "axes.spines.bottom": False,
+            "axes.spines.right": False,
+            "font.family": "sans-serif",
+        }
+    ):
+
+        def make_gridspec(
+            left,
+            right,
+        ):
+            gridspec_ratio = [0.25, 2.0]
+            hspace = None
+            wspace = 0.0
+            gs = gridspec.GridSpec(1, 2, width_ratios=gridspec_ratio)
+            gs.update(
+                left=left,
+                right=right,
+                wspace=wspace,
+                hspace=hspace,
+                bottom=bottom_margin,
+                top=top_margin,
+            )
+            return gs
+
+        def add_entropy_bars(
+            unigrams,
+            bigrams,
+            axis,
+        ):
+            # settings for margins etc.
+            barsize = [0.0, 0.7]
+            s_min = pd.Series(
+                (
+                    bigrams.apply(lambda x: entropy(x, base=2), axis=1)
+                    / np.log2(bigrams.shape[0])
+                )[:top].values,
+                index=[
+                    i + f" ({str(round(fr * 100, 1))})" if frequencies else i
+                    for i, fr in zip(bigrams.index, unigrams[:top].values)
+                ],
+            )
+            ax = s_min.plot(kind="barh", ax=axis, color="k")
+
+            # create a list to collect the plt.patches data
+            totals_min = []
+
+            # find the values and append to list
+            for i in ax.patches:
+                totals_min.append(round(i.get_width(), 2))
+
+            for i, p in enumerate(ax.patches):
+                axis.text(
+                    totals_min[i] - 0.01,
+                    p.get_y() + 0.3,
+                    f"${totals_min[i]}$",
+                    color="w",
+                    fontsize=fontsize,
+                    verticalalignment="center",
+                    horizontalalignment="left",
+                )
+            axis.set_xlim(barsize)
+
+            axis.invert_yaxis()
+            axis.invert_xaxis()
+            axis.set_xticklabels([])
+            axis.tick_params(
+                axis="both",  # changes apply to the x-axis
+                which="both",  # both major and minor ticks are affected
+                left=False,  # ticks along the bottom edge are off
+                right=False,
+                bottom=False,
+                labelleft=True,
+                labelsize=labelsize,
+            )
+
+        def add_heatmap(transition_value_matrix, axis, colormap):
+            sns.heatmap(
+                transition_value_matrix,
+                annot=True,
+                fmt=".1f",
+                cmap=colormap,
+                ax=axis,
+                # vmin=vmin,
+                # vmax=vmax,
+                annot_kws={"fontsize": fontsize, "rotation": 60},
+                cbar=False,
+            )
+            axis.set_yticks([])
+            axis.tick_params(bottom=False)
+
+        single_col_width = two_col_width / 2
+        plot_two_sides = right_transition_matrix is not None
+        if plot_two_sides:
+            assert (
+                right_unigrams is not None
+            ), "right_unigrams must be provided if right_bigrams is provided"
+            fig = plt.figure(figsize=(two_col_width, single_col_width))
+            gs1 = make_gridspec(
+                left=left_margin,
+                right=0.5 - right_margin,
+            )
+        else:
+            fig = plt.figure(figsize=(single_col_width, single_col_width))
+            gs1 = make_gridspec(
+                left=left_margin,
+                right=1.0 - right_margin,
+            )
+
+        # LEFT-HAND SIDE
+
+        ax1 = plt.subplot(gs1[0, 0])
+
+        add_entropy_bars(
+            left_unigrams,
+            left_transition_matrix,
+            ax1,
+        )
+
+        ax2 = plt.subplot(gs1[0, 1])
+
+        add_heatmap(
+            left_transition_matrix[left_transition_matrix > 0].iloc[
+                :top, :top
+            ],  # only display non-zero values
+            axis=ax2,
+            colormap="Blues",
+        )
+
+        # RIGHT-HAND SIDE
+
+        plot_two_sides = right_transition_matrix is not None
+        if plot_two_sides:
+            assert (
+                right_unigrams is not None
+            ), "right_unigrams must be provided if right_bigrams is provided"
+
+            gs2 = make_gridspec(
+                left=0.5 + left_margin,
+                right=1.0 - right_margin,
+            )
+
+            ax3 = plt.subplot(gs2[0, 0])
+            add_entropy_bars(
+                right_unigrams,
+                right_transition_matrix,
+                ax3,
+            )
+
+            ax4 = plt.subplot(gs2[0, 1])
+            add_heatmap(
+                right_transition_matrix[right_transition_matrix > 0].iloc[:top, :top],
+                axis=ax4,
+                colormap="Reds",
+            )
+
+        fig.align_labels()
+    return fig

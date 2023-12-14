@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.15.2
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -28,7 +28,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dimcat.plotting import CADENCE_COLORS, write_image
-from dimcat.steps import groupers, slicers
+from dimcat.steps import filters, groupers, slicers
 from git import Repo
 
 # %% tags=["hide-input"]
@@ -83,22 +83,18 @@ cadence_labels.plot_grouped(
 # ### Metadata
 
 # %%
-cadence_filter = groupers.HasCadenceAnnotations()
-cadence_filter.fit_to_dataset(D)
-hascadence = cadence_filter.grouped_units.filter(False, drop_level=True)
+cadence_filter = filters.HasCadenceAnnotationsFilter()
+filtered_D = cadence_filter.process(D)
 
 # %%
-all_metadata = D.get_metadata()
-hascadence_metadata = all_metadata.subselect(hascadence)
-hascadence_metadata.head()
+hascadence_metadata = filtered_D.get_metadata()
+chronological_corpus_names = hascadence_metadata.get_corpus_names()
 
 # %%
 mean_composition_years = (
     hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
 )
-chronological_order = mean_composition_years.index.to_list()
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
-chronological_corpus_names = list(corpus_names.values())
+chronological_corpus_names = hascadence_metadata.get_corpus_names()
 bar_data = pd.concat(
     [
         mean_composition_years.rename("year"),
@@ -159,7 +155,7 @@ cadence_fraction_per_dataset = cadence_fraction_per_dataset.rename(
     "fraction"
 ).reset_index()
 cadence_fraction_per_dataset["corpus_name"] = cadence_fraction_per_dataset.corpus.map(
-    corpus_names
+    get_corpus_display_name
 )
 fig = px.bar(
     cadence_fraction_per_dataset,
@@ -316,7 +312,7 @@ fig = px.bar(
     height=800,
     barmode="group",
     labels=dict(n_cadences="#cadences in a phrase"),
-    category_orders=dict(dataset=chronological_order),
+    category_orders=dict(dataset=chronological_corpus_names),
 )
 save_figure_as(fig, "n_cadences_per_phrase_corpuswise_absolute_grouped_bars")
 fig.show()

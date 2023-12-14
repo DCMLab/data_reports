@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.15.2
+    jupytext_version: 1.16.0
 kernelspec:
   display_name: revamp
   language: python
@@ -31,10 +31,10 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-from IPython.display import display
 from dimcat import analyzers, groupers
 from dimcat.plotting import write_image
 from git import Repo
+from IPython.display import display
 from matplotlib import pyplot as plt
 ```
 
