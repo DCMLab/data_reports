@@ -64,50 +64,6 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```
 
 ```{code-cell}
-:tags: [hide-input]
-
-package_path = resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
-D
-```
-
-```{code-cell}
-pipeline = [
-    dict(dtype="HasHarmonyLabelsFilter", keep_values=[True]),
-    "CorpusGrouper",
-]
-analyzed_D = D.apply_step(*pipeline)
-harmony_labels = analyzed_D.get_feature("HarmonyLabels")
-harmony_labels
-```
-
-```{code-cell}
-all_metadata = analyzed_D.get_metadata()
-mean_composition_years = all_metadata.get_composition_years(group_cols="corpus")
-chronological_order = mean_composition_years.sort_values().index.to_list()
-corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
-chronological_corpus_names = list(corpus_names.values())
-corpus_name_colors = {
-    corpus_names[corp]: color for corp, color in corpus_colors.items()
-}
-```
-
-```{code-cell}
-
-
-chord_proportions: Durations = harmony_labels.apply_step("Proportions")
-chord_proportions.make_ranking_table()
-```
-
-```{code-cell}
 
 
 def _compute_cross_entropies(P_column_vectors, Q_column_vectors=None):
@@ -168,9 +124,7 @@ def compute_cross_entropies(
         return _compute_cross_entropies(P_probs)
     Q_probs = make_groupwise_probabilities(analysis_result, Q_groups, smoothing)
     return _compute_cross_entropies(P_probs, Q_probs)
-```
 
-```{code-cell}
 def mean_of_other_groups(df, group):
     df = df.drop(group, axis=1)  # do include corpus predicting its own pieces
     piecewise_mean = df.mean(axis=1)
@@ -209,12 +163,6 @@ def plot_uniqueness(chord_proportions, chronological_corpus_names):
     )
 
 
-plot_uniqueness(chord_proportions, chronological_corpus_names)
-```
-
-```{code-cell}
-
-
 def compute_corpus_coherence(
     chord_proportions,
 ):
@@ -240,12 +188,6 @@ def compute_corpus_coherence(
         )
     return pd.DataFrame(corpuswise_coherence)
 
-
-corpus_coherence = compute_corpus_coherence(chord_proportions)
-corpus_coherence
-```
-
-```{code-cell}
 def plot_coherence(chord_proportions, chronological_corpus_names):
     corpus_coherence = compute_corpus_coherence(chord_proportions)
     return make_bar_plot(
@@ -259,14 +201,57 @@ def plot_coherence(chord_proportions, chronological_corpus_names):
         height=800,
         width=1200,
     )
+```
 
+```{code-cell}
+:tags: [hide-input]
 
+package_path = resolve_dir(
+    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+)
+repo = Repo(os.path.dirname(package_path))
+print_heading("Data and software versions")
+print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3.__version__}")
+D = dc.Dataset.from_package(package_path)
+D
+```
+
+```{code-cell}
+pipeline = [
+    dict(dtype="HasHarmonyLabelsFilter", keep_values=[True]),
+    "CorpusGrouper",
+]
+analyzed_D = D.apply_step(*pipeline)
+harmony_labels = analyzed_D.get_feature("HarmonyLabels")
+harmony_labels
+```
+
+```{code-cell}
+all_metadata = analyzed_D.get_metadata()
+chronological_corpus_names = all_metadata.get_corpus_names()
+```
+
+```{code-cell}
+chord_proportions: Durations = harmony_labels.apply_step("Proportions")
+chord_proportions.make_ranking_table()
+```
+
+```{code-cell}
+plot_uniqueness(chord_proportions, chronological_corpus_names)
+```
+
+```{code-cell}
+corpus_coherence = compute_corpus_coherence(chord_proportions)
+corpus_coherence
+```
+
+```{code-cell}
 plot_coherence(chord_proportions, chronological_corpus_names)
 ```
 
 ```{code-cell}
-
-
 corpus_coherence = compute_corpus_coherence(chord_proportions)
 corpus_uniqueness = compute_corpus_uniqueness(chord_proportions)
 uniqueness_coherence = corpus_uniqueness.merge(corpus_coherence, on="corpus")
@@ -280,38 +265,4 @@ make_scatter_plot(
     height=800,
     width=1200,
 )
-```
-
-```{code-cell}
-pd.concat([corpus_uniqueness, corpus_coherence], join="corpus", axis=1)
-```
-
-```{code-cell}
-
-```
-
-```{code-cell}
-
-
-def index_union(*S: pd.Series | pd.DataFrame) -> List[pd.Series | pd.DataFrame]:
-    if len(S) == 0:
-        return []
-    result_index = S[0].index
-    for s in S[1:]:
-        result_index = result_index.union(s.index)
-    return [s.reindex(result_index, fill_value=0.0) for s in S]
-
-
-def index_intersection(*S: pd.Series | pd.DataFrame) -> List[pd.Series | pd.DataFrame]:
-    if len(S) == 0:
-        return []
-    result_index = S[0].index
-    for s in S[1:]:
-        result_index = result_index.intersection(s.index)
-    return [s.reindex(result_index, fill_value=0.0) for s in S]
-
-
-def compute_cross_entropy(P, Q):
-    msg_lengths = -np.log2(Q)
-    return np.sum(P.mul(msg_lengths))
 ```
