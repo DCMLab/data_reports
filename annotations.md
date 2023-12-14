@@ -67,12 +67,7 @@ all_metadata = filtered_D.get_metadata()
 
 ```{code-cell}
 assert len(all_metadata) > 0, "No pieces selected for analysis."
-mean_composition_years = all_metadata.get_composition_years(group_cols="corpus")
-chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
-chronological_corpus_names = list(corpus_names.values())
-corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
+chronological_corpus_names = all_metadata.get_corpus_names()
 ```
 
 ## DCML harmony labels
@@ -578,7 +573,7 @@ norm_segment_duration_per_corpus = 100 * segment_duration_per_corpus / segment_d
 maj_min_ratio_per_corpus = pd.concat([segment_duration_per_corpus,
                                       norm_segment_duration_per_corpus.rename('fraction').round(1).astype(str)+" %"],
                                      axis=1)
-maj_min_ratio_per_corpus['corpus_name'] = maj_min_ratio_per_corpus.index.get_level_values('corpus').map(corpus_names)
+maj_min_ratio_per_corpus['corpus_name'] = maj_min_ratio_per_corpus.index.get_level_values('corpus').map(get_corpus_display_name)
 maj_min_ratio_per_corpus['mode'] = maj_min_ratio_per_corpus.index.get_level_values('localkey_is_minor').map({False: 'major', True: 'minor'})
 ```
 

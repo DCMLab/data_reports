@@ -157,7 +157,7 @@ make_bar_plot(
     x_col="group",
     y_col="information_gain",
     color="category",
-    title="Information gain of several pedictors on the subsequent chord",
+    title="Information gain of several predictors on the subsequent chord",
     barmode="group",
     labels=dict(category="predictor"),
 )

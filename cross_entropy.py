@@ -229,7 +229,6 @@ chronological_corpus_names = all_metadata.get_corpus_names()
 chord_proportions: Durations = harmony_labels.apply_step("Proportions")
 chord_proportions.make_ranking_table()
 
-
 # %%
 corpus_by_corpus = compute_cross_entropies(chord_proportions, "corpus")
 px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)

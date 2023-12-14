@@ -30,12 +30,12 @@ import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
+import plotly.express as px
 from dimcat import resources
 from dimcat.data.resources import Durations
 from dimcat.data.resources.dc import UnitOfAnalysis
 from dimcat.plotting import make_bar_plot, make_scatter_plot, write_image
 from git import Repo
-import plotly.express as px
 
 from utils import (
     DEFAULT_OUTPUT_FORMAT,

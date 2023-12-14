@@ -31,7 +31,7 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-from dimcat import analyzers, groupers, resources
+from dimcat import analyzers, groupers
 from dimcat.plotting import write_image
 from git import Repo
 from IPython.display import display
