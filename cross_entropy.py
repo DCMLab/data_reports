@@ -26,6 +26,7 @@ import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
+import plotly.express as px
 from dimcat import resources
 from dimcat.data.resources import Durations
 from dimcat.data.resources.dc import UnitOfAnalysis
@@ -230,11 +231,11 @@ chord_proportions.make_ranking_table()
 
 
 # %%
-plot_uniqueness(chord_proportions, chronological_corpus_names)
+corpus_by_corpus = compute_cross_entropies(chord_proportions, "corpus")
+px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)
 
 # %%
-corpus_coherence = compute_corpus_coherence(chord_proportions)
-corpus_coherence
+plot_uniqueness(chord_proportions, chronological_corpus_names)
 
 # %%
 plot_coherence(chord_proportions, chronological_corpus_names)
@@ -247,6 +248,8 @@ make_scatter_plot(
     uniqueness_coherence,
     x_col="uniqueness",
     y_col="coherence",
+    error_x="sem_x",
+    error_y="sem_y",
     hover_data=["corpus"],
     title="Uniqueness vs. coherence of corpus pieces",
     layout=dict(autosize=False),

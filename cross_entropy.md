@@ -24,7 +24,7 @@ tags: [hide-cell]
 # %load_ext autoreload
 # %autoreload 2
 import os
-from typing import Iterable, List, Optional
+from typing import Iterable, Optional
 
 import dimcat as dc
 import ms3
@@ -35,9 +35,9 @@ from dimcat.data.resources import Durations
 from dimcat.data.resources.dc import UnitOfAnalysis
 from dimcat.plotting import make_bar_plot, make_scatter_plot, write_image
 from git import Repo
+import plotly.express as px
 
 from utils import (
-    CORPUS_COLOR_SCALE,
     DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
     get_corpus_display_name,
@@ -125,6 +125,7 @@ def compute_cross_entropies(
     Q_probs = make_groupwise_probabilities(analysis_result, Q_groups, smoothing)
     return _compute_cross_entropies(P_probs, Q_probs)
 
+
 def mean_of_other_groups(df, group):
     df = df.drop(group, axis=1)  # do include corpus predicting its own pieces
     piecewise_mean = df.mean(axis=1)
@@ -188,6 +189,7 @@ def compute_corpus_coherence(
         )
     return pd.DataFrame(corpuswise_coherence)
 
+
 def plot_coherence(chord_proportions, chronological_corpus_names):
     corpus_coherence = compute_corpus_coherence(chord_proportions)
     return make_bar_plot(
@@ -239,12 +241,12 @@ chord_proportions.make_ranking_table()
 ```
 
 ```{code-cell}
-plot_uniqueness(chord_proportions, chronological_corpus_names)
+corpus_by_corpus = compute_cross_entropies(chord_proportions, "corpus")
+px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)
 ```
 
 ```{code-cell}
-corpus_coherence = compute_corpus_coherence(chord_proportions)
-corpus_coherence
+plot_uniqueness(chord_proportions, chronological_corpus_names)
 ```
 
 ```{code-cell}
@@ -259,6 +261,8 @@ make_scatter_plot(
     uniqueness_coherence,
     x_col="uniqueness",
     y_col="coherence",
+    error_x="sem_x",
+    error_y="sem_y",
     hover_data=["corpus"],
     title="Uniqueness vs. coherence of corpus pieces",
     layout=dict(autosize=False),
