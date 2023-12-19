@@ -15,6 +15,10 @@
 
 # %% [markdown]
 # # Information gain of antecedents and consequents
+#
+# ToDo:
+# * Uniqueness in Bezug auf das vorher Dagewesene
+# * Bigrams
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 # # %load_ext autoreload
@@ -231,6 +235,13 @@ chord_proportions.make_ranking_table()
 
 # %%
 corpus_by_corpus = compute_cross_entropies(chord_proportions, "corpus")
+px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)
+
+# %%
+chronological_corpus_names = all_metadata.get_corpus_names(func=None)
+
+# %%
+corpus_by_corpus.loc[chronological_corpus_names, chronological_corpus_names]
 px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)
 
 # %%

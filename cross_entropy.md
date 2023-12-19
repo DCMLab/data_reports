@@ -14,6 +14,10 @@ kernelspec:
 
 # Information gain of antecedents and consequents
 
+ToDo:
+* Uniqueness in Bezug auf das vorher Dagewesene
+* Bigrams
+
 ```{code-cell}
 ---
 mystnb:
@@ -242,6 +246,15 @@ chord_proportions.make_ranking_table()
 
 ```{code-cell}
 corpus_by_corpus = compute_cross_entropies(chord_proportions, "corpus")
+px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)
+```
+
+```{code-cell}
+chronological_corpus_names = all_metadata.get_corpus_names(func=None)
+```
+
+```{code-cell}
+corpus_by_corpus.loc[chronological_corpus_names, chronological_corpus_names]
 px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)
 ```
 

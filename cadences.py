@@ -91,6 +91,10 @@ hascadence_metadata = filtered_D.get_metadata()
 chronological_corpus_names = hascadence_metadata.get_corpus_names()
 
 # %%
+cadence_counts = cadence_labels.apply_step("Counter")
+cadence_counts.plot_grouped("corpus")
+
+# %%
 mean_composition_years = (
     hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
 )

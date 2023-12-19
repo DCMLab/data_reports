@@ -102,6 +102,11 @@ chronological_corpus_names = hascadence_metadata.get_corpus_names()
 ```
 
 ```{code-cell}
+cadence_counts = cadence_labels.apply_step("Counter")
+cadence_counts.plot_grouped("corpus")
+```
+
+```{code-cell}
 mean_composition_years = (
     hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
 )

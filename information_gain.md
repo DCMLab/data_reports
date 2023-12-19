@@ -152,11 +152,11 @@ antecedents = {
     ],
     "predictor + intervals": [
         ("bass_note", "intervals_over_bass"),
-        ("root", "intervals_over_root"),
+        ("root", "intervals_over_bass"),
     ],
     "predictor + localkey + intervals": [
         ("bass_note", "intervals_over_bass", "localkey_mode"),
-        ("root", "intervals_over_root", "localkey_mode"),
+        ("root", "intervals_over_bass", "localkey_mode"),
     ],
 }
 ig_values = compute_information_gains(bigram_table, "chord", antecedents)
@@ -173,4 +173,8 @@ make_bar_plot(
     barmode="group",
     labels=dict(category="predictor"),
 )
+```
+
+```{code-cell}
+
 ```
