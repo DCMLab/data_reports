@@ -34,13 +34,14 @@ from utils import (
     get_repo_name,
     print_heading,
     resolve_dir,
+    value_count_df,
 )
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "reduction"))
+RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "phrases"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -67,3 +68,7 @@ D
 # %%
 phrases = D.get_feature(dict(dtype="PhraseAnnotations", format="PHRASE_ROWS"))
 phrases
+
+# %%
+vc = value_count_df(phrases.end_chord, rank_index=True)
+vc.head(50)

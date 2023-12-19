@@ -712,6 +712,7 @@ def value_count_df(
     name: Optional[str] = None,
     counts_column: str = "counts",
     round: Optional[int] = 2,
+    rank_index: bool = False,
 ):
     """Value counts as DataFrame where the index has the name of the given Series or ``name`` and where the counts
     are given in the column ``counts``.
@@ -723,6 +724,10 @@ def value_count_df(
         normalized = normalized.round(round)
     df = pd.concat([vc.to_frame(), normalized.rename("%")], axis=1)
     df.index.rename(name, inplace=True)
+    if rank_index:
+        df = df.reset_index()
+        df.index += 1
+        df.index.rename("rank", inplace=True)
     return df
 
 
