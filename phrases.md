@@ -24,6 +24,7 @@ tags: [hide-cell]
 %load_ext autoreload
 %autoreload 2
 import os
+from typing import Optional
 
 import dimcat as dc
 import ms3
@@ -87,14 +88,8 @@ vc.head(50)
 ```
 
 ```{code-cell}
-stages = phrases.filter_phrase_data(columns=["localkey", "chord"], droplevels=3, reverse=True, wide_format=True, new_level_name="stage")
-stages.to_csv(make_output_path("stages", "tsv"), sep='\t')
-stages.head()
-```
-
-```{code-cell}
 def make_and_store_phrase_data(
-        name: str,
+        name: Optional[str] = None,
         columns = "chord",
         components = "body",
         droplevels = 3,
@@ -103,6 +98,7 @@ def make_and_store_phrase_data(
         wide_format = True,
         query = None,
 ):
+    """Function sets the defaults for the stage TSVs produced in the following."""
     phrase_data = phrases.filter_phrase_data(
         columns=columns,
         components=components,
@@ -112,14 +108,17 @@ def make_and_store_phrase_data(
         wide_format=wide_format,
         query=query
     )
-    phrase_data.to_csv(make_output_path(name, "tsv"), sep='\t')
+    if name:
+        phrase_data.to_csv(make_output_path(name, "tsv"), sep='\t')
     return phrase_data
-    
-onekey_major = make_and_store_phrase_data("onekey_major", query="body_n_modulations == 0 & localkey_mode == 'major'")
-onekey_minor = make_and_store_phrase_data("onekey_minor", query="body_n_modulations == 0 & localkey_mode == 'minor'")
+
+stages = make_and_store_phrase_data("stages", columns=["localkey", "chord"])
+stages.head()
 ```
 
 ```{code-cell}
+onekey_major = make_and_store_phrase_data("onekey_major", query="body_n_modulations == 0 & localkey_mode == 'major'")
+onekey_minor = make_and_store_phrase_data("onekey_minor", query="body_n_modulations == 0 & localkey_mode == 'minor'")
 one_key_major_I = make_and_store_phrase_data("onekey_major_I", query="body_n_modulations == 0 & localkey_mode == 'major' & end_chord == 'I'") # end_chord.str.contains('^I(?![iIvV\/])')")
 one_key_minor_i = make_and_store_phrase_data("one_key_minor_i", query="body_n_modulations == 0 & localkey_mode == 'minor' & end_chord == 'i'")
 ```
