@@ -55,9 +55,7 @@ phrases
 ```
 
 ```{code-cell} ipython3
-:is_executing: true
-
-def make_phrase_excertps(
+def make_phrase_excerpts(
         dlc_path,
         excerpt_path,
         corpus,
@@ -68,13 +66,24 @@ def make_phrase_excertps(
     if not filepath.is_file():
         raise FileNotFoundError(filepath)
     score = ms3.Score(filepath)
-    phrase_starts = phrase_annotations.groupby(level="phrase_id", group_keys=False)[["mc", "mc_onset"]].nth(0)
+    phrase_starts = phrase_annotations.groupby(level="phrase_id")[["mc", "mc_onset"]].nth(0)
     drop_levels = [name for name in phrase_starts.index.names if name != "phrase_id"]
     phrase_starts = phrase_starts.droplevel(drop_levels)
     phrase_starts = list(phrase_starts.itertuples(name=None))
+    print(filepath)
+    print("-" * len(str(filepath)))
     for (phrase_id, start_mc, start_mc_onset), (_, end_mc, end_mc_onset) in zip(
             phrase_starts, phrase_starts[1:] + [(None, None, None)]
             ):
+        print(f"""  score.mscx.store_excerpt(
+    start_mc={start_mc},
+    start_mc_onset={start_mc_onset},
+    end_mc={end_mc},
+    end_mc_onset={end_mc_onset},
+    exclude_end={True},
+    directory={excerpt_path!r},
+    suffix="_phrase{phrase_id}"
+  )""")
         score.mscx.store_excerpt(
             start_mc=start_mc,
             start_mc_onset=start_mc_onset,
@@ -87,9 +96,9 @@ def make_phrase_excertps(
 
 
 def mark_as_done(item):
+    global done
     with open(DONE_FILE, 'a') as f:
         f.write(item + "\n")
-    done.append(item)
 
 
 if RESTART:
@@ -106,7 +115,7 @@ for (corpus, piece), df in phrases.groupby(level=["corpus", "piece"]):
     if id_string in done:
         print(f"SKIPPED {id_string}")
         continue
-    make_phrase_excertps(
+    make_phrase_excerpts(
         dlc_path=dlc_path,
         excerpt_path=excerpt_path,
         corpus=corpus,
@@ -117,5 +126,9 @@ for (corpus, piece), df in phrases.groupby(level=["corpus", "piece"]):
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 
 ```
