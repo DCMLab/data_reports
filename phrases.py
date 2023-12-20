@@ -45,8 +45,12 @@ RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "phrases"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+def make_output_path(filename, extension=None):
+    if extension:
+        extension = "." + extension.lstrip(".")
+    else:
+        extension = DEFAULT_OUTPUT_FORMAT
+    return os.path.join(RESULTS_PATH, f"{filename}{extension}")
 
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -66,9 +70,20 @@ D = dc.Dataset.from_package(package_path)
 D
 
 # %%
-phrases = D.get_feature(dict(dtype="PhraseAnnotations", format="PHRASE_ROWS"))
+phrases = D.get_feature("PhraseLabels")
 phrases
 
 # %%
 vc = value_count_df(phrases.end_chord, rank_index=True)
 vc.head(50)
+
+# %%
+stages = phrases.filter_phrase_data(
+    columns=["localkey", "chord"],
+    droplevels=3,
+    reverse=True,
+    wide_format=True,
+    new_level_name="stage",
+)
+stages.to_csv(make_output_path("stages", "tsv"), sep="\t")
+stages.iloc(axis=1)[:20]
