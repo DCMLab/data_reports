@@ -99,17 +99,17 @@ def make_and_store_stage_data(
     components="body",
     droplevels=3,
     reverse=True,
-    new_level_name="stage",
+    level_name="stage",
     wide_format=True,
     query=None,
 ):
     """Function sets the defaults for the stage TSVs produced in the following."""
-    phrase_data = phrases.filter_phrase_data(
+    phrase_data = phrases.get_phrase_data(
         columns=columns,
         components=components,
         droplevels=droplevels,
         reverse=reverse,
-        new_level_name=new_level_name,
+        level_name=level_name,
         wide_format=wide_format,
         query=query,
     )
