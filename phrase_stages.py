@@ -30,8 +30,8 @@ import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
-from dimcat.data.resources.features import _make_groupwise_range_index
 from dimcat.plotting import make_pie_chart, write_image
+from dimcat.steps.analyzers.phrases import _make_groupwise_range_index
 from git import Repo
 
 from utils import (
@@ -256,7 +256,7 @@ result.to_csv(make_output_path("one_key_major_I.stages", "tsv"), sep="\t")
 # %%
 show_stage(result, 2)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 
 
 def merge_row_by_roots(series):
@@ -276,17 +276,7 @@ result = merge_row_by_roots(phrase_data.iloc[0])
 result
 
 # %%
-# %%timeit
-indexing_result = phrase_data.apply(merge_row_by_roots, axis=1)
-
-# %%
-# %%timeit
 indexing_result = phrase_data.agg(merge_row_by_roots, axis=1)
-
-# %% jupyter={"outputs_hidden": false}
-new_stage_mask = result != result.shift()
-new_stage_mask
-
-# %%
+indexing_result
 
 # %%
