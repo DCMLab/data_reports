@@ -25,7 +25,6 @@ tags: [hide-cell]
 %autoreload 2
 import os
 import re
-import itertools
 from functools import cache
 from typing import Optional, Tuple
 
@@ -36,7 +35,7 @@ import pandas as pd
 from dimcat.data.resources.features import _make_groupwise_range_index
 from dimcat.plotting import make_pie_chart, write_image
 from git import Repo
-
+import itertools
 from utils import (
     DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
@@ -97,7 +96,7 @@ def make_and_store_stage_data(
     name: Optional[str] = None,
     columns="chord",
     components="body",
-    droplevels=3,
+    drop_levels=3,
     reverse=True,
     level_name="stage",
     wide_format=True,
@@ -107,7 +106,7 @@ def make_and_store_stage_data(
     phrase_data = phrases.get_phrase_data(
         columns=columns,
         components=components,
-        droplevels=droplevels,
+        drop_levels=drop_levels,
         reverse=reverse,
         level_name=level_name,
         wide_format=wide_format,
