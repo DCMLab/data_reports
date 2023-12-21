@@ -14,7 +14,7 @@ kernelspec:
 
 # Phrases in the DLC
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -25,14 +25,15 @@ tags: [hide-cell]
 %autoreload 2
 import os
 import re
+import itertools
 from functools import cache
-from itertools import chain
-from typing import Optional, Tuple, Iterator
+from typing import Optional, Tuple
 
 import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
+from dimcat.data.resources.features import _make_groupwise_range_index
 from dimcat.plotting import make_pie_chart, write_image
 from git import Repo
 
@@ -49,7 +50,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "phrases"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -66,7 +67,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = resolve_dir(
@@ -81,17 +82,17 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 phrases = D.get_feature("PhraseLabels")
 phrases
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 vc = value_count_df(phrases.end_chord, rank_index=True)
 vc.head(50)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_and_store_stage_data(
     name: Optional[str] = None,
     columns="chord",
@@ -121,7 +122,7 @@ stages = make_and_store_stage_data("stages", columns=["localkey", "chord"])
 stages.head()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 onekey_major = make_and_store_stage_data(
     "onekey_major", query="body_n_modulations == 0 & localkey_mode == 'major'"
 )
@@ -138,11 +139,11 @@ one_key_minor_i = make_and_store_stage_data(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def prepare_phrase_data(phrase_data_obj):
     """Adds a second column level with empty strings to prepare the insertion of substages."""
     df = phrase_data_obj.df
-    df = pd.concat([df], keys=[""], names=["substage"], axis=1).swaplevel(0, 1, axis=1)
+    df = pd.concat([df], keys=[0], names=["substage"], axis=1).swaplevel(0, 1, axis=1)
     return df
 
 
@@ -150,7 +151,7 @@ phrase_data = prepare_phrase_data(one_key_major_I)
 phrase_data
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def show_stage(df, column: int, **kwargs):
     """Pie chart for a given stage."""
     stage = df.loc(axis=1)[column]
@@ -168,7 +169,7 @@ def show_stage(df, column: int, **kwargs):
 show_stage(phrase_data, 1)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 numeral_regex = r"^(b*|\#*)(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i|Ger|It|Fr|@none)"
 
 
@@ -189,27 +190,21 @@ def make_regexes(numeral) -> Tuple[str, str]:
 get_numeral("#viio6/VII")
 ```
 
-```{code-cell}
-def make_letter() -> Iterator[str]:
-    """Generate characters in alphabetical order for substages."""
-    yield from (
-        chr(i)
-        for i in chain(range(ord("a"), ord("z") + 1), range(ord("A"), ord("Z") + 1))
-    )
+```{code-cell} ipython3
 
 
-def _merge_subsequent_into_stage(df, *regex, fill_value=".", printout = False):
+def _merge_subsequent_into_stage(df, *regex, fill_value=".", printout=False):
     """Considers the left-most column as the current stage, the head, and the adjacent column (the first column of the
     tail) as subsequent stage. The items from the latter that match any of the given regular expressions are merged
     into the former by inserting a new column containing these items representing a substage (filled with the
     fill_value). The corresponding rows in the tail, from which items were merged, are rolled to the left and newly
-    empty columns at the end of tail are dropped. Then the tail is processed with merge_adjacent_roots() before
-    concatenating it to the substages on the left.
+    empty columns at the end of tail are dropped. Then the tail is processed with recursively_merge_adjacent_roots()
+    before concatenating it to the substages on the left.
     """
     _, n_cols = df.shape
     if n_cols < 2:
         return df
-    letter = make_letter()
+    substage = itertools.count(start=1)
     column_iloc = df.iloc(axis=1)
     stage_column = column_iloc[0]
     stage = stage_column.name[0]
@@ -225,18 +220,23 @@ def _merge_subsequent_into_stage(df, *regex, fill_value=".", printout = False):
 
     mask = make_mask(right)
     while mask.any():
-        new_column = right.where(mask, other=fill_value).rename((stage, next(letter)))
+        new_column = right.where(mask, other=fill_value).rename((stage, next(substage)))
         head.append(new_column)
         tail.loc[mask] = tail.loc[mask].shift(-1, axis=1)
         right = tail.iloc(axis=1)[0]
         mask = make_mask(right)
     tail_curtailed = tail.dropna(how="all", axis=1)
     if printout:
-        print(f"Added {len(head)} substages to {stage}, reducing the tail from {n_cols} to {tail_curtailed.shape[1]}")
-    recursively_merged_tail = merge_adjacent_roots(tail_curtailed, printout=printout)
+        print(
+            f"Added {len(head)} substages to {stage}, reducing the tail from {n_cols} to {tail_curtailed.shape[1]}"
+        )
+    recursively_merged_tail = recursively_merge_adjacent_roots(
+        tail_curtailed, printout=printout
+    )
     return pd.concat(head + [recursively_merged_tail], axis=1)
 
-def merge_adjacent_roots(phrase_data, printout=False):
+
+def recursively_merge_adjacent_roots(phrase_data, printout=False):
     """Recursively inserts substage columns by merging labels from later stages into earlier ones when they have
     the same root. Chords applied to the root are also merged."""
     n_rows, n_cols = phrase_data.shape
@@ -251,19 +251,72 @@ def merge_adjacent_roots(phrase_data, printout=False):
         df_curtailed = df.dropna(how="all", axis=1)
         if printout:
             print(f"_merge_subsequent_into_stage({len(df)}/{n_rows}) for {numeral}")
-        numeral_df = _merge_subsequent_into_stage(df_curtailed, regex_a, regex_b, printout=printout)
+        numeral_df = _merge_subsequent_into_stage(
+            df_curtailed, regex_a, regex_b, printout=printout
+        )
         results.append(numeral_df)
     return pd.concat(results).sort_index(axis=1)
 ```
 
-```{code-cell}
-result = merge_adjacent_roots(phrase_data)
+```{code-cell} ipython3
+result = recursively_merge_adjacent_roots(phrase_data)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 result.to_csv(make_output_path("one_key_major_I.stages", "tsv"), sep="\t")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 show_stage(result, 2)
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+
+
+def merge_row_by_roots(series):
+    series = series.dropna()
+    numerals = series.map(get_numeral, na_action="ignore")
+    new_stage_mask = numerals != numerals.shift()
+    new_stage_level = new_stage_mask.cumsum() - 1
+    new_substage_level = _make_groupwise_range_index(new_stage_level)
+    new_index = pd.MultiIndex.from_arrays(
+        [new_stage_level, new_substage_level], names=["stage", "substage"]
+    )
+    series.index = new_index
+    return series
+
+
+result = merge_row_by_roots(phrase_data.iloc[0])
+result
+```
+
+```{code-cell} ipython3
+%%timeit
+indexing_result = phrase_data.apply(merge_row_by_roots, axis=1)
+```
+
+```{code-cell} ipython3
+%%timeit
+indexing_result = phrase_data.agg(merge_row_by_roots, axis=1)
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+new_stage_mask = result != result.shift()
+new_stage_mask
+```
+
+```{code-cell} ipython3
+
+```
+
+```{code-cell} ipython3
+
 ```
