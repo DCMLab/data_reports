@@ -21,17 +21,13 @@
 # %load_ext autoreload
 # %autoreload 2
 
-import itertools
 import os
 import re
-from functools import cache
-from typing import Optional, Tuple
+from typing import Optional
 
 import dimcat as dc
 import ms3
-import numpy as np
 import pandas as pd
-from dimcat.data.resources.utils import make_groupwise_range_index_from_groups
 from dimcat.plotting import make_pie_chart, write_image
 from git import Repo
 
@@ -132,18 +128,6 @@ one_key_minor_i = make_and_store_stage_data(
 
 
 # %%
-def prepare_phrase_data(phrase_data_obj):
-    """Adds a second column level with empty strings to prepare the insertion of substages."""
-    df = phrase_data_obj.df
-    df = pd.concat([df], keys=[0], names=["substage"], axis=1).swaplevel(0, 1, axis=1)
-    return df
-
-
-phrase_data = prepare_phrase_data(one_key_major_I)
-phrase_data
-
-
-# %%
 def show_stage(df, column: int, **kwargs):
     """Pie chart for a given stage."""
     stage = df.loc(axis=1)[column]
@@ -158,7 +142,7 @@ def show_stage(df, column: int, **kwargs):
     return make_pie_chart(vc, **settings)
 
 
-show_stage(phrase_data, 1)
+show_stage(one_key_major_I, 1)
 
 # %%
 numeral_regex = r"^(b*|\#*)(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i|Ger|It|Fr|@none)"
@@ -167,119 +151,99 @@ numeral_regex = r"^(b*|\#*)(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i|Ger|It|Fr|
 def get_numeral(label: str) -> str:
     """From a chord label, get the root or, if an applied chord, the root that the chord is applied to."""
     considered = label.split("/")[-1]
-    return re.match(numeral_regex, considered).group()
+    try:
+        return re.match(numeral_regex, considered).group()
+    except AttributeError:
+        return pd.NA
 
 
-@cache
-def make_regexes(numeral) -> Tuple[str, str]:
-    """Returns two regular expressions, one that matches chords with a given root and are not applied chords, and one
-    that matches chords that are applied to that root.
-    """
-    return rf"^{numeral}[^iIvV\/]*$", rf"^.+/{numeral}\]?$"
-
-
-get_numeral("#viio6/VII")
-
-
-# %%
-
-
-def _merge_subsequent_into_stage(df, *regex, fill_value=".", printout=False):
-    """Considers the left-most column as the current stage, the head, and the adjacent column (the first column of the
-    tail) as subsequent stage. The items from the latter that match any of the given regular expressions are merged
-    into the former by inserting a new column containing these items representing a substage (filled with the
-    fill_value). The corresponding rows in the tail, from which items were merged, are rolled to the left and newly
-    empty columns at the end of tail are dropped. Then the tail is processed with recursively_merge_adjacent_roots()
-    before concatenating it to the substages on the left.
-    """
-    _, n_cols = df.shape
-    if n_cols < 2:
-        return df
-    substage = itertools.count(start=1)
-    column_iloc = df.iloc(axis=1)
-    stage_column = column_iloc[0]
-    stage = stage_column.name[0]
-    head = [stage_column]
-    tail = column_iloc[1:]
-    right = column_iloc[1]
-
-    def make_mask(series):
-        mask = np.zeros_like(right, bool)
-        for rgx in regex:
-            mask |= series.str.contains(rgx, na=False)
-        return mask
-
-    mask = make_mask(right)
-    while mask.any():
-        new_column = right.where(mask, other=fill_value).rename((stage, next(substage)))
-        head.append(new_column)
-        tail.loc[mask] = tail.loc[mask].shift(-1, axis=1)
-        right = tail.iloc(axis=1)[0]
-        mask = make_mask(right)
-    tail_curtailed = tail.dropna(how="all", axis=1)
-    if printout:
-        print(
-            f"Added {len(head)} substages to {stage}, reducing the tail from {n_cols} to {tail_curtailed.shape[1]}"
-        )
-    recursively_merged_tail = recursively_merge_adjacent_roots(
-        tail_curtailed, printout=printout
-    )
-    return pd.concat(head + [recursively_merged_tail], axis=1)
-
-
-def recursively_merge_adjacent_roots(phrase_data, printout=False):
-    """Recursively inserts substage columns by merging labels from later stages into earlier ones when they have
-    the same root. Chords applied to the root are also merged."""
-    n_rows, n_cols = phrase_data.shape
-    if printout:
-        print(f"merge_adjacent_roots({n_rows}x{n_cols})")
-    if n_cols < 2:
-        return phrase_data
-    numeral_groups = phrase_data.iloc(axis=1)[0].map(get_numeral, na_action="ignore")
-    results = []
-    for numeral, df in phrase_data.groupby(numeral_groups):
-        regex_a, regex_b = make_regexes(numeral)
-        df_curtailed = df.dropna(how="all", axis=1)
-        if printout:
-            print(f"_merge_subsequent_into_stage({len(df)}/{n_rows}) for {numeral}")
-        numeral_df = _merge_subsequent_into_stage(
-            df_curtailed, regex_a, regex_b, printout=printout
-        )
-        results.append(numeral_df)
-    return pd.concat(results).sort_index(axis=1)
-
-
-# %%
-result = recursively_merge_adjacent_roots(phrase_data)
-
-# %%
+numeral_criterion = one_key_major_I.dataframe.chord.map(get_numeral).rename(
+    "root_numeral"
+)
+result = one_key_major_I.regroup_phrases(numeral_criterion)
 result.to_csv(make_output_path("one_key_major_I.stages", "tsv"), sep="\t")
-
-# %%
-show_stage(result, 2)
-
-
-# %%
-
-
-def merge_row_by_roots(series):
-    series = series.dropna()
-    numerals = series.map(get_numeral, na_action="ignore")
-    new_stage_mask = numerals != numerals.shift()
-    new_stage_level = new_stage_mask.cumsum() - 1
-    new_substage_level = make_groupwise_range_index_from_groups(new_stage_level)
-    new_index = pd.MultiIndex.from_arrays(
-        [new_stage_level, new_substage_level], names=["stage", "substage"]
-    )
-    series.index = new_index
-    return series
-
-
-result = merge_row_by_roots(phrase_data.iloc[0])
 result
 
-# %%
-indexing_result = phrase_data.agg(merge_row_by_roots, axis=1)
-indexing_result
 
 # %%
+regrouped = result._format_dataframe(
+    result.drop(columns="root_numeral"), "WIDE"
+)  # ToDo: Unstack needs to take into account the new index levels
+show_stage(regrouped, 1)
+
+# %% [raw]
+# # this recursive approach is very inefficient
+#
+# @cache
+# def make_regexes(numeral) -> Tuple[str, str]:
+#     """Returns two regular expressions, one that matches chords with a given root and are not applied chords, and one
+#     that matches chords that are applied to that root.
+#     """
+#     return rf"^{numeral}[^iIvV\/]*$", rf"^.+/{numeral}\]?$"
+#
+#
+# def _merge_subsequent_into_stage(df, *regex, fill_value=".", printout=False):
+#     """Considers the left-most column as the current stage, the head, and the adjacent column (the first column of the
+#     tail) as subsequent stage. The items from the latter that match any of the given regular expressions are merged
+#     into the former by inserting a new column containing these items representing a substage (filled with the
+#     fill_value). The corresponding rows in the tail, from which items were merged, are rolled to the left and newly
+#     empty columns at the end of tail are dropped. Then the tail is processed with recursively_merge_adjacent_roots()
+#     before concatenating it to the substages on the left.
+#     """
+#     _, n_cols = df.shape
+#     if n_cols < 2:
+#         return df
+#     substage = itertools.count(start=1)
+#     column_iloc = df.iloc(axis=1)
+#     stage_column = column_iloc[0]
+#     stage = stage_column.name[0]
+#     head = [stage_column]
+#     tail = column_iloc[1:]
+#     right = column_iloc[1]
+#
+#     def make_mask(series):
+#         mask = np.zeros_like(right, bool)
+#         for rgx in regex:
+#             mask |= series.str.contains(rgx, na=False)
+#         return mask
+#
+#     mask = make_mask(right)
+#     while mask.any():
+#         new_column = right.where(mask, other=fill_value).rename((stage, next(substage)))
+#         head.append(new_column)
+#         tail.loc[mask] = tail.loc[mask].shift(-1, axis=1)
+#         right = tail.iloc(axis=1)[0]
+#         mask = make_mask(right)
+#     tail_curtailed = tail.dropna(how="all", axis=1)
+#     if printout:
+#         print(
+#             f"Added {len(head)} substages to {stage}, reducing the tail from {n_cols} to {tail_curtailed.shape[1]}"
+#         )
+#     recursively_merged_tail = recursively_merge_adjacent_roots(
+#         tail_curtailed, printout=printout
+#     )
+#     return pd.concat(head + [recursively_merged_tail], axis=1)
+#
+#
+# def recursively_merge_adjacent_roots(phrase_data, printout=False):
+#     """Recursively inserts substage columns by merging labels from later stages into earlier ones when they have
+#     the same root. Chords applied to the root are also merged."""
+#     n_rows, n_cols = phrase_data.shape
+#     if printout:
+#         print(f"merge_adjacent_roots({n_rows}x{n_cols})")
+#     if n_cols < 2:
+#         return phrase_data
+#     numeral_groups = phrase_data.iloc(axis=1)[0].map(get_numeral, na_action="ignore")
+#     results = []
+#     for numeral, df in phrase_data.groupby(numeral_groups):
+#         regex_a, regex_b = make_regexes(numeral)
+#         df_curtailed = df.dropna(how="all", axis=1)
+#         if printout:
+#             print(f"_merge_subsequent_into_stage({len(df)}/{n_rows}) for {numeral}")
+#         numeral_df = _merge_subsequent_into_stage(
+#             df_curtailed, regex_a, regex_b, printout=printout
+#         )
+#         results.append(numeral_df)
+#     return pd.concat(results).sort_index(axis=1)
+#
+# result = recursively_merge_adjacent_roots(phrase_data)

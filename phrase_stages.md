@@ -24,17 +24,13 @@ tags: [hide-cell]
 %load_ext autoreload
 %autoreload 2
 
-import itertools
 import os
 import re
-from functools import cache
-from typing import Optional, Tuple
+from typing import Optional
 
 import dimcat as dc
 import ms3
-import numpy as np
 import pandas as pd
-from dimcat.data.resources.utils import make_groupwise_range_index_from_groups
 from dimcat.plotting import make_pie_chart, write_image
 from git import Repo
 
@@ -141,18 +137,6 @@ one_key_minor_i = make_and_store_stage_data(
 ```
 
 ```{code-cell} ipython3
-def prepare_phrase_data(phrase_data_obj):
-    """Adds a second column level with empty strings to prepare the insertion of substages."""
-    df = phrase_data_obj.df
-    df = pd.concat([df], keys=[0], names=["substage"], axis=1).swaplevel(0, 1, axis=1)
-    return df
-
-
-phrase_data = prepare_phrase_data(one_key_major_I)
-phrase_data
-```
-
-```{code-cell} ipython3
 def show_stage(df, column: int, **kwargs):
     """Pie chart for a given stage."""
     stage = df.loc(axis=1)[column]
@@ -167,7 +151,7 @@ def show_stage(df, column: int, **kwargs):
     return make_pie_chart(vc, **settings)
 
 
-show_stage(phrase_data, 1)
+show_stage(one_key_major_I, 1)
 ```
 
 ```{code-cell} ipython3
@@ -177,8 +161,29 @@ numeral_regex = r"^(b*|\#*)(VII|VI|V|IV|III|II|I|vii|vi|v|iv|iii|ii|i|Ger|It|Fr|
 def get_numeral(label: str) -> str:
     """From a chord label, get the root or, if an applied chord, the root that the chord is applied to."""
     considered = label.split("/")[-1]
-    return re.match(numeral_regex, considered).group()
+    try:
+        return re.match(numeral_regex, considered).group()
+    except AttributeError:
+        return pd.NA
 
+
+numeral_criterion = one_key_major_I.dataframe.chord.map(get_numeral).rename(
+    "root_numeral"
+)
+result = one_key_major_I.regroup_phrases(numeral_criterion)
+result.to_csv(make_output_path("one_key_major_I.stages", "tsv"), sep="\t")
+result
+```
+
+```{code-cell} ipython3
+regrouped = result._format_dataframe(
+    result.drop(columns="root_numeral"), "WIDE"
+)  # ToDo: Unstack needs to take into account the new index levels
+show_stage(regrouped, 1)
+```
+
+```{raw-cell}
+# this recursive approach is very inefficient
 
 @cache
 def make_regexes(numeral) -> Tuple[str, str]:
@@ -186,12 +191,6 @@ def make_regexes(numeral) -> Tuple[str, str]:
     that matches chords that are applied to that root.
     """
     return rf"^{numeral}[^iIvV\/]*$", rf"^.+/{numeral}\]?$"
-
-
-get_numeral("#viio6/VII")
-```
-
-```{code-cell} ipython3
 
 
 def _merge_subsequent_into_stage(df, *regex, fill_value=".", printout=False):
@@ -257,45 +256,6 @@ def recursively_merge_adjacent_roots(phrase_data, printout=False):
         )
         results.append(numeral_df)
     return pd.concat(results).sort_index(axis=1)
-```
 
-```{code-cell} ipython3
 result = recursively_merge_adjacent_roots(phrase_data)
-```
-
-```{code-cell} ipython3
-result.to_csv(make_output_path("one_key_major_I.stages", "tsv"), sep="\t")
-```
-
-```{code-cell} ipython3
-show_stage(result, 2)
-```
-
-```{code-cell} ipython3
-
-
-def merge_row_by_roots(series):
-    series = series.dropna()
-    numerals = series.map(get_numeral, na_action="ignore")
-    new_stage_mask = numerals != numerals.shift()
-    new_stage_level = new_stage_mask.cumsum() - 1
-    new_substage_level = make_groupwise_range_index_from_groups(new_stage_level)
-    new_index = pd.MultiIndex.from_arrays(
-        [new_stage_level, new_substage_level], names=["stage", "substage"]
-    )
-    series.index = new_index
-    return series
-
-
-result = merge_row_by_roots(phrase_data.iloc[0])
-result
-```
-
-```{code-cell} ipython3
-indexing_result = phrase_data.agg(merge_row_by_roots, axis=1)
-indexing_result
-```
-
-```{code-cell} ipython3
-
 ```
