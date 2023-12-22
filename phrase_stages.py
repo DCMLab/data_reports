@@ -16,11 +16,12 @@
 # %% [markdown]
 # # Phrases in the DLC
 
-import itertools
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 # %load_ext autoreload
 # %autoreload 2
+
+import itertools
 import os
 import re
 from functools import cache
@@ -30,8 +31,8 @@ import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
+from dimcat.data.resources.utils import make_groupwise_range_index_from_groups
 from dimcat.plotting import make_pie_chart, write_image
-from dimcat.steps.analyzers.phrases import _make_groupwise_range_index
 from git import Repo
 
 from utils import (
@@ -179,6 +180,7 @@ def make_regexes(numeral) -> Tuple[str, str]:
 
 get_numeral("#viio6/VII")
 
+
 # %%
 
 
@@ -256,6 +258,7 @@ result.to_csv(make_output_path("one_key_major_I.stages", "tsv"), sep="\t")
 # %%
 show_stage(result, 2)
 
+
 # %%
 
 
@@ -264,7 +267,7 @@ def merge_row_by_roots(series):
     numerals = series.map(get_numeral, na_action="ignore")
     new_stage_mask = numerals != numerals.shift()
     new_stage_level = new_stage_mask.cumsum() - 1
-    new_substage_level = _make_groupwise_range_index(new_stage_level)
+    new_substage_level = make_groupwise_range_index_from_groups(new_stage_level)
     new_index = pd.MultiIndex.from_arrays(
         [new_stage_level, new_substage_level], names=["stage", "substage"]
     )

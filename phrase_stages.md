@@ -23,6 +23,8 @@ tags: [hide-cell]
 ---
 %load_ext autoreload
 %autoreload 2
+
+import itertools
 import os
 import re
 from functools import cache
@@ -32,10 +34,10 @@ import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
-from dimcat.steps.analyzers.phrases import _make_groupwise_range_index
+from dimcat.data.resources.utils import make_groupwise_range_index_from_groups
 from dimcat.plotting import make_pie_chart, write_image
 from git import Repo
-import itertools
+
 from utils import (
     DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
@@ -277,7 +279,7 @@ def merge_row_by_roots(series):
     numerals = series.map(get_numeral, na_action="ignore")
     new_stage_mask = numerals != numerals.shift()
     new_stage_level = new_stage_mask.cumsum() - 1
-    new_substage_level = _make_groupwise_range_index(new_stage_level)
+    new_substage_level = make_groupwise_range_index_from_groups(new_stage_level)
     new_index = pd.MultiIndex.from_arrays(
         [new_stage_level, new_substage_level], names=["stage", "substage"]
     )
