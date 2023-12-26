@@ -15,10 +15,8 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
-from dimcat.data.resources.features import (
-    add_chord_tone_intervals,
-    extend_bass_notes_feature,
-)
+from dimcat.data.resources.facets import add_chord_tone_intervals
+from dimcat.data.resources.features import extend_bass_notes_feature
 from dimcat.utils import grams, make_transition_matrix
 from git import Repo
 from IPython.display import display
