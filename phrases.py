@@ -69,7 +69,35 @@ D = dc.Dataset.from_package(package_path)
 D
 
 # %%
-phrases = D.get_feature("PhraseLabels")
+phrase_annotations = D.get_feature("PhraseAnnotations")
+phrase_annotations
+
+# %%
+overall_ranking = (
+    D.get_feature("HarmonyLabels").get_default_analysis().make_ranking_table()
+)
+within_phrase_ranking = phrase_annotations.get_default_analysis().make_ranking_table()
+pd.concat(
+    [overall_ranking, within_phrase_ranking], keys=["overall", "within_phrase"], axis=1
+)
+
+# %%
+bigram_table = phrase_annotations.apply_step("bigramanalyzer")
+bigram_table
+
+# %%
+bgt = bigram_table.make_bigram_tuples(join_str=True, terminal_symbols="DROP")
+bgt.head(50)
+
+# %%
+bgt.make_ranking_table()
+
+# %%
+phrase_components = phrase_annotations.extract_feature("PhraseComponents")
+phrase_components
+
+# %%
+phrases = phrase_components.extract_feature("PhraseLabels")
 phrases
 
 # %%

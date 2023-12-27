@@ -77,7 +77,37 @@ D
 ```
 
 ```{code-cell}
-phrases = D.get_feature("PhraseLabels")
+phrase_annotations = D.get_feature("PhraseAnnotations")
+phrase_annotations
+```
+
+```{code-cell}
+overall_ranking = D.get_feature("HarmonyLabels").get_default_analysis().make_ranking_table()
+within_phrase_ranking = phrase_annotations.get_default_analysis().make_ranking_table()
+pd.concat([overall_ranking, within_phrase_ranking], keys=["overall", "within_phrase"], axis=1)
+```
+
+```{code-cell}
+bigram_table = phrase_annotations.apply_step("bigramanalyzer")
+bigram_table
+```
+
+```{code-cell}
+bgt = bigram_table.make_bigram_tuples(join_str=True, terminal_symbols="DROP")
+bgt.head(50)
+```
+
+```{code-cell}
+bgt.make_ranking_table()
+```
+
+```{code-cell}
+phrase_components = phrase_annotations.extract_feature("PhraseComponents")
+phrase_components
+```
+
+```{code-cell}
+phrases = phrase_components.extract_feature("PhraseLabels")
 phrases
 ```
 

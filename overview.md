@@ -16,7 +16,7 @@ kernelspec:
 
 This notebook gives a general overview of the features included in the dataset.
 
-```{code-cell} ipython3
+```{code-cell}
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -37,7 +37,7 @@ from git import Repo
 from IPython.display import display
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 from utils import (
     CORPUS_COLOR_SCALE,
     DEFAULT_OUTPUT_FORMAT,
@@ -64,7 +64,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 **Loading data**
 
-```{code-cell} ipython3
+```{code-cell}
 package_path = resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
@@ -77,14 +77,14 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
 all_metadata = filtered_D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
 all_metadata
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 mean_composition_years = corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
@@ -95,7 +95,7 @@ corpus_name_colors = {
 }
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 mean_composition_years
 ```
 
@@ -103,7 +103,7 @@ mean_composition_years
 
 This section relies on the dataset's metadata.
 
-```{code-cell} ipython3
+```{code-cell}
 valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors="coerce")
 valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors="coerce")
 print(
@@ -114,13 +114,13 @@ print(
 
 ### Mean composition years per corpus
 
-```{code-cell} ipython3
+```{code-cell}
 def make_summary(metadata_df):
     piece_is_annotated = metadata_df.label_count > 0
     return metadata_df[piece_is_annotated].copy()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 summary = make_summary(all_metadata)
@@ -148,13 +148,13 @@ save_figure_as(fig, "pieces_timeline_bars")
 fig.show()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 summary
 ```
 
 ### Composition years histogram
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 hist_data = summary.reset_index()
@@ -181,7 +181,7 @@ fig.show()
 
 ### Overview
 
-```{code-cell} ipython3
+```{code-cell}
 def make_overview_table(groupby, group_name="pieces"):
     n_groups = groupby.size().rename(group_name)
     absolute_numbers = dict(
@@ -202,14 +202,14 @@ absolute = make_overview_table(summary.groupby("workTitle"))
 absolute.astype(int)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 public = dc.Dataset.from_package(
     "/home/laser/git/meta_repositories/dcml_corpora/dcml_corpora.datapackage.json"
 )
 public
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 def summarize_dataset(D):
     all_metadata = D.get_metadata()
     summary = make_summary(all_metadata)
@@ -220,14 +220,14 @@ dcml_corpora = summarize_dataset(public)
 print(dcml_corpora.astype(int).to_markdown())
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 distant_listening = summarize_dataset(D)
 print(distant_listening.astype(int).to_markdown())
 ```
 
 ### Measures
 
-```{code-cell} ipython3
+```{code-cell}
 all_measures = D.get_feature("measures").df
 print(
     f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files."
@@ -235,7 +235,7 @@ print(
 all_measures.head()
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 print("Distribution of time signatures per XML measure (MC):")
 all_measures.timesig.value_counts(dropna=False)
 ```
@@ -244,7 +244,7 @@ all_measures.timesig.value_counts(dropna=False)
 
 All symbols, independent of the local key (the mode of which changes their semantics).
 
-```{code-cell} ipython3
+```{code-cell}
 try:
     all_annotations = D.get_feature("harmonylabels").df
 except Exception:

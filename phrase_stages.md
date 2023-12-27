@@ -176,10 +176,15 @@ result
 ```
 
 ```{code-cell} ipython3
-regrouped = result._format_dataframe(
-    result.drop(columns="root_numeral"), "WIDE"
-)  # ToDo: Unstack needs to take into account the new index levels
+# regrouped = result._format_dataframe(
+#     result.drop(columns="root_numeral"), "WIDE"
+# )  # ToDo: Unstack needs to take into account the new index levels
+regrouped = result["chord"].unstack(level=[-2, -1]).sort_index(axis=1)
 show_stage(regrouped, 1)
+```
+
+```{code-cell} ipython3
+regrouped
 ```
 
 ```{raw-cell}
