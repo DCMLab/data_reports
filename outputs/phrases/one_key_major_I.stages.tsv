@@ -4567,8 +4567,6 @@ scarlatti_sonatas	K039	13199	5	0	V	V7
 scarlatti_sonatas	K039	13199	5	1	V	V(6)
 scarlatti_sonatas	K039	13199	6	0	I	I
 scarlatti_sonatas	K039	13199	7	0	V	V
-scarlatti_sonatas	K039	13195	0	0	I	I
-scarlatti_sonatas	K039	13195	0	1	I	I
 scarlatti_sonatas	K037	13190	0	0	I	I
 scarlatti_sonatas	K037	13190	1	0	V	V7
 scarlatti_sonatas	K037	13190	1	1	V	V
@@ -5461,10 +5459,6 @@ scarlatti_sonatas	K006	12835	10	5	i	V/i
 scarlatti_sonatas	K006	12832	0	0	I	I
 scarlatti_sonatas	K006	12832	1	0	IV	IV
 scarlatti_sonatas	K006	12832	1	1	IV	V7/IV
-scarlatti_sonatas	K006	12831	0	0	I	I
-scarlatti_sonatas	K006	12831	0	1	I	I
-scarlatti_sonatas	K006	12830	0	0	I	I
-scarlatti_sonatas	K006	12830	0	1	I	I
 scarlatti_sonatas	K005	12822	0	0	I	I
 scarlatti_sonatas	K005	12822	1	0	V	V
 scarlatti_sonatas	K005	12822	1	1	V	V(6)
@@ -6698,8 +6692,6 @@ peri_euridice	peri_euridice_scene_2	12221	0	0	I	I
 peri_euridice	peri_euridice_scene_2	12221	1	0	V	V
 peri_euridice	peri_euridice_scene_2	12221	2	0	ii	ii6
 peri_euridice	peri_euridice_scene_2	12221	3	0	I	I6
-peri_euridice	peri_euridice_scene_2	12218	0	0	I	I
-peri_euridice	peri_euridice_scene_2	12218	0	1	I	I
 peri_euridice	peri_euridice_scene_1	12217	0	0	I	I
 peri_euridice	peri_euridice_scene_1	12217	1	0	V	V
 peri_euridice	peri_euridice_scene_1	12217	1	1	V	V(4)
@@ -33205,9 +33197,7 @@ couperin_concerts	c05n01_prelude	5425	1	2	V	V(4)
 couperin_concerts	c05n01_prelude	5425	2	0	ii	ii43
 couperin_concerts	c05n01_prelude	5425	3	0	I	I6
 couperin_concerts	c05n01_prelude	5425	4	0	V	V
-couperin_concerts	c05n01_prelude	5425	5	0	I	I
-couperin_concerts	c05n01_prelude	5424	0	0	I	I
-couperin_concerts	c05n01_prelude	5424	0	1	I	I
+couperin_concerts	c05n01_prelude	5425	5	0
 couperin_concerts	c04n07_forlane	5421	0	0	I	I
 couperin_concerts	c04n07_forlane	5421	1	0	V	V
 couperin_concerts	c04n07_forlane	5421	1	1	V	V(64)
@@ -36625,8 +36615,6 @@ corelli	op01n09a	4362	11	0	IV	IV6
 corelli	op01n09a	4362	11	1	IV	IV
 corelli	op01n09a	4362	12	0	I	I
 corelli	op01n09a	4362	13	0	V	I/V
-corelli	op01n09a	4359	0	0	I	I
-corelli	op01n09a	4359	0	1	I	I
 corelli	op01n07c	4336	0	0	I	I
 corelli	op01n07c	4336	1	0	V	V
 corelli	op01n07c	4336	1	1	V	V(4)
