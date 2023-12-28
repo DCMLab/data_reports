@@ -14,6 +14,8 @@ kernelspec:
 
 # Phrases in the DLC
 
+ToDo: Wrong `duration_qb` in phrase ID 14628
+
 ```{code-cell} ipython3
 ---
 mystnb:
@@ -26,11 +28,13 @@ tags: [hide-cell]
 
 import os
 import re
-from typing import Optional
+from typing import Hashable, Optional
 
 import dimcat as dc
 import ms3
 import pandas as pd
+from dimcat import resources
+from dimcat.data.resources.utils import merge_columns_into_one
 from dimcat.plotting import make_pie_chart, write_image
 from git import Repo
 
@@ -65,6 +69,74 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```
 
 ```{code-cell} ipython3
+
+
+def make_and_store_stage_data(
+    phrase_feature,
+    name: Optional[str] = None,
+    columns="chord",
+    components="body",
+    drop_levels=3,
+    reverse=True,
+    level_name="stage",
+    wide_format=True,
+    query=None,
+) -> resources.PhraseData:
+    """Function sets the defaults for the stage TSVs produced in the following."""
+    phrase_data = phrase_feature.get_phrase_data(
+        columns=columns,
+        components=components,
+        drop_levels=drop_levels,
+        reverse=reverse,
+        level_name=level_name,
+        wide_format=wide_format,
+        query=query,
+    )
+    if name:
+        phrase_data.to_csv(make_output_path(name, "tsv"), sep="\t")
+    return phrase_data
+
+
+def make_criterion(
+    phrase_feature,
+    criterion_name: Optional[str] = None,
+    columns="chord",
+    components="body",
+    drop_levels=3,
+    reverse=True,
+    level_name="stage",
+    query=None,
+    join_str: Optional[str | bool] = None,
+    fillna: Optional[Hashable] = None,
+) -> pd.Series:
+    """Function sets the defaults for the stage TSVs produced in the following."""
+    phrase_data = phrase_feature.get_phrase_data(
+        columns=columns,
+        components=components,
+        drop_levels=drop_levels,
+        reverse=reverse,
+        level_name=level_name,
+        wide_format=False,
+        query=query,
+    )
+    if not isinstance(columns, str) and len(columns) > 1:
+        phrase_data = merge_columns_into_one(
+            phrase_data, join_str=join_str, fillna=fillna
+        )
+        if criterion_name is None:
+            criterion_name = "_and_".join(columns)
+    else:
+        phrase_data = phrase_data.iloc(axis=1)[0]
+        if criterion_name is None:
+            if isinstance(columns, str):
+                criterion_name = columns
+            else:
+                criterion_name = columns[0]
+    result = phrase_data.rename(criterion_name)
+    return result
+```
+
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = resolve_dir(
@@ -80,6 +152,34 @@ D
 ```
 
 ```{code-cell} ipython3
+phrase_annotations = D.get_feature("PhraseAnnotations")
+phrase_annotations
+```
+
+```{code-cell} ipython3
+uncompressed = make_and_store_stage_data(
+    phrase_annotations, columns=["chord_and_mode"], wide_format=False
+)
+uncompressed.head(20)
+```
+
+```{code-cell} ipython3
+
+numeral_criterion = make_criterion(
+    phrase_annotations,
+    columns=["numeral_or_applied_to", "localkey_mode"],
+    criterion_name="root_numeral",
+    join_str=True,
+)
+numeral_criterion
+```
+
+```{code-cell} ipython3
+numeral_stages = uncompressed.regroup_phrases(numeral_criterion)
+numeral_stages.head(100)
+```
+
+```{code-cell} ipython3
 phrases = D.get_feature("PhraseLabels")
 phrases
 ```
@@ -90,48 +190,31 @@ vc.head(50)
 ```
 
 ```{code-cell} ipython3
-def make_and_store_stage_data(
-    name: Optional[str] = None,
-    columns="chord",
-    components="body",
-    drop_levels=3,
-    reverse=True,
-    level_name="stage",
-    wide_format=True,
-    query=None,
-):
-    """Function sets the defaults for the stage TSVs produced in the following."""
-    phrase_data = phrases.get_phrase_data(
-        columns=columns,
-        components=components,
-        drop_levels=drop_levels,
-        reverse=reverse,
-        level_name=level_name,
-        wide_format=wide_format,
-        query=query,
-    )
-    if name:
-        phrase_data.to_csv(make_output_path(name, "tsv"), sep="\t")
-    return phrase_data
-
-
-stages = make_and_store_stage_data("stages", columns=["localkey", "chord"])
+stages = make_and_store_stage_data(
+    phrases, name="stages", columns=["localkey", "chord"]
+)
 stages.head()
 ```
 
 ```{code-cell} ipython3
 onekey_major = make_and_store_stage_data(
-    "onekey_major", query="body_n_modulations == 0 & localkey_mode == 'major'"
+    phrases,
+    name="onekey_major",
+    query="body_n_modulations == 0 & localkey_mode == 'major'",
 )
 onekey_minor = make_and_store_stage_data(
-    "onekey_minor", query="body_n_modulations == 0 & localkey_mode == 'minor'"
+    phrases,
+    name="onekey_minor",
+    query="body_n_modulations == 0 & localkey_mode == 'minor'",
 )
 one_key_major_I = make_and_store_stage_data(
-    "onekey_major_I",
+    phrases,
+    name="onekey_major_I",
     query="body_n_modulations == 0 & localkey_mode == 'major' & end_chord == 'I'",
 )  # end_chord.str.contains('^I(?![iIvV\/])')")
 one_key_minor_i = make_and_store_stage_data(
-    "one_key_minor_i",
+    phrases,
+    name="one_key_minor_i",
     query="body_n_modulations == 0 & localkey_mode == 'minor' & end_chord == 'i'",
 )
 ```
@@ -167,9 +250,9 @@ def get_numeral(label: str) -> str:
         return pd.NA
 
 
-numeral_criterion = one_key_major_I.dataframe.chord.map(get_numeral).rename(
-    "root_numeral"
-)
+numeral_criterion = one_key_major_I.dataframe.chord.map(
+    get_numeral, na_action="ignore"
+).rename("root_numeral")
 result = one_key_major_I.regroup_phrases(numeral_criterion)
 result.to_csv(make_output_path("one_key_major_I.stages", "tsv"), sep="\t")
 result
