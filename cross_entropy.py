@@ -226,23 +226,19 @@ harmony_labels = analyzed_D.get_feature("HarmonyLabels")
 harmony_labels
 
 # %%
-all_metadata = analyzed_D.get_metadata()
-chronological_corpus_names = all_metadata.get_corpus_names()
-
-# %%
 chord_proportions: Durations = harmony_labels.apply_step("Proportions")
 chord_proportions.make_ranking_table()
 
 # %%
 corpus_by_corpus = compute_cross_entropies(chord_proportions, "corpus")
-px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)
-
-# %%
-chronological_corpus_names = all_metadata.get_corpus_names(func=None)
-
-# %%
-corpus_by_corpus.loc[chronological_corpus_names, chronological_corpus_names]
-px.imshow(corpus_by_corpus, color_continuous_scale="RdBu_r", width=1000, height=1000)
+chronological_corpus_names = analyzed_D.get_metadata().get_corpus_names(func=None)
+px.imshow(
+    corpus_by_corpus.loc[chronological_corpus_names, chronological_corpus_names],
+    color_continuous_scale="RdBu_r",
+    title="Cross-entropy of chord distributions between corpora",
+    width=1000,
+    height=1000,
+)
 
 # %%
 plot_uniqueness(chord_proportions, chronological_corpus_names)
