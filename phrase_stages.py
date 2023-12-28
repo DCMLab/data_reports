@@ -32,7 +32,7 @@ import ms3
 import pandas as pd
 from dimcat import resources
 from dimcat.data.resources.utils import merge_columns_into_one
-from dimcat.plotting import make_pie_chart, write_image
+from dimcat.plotting import make_bar_plot, make_box_plot, make_pie_chart, write_image
 from git import Repo
 
 from utils import (
@@ -149,10 +149,73 @@ phrase_annotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 
 # %%
+# phrase_annotations[phrase_annotations.duration_qb==0]
+phrase_annotations.tail(100)
+
+# %%
 uncompressed = make_and_store_stage_data(
-    phrase_annotations, columns=["chord_and_mode"], wide_format=False
+    phrase_annotations, columns=["chord_and_mode", "duration_qb"], wide_format=False
 )
 uncompressed.head(20)
+
+
+# %%
+def make_criteria_dict(phrase_annotations, criteria_dict, join_str=True):
+    """Takes a {name -> [columns]} dict."""
+    name2stages = {
+        "uncompressed": make_and_store_stage_data(
+            phrase_annotations,
+            columns=["chord_and_mode", "duration_qb"],
+            wide_format=False,
+        )
+    }
+    for name, columns in criteria_dict.items():
+        criterion = make_criterion(
+            phrase_annotations,
+            columns=columns,
+            criterion_name=name,
+            join_str=join_str,
+        )
+        name2stages[name] = uncompressed.regroup_phrases(criterion)
+    return name2stages
+
+
+def get_stage_durations(df):
+    return df.groupby(["corpus", "piece", "phrase_id", "stage"]).duration_qb.sum()
+
+
+def compare_mean_stage_durations(durations_dict, category_title="stage_type", **kwargs):
+    """Takes a {trace_name -> durations} dict where each entry will be turned into a bar plot trace for comparison."""
+    aggregated = {
+        name: durations.groupby("corpus").agg(["mean", "sem"])
+        for name, durations in durations_dict.items()
+    }
+    df = pd.concat(aggregated, names=[category_title])
+    return make_bar_plot(
+        df, x_col="corpus", y_col="mean", error_y="sem", color=category_title, **kwargs
+    )
+
+
+def compare_criteria(phrase_annotations, criteria_dict, join_str=True):
+    name2stages = make_criteria_dict(
+        phrase_annotations, criteria_dict, join_str=join_str
+    )
+    durations_dict = {
+        name: get_stage_durations(stages) for name, stages in name2stages.items()
+    }
+    return compare_mean_stage_durations(durations_dict, height=800)
+
+
+compare_criteria(
+    phrase_annotations,
+    dict(
+        bass_note=["bass_note", "localkey_mode"],
+        root=["root", "localkey_mode"],
+        # numeral=["numeral", "localkey_mode"],
+        # root_roman=["root_roman", "localkey_mode"],
+        numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
+    ),
+)
 
 # %%
 
@@ -167,6 +230,58 @@ numeral_criterion
 # %%
 numeral_stages = uncompressed.regroup_phrases(numeral_criterion)
 numeral_stages.head(100)
+
+# %%
+
+
+uncompressed.groupby(["corpus"]).duration_qb.describe()
+uncompressed_mean_stage_durations = uncompressed.groupby(["corpus"]).duration_qb.agg(
+    ["mean", "sem"]
+)
+make_bar_plot(
+    uncompressed_mean_stage_durations, x_col="corpus", y_col="mean", error_y="sem"
+)
+
+# %%
+
+
+numeral_stage_durations = get_stage_durations(numeral_stages)
+numeral_stage_durations.groupby(["corpus"]).describe()
+
+# %%
+numeral_mean_stage_durations = numeral_stage_durations.groupby("corpus").agg(
+    ["mean", "sem"]
+)
+make_bar_plot(numeral_mean_stage_durations, x_col="corpus", y_col="mean", error_y="sem")
+
+# %%
+
+
+# %%
+def get_stage_lengths(df):
+    stage_index = df.index.to_frame(index=False)
+    phrase_id_col = stage_index.columns.get_loc("phrase_id")
+    groupby = stage_index.columns.to_list()[: phrase_id_col + 1]
+    stage_lengths = stage_index.groupby(groupby).stage.max() + 1
+    return stage_lengths
+
+
+uncompressed_lengths = get_stage_lengths(uncompressed)
+uncompressed_lengths
+
+# %%
+uncompressed_lengths.groupby("corpus").describe()
+
+# %%
+
+chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
+make_box_plot(
+    uncompressed_lengths,
+    x_col="corpus",
+    y_col="stage",
+    height=800,
+    category_orders=dict(corpus=chronological_corpus_names),
+)
 
 # %%
 phrases = D.get_feature("PhraseLabels")
