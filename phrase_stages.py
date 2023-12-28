@@ -31,6 +31,7 @@ import dimcat as dc
 import ms3
 import pandas as pd
 from dimcat import resources
+from dimcat.data.resources.results import _entropy
 from dimcat.data.resources.utils import merge_columns_into_one
 from dimcat.plotting import make_bar_plot, make_box_plot, make_pie_chart, write_image
 from git import Repo
@@ -142,33 +143,23 @@ print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
+chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
 D
 
 # %%
 phrase_annotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 
-# %%
-# phrase_annotations[phrase_annotations.duration_qb==0]
-phrase_annotations.tail(100)
-
-# %%
-uncompressed = make_and_store_stage_data(
-    phrase_annotations, columns=["chord_and_mode", "duration_qb"], wide_format=False
-)
-uncompressed.head(20)
-
 
 # %%
 def make_criteria_dict(phrase_annotations, criteria_dict, join_str=True):
     """Takes a {name -> [columns]} dict."""
-    name2stages = {
-        "uncompressed": make_and_store_stage_data(
-            phrase_annotations,
-            columns=["chord_and_mode", "duration_qb"],
-            wide_format=False,
-        )
-    }
+    uncompressed = make_and_store_stage_data(
+        phrase_annotations,
+        columns=["chord_and_mode", "duration_qb"],
+        wide_format=False,
+    )
+    name2stages = {"uncompressed": uncompressed}
     for name, columns in criteria_dict.items():
         criterion = make_criterion(
             phrase_annotations,
@@ -191,12 +182,23 @@ def compare_mean_stage_durations(durations_dict, category_title="stage_type", **
         for name, durations in durations_dict.items()
     }
     df = pd.concat(aggregated, names=[category_title])
+    corpora = df.index.get_level_values("corpus").unique()
+    corpus_order = [
+        corpus for corpus in chronological_corpus_names if corpus in corpora
+    ]
     return make_bar_plot(
-        df, x_col="corpus", y_col="mean", error_y="sem", color=category_title, **kwargs
+        df,
+        x_col="corpus",
+        y_col="mean",
+        error_y="sem",
+        color=category_title,
+        category_orders=dict(corpus=corpus_order),
+        labels=dict(mean="mean duration of stages in ♩", corpus=""),
+        **kwargs,
     )
 
 
-def compare_criteria(phrase_annotations, criteria_dict, join_str=True):
+def compare_criteria_stage_durations(phrase_annotations, criteria_dict, join_str=True):
     name2stages = make_criteria_dict(
         phrase_annotations, criteria_dict, join_str=join_str
     )
@@ -206,55 +208,77 @@ def compare_criteria(phrase_annotations, criteria_dict, join_str=True):
     return compare_mean_stage_durations(durations_dict, height=800)
 
 
-compare_criteria(
+compare_criteria_stage_durations(
     phrase_annotations,
     dict(
-        bass_note=["bass_note", "localkey_mode"],
-        root=["root", "localkey_mode"],
-        # numeral=["numeral", "localkey_mode"],
-        # root_roman=["root_roman", "localkey_mode"],
+        chord_reduced_and_mode=["chord_reduced_and_mode"],
+        bass_degree=["bass_note"],
+        root_degree=["root"],
+        root_roman=["root_roman", "localkey_mode"],
+        numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
+    ),
+)
+
+
+# %%
+def get_criterion_stage_entropies(df, criterion_name=None):
+    if not criterion_name:
+        criterion_name = df.columns.to_list()[0]
+    criterion_distributions = df.groupby(["corpus", criterion_name]).duration_qb.sum()
+    return criterion_distributions.groupby("corpus").agg(_entropy).rename("entropy")
+
+
+def compare_entropies(stages_dict, category_title="stage_type", **kwargs):
+    """Takes a {trace_name -> PhraseData} dict where each entry will be turned into a bar plot trace for comparison."""
+    entropies = {
+        name: get_criterion_stage_entropies(durations)
+        for name, durations in stages_dict.items()
+    }
+    df = pd.concat(entropies, names=[category_title])
+    corpora = df.index.get_level_values("corpus").unique()
+    corpus_order = [
+        corpus for corpus in chronological_corpus_names if corpus in corpora
+    ]
+    return make_bar_plot(
+        df,
+        x_col="corpus",
+        y_col="entropy",
+        color=category_title,
+        category_orders=dict(corpus=corpus_order),
+        labels=dict(entropy="entropy of stage distributions in bits", corpus=""),
+        **kwargs,
+    )
+
+
+def compare_criteria_entropies(phrase_annotations, criteria_dict, join_str=True):
+    name2stages = make_criteria_dict(
+        phrase_annotations, criteria_dict, join_str=join_str
+    )
+    return compare_entropies(name2stages, height=800)
+
+
+compare_criteria_entropies(
+    phrase_annotations,
+    dict(
+        chord_reduced_and_mode=["chord_reduced_and_mode"],
+        bass_degree=["bass_note"],
+        root_degree=["root"],
+        root_roman=["root_roman", "localkey_mode"],
         numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
     ),
 )
 
 # %%
-
-numeral_criterion = make_criterion(
+criteria = make_criteria_dict(
     phrase_annotations,
-    columns=["numeral_or_applied_to", "localkey_mode"],
-    criterion_name="root_numeral",
-    join_str=True,
+    dict(
+        chord_reduced_and_mode=["chord_reduced_and_mode"],
+        bass_degree=["bass_note"],
+        root_degree=["root"],
+        root_roman=["root_roman", "localkey_mode"],
+        numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
+    ),
 )
-numeral_criterion
-
-# %%
-numeral_stages = uncompressed.regroup_phrases(numeral_criterion)
-numeral_stages.head(100)
-
-# %%
-
-
-uncompressed.groupby(["corpus"]).duration_qb.describe()
-uncompressed_mean_stage_durations = uncompressed.groupby(["corpus"]).duration_qb.agg(
-    ["mean", "sem"]
-)
-make_bar_plot(
-    uncompressed_mean_stage_durations, x_col="corpus", y_col="mean", error_y="sem"
-)
-
-# %%
-
-
-numeral_stage_durations = get_stage_durations(numeral_stages)
-numeral_stage_durations.groupby(["corpus"]).describe()
-
-# %%
-numeral_mean_stage_durations = numeral_stage_durations.groupby("corpus").agg(
-    ["mean", "sem"]
-)
-make_bar_plot(numeral_mean_stage_durations, x_col="corpus", y_col="mean", error_y="sem")
-
-# %%
 
 
 # %%
@@ -266,7 +290,7 @@ def get_stage_lengths(df):
     return stage_lengths
 
 
-uncompressed_lengths = get_stage_lengths(uncompressed)
+uncompressed_lengths = get_stage_lengths(criteria["uncompressed"])
 uncompressed_lengths
 
 # %%
@@ -274,7 +298,7 @@ uncompressed_lengths.groupby("corpus").describe()
 
 # %%
 
-chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
+
 make_box_plot(
     uncompressed_lengths,
     x_col="corpus",
@@ -284,7 +308,7 @@ make_box_plot(
 )
 
 # %%
-phrases = D.get_feature("PhraseLabels")
+phrases = phrase_annotations.extract_feature("PhraseLabels")
 phrases
 
 # %%
