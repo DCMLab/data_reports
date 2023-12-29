@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
+from dimcat.data import resources
 from dimcat.data.resources.facets import add_chord_tone_intervals
 from dimcat.data.resources.features import extend_bass_notes_feature
 from dimcat.utils import grams, make_transition_matrix
@@ -1021,3 +1022,26 @@ def make_transition_heatmap_plots(
 
         fig.align_labels()
     return fig
+
+
+def make_stage_data(
+    phrase_feature,
+    columns="chord",
+    components="body",
+    drop_levels=3,
+    reverse=True,
+    level_name="stage",
+    wide_format=True,
+    query=None,
+) -> resources.PhraseData:
+    """Function sets the defaults for the stage TSVs produced in the following."""
+    phrase_data = phrase_feature.get_phrase_data(
+        columns=columns,
+        components=components,
+        drop_levels=drop_levels,
+        reverse=reverse,
+        level_name=level_name,
+        wide_format=wide_format,
+        query=query,
+    )
+    return phrase_data
