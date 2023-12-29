@@ -18,7 +18,6 @@
 #
 # ToDo: Wrong `duration_qb` in phrase ID 14628
 
-
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 # # %load_ext autoreload
 # # %autoreload 2
@@ -65,8 +64,6 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 
 # %%
-
-
 def make_criterion(
     phrase_feature,
     criterion_name: Optional[str] = None,
@@ -324,11 +321,12 @@ chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
 D
 
 # %%
-phrase_annotations = D.get_feature("PhraseAnnotations")
+phrase_annotations: resources.PhraseAnnotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 
 # %%
 CRITERIA = dict(
+    chord_reduced_and_localkey=["chord_reduced", "localkey"],
     chord_reduced_and_mode=["chord_reduced_and_mode"],
     bass_degree=["bass_note"],
     root_roman=["root_roman", "localkey_mode"],
@@ -336,6 +334,50 @@ CRITERIA = dict(
     numeral_or_applied_to_numeral=["numeral_or_applied_to_numeral", "localkey_mode"],
 )
 criterion2stages = make_criterion_stages(phrase_annotations, CRITERIA)
+
+# %%
+numeral_type_effective_key = phrase_annotations.get_phrase_data(
+    reverse=True,
+    columns=[
+        "numeral",
+        "chord_type",
+        "effective_localkey",
+        "effective_localkey_is_minor",
+    ],
+    drop_levels="phrase_component",
+)
+is_dominant = numeral_type_effective_key.numeral.eq(
+    "V"
+) & numeral_type_effective_key.chord_type.isin({"Mm7", "M"})
+leading_tone_is_root = (
+    numeral_type_effective_key.numeral.eq("#vii")
+    & numeral_type_effective_key.effective_localkey_is_minor
+) | (
+    numeral_type_effective_key.numeral.eq("vii")
+    & ~numeral_type_effective_key.effective_localkey_is_minor
+)
+is_rootless_dominant = (
+    leading_tone_is_root & numeral_type_effective_key.chord_type.isin({"o", "o7", "%7"})
+)
+dominants_and_resolutions = ms3.transform(
+    numeral_type_effective_key,
+    ms3.rel2abs_key,
+    ["numeral", "effective_localkey", "effective_localkey_is_minor"],
+).rename("effective_numeral_or_its_dominant")
+dominants_and_resolutions.where(
+    ~(is_dominant | is_rootless_dominant),
+    numeral_type_effective_key.effective_localkey,
+    inplace=True,
+)
+effective_numeral_or_its_dominant = criterion2stages["uncompressed"].regroup_phrases(
+    dominants_and_resolutions
+)
+criterion2stages[
+    "effective_numeral_or_its_dominant"
+] = effective_numeral_or_its_dominant
+effective_numeral_or_its_dominant.head(100)
+
+# %%
 compare_criteria_metrics(criterion2stages, height=1000)
 
 # %%
