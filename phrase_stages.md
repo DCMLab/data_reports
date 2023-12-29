@@ -341,7 +341,7 @@ CRITERIA = dict(
     bass_degree=["bass_note"],
     root_roman=["root_roman", "localkey_mode"],
     root_degree=["root"],
-    numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
+    numeral_or_applied_to_numeral=["numeral_or_applied_to_numeral", "localkey_mode"],
 )
 criterion2stages = make_criterion_stages(phrase_annotations, CRITERIA)
 compare_criteria_metrics(criterion2stages, height=1000)
