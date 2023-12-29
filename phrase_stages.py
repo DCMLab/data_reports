@@ -20,12 +20,12 @@
 
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# %load_ext autoreload
-# %autoreload 2
+# # %load_ext autoreload
+# # %autoreload 2
 
 import os
 import re
-from typing import Hashable, Optional
+from typing import Dict, Hashable, List, Optional
 
 import dimcat as dc
 import ms3
@@ -150,16 +150,29 @@ D
 phrase_annotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 
+# %%
+CRITERIA = dict(
+    chord_reduced_and_mode=["chord_reduced_and_mode"],
+    bass_degree=["bass_note"],
+    root_roman=["root_roman", "localkey_mode"],
+    root_degree=["root"],
+    numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
+)
+
 
 # %%
-def make_criteria_dict(phrase_annotations, criteria_dict, join_str=True):
+def make_criterion_stages(
+    phrase_annotations: resources.PhraseAnnotations,
+    criteria_dict: Dict[str, str | List[str]],
+    join_str=True,
+):
     """Takes a {name -> [columns]} dict."""
     uncompressed = make_and_store_stage_data(
         phrase_annotations,
         columns=["chord_and_mode", "duration_qb"],
         wide_format=False,
     )
-    name2stages = {"uncompressed": uncompressed}
+    name2phrase_data = {"uncompressed": uncompressed}
     for name, columns in criteria_dict.items():
         criterion = make_criterion(
             phrase_annotations,
@@ -167,19 +180,94 @@ def make_criteria_dict(phrase_annotations, criteria_dict, join_str=True):
             criterion_name=name,
             join_str=join_str,
         )
-        name2stages[name] = uncompressed.regroup_phrases(criterion)
-    return name2stages
+        name2phrase_data[name] = uncompressed.regroup_phrases(criterion)
+    return name2phrase_data
 
 
-def get_stage_durations(df):
-    return df.groupby(["corpus", "piece", "phrase_id", "stage"]).duration_qb.sum()
+def get_stage_durations(phrase_data: resources.PhraseData):
+    return phrase_data.groupby(
+        ["corpus", "piece", "phrase_id", "stage"]
+    ).duration_qb.sum()
 
 
-def compare_mean_stage_durations(durations_dict, category_title="stage_type", **kwargs):
-    """Takes a {trace_name -> durations} dict where each entry will be turned into a bar plot trace for comparison."""
+def get_criterion_phrase_lengths(phrase_data: resources.PhraseData):
+    """In terms of number of stages after merging."""
+    stage_index = phrase_data.index.to_frame(index=False)
+    phrase_id_col = stage_index.columns.get_loc("phrase_id")
+    groupby = stage_index.columns.to_list()[: phrase_id_col + 1]
+    stage_lengths = stage_index.groupby(groupby).stage.max() + 1
+    return stage_lengths.rename("phrase_length")
+
+
+def get_criterion_phrase_entropies(
+    phrase_data: resources.PhraseData, criterion_name: Optional[str] = None
+):
+    if not criterion_name:
+        criterion_name = phrase_data.columns.to_list()[0]
+    criterion_distributions = phrase_data.groupby(
+        ["corpus", criterion_name]
+    ).duration_qb.sum()
+    return criterion_distributions.groupby("corpus").agg(_entropy).rename("entropy")
+
+
+def get_metrics_means(name2phrase_data: Dict[str, resources.PhraseData]):
+    criterion_metric2value = {}
+    for name, stages in name2phrase_data.items():
+        stage_durations = get_stage_durations(stages)
+        criterion_metric2value[
+            (name, "mean stage duration", "mean")
+        ] = stage_durations.mean()
+        criterion_metric2value[
+            (name, "mean stage duration", "sem")
+        ] = stage_durations.sem()
+        phrase_lengths = get_criterion_phrase_lengths(stages)
+        criterion_metric2value[
+            (name, "mean phrase length", "mean")
+        ] = phrase_lengths.mean()
+        criterion_metric2value[
+            (name, "mean phrase length", "sem")
+        ] = phrase_lengths.sem()
+        phrase_entropies = get_criterion_phrase_entropies(stages)
+        criterion_metric2value[
+            (name, "mean phrase entropy", "mean")
+        ] = phrase_entropies.mean()
+        criterion_metric2value[
+            (name, "mean phrase entropy", "sem")
+        ] = phrase_entropies.sem()
+    metrics = pd.Series(criterion_metric2value, name="value").unstack(sort=False)
+    metrics.index.names = ["criterion", "metric"]
+    return metrics
+
+
+def compare_criteria_metrics(
+    name2phrase_data: Dict[str, resources.PhraseData], **kwargs
+):
+    metrics = get_metrics_means(name2phrase_data).reset_index()
+    return make_bar_plot(
+        metrics,
+        facet_row="metric",
+        color="criterion",
+        x_col="mean",
+        y_col="criterion",
+        x_axis=dict(matches=None, showticklabels=True),
+        layout=dict(showlegend=False),
+        error_x="sem",
+        orientation="h",
+        labels=dict(entropy="entropy of stage distributions in bits", corpus=""),
+        **kwargs,
+    )
+
+
+def plot_corpuswise_criteria_means(
+    criterion2values: Dict[str, pd.Series],
+    category_title="stage_type",
+    y_axis_label="mean duration of stages in ♩",
+    **kwargs,
+):
+    """Takes a {trace_name -> values} dict where each entry will be turned into a bar plot trace for comparison."""
     aggregated = {
         name: durations.groupby("corpus").agg(["mean", "sem"])
-        for name, durations in durations_dict.items()
+        for name, durations in criterion2values.items()
     }
     df = pd.concat(aggregated, names=[category_title])
     corpora = df.index.get_level_values("corpus").unique()
@@ -193,48 +281,19 @@ def compare_mean_stage_durations(durations_dict, category_title="stage_type", **
         error_y="sem",
         color=category_title,
         category_orders=dict(corpus=corpus_order),
-        labels=dict(mean="mean duration of stages in ♩", corpus=""),
+        labels=dict(mean=y_axis_label, corpus=""),
         **kwargs,
     )
 
 
-def compare_criteria_stage_durations(phrase_annotations, criteria_dict, join_str=True):
-    name2stages = make_criteria_dict(
-        phrase_annotations, criteria_dict, join_str=join_str
-    )
-    durations_dict = {
-        name: get_stage_durations(stages) for name, stages in name2stages.items()
-    }
-    return compare_mean_stage_durations(durations_dict, height=800)
-
-
-compare_criteria_stage_durations(
-    phrase_annotations,
-    dict(
-        chord_reduced_and_mode=["chord_reduced_and_mode"],
-        bass_degree=["bass_note"],
-        root_degree=["root"],
-        root_roman=["root_roman", "localkey_mode"],
-        numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
-    ),
-)
-
-
-# %%
-def get_criterion_stage_entropies(df, criterion_name=None):
-    if not criterion_name:
-        criterion_name = df.columns.to_list()[0]
-    criterion_distributions = df.groupby(["corpus", criterion_name]).duration_qb.sum()
-    return criterion_distributions.groupby("corpus").agg(_entropy).rename("entropy")
-
-
-def compare_entropies(stages_dict, category_title="stage_type", **kwargs):
+def plot_corpuswise_criteria(
+    criterion2values,
+    category_title="stage_type",
+    y_axis_label="entropy of stage distributions in bits",
+    **kwargs,
+):
     """Takes a {trace_name -> PhraseData} dict where each entry will be turned into a bar plot trace for comparison."""
-    entropies = {
-        name: get_criterion_stage_entropies(durations)
-        for name, durations in stages_dict.items()
-    }
-    df = pd.concat(entropies, names=[category_title])
+    df = pd.concat(criterion2values, names=[category_title])
     corpora = df.index.get_level_values("corpus").unique()
     corpus_order = [
         corpus for corpus in chronological_corpus_names if corpus in corpora
@@ -245,64 +304,89 @@ def compare_entropies(stages_dict, category_title="stage_type", **kwargs):
         y_col="entropy",
         color=category_title,
         category_orders=dict(corpus=corpus_order),
-        labels=dict(entropy="entropy of stage distributions in bits", corpus=""),
+        labels=dict(entropy=y_axis_label, corpus=""),
         **kwargs,
     )
 
 
-def compare_criteria_entropies(phrase_annotations, criteria_dict, join_str=True):
-    name2stages = make_criteria_dict(
+def _compare_criteria_stage_durations(
+    name2phrase_data: Dict[str, resources.PhraseData]
+):
+    durations_dict = {
+        name: get_stage_durations(stages) for name, stages in name2phrase_data.items()
+    }
+    return plot_corpuswise_criteria_means(durations_dict, height=800)
+
+
+def compare_criteria_stage_durations(
+    phrase_annotations: resources.PhraseAnnotations,
+    criteria_dict: Dict[str, str | List[str]],
+    join_str=True,
+):
+    name2phrase_data = make_criterion_stages(
         phrase_annotations, criteria_dict, join_str=join_str
     )
-    return compare_entropies(name2stages, height=800)
+    return _compare_criteria_stage_durations(name2phrase_data)
 
 
-compare_criteria_entropies(
-    phrase_annotations,
-    dict(
-        chord_reduced_and_mode=["chord_reduced_and_mode"],
-        bass_degree=["bass_note"],
-        root_degree=["root"],
-        root_roman=["root_roman", "localkey_mode"],
-        numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
-    ),
-)
+def _compare_criteria_phrase_lengths(name2phrase_data: Dict[str, resources.PhraseData]):
+    lengths_dict = {
+        name: get_criterion_phrase_lengths(durations)
+        for name, durations in name2phrase_data.items()
+    }
+    return plot_corpuswise_criteria_means(
+        lengths_dict, y_axis_label="mean number of stages per phrase", height=800
+    )
+
+
+def compare_criteria_phrase_lengths(
+    phrase_annotations: resources.PhraseAnnotations,
+    criteria_dict: Dict[str, str | List[str]],
+    join_str=True,
+):
+    name2phrase_data = make_criterion_stages(
+        phrase_annotations, criteria_dict, join_str=join_str
+    )
+    return _compare_criteria_phrase_lengths(name2phrase_data)
+
+
+def _compare_criteria_entropies(name2phrase_data: Dict[str, resources.PhraseData]):
+    entropies = {
+        name: get_criterion_phrase_entropies(durations)
+        for name, durations in name2phrase_data.items()
+    }
+    return plot_corpuswise_criteria(entropies, height=800)
+
+
+def compare_criteria_entropies(phrase_annotations, criteria_dict, join_str=True):
+    name2phrase_data = make_criterion_stages(
+        phrase_annotations, criteria_dict, join_str=join_str
+    )
+    return _compare_criteria_entropies(name2phrase_data)
+
 
 # %%
-criteria = make_criteria_dict(
-    phrase_annotations,
-    dict(
-        chord_reduced_and_mode=["chord_reduced_and_mode"],
-        bass_degree=["bass_note"],
-        root_degree=["root"],
-        root_roman=["root_roman", "localkey_mode"],
-        numeral_or_applied_to=["numeral_or_applied_to", "localkey_mode"],
-    ),
-)
-
+criterion2stages = make_criterion_stages(phrase_annotations, CRITERIA)
+compare_criteria_metrics(criterion2stages, height=1000)
 
 # %%
-def get_stage_lengths(df):
-    stage_index = df.index.to_frame(index=False)
-    phrase_id_col = stage_index.columns.get_loc("phrase_id")
-    groupby = stage_index.columns.to_list()[: phrase_id_col + 1]
-    stage_lengths = stage_index.groupby(groupby).stage.max() + 1
-    return stage_lengths
-
-
-uncompressed_lengths = get_stage_lengths(criteria["uncompressed"])
-uncompressed_lengths
+_compare_criteria_stage_durations(criterion2stages)
 
 # %%
+_compare_criteria_phrase_lengths(criterion2stages)
+
+# %%
+_compare_criteria_entropies(criterion2stages)
+
+# %%
+uncompressed_lengths = get_criterion_phrase_lengths(criterion2stages["uncompressed"])
 uncompressed_lengths.groupby("corpus").describe()
 
 # %%
-
-
 make_box_plot(
     uncompressed_lengths,
     x_col="corpus",
-    y_col="stage",
+    y_col="phrase_length",
     height=800,
     category_orders=dict(corpus=chronological_corpus_names),
 )
