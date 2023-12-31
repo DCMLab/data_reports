@@ -67,7 +67,7 @@ D
 
 # %%
 pipeline = [
-    dict(dtype="HasHarmonyLabelsFilter", keep_values=[True]),
+    "HasHarmonyLabelsFilter",
     "KeySlicer",
     dict(dtype="BigramAnalyzer", features="BassNotes", format="FULL_WITHOUT_CONTEXT"),
 ]

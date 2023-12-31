@@ -145,17 +145,80 @@ phrase_annotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 
 # %%
-phrase_bodies = phrase_annotations.get_phrase_data(
-    ["bass_note", "intervals_over_bass"], drop_levels="phrase_component"
-)
-phrase_bodies.head(20)
+test = phrase_annotations.query("piece == 'n01op18-1_01'").copy()
+test[test.pedal.notna()]
 
 # %%
-bgt = phrase_bodies.apply_step("BigramAnalyzer")
-bgt.loc(axis=1)["b", "bass_note"] -= bgt.loc(axis=1)["a", "bass_note"]
+phrase_labels = phrase_annotations.extract_feature("PhraseLabels")
+phrase_labels
+
+
+# %%
+def add_bass_progressions(
+    phrase_bodies,
+    reverse=False,
+) -> resources.NgramTable:
+    bgt: resources.NgramTable = phrase_bodies.apply_step("BigramAnalyzer")
+    if reverse:
+        bgt.loc(axis=1)["b", "bass_note"] = (
+            bgt.loc(axis=1)["a", "bass_note"] - bgt.loc(axis=1)["b", "bass_note"]
+        )
+    else:
+        bgt.loc(axis=1)["b", "bass_note"] -= bgt.loc(axis=1)["a", "bass_note"]
+    new_index = pd.MultiIndex.from_tuples(
+        [
+            ("b", "bass_progression") if t == ("b", "bass_note") else t
+            for t in bgt.columns
+        ]
+    )
+    bgt.df.columns = new_index
+    return bgt
+
+
+ending_on_tonic = phrase_labels.get_phrase_data(
+    ["bass_note", "intervals_over_bass"],
+    drop_levels="phrase_component",
+    reverse=True,
+    query="end_chord == ['I', 'i']",
+)
+ending_on_tonic = add_bass_progressions(ending_on_tonic, reverse=True)
+ending_on_tonic
+
+# %%
+sonority_progression_tuples = ending_on_tonic.make_bigram_tuples(
+    "intervals_over_bass", None, terminal_symbols="DROP"
+)
+sonority_progression_tuples
+
+# %%
+sonority_progression_tuples.query("i == 0").n_gram.value_counts()
+
+# %%
+ending_on_tonic = phrase_labels.get_phrase_data(
+    ["chord"],
+    drop_levels="phrase_component",
+    reverse=True,
+    query="end_chord == ['I', 'i']",
+)
+ending_on_tonic.query("i == 1").chord.value_counts()
+
+# %%
+bodies_reversed = phrase_labels.get_phrase_data(
+    ["chord", "numeral"],
+    drop_levels="phrase_component",
+    reverse=True,
+)
+bgt = bodies_reversed.apply_step("BigramAnalyzer")
 bgt
 
 # %%
+bgt.query("@bgt.a.numeral == 'V'").b.chord.value_counts()
+
+# %%
+phrase_bodies = phrase_annotations.get_phrase_data(
+    ["bass_note", "intervals_over_bass"], drop_levels="phrase_component"
+)
+bgt = add_bass_progressions(phrase_bodies)
 chord_type_pairs = bgt.make_bigram_tuples(
     "intervals_over_bass", None, terminal_symbols="DROP"
 )
@@ -182,7 +245,7 @@ pd.concat([level_0_values, chord_type_transitions], axis=1).sort_values(
 )
 
 # %%
-chord_type_transitions.sort_values("count", ascending=False)
+chord_type_transitions.sort_values("count", ascending=False).iloc[:100]
 
 # %%
 bgt.make_bigram_tuples(terminal_symbols="DROP").make_ranking_table()
