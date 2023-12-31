@@ -24,10 +24,12 @@ tags: [hide-cell]
 # %load_ext autoreload
 # %autoreload 2
 import os
+from typing import Tuple
 
 import dimcat as dc
 import ms3
 import pandas as pd
+import plotly.express as px
 from dimcat.data.resources import Durations
 from dimcat.plotting import write_image
 from git import Repo
@@ -78,7 +80,8 @@ D
 
 ```{code-cell}
 pipeline = [
-    dict(dtype="HasHarmonyLabelsFilter", keep_values=[True]),
+    "HasHarmonyLabelsFilter",
+    "ModeGrouper",
     "CorpusGrouper",
 ]
 analyzed_D = D.apply_step(*pipeline)
@@ -87,20 +90,106 @@ harmony_labels
 ```
 
 ```{code-cell}
+harmony_labels.loc[
+    harmony_labels["scale_degrees_major"] == ("1", "3", "5", "b7"), "chord"
+].value_counts()
+```
+
+```{code-cell}
+sd_maj_sonorities = (
+    harmony_labels.groupby("scale_degrees_major")
+    .duration_qb.sum()
+    .sort_values(ascending=False)
+)
+pd.concat(
+    [
+        sd_maj_sonorities,
+        (sd_maj_sonorities / sd_maj_sonorities.sum()).rename("proportion"),
+    ],
+    axis=1,
+)
+```
+
+```{code-cell}
+sd_major_occurrences = (
+    harmony_labels.groupby("scale_degrees_major")
+    .size()
+    .rename("frequency")
+    .sort_values(ascending=False)
+    .reset_index()
+)
+sd_major_occurrences.index = sd_major_occurrences.index.rename("rank") + 1
+sd_major_occurrences = sd_major_occurrences.reset_index()
+px.scatter(sd_major_occurrences, x="rank", y="frequency", log_y=True)
+```
+
+```{code-cell}
+px.scatter(sd_major_occurrences, x="rank", y="C")
+```
+
+```{code-cell}
+
+
+
+def find_index_of_r1_r2(C: pd.Series) -> Tuple[int, int]:
+    """Takes a Series representing C = 1 / (frequency(rank) - rank) and returns the indices of r1 and r2, left and
+    right of the discontinuity."""
+    r1_i = C.idxmax()
+    r2_i = C.lt(0).idxmax()
+    assert (
+        r2_i == r1_i + 1
+    ), f"Expected r1 and r2 to be one apart, but got r1_i = {r1_i}, r2_i = {r2_i}"
+    return r1_i, r2_i
+
+
+def compute_h(df) -> int | float:
+    """Computes the h-point of a DataFrame with columns "rank" and "frequency" and returns the rank of the h-point.
+    Returns a rank integer if a value with r = f(r) exists, otherwise rank float.
+    """
+    if (mask := df.frequency.eq(df["rank"])).any():
+        h_ix = df.index[mask][0]
+        return df.at[h_ix, "rank"]
+    C = 1 / (sd_major_occurrences.frequency - sd_major_occurrences["rank"])
+    r1_i, r2_i = find_index_of_r1_r2(C)
+    (r1, f_r1), (r2, f_r2) = df.loc[[r1_i, r2_i], ["rank", "frequency"]].values
+    return (f_r1 * r2 - f_r2 * r1) / (r2 - r1 + f_r1 - f_r2)
+
+
+compute_h(sd_major_occurrences)
+```
+
+```{code-cell}
+sd_major_occurrences.iloc[130:150]
+```
+
+```{code-cell}
+sd_sonorities = (
+    harmony_labels.groupby("scale_degrees")
+    .duration_qb.sum()
+    .sort_values(ascending=False)
+)
+pd.concat(
+    [sd_sonorities, (sd_sonorities / sd_sonorities.sum()).rename("proportion")], axis=1
+)
+```
+
+```{code-cell}
 chord_proportions: Durations = harmony_labels.apply_step("Proportions")
-corpus_profiles = chord_proportions.make_ranking_table()
-corpus_profiles.iloc[:50, :50]
+chord_proportions.make_ranking_table(drop_cols="chord_and_mode").iloc[:50, :50]
+```
+
+```{code-cell}
+chord_proportions.make_ranking_table(["mode"], drop_cols="chord_and_mode")
 ```
 
 ```{code-cell}
 piece2profile = {
-    group: profile["duration_qb"].droplevel([0, 1])
-    for group, profile in chord_proportions.groupby(["corpus", "piece"])
+    group: profile["duration_qb"].droplevel(
+        ["corpus", "piece", "mode", "chord_and_mode"]
+    )
+    for group, profile in chord_proportions.groupby(["corpus", "piece", "mode"])
 }
-piece_profiles = pd.concat(piece2profile, axis=1, names=["corpus", "piece"])
-```
-
-```{code-cell}
+piece_profiles = pd.concat(piece2profile, axis=1, names=["corpus", "piece", "mode"])
 piece_profiles.sort_index(
     key=lambda _: pd.Index(piece_profiles.notna().sum(axis=1)), ascending=False
 ).iloc[:50, :50]
@@ -113,16 +202,16 @@ piece_profiles.sort_index(
 ```
 
 ```{code-cell}
-corpus_proportions = chord_proportions.combine_results("corpus")
+corpus_proportions = chord_proportions.combine_results().droplevel("chord_and_mode")
 corpus_proportions
 ```
 
 ```{code-cell}
 corpus2profile = {
-    group: profile["duration_qb"].droplevel(0)
-    for group, profile in corpus_proportions.groupby("corpus")
+    group: profile["duration_qb"].droplevel(["corpus", "mode"])
+    for group, profile in corpus_proportions.groupby(["corpus", "mode"])
 }
-corpus_profiles = pd.concat(corpus2profile, axis=1, names=["corpus"])
+corpus_profiles = pd.concat(corpus2profile, axis=1, names=["corpus", "mode"])
 chord_occurrence_mask = corpus_profiles.notna()
 corpus_frequency = chord_occurrence_mask.sum(axis=1)
 chord_occurrence_mask = chord_occurrence_mask.sort_index(
@@ -139,4 +228,8 @@ mask_with_sum = pd.concat(
     [chord_occurrence_mask, chord_occurrence_mask.sum(axis=1).rename("sum")], axis=1
 )
 mask_with_sum.to_csv(make_output_path("chord_occurrence_mask", "tsv"), sep="\t")
+```
+
+```{code-cell}
+
 ```
