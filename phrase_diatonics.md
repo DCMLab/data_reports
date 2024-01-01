@@ -25,7 +25,7 @@ tags: [hide-cell]
 # %autoreload 2
 
 import os
-from typing import Dict, Hashable, List, Optional, Tuple
+from typing import Dict, Hashable, List, Optional
 
 import dimcat as dc
 import ms3
@@ -34,6 +34,11 @@ from dimcat import resources
 from dimcat.data.resources.results import _entropy
 from dimcat.data.resources.utils import merge_columns_into_one
 from dimcat.plotting import make_bar_plot, make_box_plot, write_image
+from docs.notebooks.utils import (
+    compute_smallest_diatonics,
+    get_max_range,
+    merge_up_to_max_width,
+)
 from git import Repo
 
 from utils import (
@@ -358,9 +363,10 @@ chord_tones = phrase_annotations.get_phrase_data(
 chord_tones.df.chord_tones.where(chord_tones.chord_tones != (), inplace=True)
 chord_tones.df.chord_tones.ffill(inplace=True)
 chord_tones = ms3.transpose_chord_tones_by_localkey(chord_tones.df, by_global=True)
-chord_tones["lowest_tpc"] = chord_tones.chord_tones.apply(min)
-chord_tones["highest_tpc"] = chord_tones.chord_tones.apply(max)
-chord_tones["tpc_width"] = chord_tones.highest_tpc - chord_tones.lowest_tpc
+chord_tones["lowest_tpc"] = chord_tones.chord_tones.map(min)
+highest_tpc = chord_tones.chord_tones.map(max)
+chord_tones["tpc_width"] = highest_tpc - chord_tones.lowest_tpc
+chord_tones["highest_tpc"] = highest_tpc
 ```
 
 ```{code-cell}
@@ -372,26 +378,6 @@ chord_tones.tpc_width.value_counts()
 ```
 
 ```{code-cell}
-chord_tones.query("phrase_id == 1").iloc[:, -3:]
-```
-
-```{code-cell}
-input = chord_tones.query("phrase_id == 1").iloc[:, -3:]
-input
-```
-
-```{code-cell}
-def get_max_range(widths) -> Tuple[int, int, int]:
-    """Index range capturing the first until last occurrence of the maximum value."""
-    maximum, first_ix, last_ix = 0, 0, 0
-    for i, width in enumerate(widths):
-        if width > maximum:
-            maximum = width
-            first_ix = i
-            last_ix = i
-        elif width == maximum:
-            last_ix = i
-    return first_ix, last_ix + 1, maximum
 
 
 def compute_smallest_fifth_ranges(width, smallest=7):
@@ -412,70 +398,98 @@ compute_smallest_fifth_ranges(input.tpc_width.to_list())
 ```
 
 ```{code-cell}
-def merge_up_to_max_width(input, largest):
-    lowest, highest = None, None
-    merge_n = 0
-    result = []
-
-    def do_merge():
-        nonlocal lowest, highest, merge_n
-        if merge_n:
-            result.extend([(lowest, highest - lowest)] * merge_n)
-        lowest, highest = None, None
-        merge_n = 0
-
-    for i, (low, high, width) in enumerate(input, start=1):
-        if width > largest:
-            do_merge()
-            result.append((low, width))
-            continue
-        if lowest is None:
-            lowest = low
-            highest = high
-            continue
-        merge_low_point = min((low, lowest))
-        merge_high_point = max((high, highest))
-        merge_width = merge_high_point - merge_low_point
-        if merge_width <= largest:
-            # merge
-            lowest = merge_low_point
-            highest = merge_high_point
-            merge_n += 1
-        else:
-            do_merge()
-            lowest = low
-            highest = high
-    do_merge()
-    return pd.DataFrame(result, columns=["lowest_tpc", "tpc_width"])
-
-
-merge_up_to_max_width(list(input.itertuples(index=False, name=None)), largest=7)
-```
-
-```{code-cell}
-def compute_smallest_fifth_ranges(input, smallest=7, largest=10):
-    if len(input) == 1:
-        return input.iloc[:, [0, 2]]
-    first_max_ix, last_max_ix, max_val = get_max_range(input.tpc_width)
-    if max_val == smallest:
-        return input.iloc[:, [0, 2]]
-    if max_val < smallest:
-        return merge_up_to_max_width(input.values, largest=smallest)
-    left = input.iloc[:first_max_ix]
-    middle = input.iloc[first_max_ix:last_max_ix]
-    right = input.iloc[last_max_ix:]
-    if max_val < largest:
-        middle = merge_up_to_max_width(middle.values, largest=largest)
-    return pd.concat(
-        [
-            compute_smallest_fifth_ranges(left),
-            middle,
-            compute_smallest_fifth_ranges(right),
-        ]
-    )
+# def merge_up_to_max_width(input, largest):
+#     lowest, highest = None, None
+#     merge_n = 0
+#     result = []
+#
+#     def do_merge():
+#         nonlocal lowest, highest, merge_n
+#         if merge_n:
+#             result.extend([(lowest, highest - lowest)] * merge_n)
+#         lowest, highest = None, None
+#         merge_n = 0
+#
+#     for i, (low, high, width) in enumerate(input, start=1):
+#         if width > largest:
+#             do_merge()
+#             result.append((low, width))
+#             continue
+#         if lowest is None:
+#             lowest = low
+#             highest = high
+#             continue
+#         merge_low_point = min((low, lowest))
+#         merge_high_point = max((high, highest))
+#         merge_width = merge_high_point - merge_low_point
+#         if merge_width <= largest:
+#             # merge
+#             lowest = merge_low_point
+#             highest = merge_high_point
+#             merge_n += 1
+#         else:
+#             do_merge()
+#             lowest = low
+#             highest = high
+#     do_merge()
+#     return pd.DataFrame(result, columns=["lowest_tpc", "tpc_width"])
+#
+#
+# merge_up_to_max_width(list(input.itertuples(index=False, name=None)), largest=7)
+#
+# def compute_smallest_fifth_ranges(input, smallest=7, largest=10):
+#     if len(input) == 1:
+#         return input.iloc[:, [0, 2]]
+#     first_max_ix, last_max_ix, max_val = get_max_range(input.tpc_width)
+#     if max_val == smallest:
+#         return input.iloc[:, [0, 2]]
+#     if max_val < smallest:
+#         return merge_up_to_max_width(input.values, largest=smallest)
+#     left = input.iloc[:first_max_ix]
+#     middle = input.iloc[first_max_ix:last_max_ix]
+#     right = input.iloc[last_max_ix:]
+#     if max_val < largest:
+#         middle = merge_up_to_max_width(middle.values, largest=largest)
+#     return pd.concat(
+#         [
+#             compute_smallest_fifth_ranges(left),
+#             middle,
+#             compute_smallest_fifth_ranges(right),
+#         ]
+#     )
 
 
 compute_smallest_fifth_ranges(input, largest=9)
+```
+
+```{code-cell}
+
+
+merge_up_to_max_width(input.lowest_tpc, input.tpc_width, largest=10)
+```
+
+```{code-cell}
+
+
+compute_smallest_diatonics(input, largest=10, verbose=True)
+```
+
+```{code-cell}
+groupby = iter(chord_tones.groupby("phrase_id"))
+```
+
+```{code-cell}
+group, group_df = next(groupby)
+criterion = compute_smallest_diatonics(group_df, verbose=True)
+pd.concat([group_df, criterion], axis=1)
+```
+
+```{code-cell}
+group_df
+```
+
+```{code-cell}
+compute_smallest_diatonics(group_df, verbose=True)
 ```
 
 ```{code-cell}

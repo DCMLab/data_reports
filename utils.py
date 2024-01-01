@@ -1045,3 +1045,120 @@ def make_stage_data(
         query=query,
     )
     return phrase_data
+
+
+def get_max_range(widths) -> Tuple[int, int, int]:
+    """Index range capturing the first until last occurrence of the maximum value."""
+    maximum, first_ix, last_ix = 0, 0, 0
+    for i, width in enumerate(widths):
+        if width > maximum:
+            maximum = width
+            first_ix = i
+            last_ix = i
+        elif width == maximum:
+            last_ix = i
+    return first_ix, last_ix + 1, maximum
+
+
+def merge_up_to_max_width(lowest_tpc, tpc_width, largest):
+    lowest, highest = None, None
+    merge_n = 0
+    result_l, result_w = [], []
+
+    def do_merge():
+        """Add the readily merged section to the results, reset the counters."""
+        nonlocal lowest, highest, merge_n
+        if merge_n:
+            result_l.extend([lowest] * merge_n)
+            result_w.extend([highest - lowest] * merge_n)
+            lowest, highest = None, None
+            merge_n = 0
+
+    for low, width in zip(lowest_tpc, tpc_width):
+        if width > largest:
+            do_merge()
+            result_l.append(low)
+            result_w.append(width)
+            continue
+        high = low + width
+        if lowest is None:
+            # start new merge range
+            lowest = low
+            highest = high
+            merge_n += 1
+            continue
+        merge_low_point = min((low, lowest))
+        merge_high_point = max((high, highest))
+        merge_width = merge_high_point - merge_low_point
+        if merge_width <= largest:
+            # merge
+            lowest = merge_low_point
+            highest = merge_high_point
+        else:
+            do_merge()
+            lowest = low
+            highest = high
+        merge_n += 1
+    do_merge()
+    return result_l, result_w
+
+
+def _compute_smallest_fifth_ranges(
+    lowest_tpc, tpc_width, smallest=7, largest=10, verbose=False
+):
+    if len(lowest_tpc) < 2:
+        return lowest_tpc, tpc_width
+    first_max_ix, last_max_ix, max_val = get_max_range(tpc_width)
+    if verbose:
+        print(f"max({tpc_width}) = {max_val}, [{first_max_ix}:{last_max_ix}]")
+    if max_val <= smallest:
+        if verbose:
+            print(
+                f"Calling merge_up_to_max_width({lowest_tpc}, {tpc_width}) because max_val {max_val} < {largest}"
+            )
+        return merge_up_to_max_width(lowest_tpc, tpc_width, largest=largest)
+    middle_l, middle_w = (
+        lowest_tpc[first_max_ix:last_max_ix],
+        tpc_width[first_max_ix:last_max_ix],
+    )
+    if max_val < largest:
+        if verbose:
+            print(
+                f"Calling merge_up_to_max_width({middle_l}, {middle_w}) because max_val {max_val} < {largest}"
+            )
+        middle_l, middle_w = merge_up_to_max_width(middle_l, middle_w, largest=largest)
+    left_l, left_w = _compute_smallest_fifth_ranges(
+        lowest_tpc[:first_max_ix],
+        tpc_width[:first_max_ix],
+        smallest=smallest,
+        largest=largest,
+        verbose=verbose,
+    )
+    right_l, right_w = _compute_smallest_fifth_ranges(
+        lowest_tpc[last_max_ix:],
+        tpc_width[last_max_ix:],
+        smallest=smallest,
+        largest=largest,
+        verbose=verbose,
+    )
+    result_l = left_l + middle_l + right_l
+    result_w = left_w + middle_w + right_w
+    return result_l, result_w
+
+
+def compute_smallest_diatonics(input, smallest=7, largest=10, verbose=False):
+    lowest, widths = _compute_smallest_fifth_ranges(
+        input.lowest_tpc.values,
+        input.tpc_width.values,
+        smallest=smallest,
+        largest=largest,
+        verbose=verbose,
+    )
+    try:
+        return pd.DataFrame(
+            dict(lowest_tpc=lowest, tpc_width=widths), index=input.index
+        )
+    except ValueError:
+        print(lowest, widths)
+        print(input.index)
+        raise
