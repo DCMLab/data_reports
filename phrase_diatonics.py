@@ -21,22 +21,22 @@
 # * n01op18-1_01, phrase_id 4, viio/vi => #viio/vi
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# %load_ext autoreload
-# %autoreload 2
-
 import os
+from random import choice
 from typing import Hashable, Optional
 
 import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
+import plotly.express as px
 from dimcat import resources
 from dimcat.data.resources.utils import merge_columns_into_one
 from dimcat.plotting import write_image
 from git import Repo
 
 import utils
+from create_gantt import create_gantt
 from utils import (
     DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
@@ -44,6 +44,10 @@ from utils import (
     print_heading,
     resolve_dir,
 )
+
+# %load_ext autoreload
+# %autoreload 2
+
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
@@ -105,6 +109,7 @@ def get_phrase_chord_tones(phrase_annotations) -> resources.PhraseData:
             "localkey",
             "globalkey",
             "globalkey_is_minor",
+            "effective_localkey",
             "chord_tones",
         ],
         drop_levels="phrase_component",
@@ -126,11 +131,9 @@ def group_operation(group_df):
     )
 
 
-def make_diatonics_criterion(
+def _make_diatonics_criterion(
     chord_tones,
-    join_str: Optional[str | bool] = None,
-    fillna: Optional[Hashable] = None,
-):
+) -> pd.DataFrame:
     lowest, width = zip(
         *chord_tones.groupby("phrase_id", sort=False, group_keys=False).apply(
             group_operation
@@ -141,6 +144,15 @@ def make_diatonics_criterion(
     result = pd.DataFrame(
         {"lowest_tpc": lowest, "tpc_width": width}, index=chord_tones.index
     )
+    return result
+
+
+def make_diatonics_criterion(
+    chord_tones,
+    join_str: Optional[str | bool] = None,
+    fillna: Optional[Hashable] = None,
+) -> pd.Series:
+    result = _make_diatonics_criterion(chord_tones)
     result = merge_columns_into_one(result, join_str=join_str, fillna=fillna)
     return result.rename("diatonics")
 
@@ -219,3 +231,129 @@ utils._compare_criteria_entropies(
 
 # %%
 diatonics_stages
+
+
+# %%
+def _make_timeline_data(phrase_df):
+    starts = (-phrase_df.duration_qb.cumsum()).rename(
+        "Start"
+    )  # .astype("datetime64[s]")
+    ends = starts.shift().fillna(1).rename("Finish")  # .astype("datetime64[s]")
+    timeline_data = pd.concat(
+        [
+            phrase_df,
+            starts,
+            ends,
+        ],
+        axis=1,
+    )
+    timeline_data = pd.merge(
+        timeline_data,
+        phrase_df.chord_tones.explode().rename("Task"),
+        left_index=True,
+        right_index=True,
+    )
+    return timeline_data
+
+
+def _make_start_finish(phrase_df):
+    starts = (-phrase_df.duration_qb.cumsum()).rename(
+        "Start"
+    )  # .astype("datetime64[s]")
+    ends = starts.shift().fillna(1).rename("Finish")  # .astype("datetime64[s]")
+    return pd.DataFrame({"Start": starts, "Finish": ends})
+
+
+def make_timeline_data(chord_tones):
+    timeline_data = pd.concat(
+        [
+            chord_tones,
+            chord_tones.groupby("phrase_id", group_keys=False, sort=False).apply(
+                _make_start_finish
+            ),
+            _make_diatonics_criterion(chord_tones).rename(
+                columns=dict(
+                    lowest_tpc="diatonics_lowest_tpc", tpc_width="diatonics_tpc_width"
+                )
+            ),
+        ],
+        axis=1,
+    )
+    exploded_chord_tones = chord_tones.chord_tones.explode()
+    exploded_chord_tones = pd.DataFrame(
+        dict(
+            chord_tone=exploded_chord_tones,
+            Task=ms3.transform(exploded_chord_tones, ms3.fifths2name),
+        ),
+        index=exploded_chord_tones.index,
+    )
+    timeline_data = pd.merge(
+        timeline_data, exploded_chord_tones, left_index=True, right_index=True
+    )
+    timeline_data["Resource"] = (
+        timeline_data.diatonics_lowest_tpc
+        + timeline_data.diatonics_tpc_width
+        - timeline_data.chord_tone
+    )
+    return timeline_data.rename(columns=dict(chord="Description"))
+
+
+timeline_data = make_timeline_data(chord_tones)
+timeline_data.head()
+
+# %%
+
+n_phrases = max(timeline_data.index.levels[2])
+phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
+phrase_timeline_data
+
+
+# %%
+colorscale = dict(zip(range(10), px.colors.qualitative.G10))
+fig = create_gantt(
+    phrase_timeline_data.sort_values("chord_tone", ascending=False), colors=colorscale
+)
+fig.update_layout(hovermode="x unified", legend_traceorder="grouped")
+# fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
+fig
+
+# %%
+fig["data"]
+
+# %%
+fig["layout"]
+
+# %%
+scatter = px.scatter(
+    phrase_timeline_data,
+    x="Start",
+    y="Finish",
+    color="Task",
+    custom_data="chord_tones",
+    hover_name="chord",
+)
+scatter.update_traces(
+    hovertemplate="<b>%{hovertext}</b><br><br>"
+    "Task=0<br>"
+    "Start=%{x}<br>"
+    "Finish=%{y}<br>"
+    "chord_tones=%{customdata}"
+    "<extra></extra>"
+)
+scatter
+
+# %%
+for scatter_trace in fig["data"]:
+    scatter.update()
+
+# %%
+colorscale
+
+# %%
+
+fig = px.timeline(phrase_timeline_data, x_start="Start", x_end="Finish", y="Task")
+# fig.update_xaxes(
+#   tickformat="%S",
+# )
+fig.update_layout(dict(xaxis_type=None))
+fig
