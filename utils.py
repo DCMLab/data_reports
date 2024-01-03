@@ -1104,7 +1104,7 @@ def merge_up_to_max_width(lowest_tpc, tpc_width, largest):
 
 
 def _compute_smallest_fifth_ranges(
-    lowest_tpc, tpc_width, smallest=7, largest=10, verbose=False
+    lowest_tpc, tpc_width, smallest=6, largest=9, verbose=False
 ):
     if len(lowest_tpc) < 2:
         return lowest_tpc, tpc_width
@@ -1117,22 +1117,17 @@ def _compute_smallest_fifth_ranges(
                 f"Calling merge_up_to_max_width({lowest_tpc}, {tpc_width}) because max_val {max_val} < {largest}"
             )
         return merge_up_to_max_width(lowest_tpc, tpc_width, largest=largest)
-    middle_l, middle_w = (
-        lowest_tpc[first_max_ix:last_max_ix],
-        tpc_width[first_max_ix:last_max_ix],
-    )
-    if max_val < largest:
-        if verbose:
-            print(
-                f"Calling merge_up_to_max_width({middle_l}, {middle_w}) because max_val {max_val} < {largest}"
-            )
-        middle_l, middle_w = merge_up_to_max_width(middle_l, middle_w, largest=largest)
     left_l, left_w = _compute_smallest_fifth_ranges(
         lowest_tpc[:first_max_ix],
         tpc_width[:first_max_ix],
         smallest=smallest,
         largest=largest,
         verbose=verbose,
+    )
+    middle_l, middle_w = merge_up_to_max_width(
+        lowest_tpc[first_max_ix:last_max_ix],
+        tpc_width[first_max_ix:last_max_ix],
+        largest=largest,
     )
     right_l, right_w = _compute_smallest_fifth_ranges(
         lowest_tpc[last_max_ix:],
@@ -1141,24 +1136,19 @@ def _compute_smallest_fifth_ranges(
         largest=largest,
         verbose=verbose,
     )
-    result_l = left_l + middle_l + right_l
-    result_w = left_w + middle_w + right_w
+    result_l = np.concatenate([left_l, middle_l, right_l])
+    result_w = np.concatenate([left_w, middle_w, right_w])
     return result_l, result_w
 
 
-def compute_smallest_diatonics(input, smallest=7, largest=10, verbose=False):
+def compute_smallest_diatonics(phrase_data, smallest=6, largest=9, verbose=False):
     lowest, widths = _compute_smallest_fifth_ranges(
-        input.lowest_tpc.values,
-        input.tpc_width.values,
+        phrase_data.lowest_tpc.values,
+        phrase_data.tpc_width.values,
         smallest=smallest,
         largest=largest,
         verbose=verbose,
     )
-    try:
-        return pd.DataFrame(
-            dict(lowest_tpc=lowest, tpc_width=widths), index=input.index
-        )
-    except ValueError:
-        print(lowest, widths)
-        print(input.index)
-        raise
+    return pd.DataFrame(
+        dict(lowest_tpc=lowest, tpc_width=widths), index=phrase_data.index
+    )

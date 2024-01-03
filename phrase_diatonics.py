@@ -15,28 +15,29 @@
 
 # %% [markdown]
 # # Detecting diatonic bands
+#
+# ToDo
+#
+# * n01op18-1_01, phrase_id 4, viio/vi => #viio/vi
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# # %load_ext autoreload
-# # %autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 
 import os
 from typing import Dict, Hashable, List, Optional
 
 import dimcat as dc
 import ms3
+import numpy as np
 import pandas as pd
 from dimcat import resources
 from dimcat.data.resources.results import _entropy
 from dimcat.data.resources.utils import merge_columns_into_one
 from dimcat.plotting import make_bar_plot, make_box_plot, write_image
-from docs.notebooks.utils import (
-    compute_smallest_diatonics,
-    get_max_range,
-    merge_up_to_max_width,
-)
 from git import Repo
 
+import utils
 from utils import (
     DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
@@ -335,142 +336,58 @@ CRITERIA = dict(
     root_roman=["root_roman", "localkey_mode"],
     root_degree=["root"],
     numeral_or_applied_to_numeral=["numeral_or_applied_to_numeral", "localkey_mode"],
+    effective_localkey=["effective_localkey"],
 )
 criterion2stages = make_criterion_stages(phrase_annotations, CRITERIA)
 
-# %%
-chord_tones = phrase_annotations.get_phrase_data(
-    reverse=True,
-    columns=[
-        "chord",
-        "localkey",
-        "globalkey",
-        "globalkey_is_minor",
-        "chord_tones",
-    ],
-    drop_levels="phrase_component",
-)
-chord_tones.df.chord_tones.where(chord_tones.chord_tones != (), inplace=True)
-chord_tones.df.chord_tones.ffill(inplace=True)
-chord_tones = ms3.transpose_chord_tones_by_localkey(chord_tones.df, by_global=True)
-chord_tones["lowest_tpc"] = chord_tones.chord_tones.map(min)
-highest_tpc = chord_tones.chord_tones.map(max)
-chord_tones["tpc_width"] = highest_tpc - chord_tones.lowest_tpc
-chord_tones["highest_tpc"] = highest_tpc
 
 # %%
-chord_tones
+def get_phrase_chord_tones(phrase_annotations):
+    chord_tones = phrase_annotations.get_phrase_data(
+        reverse=True,
+        columns=[
+            "chord",
+            "localkey",
+            "globalkey",
+            "globalkey_is_minor",
+            "chord_tones",
+        ],
+        drop_levels="phrase_component",
+    )
+    chord_tones.df.chord_tones.where(chord_tones.chord_tones != (), inplace=True)
+    chord_tones.df.chord_tones.ffill(inplace=True)
+    chord_tones = ms3.transpose_chord_tones_by_localkey(chord_tones.df, by_global=True)
+    chord_tones["lowest_tpc"] = chord_tones.chord_tones.map(min)
+    highest_tpc = chord_tones.chord_tones.map(max)
+    chord_tones["tpc_width"] = highest_tpc - chord_tones.lowest_tpc
+    chord_tones["highest_tpc"] = highest_tpc
+    return chord_tones
 
-# %%
-chord_tones.tpc_width.value_counts()
 
-# %%
-
-
-def compute_smallest_fifth_ranges(width, smallest=7):
-    first_max_ix, last_max_ix, max_val = get_max_range(width)
-    if max_val < smallest:
-        return [max_val] * len(width)
-    left = width[:first_max_ix]
-    middle = width[first_max_ix:last_max_ix]
-    right = width[last_max_ix:]
-    return (
-        compute_smallest_fifth_ranges(left)
-        + [max_val] * len(middle)
-        + compute_smallest_fifth_ranges(right)
+def group_operation(group_df):
+    return utils._compute_smallest_fifth_ranges(
+        group_df.lowest_tpc.values, group_df.tpc_width.values
     )
 
 
-compute_smallest_fifth_ranges(input.tpc_width.to_list())
+def make_diatonics_criterion(
+    chord_tones,
+    join_str: Optional[str | bool] = None,
+    fillna: Optional[Hashable] = None,
+):
+    lowest, width = zip(
+        *chord_tones.groupby("phrase_id", sort=False, group_keys=False).apply(
+            group_operation
+        )
+    )
+    lowest = np.concatenate(lowest)
+    width = np.concatenate(width)
+    result = pd.DataFrame(
+        {"lowest_tpc": lowest, "tpc_width": width}, index=chord_tones.index
+    )
+    result = merge_columns_into_one(result, join_str=join_str, fillna=fillna)
+    return result.rename("diatonics")
 
-# %%
-# def merge_up_to_max_width(input, largest):
-#     lowest, highest = None, None
-#     merge_n = 0
-#     result = []
-#
-#     def do_merge():
-#         nonlocal lowest, highest, merge_n
-#         if merge_n:
-#             result.extend([(lowest, highest - lowest)] * merge_n)
-#         lowest, highest = None, None
-#         merge_n = 0
-#
-#     for i, (low, high, width) in enumerate(input, start=1):
-#         if width > largest:
-#             do_merge()
-#             result.append((low, width))
-#             continue
-#         if lowest is None:
-#             lowest = low
-#             highest = high
-#             continue
-#         merge_low_point = min((low, lowest))
-#         merge_high_point = max((high, highest))
-#         merge_width = merge_high_point - merge_low_point
-#         if merge_width <= largest:
-#             # merge
-#             lowest = merge_low_point
-#             highest = merge_high_point
-#             merge_n += 1
-#         else:
-#             do_merge()
-#             lowest = low
-#             highest = high
-#     do_merge()
-#     return pd.DataFrame(result, columns=["lowest_tpc", "tpc_width"])
-#
-#
-# merge_up_to_max_width(list(input.itertuples(index=False, name=None)), largest=7)
-#
-# def compute_smallest_fifth_ranges(input, smallest=7, largest=10):
-#     if len(input) == 1:
-#         return input.iloc[:, [0, 2]]
-#     first_max_ix, last_max_ix, max_val = get_max_range(input.tpc_width)
-#     if max_val == smallest:
-#         return input.iloc[:, [0, 2]]
-#     if max_val < smallest:
-#         return merge_up_to_max_width(input.values, largest=smallest)
-#     left = input.iloc[:first_max_ix]
-#     middle = input.iloc[first_max_ix:last_max_ix]
-#     right = input.iloc[last_max_ix:]
-#     if max_val < largest:
-#         middle = merge_up_to_max_width(middle.values, largest=largest)
-#     return pd.concat(
-#         [
-#             compute_smallest_fifth_ranges(left),
-#             middle,
-#             compute_smallest_fifth_ranges(right),
-#         ]
-#     )
-
-
-compute_smallest_fifth_ranges(input, largest=9)
-
-# %%
-
-
-merge_up_to_max_width(input.lowest_tpc, input.tpc_width, largest=10)
-
-
-# %%
-
-
-compute_smallest_diatonics(input, largest=10, verbose=True)
-
-# %%
-groupby = iter(chord_tones.groupby("phrase_id"))
-
-# %%
-group, group_df = next(groupby)
-criterion = compute_smallest_diatonics(group_df, verbose=True)
-pd.concat([group_df, criterion], axis=1)
-
-# %%
-group_df
-
-# %%
-compute_smallest_diatonics(group_df, verbose=True)
 
 # %%
 numeral_type_effective_key = phrase_annotations.get_phrase_data(
@@ -513,6 +430,19 @@ criterion2stages[
     "effective_numeral_or_its_dominant"
 ] = effective_numeral_or_its_dominant
 effective_numeral_or_its_dominant.head(100)
+
+# %%
+chord_tones = get_phrase_chord_tones(phrase_annotations)
+chord_tones.head()
+
+# %%
+chord_tones.tpc_width.value_counts()
+
+# %%
+diatonics_criterion = make_diatonics_criterion(chord_tones)
+criterion2stages["diatonics"] = criterion2stages["uncompressed"].regroup_phrases(
+    diatonics_criterion
+)
 
 # %%
 compare_criteria_metrics(criterion2stages, height=1000)
