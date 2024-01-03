@@ -37,7 +37,7 @@ import numpy as np
 import pandas as pd
 from dimcat import resources
 from dimcat.data.resources.utils import merge_columns_into_one
-from dimcat.plotting import make_box_plot, write_image
+from dimcat.plotting import write_image
 from git import Repo
 
 import utils
@@ -105,11 +105,12 @@ criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 ```
 
 ```{code-cell}
-def get_phrase_chord_tones(phrase_annotations):
+def get_phrase_chord_tones(phrase_annotations) -> resources.PhraseData:
     chord_tones = phrase_annotations.get_phrase_data(
         reverse=True,
         columns=[
             "chord",
+            "duration_qb",
             "localkey",
             "globalkey",
             "globalkey_is_minor",
@@ -117,14 +118,15 @@ def get_phrase_chord_tones(phrase_annotations):
         ],
         drop_levels="phrase_component",
     )
-    chord_tones.df.chord_tones.where(chord_tones.chord_tones != (), inplace=True)
-    chord_tones.df.chord_tones.ffill(inplace=True)
-    chord_tones = ms3.transpose_chord_tones_by_localkey(chord_tones.df, by_global=True)
-    chord_tones["lowest_tpc"] = chord_tones.chord_tones.map(min)
-    highest_tpc = chord_tones.chord_tones.map(max)
-    chord_tones["tpc_width"] = highest_tpc - chord_tones.lowest_tpc
-    chord_tones["highest_tpc"] = highest_tpc
-    return chord_tones
+    df = chord_tones.df
+    df.chord_tones.where(df.chord_tones != (), inplace=True)
+    df.chord_tones.ffill(inplace=True)
+    df = ms3.transpose_chord_tones_by_localkey(df, by_global=True)
+    df["lowest_tpc"] = df.chord_tones.map(min)
+    highest_tpc = df.chord_tones.map(max)
+    df["tpc_width"] = highest_tpc - df.lowest_tpc
+    df["highest_tpc"] = highest_tpc
+    return chord_tones.from_resource_and_dataframe(chord_tones, df)
 
 
 def group_operation(group_df):
@@ -206,9 +208,8 @@ chord_tones.tpc_width.value_counts()
 
 ```{code-cell}
 diatonics_criterion = make_diatonics_criterion(chord_tones)
-criterion2stages["diatonics"] = criterion2stages["uncompressed"].regroup_phrases(
-    diatonics_criterion
-)
+diatonics_stages = chord_tones.regroup_phrases(diatonics_criterion)
+criterion2stages["diatonics"] = diatonics_stages
 ```
 
 ```{code-cell}
@@ -234,18 +235,5 @@ utils._compare_criteria_entropies(
 ```
 
 ```{code-cell}
-uncompressed_lengths = utils.get_criterion_phrase_lengths(
-    criterion2stages["uncompressed"]
-)
-uncompressed_lengths.groupby("corpus").describe()
-```
-
-```{code-cell}
-make_box_plot(
-    uncompressed_lengths,
-    x_col="corpus",
-    y_col="phrase_length",
-    height=800,
-    category_orders=dict(corpus=chronological_corpus_names),
-)
+diatonics_stages
 ```
