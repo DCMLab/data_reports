@@ -66,7 +66,6 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 ```{code-cell}
 
-
 def make_and_store_stage_data(
     phrase_feature,
     name: Optional[str] = None,
