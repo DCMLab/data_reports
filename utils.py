@@ -2069,4 +2069,19 @@ def compare_criteria_entropies(
     )
 
 
+def make_dominant_selector(phrase_data):
+    """Phrase data must have columns 'numeral', 'chord_type', 'effective_localkey_is_minor'"""
+    is_dominant = phrase_data.numeral.eq("V") & phrase_data.chord_type.isin(
+        {"Mm7", "M"}
+    )
+    leading_tone_is_root = (
+        phrase_data.numeral.eq("#vii") & phrase_data.effective_localkey_is_minor
+    ) | (phrase_data.numeral.eq("vii") & ~phrase_data.effective_localkey_is_minor)
+    is_rootless_dominant = leading_tone_is_root & phrase_data.chord_type.isin(
+        {"o", "o7", "%7"}
+    )
+    dominant_selector = is_dominant | is_rootless_dominant
+    return dominant_selector
+
+
 # endregion phrase stage helpers

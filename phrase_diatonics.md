@@ -178,31 +178,19 @@ numeral_type_effective_key = phrase_annotations.get_phrase_data(
     ],
     drop_levels="phrase_component",
 )
-is_dominant = numeral_type_effective_key.numeral.eq(
-    "V"
-) & numeral_type_effective_key.chord_type.isin({"Mm7", "M"})
-leading_tone_is_root = (
-    numeral_type_effective_key.numeral.eq("#vii")
-    & numeral_type_effective_key.effective_localkey_is_minor
-) | (
-    numeral_type_effective_key.numeral.eq("vii")
-    & ~numeral_type_effective_key.effective_localkey_is_minor
-)
-is_rootless_dominant = (
-    leading_tone_is_root & numeral_type_effective_key.chord_type.isin({"o", "o7", "%7"})
-)
-dominants_and_resolutions = ms3.transform(
+dominant_selector = utils.make_dominant_selector(numeral_type_effective_key)
+effective_numeral = ms3.transform(
     numeral_type_effective_key,
     ms3.rel2abs_key,
     ["numeral", "effective_localkey", "effective_localkey_is_minor"],
 ).rename("effective_numeral_or_its_dominant")
-dominants_and_resolutions.where(
-    ~(is_dominant | is_rootless_dominant),
+effective_numeral.where(
+    ~dominant_selector,
     numeral_type_effective_key.effective_localkey,
     inplace=True,
 )
 effective_numeral_or_its_dominant = criterion2stages["uncompressed"].regroup_phrases(
-    dominants_and_resolutions
+    effective_numeral
 )
 criterion2stages[
     "effective_numeral_or_its_dominant"
@@ -462,7 +450,6 @@ fig
 ```
 
 ```{code-cell}
-
 fig = px.timeline(
     phrase_timeline_data,
     x_start="Start",
@@ -479,5 +466,9 @@ fig
 ```
 
 ```{code-cell}
-
+for criterion, stages in criterion2stages.items():
+    print_heading(criterion)
+    values = stages.df.query("phrase_id == 9773").iloc[:, 0].to_list()
+    print(values[28])
+    print()
 ```

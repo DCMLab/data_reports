@@ -32,7 +32,11 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from dimcat import resources
-from dimcat.data.resources.utils import make_adjacency_groups, merge_columns_into_one
+from dimcat.data.resources.utils import (
+    make_adjacency_groups,
+    make_group_start_mask,
+    merge_columns_into_one,
+)
 from dimcat.plotting import make_box_plot, write_image
 from git import Repo
 
@@ -177,43 +181,96 @@ def make_diatonics_criterion(
 numeral_type_effective_key = phrase_annotations.get_phrase_data(
     reverse=True,
     columns=[
-        "numeral",
-        "chord_type",
         "effective_localkey",
+        "effective_localkey_resolved",
         "effective_localkey_is_minor",
+        "globalkey_is_minor",
+        "label",
+        "numeral",
+        "root_roman",
+        "chord_type",
     ],
     drop_levels="phrase_component",
 )
-is_dominant = numeral_type_effective_key.numeral.eq(
-    "V"
-) & numeral_type_effective_key.chord_type.isin({"Mm7", "M"})
-leading_tone_is_root = (
-    numeral_type_effective_key.numeral.eq("#vii")
-    & numeral_type_effective_key.effective_localkey_is_minor
-) | (
-    numeral_type_effective_key.numeral.eq("vii")
-    & ~numeral_type_effective_key.effective_localkey_is_minor
-)
-is_rootless_dominant = (
-    leading_tone_is_root & numeral_type_effective_key.chord_type.isin({"o", "o7", "%7"})
-)
-dominants_and_resolutions = ms3.transform(
+
+dominant_selector = utils.make_dominant_selector(numeral_type_effective_key)
+
+expected_root = ms3.transform(
     numeral_type_effective_key,
-    ms3.rel2abs_key,
-    ["numeral", "effective_localkey", "effective_localkey_is_minor"],
-).rename("effective_numeral_or_its_dominant")
-dominants_and_resolutions.where(
-    ~(is_dominant | is_rootless_dominant),
-    numeral_type_effective_key.effective_localkey,
-    inplace=True,
+    ms3.roman_numeral2fifths,
+    ["effective_localkey", "globalkey_is_minor"],
+).rename("expected_root")
+expected_root = expected_root.where(dominant_selector).astype("Int64")
+
+effective_numeral = pd.concat(
+    [
+        ms3.transform(
+            numeral_type_effective_key,
+            ms3.rel2abs_key,
+            ["numeral", "effective_localkey", "globalkey_is_minor"],
+        ).rename("effective_numeral"),
+        numeral_type_effective_key.globalkey_is_minor,
+    ],
+    axis=1,
 )
-effective_numeral_or_its_dominant = criterion2stages["uncompressed"].regroup_phrases(
-    dominants_and_resolutions
+subsequent_root = (
+    ms3.transform(
+        effective_numeral,
+        ms3.roman_numeral2fifths,
+    )
+    .shift()
+    .astype("Int64")
+    .rename("subsequent_root")
 )
-criterion2stages[
-    "effective_numeral_or_its_dominant"
-] = effective_numeral_or_its_dominant
-effective_numeral_or_its_dominant.head(100)
+all_but_ultima_selector = ~make_group_start_mask(subsequent_root, "phrase_id")
+subsequent_root.where(all_but_ultima_selector, inplace=True)
+
+subsequent_root_roman = numeral_type_effective_key.root_roman.shift().rename(
+    "subsequent_root_roman"
+)
+subsequent_root_roman.where(all_but_ultima_selector, inplace=True)
+numeral_type_effective_key = pd.concat(
+    [numeral_type_effective_key, subsequent_root, subsequent_root_roman], axis=1
+)
+
+merge_with_previous = (expected_root == subsequent_root).fillna(False)
+copy_decision_from_previous = (expected_root.eq(expected_root.shift())).fillna(False)
+fill_preparation_chain = (
+    copy_decision_from_previous & merge_with_previous.shift().fillna(False)
+) & all_but_ultima_selector
+keep_root = ~(merge_with_previous | fill_preparation_chain)
+criterion = numeral_type_effective_key.root_roman.where(
+    keep_root, subsequent_root_roman
+)
+criterion = criterion.where(~copy_decision_from_previous).ffill()
+
+
+numeral_type_effective_key = pd.concat([numeral_type_effective_key, criterion], axis=1)
+
+root_roman_or_its_dominant = criterion2stages["uncompressed"].regroup_phrases(criterion)
+# criterion2stages[
+#     "effective_numeral_or_its_dominant"
+# ] = effective_numeral_or_its_dominant
+# numeral_type_effective_key.head(100)
+root_roman_or_its_dominant.head(100)
+
+# %%
+grouping, group_values = make_adjacency_groups(
+    numeral_type_effective_key.expected_root.fillna(1000)
+)
+grouping.where(dominant_selector, inplace=True)
+
+
+def dominant_resolves_as_expected(group_df):
+    exp_root, nxt_root, nxt_numeral = group_df.iloc[0]
+    if exp_root == nxt_root:
+        return [nxt_numeral] * len(group_df)
+    return [pd.NA] * len(group_df)
+
+
+numeral_type_effective_key[
+    ["expected_root", "subsequent_root", "subsequent_root_roman"]
+].groupby(grouping, group_keys=False).apply(dominant_resolves_as_expected)
 
 # %%
 chord_tones = get_phrase_chord_tones(phrase_annotations)
@@ -455,7 +512,6 @@ fig.add_shape(
 fig
 
 # %%
-
 fig = px.timeline(
     phrase_timeline_data,
     x_start="Start",
