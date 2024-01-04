@@ -32,7 +32,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from dimcat import resources
-from dimcat.data.resources.utils import merge_columns_into_one
+from dimcat.data.resources.utils import make_adjacency_groups, merge_columns_into_one
 from dimcat.plotting import write_image
 from git import Repo
 
@@ -234,26 +234,6 @@ utils._compare_criteria_entropies(
 diatonics_stages
 
 # %%
-# LT_DISTANCE2SCALE_DEGREE = {
-#       0: "leading tone",
-#       1: "mediant (major)",
-#       2: "submediant (major)",
-#       3: "supertonic",
-#       4: "dominant",
-#       5: "tonic",
-#       6: "subdominant",
-#       7: "subtonic (minor)",
-#       8: "mediant (minor)",
-#       9: "submediant (minor)",
-#       10: "b2",
-#       11: "diminished dominant",
-#       12: "diminished tonic",
-#       13: "diminished subdominant",
-#       14: "diminished subtonic",
-#       15: "diminished mediant",
-#       16: "diminished submediant",
-#     }
-
 LT_DISTANCE2SCALE_DEGREE = {
     0: "7 (#7)",
     1: "3 (#3)",
@@ -295,7 +275,8 @@ COLOR_NAMES = {
     16: "GRAY_300",  # bb6 (diminished submediant)
 }
 DEGREE2COLOR = {
-    degree: COLOR_NAMES[dist] for dist, degree in LT_DISTANCE2SCALE_DEGREE.items()
+    degree: utils.TailwindColorsHex.get_color(COLOR_NAMES[dist])
+    for dist, degree in LT_DISTANCE2SCALE_DEGREE.items()
 }
 
 
@@ -356,51 +337,122 @@ def make_timeline_data(chord_tones):
 timeline_data = make_timeline_data(chord_tones)
 timeline_data.head()
 
-# %%
-n_phrases = max(timeline_data.index.levels[2])
-phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
-phrase_timeline_data
-
 
 # %%
-def plot_phrase(phrase_timeline_data, colorscale=None):
+
+
+def make_rectangle_shape(group_df, y_min):
+    result = dict(
+        type="rect",
+        x0=group_df.Start.min(),
+        x1=group_df.Finish.max(),
+        fillcolor="LightSalmon",
+        opacity=0.5,
+        line_width=0,
+        layer="below",
+    )
+    first_row = group_df.iloc[0]
+    lowest_tpc = first_row.diatonics_lowest_tpc
+    tpc_width = first_row.diatonics_tpc_width
+    highest_tpc = lowest_tpc + tpc_width
+    result["y0"] = lowest_tpc - y_min - 0.5
+    result["y1"] = highest_tpc - y_min + 0.5
+    diatonic = ms3.fifths2name(highest_tpc - 5)
+    try:
+        text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
+        result["label"] = dict(
+            text=text,
+            textposition="top left",
+        )
+    except AttributeError:
+        raise
+    return result
+
+
+def make_diatonics_rectangles(phrase_timeline_data):
+    shapes = []
+    diatonics = merge_columns_into_one(
+        phrase_timeline_data[["diatonics_lowest_tpc", "diatonics_tpc_width"]]
+    )
+    rectangle_grouper, _ = make_adjacency_groups(diatonics)
+    min_y = phrase_timeline_data.chord_tone.min()
+    for group, group_df in phrase_timeline_data.groupby(rectangle_grouper):
+        shapes.append(make_rectangle_shape(group_df, y_min=min_y))
+    return shapes
+
+
+def plot_phrase(
+    phrase_timeline_data,
+    colorscale=None,
+    add_shapes=True,
+):
+    shapes = make_diatonics_rectangles(phrase_timeline_data)
     dummy_resource_value = phrase_timeline_data.Resource.iat[0]
     phrase_timeline_data = fill_yaxis_gaps(
         phrase_timeline_data, "chord_tone", Resource=dummy_resource_value
     )
+    print(phrase_timeline_data.Task.value_counts())
     if phrase_timeline_data.Task.isna().any():
         names = ms3.transform(phrase_timeline_data.chord_tone, ms3.fifths2name)
         phrase_timeline_data.Task.fillna(names, inplace=True)
     # return phrase_timeline_data
     corpus, piece, phrase_id, *_ = phrase_timeline_data.index[0]
     title = f"Phrase {phrase_id} from {corpus}/{piece}"
+    kwargs = dict(title=title, colors=colorscale)
+    if add_shapes:
+        kwargs["shapes"] = shapes
     fig = create_gantt(
-        phrase_timeline_data.sort_values("chord_tone", ascending=False),
-        title=title,
-        colors=colorscale,
+        phrase_timeline_data.sort_values("chord_tone", ascending=False), **kwargs
     )
     fig.update_layout(hovermode="x unified", legend_traceorder="grouped")
     # fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
     return fig
 
 
-colorscale = {
-    degree: utils.TailwindColorsHex.get_color(DEGREE2COLOR[degree])
-    for degree in phrase_timeline_data.Resource.unique()
-}
+# %%
+n_phrases = max(timeline_data.index.levels[2])
+# {degree: utils.TailwindColorsHex.get_color(DEGREE2COLOR[degree]) for degree in phrase_timeline_data.Resource.unique()}
+colorscale = DEGREE2COLOR
+
+# %%
+phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
+
+# %%
 fig = plot_phrase(phrase_timeline_data, colorscale=colorscale)
+plot_phrase(phrase_timeline_data, colorscale=colorscale, add_shapes=False).show()
 fig
 
 # %%
-fig["data"]
+fig.add_shape(
+    type="rect",
+    line_width=2,
+    x0=-4,
+    y0=3,
+    x1=-2,
+    y1=1,
+    label=dict(
+        text="Keys of G or g",
+        textposition="top left",
+        font=dict(color="black", size=20),
+    ),
+    showlegend=True,
+)
+fig
 
 # %%
 
-fig = px.timeline(phrase_timeline_data, x_start="Start", x_end="Finish", y="Task")
+fig = px.timeline(
+    phrase_timeline_data,
+    x_start="Start",
+    x_end="Finish",
+    y="Task",
+    color="Resource",
+    color_discrete_map=colorscale,
+)
 # fig.update_xaxes(
 #   tickformat="%S",
 # )
-fig.update_layout(dict(xaxis_type=None))
+# fig.update_layout(dict(xaxis_type=None))
 fig
 
 # %%
