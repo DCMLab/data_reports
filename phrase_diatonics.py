@@ -99,31 +99,7 @@ CRITERIA = dict(
 )
 criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 
-
 # %%
-def get_phrase_chord_tones(phrase_annotations) -> resources.PhraseData:
-    chord_tones = phrase_annotations.get_phrase_data(
-        reverse=True,
-        columns=[
-            "chord",
-            "duration_qb",
-            "localkey",
-            "globalkey",
-            "globalkey_is_minor",
-            "effective_localkey",
-            "chord_tones",
-        ],
-        drop_levels="phrase_component",
-    )
-    df = chord_tones.df
-    df.chord_tones.where(df.chord_tones != (), inplace=True)
-    df.chord_tones.ffill(inplace=True)
-    df = ms3.transpose_chord_tones_by_localkey(df, by_global=True)
-    df["lowest_tpc"] = df.chord_tones.map(min)
-    highest_tpc = df.chord_tones.map(max)
-    df["tpc_width"] = highest_tpc - df.lowest_tpc
-    df["highest_tpc"] = highest_tpc
-    return chord_tones.from_resource_and_dataframe(chord_tones, df)
 
 
 def group_operation(group_df):
@@ -189,7 +165,7 @@ criterion2stages[
 effective_numeral_or_its_dominant.head(100)
 
 # %%
-chord_tones = get_phrase_chord_tones(phrase_annotations)
+chord_tones = utils.get_phrase_chord_tones(phrase_annotations)
 chord_tones.head()
 
 # %%

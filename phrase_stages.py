@@ -120,31 +120,6 @@ make_box_plot(
 
 
 # %%
-def get_phrase_chord_tones(phrase_annotations) -> resources.PhraseData:
-    chord_tones = phrase_annotations.get_phrase_data(
-        reverse=True,
-        columns=[
-            "chord",
-            "duration_qb",
-            "localkey",
-            "globalkey",
-            "globalkey_is_minor",
-            "effective_localkey",
-            "chord_tones",
-        ],
-        drop_levels="phrase_component",
-    )
-    df = chord_tones.df
-    df.chord_tones.where(df.chord_tones != (), inplace=True)
-    df.chord_tones.ffill(inplace=True)
-    df = ms3.transpose_chord_tones_by_localkey(df, by_global=True)
-    df["lowest_tpc"] = df.chord_tones.map(min)
-    highest_tpc = df.chord_tones.map(max)
-    df["tpc_width"] = highest_tpc - df.lowest_tpc
-    df["highest_tpc"] = highest_tpc
-    return chord_tones.from_resource_and_dataframe(chord_tones, df)
-
-
 def group_operation(group_df):
     return utils._compute_smallest_fifth_ranges(
         group_df.lowest_tpc.values, group_df.tpc_width.values
@@ -261,7 +236,7 @@ criterion2stages["root_roman_or_its_dominant"] = root_roman_or_its_dominant
 root_roman_or_its_dominant.head(100)
 
 # %%
-chord_tones = get_phrase_chord_tones(phrase_annotations)
+chord_tones = utils.get_phrase_chord_tones(phrase_annotations)
 chord_tones.head()
 
 # %%
