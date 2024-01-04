@@ -2101,9 +2101,11 @@ def get_phrase_chord_tones(phrase_annotations) -> resources.PhraseData:
     df = chord_tones.df
     df.chord_tones.where(df.chord_tones != (), inplace=True)
     df.chord_tones.ffill(inplace=True)
-    df = ms3.transpose_chord_tones_by_localkey(df, by_global=True)
-    df["lowest_tpc"] = df.chord_tones.map(min)
-    highest_tpc = df.chord_tones.map(max)
+    df = ms3.transpose_chord_tones_by_localkey(df, by_global=True).rename(
+        columns=dict(chord_tones="chord_tone_tpcs")
+    )
+    df["lowest_tpc"] = df.chord_tone_tpcs.map(min)
+    highest_tpc = df.chord_tone_tpcs.map(max)
     df["tpc_width"] = highest_tpc - df.lowest_tpc
     df["highest_tpc"] = highest_tpc
     return chord_tones.from_resource_and_dataframe(chord_tones, df)

@@ -99,6 +99,7 @@ CRITERIA = dict(
 )
 criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 
+
 # %%
 
 
@@ -267,10 +268,10 @@ def make_timeline_data(chord_tones):
         ],
         axis=1,
     )
-    exploded_chord_tones = chord_tones.chord_tones.explode()
+    exploded_chord_tones = chord_tones.chord_tone_tpcs.explode()
     exploded_chord_tones = pd.DataFrame(
         dict(
-            chord_tone=exploded_chord_tones,
+            chord_tone_tpc=exploded_chord_tones,
             Task=ms3.transform(exploded_chord_tones, ms3.fifths2name),
         ),
         index=exploded_chord_tones.index,
@@ -281,7 +282,7 @@ def make_timeline_data(chord_tones):
     n_below_leading_tone = (
         timeline_data.diatonics_lowest_tpc
         + timeline_data.diatonics_tpc_width
-        - timeline_data.chord_tone
+        - timeline_data.chord_tone_tpc
     ).rename("n_below_leading_tone")
 
     resource = pd.DataFrame(
@@ -339,7 +340,7 @@ def make_diatonics_rectangles(phrase_timeline_data):
         phrase_timeline_data[["diatonics_lowest_tpc", "diatonics_tpc_width"]]
     )
     rectangle_grouper, _ = make_adjacency_groups(diatonics)
-    min_y = phrase_timeline_data.chord_tone.min()
+    min_y = phrase_timeline_data.chord_tone_tpc.min()
     for group, group_df in phrase_timeline_data.groupby(rectangle_grouper):
         shapes.append(make_rectangle_shape(group_df, y_min=min_y))
     return shapes
@@ -353,11 +354,10 @@ def plot_phrase(
     shapes = make_diatonics_rectangles(phrase_timeline_data)
     dummy_resource_value = phrase_timeline_data.Resource.iat[0]
     phrase_timeline_data = fill_yaxis_gaps(
-        phrase_timeline_data, "chord_tone", Resource=dummy_resource_value
+        phrase_timeline_data, "chord_tone_tpc", Resource=dummy_resource_value
     )
-    print(phrase_timeline_data.Task.value_counts())
     if phrase_timeline_data.Task.isna().any():
-        names = ms3.transform(phrase_timeline_data.chord_tone, ms3.fifths2name)
+        names = ms3.transform(phrase_timeline_data.chord_tone_tpc, ms3.fifths2name)
         phrase_timeline_data.Task.fillna(names, inplace=True)
     # return phrase_timeline_data
     corpus, piece, phrase_id, *_ = phrase_timeline_data.index[0]
@@ -366,7 +366,7 @@ def plot_phrase(
     if add_shapes:
         kwargs["shapes"] = shapes
     fig = create_gantt(
-        phrase_timeline_data.sort_values("chord_tone", ascending=False), **kwargs
+        phrase_timeline_data.sort_values("chord_tone_tpc", ascending=False), **kwargs
     )
     fig.update_layout(hovermode="x unified", legend_traceorder="grouped")
     # fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
@@ -417,6 +417,9 @@ fig = px.timeline(
 # )
 # fig.update_layout(dict(xaxis_type=None))
 fig
+
+# %% [markdown]
+# ### Demo values
 
 # %%
 for criterion, stages in criterion2stages.items():
