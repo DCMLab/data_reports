@@ -207,7 +207,7 @@ effective_numeral = pd.concat(
         ms3.transform(
             numeral_type_effective_key,
             ms3.rel2abs_key,
-            ["numeral", "effective_localkey", "globalkey_is_minor"],
+            ["numeral", "effective_localkey", "effective_localkey_is_minor"],
         ).rename("effective_numeral"),
         numeral_type_effective_key.globalkey_is_minor,
     ],
@@ -230,7 +230,8 @@ subsequent_root_roman = numeral_type_effective_key.root_roman.shift().rename(
 )
 subsequent_root_roman.where(all_but_ultima_selector, inplace=True)
 numeral_type_effective_key = pd.concat(
-    [numeral_type_effective_key, subsequent_root, subsequent_root_roman], axis=1
+    [numeral_type_effective_key, expected_root, subsequent_root, subsequent_root_roman],
+    axis=1,
 )
 
 merge_with_previous = (expected_root == subsequent_root).fillna(False)
@@ -242,35 +243,22 @@ keep_root = ~(merge_with_previous | fill_preparation_chain)
 criterion = numeral_type_effective_key.root_roman.where(
     keep_root, subsequent_root_roman
 )
-criterion = criterion.where(~copy_decision_from_previous).ffill()
+# masks = pd.concat(
+#     [
+#         merge_with_previous.rename("merge_with_previous"),
+#         copy_decision_from_previous.rename("copy_decision_from_previous"),
+#         fill_preparation_chain.rename("fill_preparation_chain"),
+#         keep_root.rename("keep_root"),
+#     ],
+#     axis=1,
+# )
+# numeral_type_effective_key = pd.concat([numeral_type_effective_key, masks, criterion], axis=1)
+criterion = criterion.where(~fill_preparation_chain).ffill()
 
-
-numeral_type_effective_key = pd.concat([numeral_type_effective_key, criterion], axis=1)
 
 root_roman_or_its_dominant = criterion2stages["uncompressed"].regroup_phrases(criterion)
-# criterion2stages[
-#     "effective_numeral_or_its_dominant"
-# ] = effective_numeral_or_its_dominant
-# numeral_type_effective_key.head(100)
+criterion2stages["root_roman_or_its_dominant"] = root_roman_or_its_dominant
 root_roman_or_its_dominant.head(100)
-
-# %%
-grouping, group_values = make_adjacency_groups(
-    numeral_type_effective_key.expected_root.fillna(1000)
-)
-grouping.where(dominant_selector, inplace=True)
-
-
-def dominant_resolves_as_expected(group_df):
-    exp_root, nxt_root, nxt_numeral = group_df.iloc[0]
-    if exp_root == nxt_root:
-        return [nxt_numeral] * len(group_df)
-    return [pd.NA] * len(group_df)
-
-
-numeral_type_effective_key[
-    ["expected_root", "subsequent_root", "subsequent_root_roman"]
-].groupby(grouping, group_keys=False).apply(dominant_resolves_as_expected)
 
 # %%
 chord_tones = get_phrase_chord_tones(phrase_annotations)
