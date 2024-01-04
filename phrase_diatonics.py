@@ -18,7 +18,8 @@
 #
 # ToDo
 #
-# * n01op18-1_01, phrase_id 4, viio/vi => #viio/vi
+# * n01op18-1_01, phrase_id 4, viio/vi => #viio/
+# * 07-1, phrase_id 2415, vi/V in D would be f# but this is clearly in a. It is a minor key, so bVI should be VI
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 import os
@@ -232,28 +233,70 @@ utils._compare_criteria_entropies(
 # %%
 diatonics_stages
 
-
 # %%
-def _make_timeline_data(phrase_df):
-    starts = (-phrase_df.duration_qb.cumsum()).rename(
-        "Start"
-    )  # .astype("datetime64[s]")
-    ends = starts.shift().fillna(1).rename("Finish")  # .astype("datetime64[s]")
-    timeline_data = pd.concat(
-        [
-            phrase_df,
-            starts,
-            ends,
-        ],
-        axis=1,
-    )
-    timeline_data = pd.merge(
-        timeline_data,
-        phrase_df.chord_tones.explode().rename("Task"),
-        left_index=True,
-        right_index=True,
-    )
-    return timeline_data
+# LT_DISTANCE2SCALE_DEGREE = {
+#       0: "leading tone",
+#       1: "mediant (major)",
+#       2: "submediant (major)",
+#       3: "supertonic",
+#       4: "dominant",
+#       5: "tonic",
+#       6: "subdominant",
+#       7: "subtonic (minor)",
+#       8: "mediant (minor)",
+#       9: "submediant (minor)",
+#       10: "b2",
+#       11: "diminished dominant",
+#       12: "diminished tonic",
+#       13: "diminished subdominant",
+#       14: "diminished subtonic",
+#       15: "diminished mediant",
+#       16: "diminished submediant",
+#     }
+
+LT_DISTANCE2SCALE_DEGREE = {
+    0: "7 (#7)",
+    1: "3 (#3)",
+    2: "6 (#6)",
+    3: "2",
+    4: "5",
+    5: "1",
+    6: "4",
+    7: "b7 (7)",
+    8: "b3 (3)",
+    9: "b6 (6)",
+    10: "b2",
+    11: "b5",
+    12: "b1",
+    13: "b4",
+    14: "bb7",
+    15: "bb3",
+    16: "bb6",
+}
+
+
+COLOR_NAMES = {
+    0: "BLUE_600",  # 7 (#7) (leading tone)
+    1: "FUCHSIA_600",  # 3 (#3) (mediant (major))
+    2: "AMBER_500",  # 6 (#6) (submediant (major))
+    3: "CYAN_300",  # 2 (supertonic)
+    4: "VIOLET_900",  # 5 (dominant)
+    5: "GREEN_500",  # 1 (tonic)
+    6: "RED_500",  # 4 (subdominant)
+    7: "STONE_500",  # b7 (7) (subtonic (minor))
+    8: "FUCHSIA_800",  # b3 (3) (mediant (minor))
+    9: "YELLOW_400",  # b6 (6) (submediant (minor))
+    10: "TEAL_600",  # b2
+    11: "PINK_600",  # b5 (diminished dominant)
+    12: "INDIGO_900",  # b1 (diminished tonic)
+    13: "LIME_600",  # b4 (diminished subdominant)
+    14: "GRAY_500",  # bb7 (diminished subtonic)
+    15: "GRAY_900",  # bb3 (diminished mediant)
+    16: "GRAY_300",  # bb6 (diminished submediant)
+}
+DEGREE2COLOR = {
+    degree: COLOR_NAMES[dist] for dist, degree in LT_DISTANCE2SCALE_DEGREE.items()
+}
 
 
 def _make_start_finish(phrase_df):
@@ -290,36 +333,50 @@ def make_timeline_data(chord_tones):
     timeline_data = pd.merge(
         timeline_data, exploded_chord_tones, left_index=True, right_index=True
     )
-    timeline_data["Resource"] = (
+    n_below_leading_tone = (
         timeline_data.diatonics_lowest_tpc
         + timeline_data.diatonics_tpc_width
         - timeline_data.chord_tone
+    ).rename("n_below_leading_tone")
+
+    resource = pd.DataFrame(
+        dict(
+            n_below_leading_tone=n_below_leading_tone,
+            Resource=n_below_leading_tone.map(LT_DISTANCE2SCALE_DEGREE),
+        ),
+        index=n_below_leading_tone.index,
     )
-    return timeline_data.rename(columns=dict(chord="Description"))
+    timeline_data = pd.concat([timeline_data, resource], axis=1).rename(
+        columns=dict(chord="Description")
+    )
+    return timeline_data
 
 
+# %%
 timeline_data = make_timeline_data(chord_tones)
 timeline_data.head()
 
 # %%
-
 n_phrases = max(timeline_data.index.levels[2])
 phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
 phrase_timeline_data
 
 
 # %%
-def plot_phrase(phrase_timeline_data):
+def plot_phrase(phrase_timeline_data, colorscale=None):
+    dummy_resource_value = phrase_timeline_data.Resource.iat[0]
     phrase_timeline_data = fill_yaxis_gaps(
-        phrase_timeline_data, "chord_tone", Resource=0
+        phrase_timeline_data, "chord_tone", Resource=dummy_resource_value
     )
     if phrase_timeline_data.Task.isna().any():
         names = ms3.transform(phrase_timeline_data.chord_tone, ms3.fifths2name)
         phrase_timeline_data.Task.fillna(names, inplace=True)
     # return phrase_timeline_data
-    colorscale = dict(zip(range(10), px.colors.qualitative.G10))
+    corpus, piece, phrase_id, *_ = phrase_timeline_data.index[0]
+    title = f"Phrase {phrase_id} from {corpus}/{piece}"
     fig = create_gantt(
         phrase_timeline_data.sort_values("chord_tone", ascending=False),
+        title=title,
         colors=colorscale,
     )
     fig.update_layout(hovermode="x unified", legend_traceorder="grouped")
@@ -327,37 +384,15 @@ def plot_phrase(phrase_timeline_data):
     return fig
 
 
-fig = plot_phrase(phrase_timeline_data)
+colorscale = {
+    degree: utils.TailwindColorsHex.get_color(DEGREE2COLOR[degree])
+    for degree in phrase_timeline_data.Resource.unique()
+}
+fig = plot_phrase(phrase_timeline_data, colorscale=colorscale)
 fig
 
 # %%
 fig["data"]
-
-# %%
-fig["layout"]
-
-# %%
-scatter = px.scatter(
-    phrase_timeline_data,
-    x="Start",
-    y="Finish",
-    color="Task",
-    custom_data="chord_tones",
-    hover_name="chord",
-)
-scatter.update_traces(
-    hovertemplate="<b>%{hovertext}</b><br><br>"
-    "Task=0<br>"
-    "Start=%{x}<br>"
-    "Finish=%{y}<br>"
-    "chord_tones=%{customdata}"
-    "<extra></extra>"
-)
-scatter
-
-# %%
-for scatter_trace in fig["data"]:
-    scatter.update()
 
 # %%
 
@@ -367,3 +402,5 @@ fig = px.timeline(phrase_timeline_data, x_start="Start", x_end="Finish", y="Task
 # )
 fig.update_layout(dict(xaxis_type=None))
 fig
+
+# %%
