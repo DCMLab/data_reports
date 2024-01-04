@@ -40,7 +40,7 @@ from dimcat.plotting import write_image
 from git import Repo
 
 import utils
-from create_gantt import create_gantt
+from create_gantt import create_gantt, fill_yaxis_gaps
 from utils import (
     DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
@@ -327,12 +327,25 @@ phrase_timeline_data
 ```
 
 ```{code-cell}
-colorscale = dict(zip(range(10), px.colors.qualitative.G10))
-fig = create_gantt(
-    phrase_timeline_data.sort_values("chord_tone", ascending=False), colors=colorscale
-)
-fig.update_layout(hovermode="x unified", legend_traceorder="grouped")
-# fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
+def plot_phrase(phrase_timeline_data):
+    phrase_timeline_data = fill_yaxis_gaps(
+        phrase_timeline_data, "chord_tone", Resource=0
+    )
+    if phrase_timeline_data.Task.isna().any():
+        names = ms3.transform(phrase_timeline_data.chord_tone, ms3.fifths2name)
+        phrase_timeline_data.Task.fillna(names, inplace=True)
+    # return phrase_timeline_data
+    colorscale = dict(zip(range(10), px.colors.qualitative.G10))
+    fig = create_gantt(
+        phrase_timeline_data.sort_values("chord_tone", ascending=False),
+        colors=colorscale,
+    )
+    fig.update_layout(hovermode="x unified", legend_traceorder="grouped")
+    # fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
+    return fig
+
+
+fig = plot_phrase(phrase_timeline_data)
 fig
 ```
 
@@ -367,10 +380,6 @@ scatter
 ```{code-cell}
 for scatter_trace in fig["data"]:
     scatter.update()
-```
-
-```{code-cell}
-colorscale
 ```
 
 ```{code-cell}

@@ -47,19 +47,7 @@ def create_modulation_plan(
 ):
     if sort_and_fill:
         if task_column in ("semitones", "fifths"):
-            mi, ma = data[task_column].min(), data[task_column].max()
-            mi = min((0, mi))  # fifths can be negative
-            complete = set(range(mi, ma))
-            missing = complete.difference(set(data[task_column]))
-            missing_data = pd.DataFrame.from_records(
-                [
-                    {"Start": 0, "Finish": 0, "Resource": "local", task_column: m}
-                    for m in missing
-                ]
-            )
-            data = pd.concat([data, missing_data]).sort_values(
-                task_column, ascending=False
-            )
+            data = fill_yaxis_gaps(data, task_column, Resource="local")
         else:
             # assuming task_column contains strings
             data = data.sort_values(
@@ -176,6 +164,20 @@ def create_modulation_plan(
         layout=layout,
         shapes=shapes,
     )
+
+
+def fill_yaxis_gaps(data: pd.DataFrame, task_column: str, **kwargs) -> pd.DataFrame:
+    """Expects 'task_column' to be numerical and concatenates dummy rows for missing values."""
+    mi, ma = data[task_column].min(), data[task_column].max()
+    mi = min((0, mi))  # fifths can be negative
+    complete = set(range(mi, ma))
+    missing = complete.difference(set(data[task_column]))
+    dummy_dict = dict(Start=0, Finish=0, **kwargs)
+    missing_data = pd.DataFrame.from_records(
+        [dummy_dict | {task_column: m} for m in missing]
+    )
+    data = pd.concat([data, missing_data]).sort_values(task_column, ascending=False)
+    return data
 
 
 def create_gantt(
