@@ -2084,18 +2084,28 @@ def make_dominant_selector(phrase_data):
     return dominant_selector
 
 
-def get_phrase_chord_tones(phrase_annotations) -> resources.PhraseData:
+def get_phrase_chord_tones(
+    phrase_annotations: resources.PhraseAnnotations,
+    additional_columns: Optional[Iterable[str]] = None,
+) -> resources.PhraseData:
+    """"""
+    columns = [
+        "label",
+        "duration_qb",
+        "chord",
+        "localkey",
+        "effective_localkey",
+        "globalkey",
+        "globalkey_is_minor",
+        "chord_tones",
+    ]
+    if additional_columns is not None:
+        column_extension = [c for c in additional_columns if c not in columns]
+        add_relative_chord_tones = "chord_tones" in column_extension
+        columns.extend(column_extension)
     chord_tones = phrase_annotations.get_phrase_data(
         reverse=True,
-        columns=[
-            "chord",
-            "duration_qb",
-            "localkey",
-            "globalkey",
-            "globalkey_is_minor",
-            "effective_localkey",
-            "chord_tones",
-        ],
+        columns=columns,
         drop_levels="phrase_component",
     )
     df = chord_tones.df
@@ -2104,10 +2114,11 @@ def get_phrase_chord_tones(phrase_annotations) -> resources.PhraseData:
     df = ms3.transpose_chord_tones_by_localkey(df, by_global=True).rename(
         columns=dict(chord_tones="chord_tone_tpcs")
     )
+    if add_relative_chord_tones:
+        df = pd.concat([df, chord_tones.df.chord_tones], axis=1)
     df["lowest_tpc"] = df.chord_tone_tpcs.map(min)
-    highest_tpc = df.chord_tone_tpcs.map(max)
-    df["tpc_width"] = highest_tpc - df.lowest_tpc
-    df["highest_tpc"] = highest_tpc
+    df["highest_tpc"] = df.chord_tone_tpcs.map(max)
+    df["tpc_width"] = df.highest_tpc - df.lowest_tpc
     return chord_tones.from_resource_and_dataframe(chord_tones, df)
 
 
