@@ -26,7 +26,10 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+%load_ext autoreload
+%autoreload 2
 import os
+from random import choice
 from typing import Hashable, Optional
 
 import dimcat as dc
@@ -157,6 +160,7 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
     numeral_type_effective_key = utils.get_phrase_chord_tones(
         phrase_annotations,
         additional_columns=[
+            "effective_localkey_resolved",
             "effective_localkey_is_minor",
             "numeral",
             "root_roman",
@@ -244,4 +248,69 @@ utils._compare_criteria_phrase_lengths(
 utils._compare_criteria_entropies(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
+```
+
+```{code-cell}
+n_phrases = max(root_roman_or_its_dominant.index.levels[2])
+phrase_df = root_roman_or_its_dominant.query(f"phrase_id == {choice(range(n_phrases))}")
+phrase_df
+```
+
+```{code-cell}
+
+```
+
+```{code-cell}
+def make_resource_column(timeline_data):
+    is_dominant = timeline_data.is_dominant
+    group_levels = is_dominant.index.names[:-1]
+    stage_has_dominant = is_dominant.groupby(group_levels).any()
+    is_tonic_resolution = ~is_dominant & stage_has_dominant.reindex(timeline_data.index)
+    resource_column = pd.Series("other", index=timeline_data.index, name="Resource")
+    resource_column.where(~is_dominant, "dominant", inplace=True)
+    resource_column.where(~is_tonic_resolution, "tonic resolution", inplace=True)
+    return resource_column
+
+
+def make_timeline_data(root_roman_or_its_dominant):
+    timeline_data = pd.concat(
+        [
+            root_roman_or_its_dominant,
+            root_roman_or_its_dominant.groupby(
+                "phrase_id", group_keys=False, sort=False
+            ).duration_qb.apply(utils.make_start_finish),
+            ms3.transform(
+                root_roman_or_its_dominant,
+                ms3.roman_numeral2fifths,
+                ["effective_localkey_resolved", "globalkey_is_minor"],
+            ).rename("effective_local_tonic_tpc"),
+            utils.make_dominant_selector(root_roman_or_its_dominant).rename(
+                "is_dominant"
+            ),
+        ],
+        axis=1,
+    )
+    exploded_chord_tones = root_roman_or_its_dominant.chord_tone_tpcs.explode()
+    exploded_chord_tones = pd.DataFrame(
+        dict(
+            chord_tone_tpc=exploded_chord_tones,
+            Task=ms3.transform(exploded_chord_tones, ms3.fifths2name),
+        ),
+        index=exploded_chord_tones.index,
+    )
+    timeline_data = pd.merge(
+        timeline_data, exploded_chord_tones, left_index=True, right_index=True
+    )
+    timeline_data = pd.concat(
+        [timeline_data, make_resource_column(timeline_data)], axis=1
+    )
+    return timeline_data
+
+
+timeline_data = make_timeline_data(root_roman_or_its_dominant)
+timeline_data.head(100)
+```
+
+```{code-cell}
+
 ```

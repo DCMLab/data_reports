@@ -111,6 +111,7 @@ criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 
 ```{code-cell}
 
+
 def group_operation(group_df):
     return utils._compute_smallest_fifth_ranges(
         group_df.lowest_tpc.values, group_df.tpc_width.values
@@ -262,21 +263,13 @@ DEGREE2COLOR = {
 }
 
 
-def _make_start_finish(phrase_df):
-    starts = (-phrase_df.duration_qb.cumsum()).rename(
-        "Start"
-    )  # .astype("datetime64[s]")
-    ends = starts.shift().fillna(1).rename("Finish")  # .astype("datetime64[s]")
-    return pd.DataFrame({"Start": starts, "Finish": ends})
-
-
 def make_timeline_data(chord_tones):
     timeline_data = pd.concat(
         [
             chord_tones,
-            chord_tones.groupby("phrase_id", group_keys=False, sort=False).apply(
-                _make_start_finish
-            ),
+            chord_tones.groupby(
+                "phrase_id", group_keys=False, sort=False
+            ).duration_qb.apply(utils.make_start_finish),
             _make_diatonics_criterion(chord_tones).rename(
                 columns=dict(
                     lowest_tpc="diatonics_lowest_tpc", tpc_width="diatonics_tpc_width"
@@ -321,6 +314,7 @@ timeline_data.head()
 ```
 
 ```{code-cell}
+
 
 def make_rectangle_shape(group_df, y_min):
     result = dict(

@@ -245,21 +245,13 @@ DEGREE2COLOR = {
 }
 
 
-def _make_start_finish(phrase_df):
-    starts = (-phrase_df.duration_qb.cumsum()).rename(
-        "Start"
-    )  # .astype("datetime64[s]")
-    ends = starts.shift().fillna(1).rename("Finish")  # .astype("datetime64[s]")
-    return pd.DataFrame({"Start": starts, "Finish": ends})
-
-
 def make_timeline_data(chord_tones):
     timeline_data = pd.concat(
         [
             chord_tones,
-            chord_tones.groupby("phrase_id", group_keys=False, sort=False).apply(
-                _make_start_finish
-            ),
+            chord_tones.groupby(
+                "phrase_id", group_keys=False, sort=False
+            ).duration_qb.apply(utils.make_start_finish),
             _make_diatonics_criterion(chord_tones).rename(
                 columns=dict(
                     lowest_tpc="diatonics_lowest_tpc", tpc_width="diatonics_tpc_width"

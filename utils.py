@@ -2123,3 +2123,15 @@ def get_phrase_chord_tones(
 
 
 # endregion phrase stage helpers
+# region phrase Gantt helpers
+def make_start_finish(duration_qb: pd.Series) -> pd.DataFrame:
+    """Turns a duration_qb column into a dataframe with a Start and Finish column for use in a Gantt chart.
+    The timestamps are negative quarterbeats leading up to 0, which is the end of the phrase. The ultima, which has
+    duration 0 because its duration is part of the codetta, is assigned a duration of 1 for plotting.
+    """
+    starts = (-duration_qb.cumsum()).rename("Start")  # .astype("datetime64[s]")
+    ends = starts.shift().fillna(1).rename("Finish")  # .astype("datetime64[s]")
+    return pd.DataFrame({"Start": starts, "Finish": ends})
+
+
+# endregion phrase Gantt helpers
