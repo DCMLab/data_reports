@@ -293,36 +293,7 @@ def make_timeline_data(chord_tones):
 timeline_data = make_timeline_data(chord_tones)
 timeline_data.head()
 
-
 # %%
-
-
-def make_rectangle_shape(group_df, y_min):
-    result = dict(
-        type="rect",
-        x0=group_df.Start.min(),
-        x1=group_df.Finish.max(),
-        fillcolor="LightSalmon",
-        opacity=0.5,
-        line_width=0,
-        layer="below",
-    )
-    first_row = group_df.iloc[0]
-    lowest_tpc = first_row.diatonics_lowest_tpc
-    tpc_width = first_row.diatonics_tpc_width
-    highest_tpc = lowest_tpc + tpc_width
-    result["y0"] = lowest_tpc - y_min - 0.5
-    result["y1"] = highest_tpc - y_min + 0.5
-    diatonic = ms3.fifths2name(highest_tpc - 5)
-    try:
-        text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
-        result["label"] = dict(
-            text=text,
-            textposition="top left",
-        )
-    except AttributeError:
-        raise
-    return result
 
 
 def make_diatonics_rectangles(phrase_timeline_data):
@@ -331,9 +302,17 @@ def make_diatonics_rectangles(phrase_timeline_data):
         phrase_timeline_data[["diatonics_lowest_tpc", "diatonics_tpc_width"]]
     )
     rectangle_grouper, _ = make_adjacency_groups(diatonics)
-    min_y = phrase_timeline_data.chord_tone_tpc.min()
+    y_min = phrase_timeline_data.chord_tone_tpc.min()
     for group, group_df in phrase_timeline_data.groupby(rectangle_grouper):
-        shapes.append(make_rectangle_shape(group_df, y_min=min_y))
+        first_row = group_df.iloc[0]
+        lowest_tpc = first_row.diatonics_lowest_tpc
+        tpc_width = first_row.diatonics_tpc_width
+        highest_tpc = lowest_tpc + tpc_width
+        y0 = lowest_tpc - y_min - 0.5
+        y1 = highest_tpc - y_min + 0.5
+        diatonic = ms3.fifths2name(highest_tpc - 5)
+        text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
+        shapes.append(utils.make_rectangle_shape(group_df, y0=y0, y1=y1, text=text))
     return shapes
 
 
@@ -346,13 +325,19 @@ colorscale = DEGREE2COLOR
 phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
 
 # %%
-fig = utils.plot_phrase(phrase_timeline_data, colorscale=colorscale)
-utils.plot_phrase(
+fig = utils.plot_phrase(
     phrase_timeline_data,
     colorscale=colorscale,
     shapes=make_diatonics_rectangles(phrase_timeline_data),
+)
+utils.plot_phrase(
+    phrase_timeline_data,
+    colorscale=colorscale,
 ).show()
 fig
+
+# %%
+write_image(fig, make_output_path("sample"))
 
 # %%
 fig.add_shape(

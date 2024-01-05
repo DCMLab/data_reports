@@ -34,6 +34,7 @@ import numpy as np
 import pandas as pd
 from dimcat import resources
 from dimcat.data.resources.utils import (
+    make_adjacency_groups,
     make_group_start_mask,
     merge_columns_into_one,
     subselect_multiindex_from_df,
@@ -153,6 +154,8 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
     numeral_type_effective_key = utils.get_phrase_chord_tones(
         phrase_annotations,
         additional_columns=[
+            "localkey_resolved",
+            "localkey_is_minor",
             "effective_localkey_resolved",
             "effective_localkey_is_minor",
             "numeral",
@@ -160,6 +163,14 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
             "chord_type",
         ],
     )
+    localkey_tonic = ms3.transform(
+        numeral_type_effective_key,
+        ms3.roman_numeral2fifths,
+        ["localkey_resolved", "globalkey_is_minor"],
+    )
+    localkey_tonic_tpc = localkey_tonic.add(
+        ms3.transform(numeral_type_effective_key.globalkey, ms3.name2fifths)
+    ).rename("localkey_tonic_tpc")
     dominant_selector = utils.make_dominant_selector(numeral_type_effective_key)
     expected_root = ms3.transform(
         numeral_type_effective_key,
@@ -167,20 +178,25 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
         ["effective_localkey", "globalkey_is_minor"],
     ).rename("expected_root")
     expected_root = expected_root.where(dominant_selector).astype("Int64")
-    effective_numeral_df = pd.concat(
-        [
-            ms3.transform(
-                numeral_type_effective_key,
-                ms3.rel2abs_key,
-                ["numeral", "effective_localkey", "effective_localkey_is_minor"],
-            ).rename("effective_numeral"),
-            numeral_type_effective_key.globalkey_is_minor,
-        ],
-        axis=1,
+    effective_numeral = (
+        ms3.transform(
+            numeral_type_effective_key,
+            ms3.rel2abs_key,
+            ["numeral", "effective_localkey_resolved", "globalkey_is_minor"],
+        )
+        .astype("string")
+        .rename("effective_numeral")
     )
+
     subsequent_root = (
         ms3.transform(
-            effective_numeral_df,
+            pd.concat(
+                [
+                    effective_numeral,
+                    numeral_type_effective_key.globalkey_is_minor,
+                ],
+                axis=1,
+            ),
             ms3.roman_numeral2fifths,
         )
         .shift()
@@ -213,7 +229,9 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
         numeral_type_effective_key,
         pd.concat(
             [
+                localkey_tonic_tpc,
                 numeral_type_effective_key,
+                effective_numeral,
                 expected_root,
                 subsequent_root,
                 subsequent_root_roman,
@@ -247,19 +265,54 @@ utils._compare_criteria_entropies(
 )
 
 
-# %%
-def make_simple_resource_column(timeline_data):
+# %% jupyter={"outputs_hidden": false}
+def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root.notna()
     group_levels = is_dominant.index.names[:-1]
     stage_has_dominant = is_dominant.groupby(group_levels).any()
     is_tonic_resolution = ~is_dominant & stage_has_dominant.reindex(timeline_data.index)
-    resource_column = pd.Series("other", index=timeline_data.index, name="Resource")
+    resource_column = pd.Series("other", index=timeline_data.index, name=name)
     resource_column.where(~is_dominant, "dominant", inplace=True)
     resource_column.where(~is_tonic_resolution, "tonic resolution", inplace=True)
     return resource_column
 
 
-def make_timeline_data(root_roman_or_its_dominant):
+def make_detailed_resource_column(timeline_data, name="Resource"):
+    V_is_root = timeline_data.numeral.eq("V")
+    is_dominant_triad = V_is_root & timeline_data.chord_type.eq("M")
+    is_dominant_seventh = V_is_root & timeline_data.chord_type.eq("Mm7")
+    in_minor = timeline_data.effective_localkey_is_minor
+    leading_tone_is_root = (timeline_data.numeral.eq("#vii") & in_minor) | (
+        timeline_data.numeral.eq("vii") & ~in_minor
+    )
+    is_dim = leading_tone_is_root & timeline_data.chord_type.eq("o")
+    is_dim7 = leading_tone_is_root & timeline_data.chord_type.eq("o7")
+    if_halfdim7 = timeline_data.chord_type.eq("%7")
+    is_dominant = timeline_data.expected_root.notna()
+    group_levels = is_dominant.index.names[:-1]
+    stage_has_dominant = is_dominant.groupby(group_levels).any()
+    is_tonic_resolution = ~is_dominant & stage_has_dominant.reindex(timeline_data.index)
+    is_minor_resolution = timeline_data.effective_numeral.str.islower()
+    resource_column = pd.Series("other", index=timeline_data.index, name=name)
+    resource_column.where(~is_dominant_triad, "D", inplace=True)
+    resource_column.where(~is_dim, "rootless D7", inplace=True)
+    resource_column.where(~is_dominant_seventh, "D7", inplace=True)
+    resource_column.where(~if_halfdim7, "rootless D79", inplace=True)
+    resource_column.where(~is_dim7, "rootless D7b9", inplace=True)
+    resource_column.where(
+        ~(is_tonic_resolution & is_minor_resolution),
+        "minor tonic resolution",
+        inplace=True,
+    )
+    resource_column.where(
+        ~(is_tonic_resolution & ~is_minor_resolution),
+        "major tonic resolution",
+        inplace=True,
+    )
+    return resource_column
+
+
+def make_timeline_data(root_roman_or_its_dominant, detailed=False):
     timeline_data = pd.concat(
         [
             root_roman_or_its_dominant,
@@ -285,42 +338,171 @@ def make_timeline_data(root_roman_or_its_dominant):
     timeline_data = pd.merge(
         timeline_data, exploded_chord_tones, left_index=True, right_index=True
     )
+    if detailed:
+        resource_col = make_detailed_resource_column(timeline_data)
+        function_col = make_simple_resource_column(
+            timeline_data, name="simple_function"
+        )
+    else:
+        resource_col = make_simple_resource_column(timeline_data)
+        function_col = make_detailed_resource_column(
+            timeline_data, name="detailed_function"
+        )
     timeline_data = pd.concat(
-        [timeline_data, make_simple_resource_column(timeline_data)], axis=1
+        [
+            timeline_data,
+            function_col,
+            resource_col,
+        ],
+        axis=1,
     ).rename(columns=dict(chord="Description"))
     return timeline_data
 
 
-# %%
-timeline_data = make_timeline_data(root_roman_or_its_dominant)
+# %% jupyter={"outputs_hidden": false}
+DETAILED_FUNCTIONS = True
+timeline_data = make_timeline_data(
+    root_roman_or_its_dominant, detailed=DETAILED_FUNCTIONS
+)
 timeline_data.head(50)
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_phrases = max(timeline_data.index.levels[2])
-color_shade = 500
-colorscale = {
-    resource: utils.TailwindColorsHex.get_color(color_name, color_shade)
-    for resource, color_name in zip(
-        ("dominant", "tonic resolution", "other"), ("red", "blue", "gray")
+
+
+def make_function_colors(detailed=False):
+    if detailed:
+        colorscale = {
+            resource: utils.TailwindColorsHex.get_color(color_name)
+            for resource, color_name in [
+                ("other", "GRAY_500"),
+                ("D", "RED_400"),
+                ("rootless D7", "RED_500"),
+                ("D7", "RED_600"),
+                ("rootless D79", "RED_700"),
+                ("rootless D7b9", "RED_900"),
+                ("minor tonic resolution", "PURPLE_700"),
+                ("major tonic resolution", "SKY_500"),
+            ]
+        }
+    else:
+        color_shade = 500
+        colorscale = {
+            resource: utils.TailwindColorsHex.get_color(color_name, color_shade)
+            for resource, color_name in zip(
+                ("dominant", "tonic resolution", "other"), ("red", "blue", "gray")
+            )
+        }
+    return colorscale
+
+
+def make_tonic_line(y_root, x0, x1):
+    return dict(
+        type="line",
+        x0=x0,
+        x1=x1,
+        y0=y_root,
+        y1=y_root,
+        line_width=1,
+        line_dash="dash",
     )
-}
 
-# %%
-phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
 
-# %%
+def make_major_shapes(y_root, x0, x1, text):
+    result = []
+    y0_maj = y_root - 1.5
+    y1_maj = y_root + 5.5
+    result.append(
+        utils.make_rectangle_shape(
+            x0=x0, x1=x1, y0=y0_maj, y1=y1_maj, text=text, legendgroup="localkey"
+        )
+    )
+    result.append(make_tonic_line(y_root, x0, x1))
+    if y_root > 1:
+        y1_min = y0_maj
+        y0_min = max(-0.5, y1_min - 3)
+        result.append(
+            utils.make_rectangle_shape(
+                x0=x0,
+                x1=x1,
+                y0=y0_min,
+                y1=y1_min,
+                text="parallel minor",
+                line_dash="dot",
+                legendgroup="localkey",
+            )
+        )
+    return result
+
+
+def make_minor_shapes(y_root, x0, x1, text):
+    result = []
+    y0_min = y_root - 4.5
+    y1_min = y_root + 2.5
+    result.append(
+        utils.make_rectangle_shape(
+            x0=x0, x1=x1, y0=y0_min, y1=y1_min, text=text, legendgroup="localkey"
+        )
+    )
+    result.append(make_tonic_line(y_root, x0, x1))
+    y0_maj = y1_min
+    y1_maj = y0_maj + 3
+    result.append(
+        utils.make_rectangle_shape(
+            x0=x0,
+            x1=x1,
+            y0=y0_maj,
+            y1=y1_maj,
+            text="parallel major",
+            line_dash="dot",
+            legendgroup="localkey",
+        )
+    )
+    return result
+
+
+def make_localkey_rectangles(phrase_timeline_data):
+    shapes = []
+    rectangle_grouper, _ = make_adjacency_groups(phrase_timeline_data.localkey)
+    y_min = phrase_timeline_data.chord_tone_tpc.min()
+    for group, group_df in phrase_timeline_data.groupby(rectangle_grouper):
+        x0, x1 = group_df.Start.min(), group_df.Finish.max()
+        first_row = group_df.iloc[0]
+        y_root = first_row.localkey_tonic_tpc - y_min
+        text = first_row.localkey
+        if first_row.localkey_is_minor:
+            localkey_shapes = make_minor_shapes(y_root, x0=x0, x1=x1, text=text)
+        else:
+            localkey_shapes = make_major_shapes(y_root, x0=x0, x1=x1, text=text)
+        shapes.extend(localkey_shapes)
+    shapes[0].update(dict(showlegend=True, name="local key"))
+    shapes[1].update(dict(showlegend=True, name="local tonic"))
+    return shapes
+
+
+colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
+
+# %% jupyter={"outputs_hidden": false}
+phrase_timeline_data = timeline_data.query(
+    f"phrase_id == {choice(range(n_phrases))}"
+)  # 5932")
+
+# %% jupyter={"outputs_hidden": false}
 fig = utils.plot_phrase(
     phrase_timeline_data,
     colorscale=colorscale,
-    # shapes=make_diatonics_rectangles(phrase_timeline_data)
+    shapes=make_localkey_rectangles(phrase_timeline_data),
 )
 fig
 
 # %%
 phrase_timeline_data
 
-
 # %%
+make_localkey_rectangles(phrase_timeline_data)
+
+
+# %% jupyter={"outputs_hidden": false}
 def subselect_dominant_stages(timeline_data):
     """Returns a copy where all remaining stages contain at least one dominant."""
     dominant_stage_mask = (
@@ -336,15 +518,15 @@ def subselect_dominant_stages(timeline_data):
 all_dominant_stages = subselect_dominant_stages(timeline_data)
 all_dominant_stages
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 gpb = all_dominant_stages.groupby(level=[0, 1, 2, 3])
 expected_roots = gpb.expected_root.nunique()
 expected_roots[expected_roots.gt(1)]
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 unique_resource_vals = gpb.Resource.unique()
 unique_resource_vals.head()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_root_roman = gpb.root_roman_or_its_dominant.nunique()
 n_root_roman[n_root_roman.gt(1)]

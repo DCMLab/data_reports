@@ -19,7 +19,7 @@ ToDo
 * n01op18-1_01, phrase_id 4, viio/vi => #viio/
 * 07-1, phrase_id 2415, vi/V in D would be f# but this is clearly in a. It is a minor key, so bVI should be VI
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -57,7 +57,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "phrases"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -74,7 +74,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = resolve_dir(
@@ -90,12 +90,12 @@ chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 phrase_annotations: resources.PhraseAnnotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 CRITERIA = dict(
     chord_reduced_and_localkey=["chord_reduced", "localkey"],
     chord_reduced_and_mode=["chord_reduced_and_mode"],
@@ -108,7 +108,7 @@ CRITERIA = dict(
 criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 
 def group_operation(group_df):
@@ -143,7 +143,7 @@ def make_diatonics_criterion(
     return result.rename("diatonics")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 numeral_type_effective_key = phrase_annotations.get_phrase_data(
     reverse=True,
     columns=[
@@ -174,48 +174,48 @@ criterion2stages[
 effective_numeral_or_its_dominant.head(100)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chord_tones = utils.get_phrase_chord_tones(phrase_annotations)
 chord_tones.head()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chord_tones.tpc_width.value_counts()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 diatonics_criterion = make_diatonics_criterion(chord_tones)
 diatonics_stages = chord_tones.regroup_phrases(diatonics_criterion)
 criterion2stages["diatonics"] = diatonics_stages
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.compare_criteria_metrics(criterion2stages, height=1000)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils._compare_criteria_stage_durations(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils._compare_criteria_phrase_lengths(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils._compare_criteria_entropies(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 diatonics_stages
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 LT_DISTANCE2SCALE_DEGREE = {
     0: "7 (#7)",
     1: "3 (#3)",
@@ -307,40 +307,12 @@ def make_timeline_data(chord_tones):
     return timeline_data
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 timeline_data = make_timeline_data(chord_tones)
 timeline_data.head()
 ```
 
-```{code-cell}
-
-
-def make_rectangle_shape(group_df, y_min):
-    result = dict(
-        type="rect",
-        x0=group_df.Start.min(),
-        x1=group_df.Finish.max(),
-        fillcolor="LightSalmon",
-        opacity=0.5,
-        line_width=0,
-        layer="below",
-    )
-    first_row = group_df.iloc[0]
-    lowest_tpc = first_row.diatonics_lowest_tpc
-    tpc_width = first_row.diatonics_tpc_width
-    highest_tpc = lowest_tpc + tpc_width
-    result["y0"] = lowest_tpc - y_min - 0.5
-    result["y1"] = highest_tpc - y_min + 0.5
-    diatonic = ms3.fifths2name(highest_tpc - 5)
-    try:
-        text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
-        result["label"] = dict(
-            text=text,
-            textposition="top left",
-        )
-    except AttributeError:
-        raise
-    return result
+```{code-cell} ipython3
 
 
 def make_diatonics_rectangles(phrase_timeline_data):
@@ -349,33 +321,48 @@ def make_diatonics_rectangles(phrase_timeline_data):
         phrase_timeline_data[["diatonics_lowest_tpc", "diatonics_tpc_width"]]
     )
     rectangle_grouper, _ = make_adjacency_groups(diatonics)
-    min_y = phrase_timeline_data.chord_tone_tpc.min()
+    y_min = phrase_timeline_data.chord_tone_tpc.min()
     for group, group_df in phrase_timeline_data.groupby(rectangle_grouper):
-        shapes.append(make_rectangle_shape(group_df, y_min=min_y))
+        first_row = group_df.iloc[0]
+        lowest_tpc = first_row.diatonics_lowest_tpc
+        tpc_width = first_row.diatonics_tpc_width
+        highest_tpc = lowest_tpc + tpc_width
+        y0 = lowest_tpc - y_min - 0.5
+        y1 = highest_tpc - y_min + 0.5
+        diatonic = ms3.fifths2name(highest_tpc - 5)
+        text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
+        shapes.append(utils.make_rectangle_shape(group_df, y0=y0, y1=y1, text=text))
     return shapes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 n_phrases = max(timeline_data.index.levels[2])
 # {degree: utils.TailwindColorsHex.get_color(DEGREE2COLOR[degree]) for degree in phrase_timeline_data.Resource.unique()}
 colorscale = DEGREE2COLOR
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
 ```
 
-```{code-cell}
-fig = utils.plot_phrase(phrase_timeline_data, colorscale=colorscale)
-utils.plot_phrase(
+```{code-cell} ipython3
+fig = utils.plot_phrase(
     phrase_timeline_data,
     colorscale=colorscale,
     shapes=make_diatonics_rectangles(phrase_timeline_data),
+)
+utils.plot_phrase(
+    phrase_timeline_data,
+    colorscale=colorscale,
 ).show()
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+write_image(fig, make_output_path("sample"))
+```
+
+```{code-cell} ipython3
 fig.add_shape(
     type="rect",
     line_width=2,
@@ -393,7 +380,7 @@ fig.add_shape(
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.timeline(
     phrase_timeline_data,
     x_start="Start",
@@ -411,7 +398,7 @@ fig
 
 ### Demo values
 
-```{code-cell}
+```{code-cell} ipython3
 for criterion, stages in criterion2stages.items():
     print_heading(criterion)
     values = stages.df.query("phrase_id == 9773").iloc[:, 0].to_list()

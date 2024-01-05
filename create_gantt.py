@@ -169,7 +169,6 @@ def create_modulation_plan(
 def fill_yaxis_gaps(data: pd.DataFrame, task_column: str, **kwargs) -> pd.DataFrame:
     """Expects 'task_column' to be numerical and concatenates dummy rows for missing values."""
     mi, ma = data[task_column].min(), data[task_column].max()
-    mi = min((0, mi))  # fifths can be negative
     complete = set(range(mi, ma))
     missing = complete.difference(set(data[task_column]))
     dummy_dict = dict(Start=0, Finish=0, **kwargs)

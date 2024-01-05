@@ -5,6 +5,7 @@ import os
 import re
 from collections import Counter, defaultdict
 from functools import cache
+from numbers import Number
 from typing import Dict, Hashable, Iterable, Iterator, List, Literal, Optional, Tuple
 
 import colorlover
@@ -2109,6 +2110,8 @@ def get_phrase_chord_tones(
         column_extension = [c for c in additional_columns if c not in columns]
         add_relative_chord_tones = "chord_tones" in column_extension
         columns.extend(column_extension)
+    else:
+        add_relative_chord_tones = False
     chord_tones = phrase_annotations.get_phrase_data(
         reverse=True,
         columns=columns,
@@ -2140,7 +2143,6 @@ def make_start_finish(duration_qb: pd.Series) -> pd.DataFrame:
     return pd.DataFrame({"Start": starts, "Finish": ends})
 
 
-# endregion phrase Gantt helpers
 def plot_phrase(
     phrase_timeline_data,
     colorscale=None,
@@ -2154,15 +2156,41 @@ def plot_phrase(
     if phrase_timeline_data.Task.isna().any():
         names = ms3.transform(phrase_timeline_data.chord_tone_tpc, ms3.fifths2name)
         phrase_timeline_data.Task.fillna(names, inplace=True)
-    # return phrase_timeline_data
     corpus, piece, phrase_id, *_ = phrase_timeline_data.index[0]
-    title = f"Phrase {phrase_id} from {corpus}/{piece}"
+    globalkey = phrase_timeline_data.globalkey.iat[0]
+    title = f"Phrase {phrase_id} from {corpus}/{piece} ({globalkey})"
     kwargs = dict(title=title, colors=colorscale)
     if shapes:
         kwargs["shapes"] = shapes
     fig = create_gantt(
         phrase_timeline_data.sort_values("chord_tone_tpc", ascending=False), **kwargs
     )
-    fig.update_layout(hovermode="x", legend_traceorder="grouped")
+    # fig.update_layout(hovermode="x", legend_traceorder="grouped")
     # fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
     return fig
+
+
+def make_rectangle_shape(
+    x0: Number,
+    x1: Number,
+    y0: Number,
+    y1: Number,
+    text: Optional[str] = None,
+    textposition: str = "top left",
+    layer: Literal["below", "above"] = "above",
+    **kwargs,
+) -> dict:
+    result = dict(type="rect", x0=x0, x1=x1, y0=y0, y1=y1, layer=layer, **kwargs)
+    if text:
+        label = dict(
+            text=f"<b>{text}</b>",
+            textposition=textposition,
+        )
+        if "label" in result:
+            result["label"].update(label)
+        else:
+            result["label"] = label
+    return result
+
+
+# endregion phrase Gantt helpers
