@@ -143,6 +143,7 @@ shade_: TypeAlias = Literal[50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950
 
 
 class TailwindColors:
+    """Color palette: look for tailwindcss_v3.3.3(.png|.svg)"""
     @classmethod
     def get_color(
         cls, name: TailwindColorNames | str, shade: Optional[shade_] = None
@@ -192,7 +193,7 @@ class TailwindColorsHex(TailwindColors):
     Copied from https://github.com/dostuffthatmatters/python-tailwind-colors/blob/
     3c1ac2359e3ae753875e06e68f5072586a0ae399/tailwind_colors/__init__.py
 
-    Color palette: https://www.amcrou.ch/images/2021-01/2021-01-05-tailwind-colors.webp
+    Color palette: look for tailwindcss_v3.3.3(.png|.svg)
 
     ```python
     print(TAILWIND_COLORS.AMBER_600)
@@ -471,7 +472,7 @@ class TailwindColorsRgb(TailwindColors):
     Copied from https://github.com/dostuffthatmatters/python-tailwind-colors/blob/
     3c1ac2359e3ae753875e06e68f5072586a0ae399/tailwind_colors/__init__.py
 
-    Color palette: https://www.amcrou.ch/images/2021-01/2021-01-05-tailwind-colors.webp
+    Color palette: look for tailwindcss_v3.3.3(.png|.svg)
 
     ```python
     print(TAILWIND_COLORS_RGB.AMBER_600)

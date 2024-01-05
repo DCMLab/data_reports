@@ -1,0 +1,1892 @@
+<svg width="938" height="2502" viewBox="0 0 938 2502" fill="none" xmlns="http://www.w3.org/2000/svg">
+<g id="colors v3.3.3">
+<rect width="938" height="2502" fill="white"/>
+<g id="_system/color-group">
+<g id="name">
+<text id="base" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="63.2344">Base</tspan></text>
+</g>
+<g id="colors">
+<g id="_system/color">
+<rect id="color" x="172" y="48" width="58" height="40" rx="4" fill="black"/>
+<g id="value">
+<text id="Name" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="105.266">Black</tspan></text>
+<text id="#HEX" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="119.266">#000000</tspan></text>
+</g>
+</g>
+<g id="_system/color_2">
+<g id="color_2" filter="url(#filter0_dd_537_3)">
+<rect x="238" y="48" width="58" height="40" rx="4" fill="white"/>
+</g>
+<g id="value_2">
+<text id="Name_2" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="105.266">White</tspan></text>
+<text id="#HEX_2" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="119.266">#ffffff</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_2">
+<g id="name_2">
+<text id="base_2" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="169.234">Slate</tspan></text>
+</g>
+<g id="colors_2">
+<g id="_system/color_3">
+<rect id="color_3" x="172" y="154" width="58" height="40" rx="4" fill="#F8FAFC"/>
+<g id="value_3">
+<text id="Name_3" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="211.266">50</tspan></text>
+<text id="#HEX_3" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="225.266">#f8fafc</tspan></text>
+</g>
+</g>
+<g id="_system/color_4">
+<rect id="color_4" x="238" y="154" width="58" height="40" rx="4" fill="#F1F5F9"/>
+<g id="value_4">
+<text id="Name_4" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="211.266">100</tspan></text>
+<text id="#HEX_4" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="225.266">#f1f5f9</tspan></text>
+</g>
+</g>
+<g id="_system/color_5">
+<rect id="color_5" x="304" y="154" width="58" height="40" rx="4" fill="#E2E8F0"/>
+<g id="value_5">
+<text id="Name_5" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="211.266">200</tspan></text>
+<text id="#HEX_5" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="225.266">#e2e8f0</tspan></text>
+</g>
+</g>
+<g id="_system/color_6">
+<rect id="color_6" x="370" y="154" width="58" height="40" rx="4" fill="#CBD5E1"/>
+<g id="value_6">
+<text id="Name_6" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="211.266">300</tspan></text>
+<text id="#HEX_6" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="225.266">#cbd5e1</tspan></text>
+</g>
+</g>
+<g id="_system/color_7">
+<rect id="color_7" x="436" y="154" width="58" height="40" rx="4" fill="#94A3B8"/>
+<g id="value_7">
+<text id="Name_7" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="211.266">400</tspan></text>
+<text id="#HEX_7" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="225.266">#94a3b8</tspan></text>
+</g>
+</g>
+<g id="_system/color_8">
+<rect id="color_8" x="502" y="154" width="58" height="40" rx="4" fill="#64748B"/>
+<g id="value_8">
+<text id="Name_8" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="211.266">500</tspan></text>
+<text id="#HEX_8" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="225.266">#64748b</tspan></text>
+</g>
+</g>
+<g id="_system/color_9">
+<rect id="color_9" x="568" y="154" width="58" height="40" rx="4" fill="#475569"/>
+<g id="value_9">
+<text id="Name_9" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="211.266">600</tspan></text>
+<text id="#HEX_9" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="225.266">#475569</tspan></text>
+</g>
+</g>
+<g id="_system/color_10">
+<rect id="color_10" x="634" y="154" width="58" height="40" rx="4" fill="#334155"/>
+<g id="value_10">
+<text id="Name_10" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="211.266">700</tspan></text>
+<text id="#HEX_10" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="225.266">#334155</tspan></text>
+</g>
+</g>
+<g id="_system/color_11">
+<rect id="color_11" x="700" y="154" width="58" height="40" rx="4" fill="#1E293B"/>
+<g id="value_11">
+<text id="Name_11" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="211.266">800</tspan></text>
+<text id="#HEX_11" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="225.266">#1e293b</tspan></text>
+</g>
+</g>
+<g id="_system/color_12">
+<rect id="color_12" x="766" y="154" width="58" height="40" rx="4" fill="#0F172A"/>
+<g id="value_12">
+<text id="Name_12" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="211.266">900</tspan></text>
+<text id="#HEX_12" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="225.266">#0f172a</tspan></text>
+</g>
+</g>
+<g id="_system/color_13">
+<rect id="color_13" x="832" y="154" width="58" height="40" rx="4" fill="#020617"/>
+<g id="value_13">
+<text id="Name_13" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="211.266">950</tspan></text>
+<text id="#HEX_13" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="225.266">#020617</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_3">
+<g id="name_3">
+<text id="base_3" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="275.234">Gray</tspan></text>
+</g>
+<g id="colors_3">
+<g id="_system/color_14">
+<rect id="color_14" x="172" y="260" width="58" height="40" rx="4" fill="#F9FAFB"/>
+<g id="value_14">
+<text id="Name_14" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="317.266">50</tspan></text>
+<text id="#HEX_14" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="331.266">#f9fafb</tspan></text>
+</g>
+</g>
+<g id="_system/color_15">
+<rect id="color_15" x="238" y="260" width="58" height="40" rx="4" fill="#F3F4F6"/>
+<g id="value_15">
+<text id="Name_15" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="317.266">100</tspan></text>
+<text id="#HEX_15" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="331.266">#f3f4f6</tspan></text>
+</g>
+</g>
+<g id="_system/color_16">
+<rect id="color_16" x="304" y="260" width="58" height="40" rx="4" fill="#E5E7EB"/>
+<g id="value_16">
+<text id="Name_16" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="317.266">200</tspan></text>
+<text id="#HEX_16" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="331.266">#e5e7eb</tspan></text>
+</g>
+</g>
+<g id="_system/color_17">
+<rect id="color_17" x="370" y="260" width="58" height="40" rx="4" fill="#D1D5DB"/>
+<g id="value_17">
+<text id="Name_17" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="317.266">300</tspan></text>
+<text id="#HEX_17" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="331.266">#d1d5db</tspan></text>
+</g>
+</g>
+<g id="_system/color_18">
+<rect id="color_18" x="436" y="260" width="58" height="40" rx="4" fill="#9CA3AF"/>
+<g id="value_18">
+<text id="Name_18" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="317.266">400</tspan></text>
+<text id="#HEX_18" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="331.266">#9ca3af</tspan></text>
+</g>
+</g>
+<g id="_system/color_19">
+<rect id="color_19" x="502" y="260" width="58" height="40" rx="4" fill="#6B7280"/>
+<g id="value_19">
+<text id="Name_19" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="317.266">500</tspan></text>
+<text id="#HEX_19" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="331.266">#6b7280</tspan></text>
+</g>
+</g>
+<g id="_system/color_20">
+<rect id="color_20" x="568" y="260" width="58" height="40" rx="4" fill="#4B5563"/>
+<g id="value_20">
+<text id="Name_20" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="317.266">600</tspan></text>
+<text id="#HEX_20" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="331.266">#4b5563</tspan></text>
+</g>
+</g>
+<g id="_system/color_21">
+<rect id="color_21" x="634" y="260" width="58" height="40" rx="4" fill="#374151"/>
+<g id="value_21">
+<text id="Name_21" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="317.266">700</tspan></text>
+<text id="#HEX_21" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="331.266">#374151</tspan></text>
+</g>
+</g>
+<g id="_system/color_22">
+<rect id="color_22" x="700" y="260" width="58" height="40" rx="4" fill="#1F2937"/>
+<g id="value_22">
+<text id="Name_22" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="317.266">800</tspan></text>
+<text id="#HEX_22" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="331.266">#1f2937</tspan></text>
+</g>
+</g>
+<g id="_system/color_23">
+<rect id="color_23" x="766" y="260" width="58" height="40" rx="4" fill="#111827"/>
+<g id="value_23">
+<text id="Name_23" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="317.266">900</tspan></text>
+<text id="#HEX_23" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="331.266">#111827</tspan></text>
+</g>
+</g>
+<g id="_system/color_24">
+<rect id="color_24" x="832" y="260" width="58" height="40" rx="4" fill="#030712"/>
+<g id="value_24">
+<text id="Name_24" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="317.266">950</tspan></text>
+<text id="#HEX_24" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="331.266">#030712</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_4">
+<g id="name_4">
+<text id="base_4" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="381.234">Zinc</tspan></text>
+</g>
+<g id="colors_4">
+<g id="_system/color_25">
+<rect id="color_25" x="172" y="366" width="58" height="40" rx="4" fill="#FAFAFA"/>
+<g id="value_25">
+<text id="Name_25" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="423.266">50</tspan></text>
+<text id="#HEX_25" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="437.266">#fafafa</tspan></text>
+</g>
+</g>
+<g id="_system/color_26">
+<rect id="color_26" x="238" y="366" width="58" height="40" rx="4" fill="#F4F4F5"/>
+<g id="value_26">
+<text id="Name_26" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="423.266">100</tspan></text>
+<text id="#HEX_26" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="437.266">#f4f4f5</tspan></text>
+</g>
+</g>
+<g id="_system/color_27">
+<rect id="color_27" x="304" y="366" width="58" height="40" rx="4" fill="#E4E4E7"/>
+<g id="value_27">
+<text id="Name_27" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="423.266">200</tspan></text>
+<text id="#HEX_27" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="437.266">#e4e4e7</tspan></text>
+</g>
+</g>
+<g id="_system/color_28">
+<rect id="color_28" x="370" y="366" width="58" height="40" rx="4" fill="#D4D4D8"/>
+<g id="value_28">
+<text id="Name_28" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="423.266">300</tspan></text>
+<text id="#HEX_28" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="437.266">#d4d4d8</tspan></text>
+</g>
+</g>
+<g id="_system/color_29">
+<rect id="color_29" x="436" y="366" width="58" height="40" rx="4" fill="#A1A1AA"/>
+<g id="value_29">
+<text id="Name_29" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="423.266">400</tspan></text>
+<text id="#HEX_29" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="437.266">#a1a1aa</tspan></text>
+</g>
+</g>
+<g id="_system/color_30">
+<rect id="color_30" x="502" y="366" width="58" height="40" rx="4" fill="#71717A"/>
+<g id="value_30">
+<text id="Name_30" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="423.266">500</tspan></text>
+<text id="#HEX_30" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="437.266">#71717a</tspan></text>
+</g>
+</g>
+<g id="_system/color_31">
+<rect id="color_31" x="568" y="366" width="58" height="40" rx="4" fill="#52525B"/>
+<g id="value_31">
+<text id="Name_31" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="423.266">600</tspan></text>
+<text id="#HEX_31" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="437.266">#52525b</tspan></text>
+</g>
+</g>
+<g id="_system/color_32">
+<rect id="color_32" x="634" y="366" width="58" height="40" rx="4" fill="#3F3F46"/>
+<g id="value_32">
+<text id="Name_32" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="423.266">700</tspan></text>
+<text id="#HEX_32" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="437.266">#3f3f46</tspan></text>
+</g>
+</g>
+<g id="_system/color_33">
+<rect id="color_33" x="700" y="366" width="58" height="40" rx="4" fill="#27272A"/>
+<g id="value_33">
+<text id="Name_33" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="423.266">800</tspan></text>
+<text id="#HEX_33" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="437.266">#27272a</tspan></text>
+</g>
+</g>
+<g id="_system/color_34">
+<rect id="color_34" x="766" y="366" width="58" height="40" rx="4" fill="#18181B"/>
+<g id="value_34">
+<text id="Name_34" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="423.266">900</tspan></text>
+<text id="#HEX_34" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="437.266">#18181b</tspan></text>
+</g>
+</g>
+<g id="_system/color_35">
+<rect id="color_35" x="832" y="366" width="58" height="40" rx="4" fill="#09090B"/>
+<g id="value_35">
+<text id="Name_35" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="423.266">950</tspan></text>
+<text id="#HEX_35" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="437.266">#09090b</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_5">
+<g id="name_5">
+<text id="base_5" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="487.234">Neutral</tspan></text>
+</g>
+<g id="colors_5">
+<g id="_system/color_36">
+<rect id="color_36" x="172" y="472" width="58" height="40" rx="4" fill="#FAFAFA"/>
+<g id="value_36">
+<text id="Name_36" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="529.266">50</tspan></text>
+<text id="#HEX_36" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="543.266">#fafafa</tspan></text>
+</g>
+</g>
+<g id="_system/color_37">
+<rect id="color_37" x="238" y="472" width="58" height="40" rx="4" fill="#F5F5F5"/>
+<g id="value_37">
+<text id="Name_37" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="529.266">100</tspan></text>
+<text id="#HEX_37" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="543.266">#f5f5f5</tspan></text>
+</g>
+</g>
+<g id="_system/color_38">
+<rect id="color_38" x="304" y="472" width="58" height="40" rx="4" fill="#E5E5E5"/>
+<g id="value_38">
+<text id="Name_38" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="529.266">200</tspan></text>
+<text id="#HEX_38" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="543.266">#e5e5e5</tspan></text>
+</g>
+</g>
+<g id="_system/color_39">
+<rect id="color_39" x="370" y="472" width="58" height="40" rx="4" fill="#D4D4D4"/>
+<g id="value_39">
+<text id="Name_39" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="529.266">300</tspan></text>
+<text id="#HEX_39" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="543.266">#d4d4d4</tspan></text>
+</g>
+</g>
+<g id="_system/color_40">
+<rect id="color_40" x="436" y="472" width="58" height="40" rx="4" fill="#A3A3A3"/>
+<g id="value_40">
+<text id="Name_40" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="529.266">400</tspan></text>
+<text id="#HEX_40" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="543.266">#a3a3a3</tspan></text>
+</g>
+</g>
+<g id="_system/color_41">
+<rect id="color_41" x="502" y="472" width="58" height="40" rx="4" fill="#737373"/>
+<g id="value_41">
+<text id="Name_41" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="529.266">500</tspan></text>
+<text id="#HEX_41" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="543.266">#737373</tspan></text>
+</g>
+</g>
+<g id="_system/color_42">
+<rect id="color_42" x="568" y="472" width="58" height="40" rx="4" fill="#525252"/>
+<g id="value_42">
+<text id="Name_42" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="529.266">600</tspan></text>
+<text id="#HEX_42" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="543.266">#525252</tspan></text>
+</g>
+</g>
+<g id="_system/color_43">
+<rect id="color_43" x="634" y="472" width="58" height="40" rx="4" fill="#404040"/>
+<g id="value_43">
+<text id="Name_43" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="529.266">700</tspan></text>
+<text id="#HEX_43" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="543.266">#404040</tspan></text>
+</g>
+</g>
+<g id="_system/color_44">
+<rect id="color_44" x="700" y="472" width="58" height="40" rx="4" fill="#262626"/>
+<g id="value_44">
+<text id="Name_44" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="529.266">800</tspan></text>
+<text id="#HEX_44" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="543.266">#262626</tspan></text>
+</g>
+</g>
+<g id="_system/color_45">
+<rect id="color_45" x="766" y="472" width="58" height="40" rx="4" fill="#171717"/>
+<g id="value_45">
+<text id="Name_45" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="529.266">900</tspan></text>
+<text id="#HEX_45" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="543.266">#171717</tspan></text>
+</g>
+</g>
+<g id="_system/color_46">
+<rect id="color_46" x="832" y="472" width="58" height="40" rx="4" fill="#0A0A0A"/>
+<g id="value_46">
+<text id="Name_46" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="529.266">950</tspan></text>
+<text id="#HEX_46" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="543.266">#0a0a0a</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_6">
+<g id="name_6">
+<text id="base_6" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="593.234">Stone</tspan></text>
+</g>
+<g id="colors_6">
+<g id="_system/color_47">
+<rect id="color_47" x="172" y="578" width="58" height="40" rx="4" fill="#FAFAF9"/>
+<g id="value_47">
+<text id="Name_47" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="635.266">50</tspan></text>
+<text id="#HEX_47" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="649.266">#fafaf9</tspan></text>
+</g>
+</g>
+<g id="_system/color_48">
+<rect id="color_48" x="238" y="578" width="58" height="40" rx="4" fill="#F5F5F4"/>
+<g id="value_48">
+<text id="Name_48" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="635.266">100</tspan></text>
+<text id="#HEX_48" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="649.266">#f5f5f4</tspan></text>
+</g>
+</g>
+<g id="_system/color_49">
+<rect id="color_49" x="304" y="578" width="58" height="40" rx="4" fill="#E7E5E4"/>
+<g id="value_49">
+<text id="Name_49" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="635.266">200</tspan></text>
+<text id="#HEX_49" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="649.266">#e7e5e4</tspan></text>
+</g>
+</g>
+<g id="_system/color_50">
+<rect id="color_50" x="370" y="578" width="58" height="40" rx="4" fill="#D6D3D1"/>
+<g id="value_50">
+<text id="Name_50" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="635.266">300</tspan></text>
+<text id="#HEX_50" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="649.266">#d6d3d1</tspan></text>
+</g>
+</g>
+<g id="_system/color_51">
+<rect id="color_51" x="436" y="578" width="58" height="40" rx="4" fill="#A8A29E"/>
+<g id="value_51">
+<text id="Name_51" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="635.266">400</tspan></text>
+<text id="#HEX_51" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="649.266">#a8a29e</tspan></text>
+</g>
+</g>
+<g id="_system/color_52">
+<rect id="color_52" x="502" y="578" width="58" height="40" rx="4" fill="#78716C"/>
+<g id="value_52">
+<text id="Name_52" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="635.266">500</tspan></text>
+<text id="#HEX_52" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="649.266">#78716c</tspan></text>
+</g>
+</g>
+<g id="_system/color_53">
+<rect id="color_53" x="568" y="578" width="58" height="40" rx="4" fill="#57534E"/>
+<g id="value_53">
+<text id="Name_53" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="635.266">600</tspan></text>
+<text id="#HEX_53" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="649.266">#57534e</tspan></text>
+</g>
+</g>
+<g id="_system/color_54">
+<rect id="color_54" x="634" y="578" width="58" height="40" rx="4" fill="#44403C"/>
+<g id="value_54">
+<text id="Name_54" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="635.266">700</tspan></text>
+<text id="#HEX_54" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="649.266">#44403c</tspan></text>
+</g>
+</g>
+<g id="_system/color_55">
+<rect id="color_55" x="700" y="578" width="58" height="40" rx="4" fill="#292524"/>
+<g id="value_55">
+<text id="Name_55" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="635.266">800</tspan></text>
+<text id="#HEX_55" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="649.266">#292524</tspan></text>
+</g>
+</g>
+<g id="_system/color_56">
+<rect id="color_56" x="766" y="578" width="58" height="40" rx="4" fill="#1C1917"/>
+<g id="value_56">
+<text id="Name_56" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="635.266">900</tspan></text>
+<text id="#HEX_56" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="649.266">#1c1917</tspan></text>
+</g>
+</g>
+<g id="_system/color_57">
+<rect id="color_57" x="832" y="578" width="58" height="40" rx="4" fill="#0C0A09"/>
+<g id="value_57">
+<text id="Name_57" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="635.266">950</tspan></text>
+<text id="#HEX_57" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="649.266">#0c0a09</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_7">
+<g id="name_7">
+<text id="base_7" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="699.5">Red</tspan></text>
+</g>
+<g id="colors_7">
+<g id="_system/color_58">
+<rect id="color_58" x="172" y="684" width="58" height="40" rx="4" fill="#FEF2F2"/>
+<g id="value_58">
+<text id="Name_58" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="741.266">50</tspan></text>
+<text id="#HEX_58" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="755.266">#fef2f2</tspan></text>
+</g>
+</g>
+<g id="_system/color_59">
+<rect id="color_59" x="238" y="684" width="58" height="40" rx="4" fill="#FEE2E2"/>
+<g id="value_59">
+<text id="Name_59" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="741.266">100</tspan></text>
+<text id="#HEX_59" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="755.266">#fee2e2</tspan></text>
+</g>
+</g>
+<g id="_system/color_60">
+<rect id="color_60" x="304" y="684" width="58" height="40" rx="4" fill="#FECACA"/>
+<g id="value_60">
+<text id="Name_60" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="741.266">200</tspan></text>
+<text id="#HEX_60" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="755.266">#fecaca</tspan></text>
+</g>
+</g>
+<g id="_system/color_61">
+<rect id="color_61" x="370" y="684" width="58" height="40" rx="4" fill="#FCA5A5"/>
+<g id="value_61">
+<text id="Name_61" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="741.266">300</tspan></text>
+<text id="#HEX_61" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="755.266">#fca5a5</tspan></text>
+</g>
+</g>
+<g id="_system/color_62">
+<rect id="color_62" x="436" y="684" width="58" height="40" rx="4" fill="#F87171"/>
+<g id="value_62">
+<text id="Name_62" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="741.266">400</tspan></text>
+<text id="#HEX_62" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="755.266">#f87171</tspan></text>
+</g>
+</g>
+<g id="_system/color_63">
+<rect id="color_63" x="502" y="684" width="58" height="40" rx="4" fill="#EF4444"/>
+<g id="value_63">
+<text id="Name_63" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="741.266">500</tspan></text>
+<text id="#HEX_63" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="755.266">#ef4444</tspan></text>
+</g>
+</g>
+<g id="_system/color_64">
+<rect id="color_64" x="568" y="684" width="58" height="40" rx="4" fill="#DC2626"/>
+<g id="value_64">
+<text id="Name_64" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="741.266">600</tspan></text>
+<text id="#HEX_64" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="755.266">#dc2626</tspan></text>
+</g>
+</g>
+<g id="_system/color_65">
+<rect id="color_65" x="634" y="684" width="58" height="40" rx="4" fill="#B91C1C"/>
+<g id="value_65">
+<text id="Name_65" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="741.266">700</tspan></text>
+<text id="#HEX_65" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="755.266">#b91c1c</tspan></text>
+</g>
+</g>
+<g id="_system/color_66">
+<rect id="color_66" x="700" y="684" width="58" height="40" rx="4" fill="#991B1B"/>
+<g id="value_66">
+<text id="Name_66" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="741.266">800</tspan></text>
+<text id="#HEX_66" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="755.266">#991b1b</tspan></text>
+</g>
+</g>
+<g id="_system/color_67">
+<rect id="color_67" x="766" y="684" width="58" height="40" rx="4" fill="#7F1D1D"/>
+<g id="value_67">
+<text id="Name_67" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="741.266">900</tspan></text>
+<text id="#HEX_67" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="755.266">#7f1d1d</tspan></text>
+</g>
+</g>
+<g id="_system/color_68">
+<rect id="color_68" x="832" y="684" width="58" height="40" rx="4" fill="#450A0A"/>
+<g id="value_68">
+<text id="Name_68" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="741.266">950</tspan></text>
+<text id="#HEX_68" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="755.266">#450a0a</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_8">
+<g id="name_8">
+<text id="base_8" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="805.5">Orange</tspan></text>
+</g>
+<g id="colors_8">
+<g id="_system/color_69">
+<rect id="color_69" x="172" y="790" width="58" height="40" rx="4" fill="#FFF7ED"/>
+<g id="value_69">
+<text id="Name_69" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="847.266">50</tspan></text>
+<text id="#HEX_69" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="861.266">#fff7ed</tspan></text>
+</g>
+</g>
+<g id="_system/color_70">
+<rect id="color_70" x="238" y="790" width="58" height="40" rx="4" fill="#FFEDD5"/>
+<g id="value_70">
+<text id="Name_70" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="847.266">100</tspan></text>
+<text id="#HEX_70" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="861.266">#ffedd5</tspan></text>
+</g>
+</g>
+<g id="_system/color_71">
+<rect id="color_71" x="304" y="790" width="58" height="40" rx="4" fill="#FED7AA"/>
+<g id="value_71">
+<text id="Name_71" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="847.266">200</tspan></text>
+<text id="#HEX_71" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="861.266">#fed7aa</tspan></text>
+</g>
+</g>
+<g id="_system/color_72">
+<rect id="color_72" x="370" y="790" width="58" height="40" rx="4" fill="#FDBA74"/>
+<g id="value_72">
+<text id="Name_72" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="847.266">300</tspan></text>
+<text id="#HEX_72" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="861.266">#fdba74</tspan></text>
+</g>
+</g>
+<g id="_system/color_73">
+<rect id="color_73" x="436" y="790" width="58" height="40" rx="4" fill="#FB923C"/>
+<g id="value_73">
+<text id="Name_73" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="847.266">400</tspan></text>
+<text id="#HEX_73" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="861.266">#fb923c</tspan></text>
+</g>
+</g>
+<g id="_system/color_74">
+<rect id="color_74" x="502" y="790" width="58" height="40" rx="4" fill="#F97316"/>
+<g id="value_74">
+<text id="Name_74" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="847.266">500</tspan></text>
+<text id="#HEX_74" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="861.266">#f97316</tspan></text>
+</g>
+</g>
+<g id="_system/color_75">
+<rect id="color_75" x="568" y="790" width="58" height="40" rx="4" fill="#EA580C"/>
+<g id="value_75">
+<text id="Name_75" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="847.266">600</tspan></text>
+<text id="#HEX_75" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="861.266">#ea580c</tspan></text>
+</g>
+</g>
+<g id="_system/color_76">
+<rect id="color_76" x="634" y="790" width="58" height="40" rx="4" fill="#C2410C"/>
+<g id="value_76">
+<text id="Name_76" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="847.266">700</tspan></text>
+<text id="#HEX_76" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="861.266">#c2410c</tspan></text>
+</g>
+</g>
+<g id="_system/color_77">
+<rect id="color_77" x="700" y="790" width="58" height="40" rx="4" fill="#9A3412"/>
+<g id="value_77">
+<text id="Name_77" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="847.266">800</tspan></text>
+<text id="#HEX_77" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="861.266">#9a3412</tspan></text>
+</g>
+</g>
+<g id="_system/color_78">
+<rect id="color_78" x="766" y="790" width="58" height="40" rx="4" fill="#7C2D12"/>
+<g id="value_78">
+<text id="Name_78" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="847.266">900</tspan></text>
+<text id="#HEX_78" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="861.266">#7c2d12</tspan></text>
+</g>
+</g>
+<g id="_system/color_79">
+<rect id="color_79" x="832" y="790" width="58" height="40" rx="4" fill="#431407"/>
+<g id="value_79">
+<text id="Name_79" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="847.266">950</tspan></text>
+<text id="#HEX_79" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="861.266">#431407</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_9">
+<g id="name_9">
+<text id="base_9" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="911.5">Amber</tspan></text>
+</g>
+<g id="colors_9">
+<g id="_system/color_80">
+<rect id="color_80" x="172" y="896" width="58" height="40" rx="4" fill="#FFFBEB"/>
+<g id="value_80">
+<text id="Name_80" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="953.266">50</tspan></text>
+<text id="#HEX_80" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="967.266">#fffbeb</tspan></text>
+</g>
+</g>
+<g id="_system/color_81">
+<rect id="color_81" x="238" y="896" width="58" height="40" rx="4" fill="#FEF3C7"/>
+<g id="value_81">
+<text id="Name_81" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="953.266">100</tspan></text>
+<text id="#HEX_81" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="967.266">#fef3c7</tspan></text>
+</g>
+</g>
+<g id="_system/color_82">
+<rect id="color_82" x="304" y="896" width="58" height="40" rx="4" fill="#FDE68A"/>
+<g id="value_82">
+<text id="Name_82" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="953.266">200</tspan></text>
+<text id="#HEX_82" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="967.266">#fde68a</tspan></text>
+</g>
+</g>
+<g id="_system/color_83">
+<rect id="color_83" x="370" y="896" width="58" height="40" rx="4" fill="#FCD34D"/>
+<g id="value_83">
+<text id="Name_83" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="953.266">300</tspan></text>
+<text id="#HEX_83" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="967.266">#fcd34d</tspan></text>
+</g>
+</g>
+<g id="_system/color_84">
+<rect id="color_84" x="436" y="896" width="58" height="40" rx="4" fill="#FBBF24"/>
+<g id="value_84">
+<text id="Name_84" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="953.266">400</tspan></text>
+<text id="#HEX_84" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="967.266">#fbbf24</tspan></text>
+</g>
+</g>
+<g id="_system/color_85">
+<rect id="color_85" x="502" y="896" width="58" height="40" rx="4" fill="#F59E0B"/>
+<g id="value_85">
+<text id="Name_85" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="953.266">500</tspan></text>
+<text id="#HEX_85" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="967.266">#f59e0b</tspan></text>
+</g>
+</g>
+<g id="_system/color_86">
+<rect id="color_86" x="568" y="896" width="58" height="40" rx="4" fill="#D97706"/>
+<g id="value_86">
+<text id="Name_86" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="953.266">600</tspan></text>
+<text id="#HEX_86" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="967.266">#d97706</tspan></text>
+</g>
+</g>
+<g id="_system/color_87">
+<rect id="color_87" x="634" y="896" width="58" height="40" rx="4" fill="#B45309"/>
+<g id="value_87">
+<text id="Name_87" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="953.266">700</tspan></text>
+<text id="#HEX_87" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="967.266">#b45309</tspan></text>
+</g>
+</g>
+<g id="_system/color_88">
+<rect id="color_88" x="700" y="896" width="58" height="40" rx="4" fill="#92400E"/>
+<g id="value_88">
+<text id="Name_88" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="953.266">800</tspan></text>
+<text id="#HEX_88" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="967.266">#92400e</tspan></text>
+</g>
+</g>
+<g id="_system/color_89">
+<rect id="color_89" x="766" y="896" width="58" height="40" rx="4" fill="#78350F"/>
+<g id="value_89">
+<text id="Name_89" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="953.266">900</tspan></text>
+<text id="#HEX_89" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="967.266">#78350f</tspan></text>
+</g>
+</g>
+<g id="_system/color_90">
+<rect id="color_90" x="832" y="896" width="58" height="40" rx="4" fill="#431407"/>
+<g id="value_90">
+<text id="Name_90" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="953.266">950</tspan></text>
+<text id="#HEX_90" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="967.266">#431407</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_10">
+<g id="name_10">
+<text id="base_10" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1017.5">Yellow</tspan></text>
+</g>
+<g id="colors_10">
+<g id="_system/color_91">
+<rect id="color_91" x="172" y="1002" width="58" height="40" rx="4" fill="#FEFCE8"/>
+<g id="value_91">
+<text id="Name_91" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1059.27">50</tspan></text>
+<text id="#HEX_91" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1073.27">#fefce8</tspan></text>
+</g>
+</g>
+<g id="_system/color_92">
+<rect id="color_92" x="238" y="1002" width="58" height="40" rx="4" fill="#FEF9C3"/>
+<g id="value_92">
+<text id="Name_92" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1059.27">100</tspan></text>
+<text id="#HEX_92" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1073.27">#fef9c3</tspan></text>
+</g>
+</g>
+<g id="_system/color_93">
+<rect id="color_93" x="304" y="1002" width="58" height="40" rx="4" fill="#FEF08A"/>
+<g id="value_93">
+<text id="Name_93" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1059.27">200</tspan></text>
+<text id="#HEX_93" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1073.27">#fef08a</tspan></text>
+</g>
+</g>
+<g id="_system/color_94">
+<rect id="color_94" x="370" y="1002" width="58" height="40" rx="4" fill="#FDE047"/>
+<g id="value_94">
+<text id="Name_94" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1059.27">300</tspan></text>
+<text id="#HEX_94" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1073.27">#fef08a</tspan></text>
+</g>
+</g>
+<g id="_system/color_95">
+<rect id="color_95" x="436" y="1002" width="58" height="40" rx="4" fill="#FACC15"/>
+<g id="value_95">
+<text id="Name_95" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1059.27">400</tspan></text>
+<text id="#HEX_95" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1073.27">#facc15</tspan></text>
+</g>
+</g>
+<g id="_system/color_96">
+<rect id="color_96" x="502" y="1002" width="58" height="40" rx="4" fill="#EAB308"/>
+<g id="value_96">
+<text id="Name_96" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1059.27">500</tspan></text>
+<text id="#HEX_96" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1073.27">#eab308</tspan></text>
+</g>
+</g>
+<g id="_system/color_97">
+<rect id="color_97" x="568" y="1002" width="58" height="40" rx="4" fill="#CA8A04"/>
+<g id="value_97">
+<text id="Name_97" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1059.27">600</tspan></text>
+<text id="#HEX_97" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1073.27">#eab308</tspan></text>
+</g>
+</g>
+<g id="_system/color_98">
+<rect id="color_98" x="634" y="1002" width="58" height="40" rx="4" fill="#A16207"/>
+<g id="value_98">
+<text id="Name_98" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1059.27">700</tspan></text>
+<text id="#HEX_98" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1073.27">#eab308</tspan></text>
+</g>
+</g>
+<g id="_system/color_99">
+<rect id="color_99" x="700" y="1002" width="58" height="40" rx="4" fill="#854D0E"/>
+<g id="value_99">
+<text id="Name_99" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1059.27">800</tspan></text>
+<text id="#HEX_99" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1073.27">#eab308</tspan></text>
+</g>
+</g>
+<g id="_system/color_100">
+<rect id="color_100" x="766" y="1002" width="58" height="40" rx="4" fill="#713F12"/>
+<g id="value_100">
+<text id="Name_100" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1059.27">900</tspan></text>
+<text id="#HEX_100" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1073.27">#713f12</tspan></text>
+</g>
+</g>
+<g id="_system/color_101">
+<rect id="color_101" x="832" y="1002" width="58" height="40" rx="4" fill="#422006"/>
+<g id="value_101">
+<text id="Name_101" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1059.27">950</tspan></text>
+<text id="#HEX_101" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1073.27">#422006</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_11">
+<g id="name_11">
+<text id="base_11" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1123.5">Lime</tspan></text>
+</g>
+<g id="colors_11">
+<g id="_system/color_102">
+<rect id="color_102" x="172" y="1108" width="58" height="40" rx="4" fill="#F7FEE7"/>
+<g id="value_102">
+<text id="Name_102" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1165.27">50</tspan></text>
+<text id="#HEX_102" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1179.27">#f7fee7</tspan></text>
+</g>
+</g>
+<g id="_system/color_103">
+<rect id="color_103" x="238" y="1108" width="58" height="40" rx="4" fill="#ECFCCB"/>
+<g id="value_103">
+<text id="Name_103" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1165.27">100</tspan></text>
+<text id="#HEX_103" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1179.27">#ecfccb</tspan></text>
+</g>
+</g>
+<g id="_system/color_104">
+<rect id="color_104" x="304" y="1108" width="58" height="40" rx="4" fill="#D9F99D"/>
+<g id="value_104">
+<text id="Name_104" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1165.27">200</tspan></text>
+<text id="#HEX_104" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1179.27">#d9f99d</tspan></text>
+</g>
+</g>
+<g id="_system/color_105">
+<rect id="color_105" x="370" y="1108" width="58" height="40" rx="4" fill="#BEF264"/>
+<g id="value_105">
+<text id="Name_105" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1165.27">300</tspan></text>
+<text id="#HEX_105" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1179.27">#bef264</tspan></text>
+</g>
+</g>
+<g id="_system/color_106">
+<rect id="color_106" x="436" y="1108" width="58" height="40" rx="4" fill="#A3E635"/>
+<g id="value_106">
+<text id="Name_106" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1165.27">400</tspan></text>
+<text id="#HEX_106" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1179.27">#a3e635</tspan></text>
+</g>
+</g>
+<g id="_system/color_107">
+<rect id="color_107" x="502" y="1108" width="58" height="40" rx="4" fill="#84CC16"/>
+<g id="value_107">
+<text id="Name_107" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1165.27">500</tspan></text>
+<text id="#HEX_107" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1179.27">#84cc16</tspan></text>
+</g>
+</g>
+<g id="_system/color_108">
+<rect id="color_108" x="568" y="1108" width="58" height="40" rx="4" fill="#65A30D"/>
+<g id="value_108">
+<text id="Name_108" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1165.27">600</tspan></text>
+<text id="#HEX_108" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1179.27">#65a30d</tspan></text>
+</g>
+</g>
+<g id="_system/color_109">
+<rect id="color_109" x="634" y="1108" width="58" height="40" rx="4" fill="#4D7C0F"/>
+<g id="value_109">
+<text id="Name_109" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1165.27">700</tspan></text>
+<text id="#HEX_109" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1179.27">#4d7c0f</tspan></text>
+</g>
+</g>
+<g id="_system/color_110">
+<rect id="color_110" x="700" y="1108" width="58" height="40" rx="4" fill="#3F6212"/>
+<g id="value_110">
+<text id="Name_110" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1165.27">800</tspan></text>
+<text id="#HEX_110" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1179.27">#3f6212</tspan></text>
+</g>
+</g>
+<g id="_system/color_111">
+<rect id="color_111" x="766" y="1108" width="58" height="40" rx="4" fill="#365314"/>
+<g id="value_111">
+<text id="Name_111" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1165.27">900</tspan></text>
+<text id="#HEX_111" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1179.27">#365314</tspan></text>
+</g>
+</g>
+<g id="_system/color_112">
+<rect id="color_112" x="832" y="1108" width="58" height="40" rx="4" fill="#1A2E05"/>
+<g id="value_112">
+<text id="Name_112" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1165.27">950</tspan></text>
+<text id="#HEX_112" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1179.27">#1a2e05</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_12">
+<g id="name_12">
+<text id="base_12" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1229.5">Green</tspan></text>
+</g>
+<g id="colors_12">
+<g id="_system/color_113">
+<rect id="color_113" x="172" y="1214" width="58" height="40" rx="4" fill="#F0FDF4"/>
+<g id="value_113">
+<text id="Name_113" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1271.27">50</tspan></text>
+<text id="#HEX_113" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1285.27">#f0fdf4</tspan></text>
+</g>
+</g>
+<g id="_system/color_114">
+<rect id="color_114" x="238" y="1214" width="58" height="40" rx="4" fill="#DCFCE7"/>
+<g id="value_114">
+<text id="Name_114" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1271.27">100</tspan></text>
+<text id="#HEX_114" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1285.27">#dcfce7</tspan></text>
+</g>
+</g>
+<g id="_system/color_115">
+<rect id="color_115" x="304" y="1214" width="58" height="40" rx="4" fill="#BBF7D0"/>
+<g id="value_115">
+<text id="Name_115" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1271.27">200</tspan></text>
+<text id="#HEX_115" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1285.27">#bbf7d0</tspan></text>
+</g>
+</g>
+<g id="_system/color_116">
+<rect id="color_116" x="370" y="1214" width="58" height="40" rx="4" fill="#86EFAC"/>
+<g id="value_116">
+<text id="Name_116" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1271.27">300</tspan></text>
+<text id="#HEX_116" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1285.27">#86efac</tspan></text>
+</g>
+</g>
+<g id="_system/color_117">
+<rect id="color_117" x="436" y="1214" width="58" height="40" rx="4" fill="#4ADE80"/>
+<g id="value_117">
+<text id="Name_117" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1271.27">400</tspan></text>
+<text id="#HEX_117" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1285.27">#4ade80</tspan></text>
+</g>
+</g>
+<g id="_system/color_118">
+<rect id="color_118" x="502" y="1214" width="58" height="40" rx="4" fill="#22C55E"/>
+<g id="value_118">
+<text id="Name_118" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1271.27">500</tspan></text>
+<text id="#HEX_118" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1285.27">#22c55e</tspan></text>
+</g>
+</g>
+<g id="_system/color_119">
+<rect id="color_119" x="568" y="1214" width="58" height="40" rx="4" fill="#16A34A"/>
+<g id="value_119">
+<text id="Name_119" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1271.27">600</tspan></text>
+<text id="#HEX_119" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1285.27">#16a34a</tspan></text>
+</g>
+</g>
+<g id="_system/color_120">
+<rect id="color_120" x="634" y="1214" width="58" height="40" rx="4" fill="#15803D"/>
+<g id="value_120">
+<text id="Name_120" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1271.27">700</tspan></text>
+<text id="#HEX_120" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1285.27">#15803d</tspan></text>
+</g>
+</g>
+<g id="_system/color_121">
+<rect id="color_121" x="700" y="1214" width="58" height="40" rx="4" fill="#166534"/>
+<g id="value_121">
+<text id="Name_121" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1271.27">800</tspan></text>
+<text id="#HEX_121" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1285.27">#166534</tspan></text>
+</g>
+</g>
+<g id="_system/color_122">
+<rect id="color_122" x="766" y="1214" width="58" height="40" rx="4" fill="#14532D"/>
+<g id="value_122">
+<text id="Name_122" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1271.27">900</tspan></text>
+<text id="#HEX_122" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1285.27">#14532d</tspan></text>
+</g>
+</g>
+<g id="_system/color_123">
+<rect id="color_123" x="832" y="1214" width="58" height="40" rx="4" fill="#052E16"/>
+<g id="value_123">
+<text id="Name_123" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1271.27">950</tspan></text>
+<text id="#HEX_123" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1285.27">#052e16</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_13">
+<g id="name_13">
+<text id="base_13" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1335.5">Emerald</tspan></text>
+</g>
+<g id="colors_13">
+<g id="_system/color_124">
+<rect id="color_124" x="172" y="1320" width="58" height="40" rx="4" fill="#F0FDF4"/>
+<g id="value_124">
+<text id="Name_124" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1377.27">50</tspan></text>
+<text id="#HEX_124" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1391.27">#ecfdf5</tspan></text>
+</g>
+</g>
+<g id="_system/color_125">
+<rect id="color_125" x="238" y="1320" width="58" height="40" rx="4" fill="#D1FAE5"/>
+<g id="value_125">
+<text id="Name_125" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1377.27">100</tspan></text>
+<text id="#HEX_125" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1391.27">#d1fae5</tspan></text>
+</g>
+</g>
+<g id="_system/color_126">
+<rect id="color_126" x="304" y="1320" width="58" height="40" rx="4" fill="#A7F3D0"/>
+<g id="value_126">
+<text id="Name_126" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1377.27">200</tspan></text>
+<text id="#HEX_126" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1391.27">#a7f3d0</tspan></text>
+</g>
+</g>
+<g id="_system/color_127">
+<rect id="color_127" x="370" y="1320" width="58" height="40" rx="4" fill="#6EE7B7"/>
+<g id="value_127">
+<text id="Name_127" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1377.27">300</tspan></text>
+<text id="#HEX_127" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1391.27">#6ee7b7</tspan></text>
+</g>
+</g>
+<g id="_system/color_128">
+<rect id="color_128" x="436" y="1320" width="58" height="40" rx="4" fill="#34D399"/>
+<g id="value_128">
+<text id="Name_128" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1377.27">400</tspan></text>
+<text id="#HEX_128" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1391.27">#34d399</tspan></text>
+</g>
+</g>
+<g id="_system/color_129">
+<rect id="color_129" x="502" y="1320" width="58" height="40" rx="4" fill="#10B981"/>
+<g id="value_129">
+<text id="Name_129" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1377.27">500</tspan></text>
+<text id="#HEX_129" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1391.27">#10b981</tspan></text>
+</g>
+</g>
+<g id="_system/color_130">
+<rect id="color_130" x="568" y="1320" width="58" height="40" rx="4" fill="#059669"/>
+<g id="value_130">
+<text id="Name_130" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1377.27">600</tspan></text>
+<text id="#HEX_130" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1391.27">#059669</tspan></text>
+</g>
+</g>
+<g id="_system/color_131">
+<rect id="color_131" x="634" y="1320" width="58" height="40" rx="4" fill="#047857"/>
+<g id="value_131">
+<text id="Name_131" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1377.27">700</tspan></text>
+<text id="#HEX_131" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1391.27">#047857</tspan></text>
+</g>
+</g>
+<g id="_system/color_132">
+<rect id="color_132" x="700" y="1320" width="58" height="40" rx="4" fill="#065F46"/>
+<g id="value_132">
+<text id="Name_132" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1377.27">800</tspan></text>
+<text id="#HEX_132" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1391.27">#065f46</tspan></text>
+</g>
+</g>
+<g id="_system/color_133">
+<rect id="color_133" x="766" y="1320" width="58" height="40" rx="4" fill="#064E3B"/>
+<g id="value_133">
+<text id="Name_133" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1377.27">900</tspan></text>
+<text id="#HEX_133" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1391.27">#064e3b</tspan></text>
+</g>
+</g>
+<g id="_system/color_134">
+<rect id="color_134" x="832" y="1320" width="58" height="40" rx="4" fill="#022C22"/>
+<g id="value_134">
+<text id="Name_134" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1377.27">950</tspan></text>
+<text id="#HEX_134" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1391.27">#022c22</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_14">
+<g id="name_14">
+<text id="base_14" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1441.5">Teal</tspan></text>
+</g>
+<g id="colors_14">
+<g id="_system/color_135">
+<rect id="color_135" x="172" y="1426" width="58" height="40" rx="4" fill="#F0FDFA"/>
+<g id="value_135">
+<text id="Name_135" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1483.27">50</tspan></text>
+<text id="#HEX_135" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1497.27">#f0fdfa</tspan></text>
+</g>
+</g>
+<g id="_system/color_136">
+<rect id="color_136" x="238" y="1426" width="58" height="40" rx="4" fill="#CCFBF1"/>
+<g id="value_136">
+<text id="Name_136" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1483.27">100</tspan></text>
+<text id="#HEX_136" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1497.27">#ccfbf1</tspan></text>
+</g>
+</g>
+<g id="_system/color_137">
+<rect id="color_137" x="304" y="1426" width="58" height="40" rx="4" fill="#99F6E4"/>
+<g id="value_137">
+<text id="Name_137" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1483.27">200</tspan></text>
+<text id="#HEX_137" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1497.27">#99f6e4</tspan></text>
+</g>
+</g>
+<g id="_system/color_138">
+<rect id="color_138" x="370" y="1426" width="58" height="40" rx="4" fill="#5EEAD4"/>
+<g id="value_138">
+<text id="Name_138" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1483.27">300</tspan></text>
+<text id="#HEX_138" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1497.27">#5eead4</tspan></text>
+</g>
+</g>
+<g id="_system/color_139">
+<rect id="color_139" x="436" y="1426" width="58" height="40" rx="4" fill="#2DD4BF"/>
+<g id="value_139">
+<text id="Name_139" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1483.27">400</tspan></text>
+<text id="#HEX_139" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1497.27">#2dd4bf</tspan></text>
+</g>
+</g>
+<g id="_system/color_140">
+<rect id="color_140" x="502" y="1426" width="58" height="40" rx="4" fill="#14B8A6"/>
+<g id="value_140">
+<text id="Name_140" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1483.27">500</tspan></text>
+<text id="#HEX_140" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1497.27">#14b8a6</tspan></text>
+</g>
+</g>
+<g id="_system/color_141">
+<rect id="color_141" x="568" y="1426" width="58" height="40" rx="4" fill="#0D9488"/>
+<g id="value_141">
+<text id="Name_141" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1483.27">600</tspan></text>
+<text id="#HEX_141" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1497.27">#0d9488</tspan></text>
+</g>
+</g>
+<g id="_system/color_142">
+<rect id="color_142" x="634" y="1426" width="58" height="40" rx="4" fill="#0F766E"/>
+<g id="value_142">
+<text id="Name_142" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1483.27">700</tspan></text>
+<text id="#HEX_142" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1497.27">#0f766e</tspan></text>
+</g>
+</g>
+<g id="_system/color_143">
+<rect id="color_143" x="700" y="1426" width="58" height="40" rx="4" fill="#115E59"/>
+<g id="value_143">
+<text id="Name_143" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1483.27">800</tspan></text>
+<text id="#HEX_143" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1497.27">#115e59</tspan></text>
+</g>
+</g>
+<g id="_system/color_144">
+<rect id="color_144" x="766" y="1426" width="58" height="40" rx="4" fill="#134E4A"/>
+<g id="value_144">
+<text id="Name_144" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1483.27">900</tspan></text>
+<text id="#HEX_144" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1497.27">#134e4a</tspan></text>
+</g>
+</g>
+<g id="_system/color_145">
+<rect id="color_145" x="832" y="1426" width="58" height="40" rx="4" fill="#042F2E"/>
+<g id="value_145">
+<text id="Name_145" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1483.27">950</tspan></text>
+<text id="#HEX_145" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1497.27">#042f2e</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_15">
+<g id="name_15">
+<text id="base_15" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1547.5">Cyan</tspan></text>
+</g>
+<g id="colors_15">
+<g id="_system/color_146">
+<rect id="color_146" x="172" y="1532" width="58" height="40" rx="4" fill="#ECFEFF"/>
+<g id="value_146">
+<text id="Name_146" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1589.27">50</tspan></text>
+<text id="#HEX_146" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1603.27">#ecfeff</tspan></text>
+</g>
+</g>
+<g id="_system/color_147">
+<rect id="color_147" x="238" y="1532" width="58" height="40" rx="4" fill="#CFFAFE"/>
+<g id="value_147">
+<text id="Name_147" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1589.27">100</tspan></text>
+<text id="#HEX_147" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1603.27">#cffafe</tspan></text>
+</g>
+</g>
+<g id="_system/color_148">
+<rect id="color_148" x="304" y="1532" width="58" height="40" rx="4" fill="#A5F3FC"/>
+<g id="value_148">
+<text id="Name_148" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1589.27">200</tspan></text>
+<text id="#HEX_148" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1603.27">#a5f3fc</tspan></text>
+</g>
+</g>
+<g id="_system/color_149">
+<rect id="color_149" x="370" y="1532" width="58" height="40" rx="4" fill="#67E8F9"/>
+<g id="value_149">
+<text id="Name_149" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1589.27">300</tspan></text>
+<text id="#HEX_149" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1603.27">#67e8f9</tspan></text>
+</g>
+</g>
+<g id="_system/color_150">
+<rect id="color_150" x="436" y="1532" width="58" height="40" rx="4" fill="#22D3EE"/>
+<g id="value_150">
+<text id="Name_150" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1589.27">400</tspan></text>
+<text id="#HEX_150" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1603.27">#22d3ee</tspan></text>
+</g>
+</g>
+<g id="_system/color_151">
+<rect id="color_151" x="502" y="1532" width="58" height="40" rx="4" fill="#06B6D4"/>
+<g id="value_151">
+<text id="Name_151" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1589.27">500</tspan></text>
+<text id="#HEX_151" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1603.27">#06b6d4</tspan></text>
+</g>
+</g>
+<g id="_system/color_152">
+<rect id="color_152" x="568" y="1532" width="58" height="40" rx="4" fill="#0891B2"/>
+<g id="value_152">
+<text id="Name_152" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1589.27">600</tspan></text>
+<text id="#HEX_152" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1603.27">#0891b2</tspan></text>
+</g>
+</g>
+<g id="_system/color_153">
+<rect id="color_153" x="634" y="1532" width="58" height="40" rx="4" fill="#0E7490"/>
+<g id="value_153">
+<text id="Name_153" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1589.27">700</tspan></text>
+<text id="#HEX_153" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1603.27">#0e7490</tspan></text>
+</g>
+</g>
+<g id="_system/color_154">
+<rect id="color_154" x="700" y="1532" width="58" height="40" rx="4" fill="#155E75"/>
+<g id="value_154">
+<text id="Name_154" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1589.27">800</tspan></text>
+<text id="#HEX_154" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1603.27">#155e75</tspan></text>
+</g>
+</g>
+<g id="_system/color_155">
+<rect id="color_155" x="766" y="1532" width="58" height="40" rx="4" fill="#164E63"/>
+<g id="value_155">
+<text id="Name_155" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1589.27">900</tspan></text>
+<text id="#HEX_155" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1603.27">#164e63</tspan></text>
+</g>
+</g>
+<g id="_system/color_156">
+<rect id="color_156" x="832" y="1532" width="58" height="40" rx="4" fill="#083344"/>
+<g id="value_156">
+<text id="Name_156" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1589.27">950</tspan></text>
+<text id="#HEX_156" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1603.27">#083344</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_16">
+<g id="name_16">
+<text id="base_16" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1653.5">Sky</tspan></text>
+</g>
+<g id="colors_16">
+<g id="_system/color_157">
+<rect id="color_157" x="172" y="1638" width="58" height="40" rx="4" fill="#F0F9FF"/>
+<g id="value_157">
+<text id="Name_157" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1695.27">50</tspan></text>
+<text id="#HEX_157" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1709.27">#f0f9ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_158">
+<rect id="color_158" x="238" y="1638" width="58" height="40" rx="4" fill="#E0F2FE"/>
+<g id="value_158">
+<text id="Name_158" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1695.27">100</tspan></text>
+<text id="#HEX_158" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1709.27">#f0f9ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_159">
+<rect id="color_159" x="304" y="1638" width="58" height="40" rx="4" fill="#BAE6FD"/>
+<g id="value_159">
+<text id="Name_159" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1695.27">200</tspan></text>
+<text id="#HEX_159" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1709.27">#f0f9ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_160">
+<rect id="color_160" x="370" y="1638" width="58" height="40" rx="4" fill="#7DD3FC"/>
+<g id="value_160">
+<text id="Name_160" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1695.27">300</tspan></text>
+<text id="#HEX_160" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1709.27">#7dd3fc</tspan></text>
+</g>
+</g>
+<g id="_system/color_161">
+<rect id="color_161" x="436" y="1638" width="58" height="40" rx="4" fill="#38BDF8"/>
+<g id="value_161">
+<text id="Name_161" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1695.27">400</tspan></text>
+<text id="#HEX_161" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1709.27">#7dd3fc</tspan></text>
+</g>
+</g>
+<g id="_system/color_162">
+<rect id="color_162" x="502" y="1638" width="58" height="40" rx="4" fill="#0EA5E9"/>
+<g id="value_162">
+<text id="Name_162" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1695.27">500</tspan></text>
+<text id="#HEX_162" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1709.27">#0ea5e9</tspan></text>
+</g>
+</g>
+<g id="_system/color_163">
+<rect id="color_163" x="568" y="1638" width="58" height="40" rx="4" fill="#0284C7"/>
+<g id="value_163">
+<text id="Name_163" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1695.27">600</tspan></text>
+<text id="#HEX_163" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1709.27">#0ea5e9</tspan></text>
+</g>
+</g>
+<g id="_system/color_164">
+<rect id="color_164" x="634" y="1638" width="58" height="40" rx="4" fill="#0369A1"/>
+<g id="value_164">
+<text id="Name_164" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1695.27">700</tspan></text>
+<text id="#HEX_164" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1709.27">#0ea5e9</tspan></text>
+</g>
+</g>
+<g id="_system/color_165">
+<rect id="color_165" x="700" y="1638" width="58" height="40" rx="4" fill="#075985"/>
+<g id="value_165">
+<text id="Name_165" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1695.27">800</tspan></text>
+<text id="#HEX_165" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1709.27">#0ea5e9</tspan></text>
+</g>
+</g>
+<g id="_system/color_166">
+<rect id="color_166" x="766" y="1638" width="58" height="40" rx="4" fill="#0C4A6E"/>
+<g id="value_166">
+<text id="Name_166" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1695.27">900</tspan></text>
+<text id="#HEX_166" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1709.27">#0ea5e9</tspan></text>
+</g>
+</g>
+<g id="_system/color_167">
+<rect id="color_167" x="832" y="1638" width="58" height="40" rx="4" fill="#082F49"/>
+<g id="value_167">
+<text id="Name_167" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1695.27">950</tspan></text>
+<text id="#HEX_167" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1709.27">#082f49</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_17">
+<g id="name_17">
+<text id="base_17" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1759.5">Blue</tspan></text>
+</g>
+<g id="colors_17">
+<g id="_system/color_168">
+<rect id="color_168" x="172" y="1744" width="58" height="40" rx="4" fill="#EFF6FF"/>
+<g id="value_168">
+<text id="Name_168" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1801.27">50</tspan></text>
+<text id="#HEX_168" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1815.27">#eff6ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_169">
+<rect id="color_169" x="238" y="1744" width="58" height="40" rx="4" fill="#DBEAFE"/>
+<g id="value_169">
+<text id="Name_169" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1801.27">100</tspan></text>
+<text id="#HEX_169" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1815.27">#dbeafe</tspan></text>
+</g>
+</g>
+<g id="_system/color_170">
+<rect id="color_170" x="304" y="1744" width="58" height="40" rx="4" fill="#BFDBFE"/>
+<g id="value_170">
+<text id="Name_170" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1801.27">200</tspan></text>
+<text id="#HEX_170" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1815.27">#bfdbfe</tspan></text>
+</g>
+</g>
+<g id="_system/color_171">
+<rect id="color_171" x="370" y="1744" width="58" height="40" rx="4" fill="#93C5FD"/>
+<g id="value_171">
+<text id="Name_171" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1801.27">300</tspan></text>
+<text id="#HEX_171" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1815.27">#93c5fd</tspan></text>
+</g>
+</g>
+<g id="_system/color_172">
+<rect id="color_172" x="436" y="1744" width="58" height="40" rx="4" fill="#60A5FA"/>
+<g id="value_172">
+<text id="Name_172" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1801.27">400</tspan></text>
+<text id="#HEX_172" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1815.27">#60a5fa</tspan></text>
+</g>
+</g>
+<g id="_system/color_173">
+<rect id="color_173" x="502" y="1744" width="58" height="40" rx="4" fill="#3B82F6"/>
+<g id="value_173">
+<text id="Name_173" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1801.27">500</tspan></text>
+<text id="#HEX_173" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1815.27">#3b82f6</tspan></text>
+</g>
+</g>
+<g id="_system/color_174">
+<rect id="color_174" x="568" y="1744" width="58" height="40" rx="4" fill="#2563EB"/>
+<g id="value_174">
+<text id="Name_174" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1801.27">600</tspan></text>
+<text id="#HEX_174" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1815.27">#2563eb</tspan></text>
+</g>
+</g>
+<g id="_system/color_175">
+<rect id="color_175" x="634" y="1744" width="58" height="40" rx="4" fill="#1D4ED8"/>
+<g id="value_175">
+<text id="Name_175" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1801.27">700</tspan></text>
+<text id="#HEX_175" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1815.27">#1d4ed8</tspan></text>
+</g>
+</g>
+<g id="_system/color_176">
+<rect id="color_176" x="700" y="1744" width="58" height="40" rx="4" fill="#1E40AF"/>
+<g id="value_176">
+<text id="Name_176" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1801.27">800</tspan></text>
+<text id="#HEX_176" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1815.27">#1e40af</tspan></text>
+</g>
+</g>
+<g id="_system/color_177">
+<rect id="color_177" x="766" y="1744" width="58" height="40" rx="4" fill="#1E3A8A"/>
+<g id="value_177">
+<text id="Name_177" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1801.27">900</tspan></text>
+<text id="#HEX_177" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1815.27">#1e3a8a</tspan></text>
+</g>
+</g>
+<g id="_system/color_178">
+<rect id="color_178" x="832" y="1744" width="58" height="40" rx="4" fill="#172554"/>
+<g id="value_178">
+<text id="Name_178" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1801.27">950</tspan></text>
+<text id="#HEX_178" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1815.27">#172554</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_18">
+<g id="name_18">
+<text id="base_18" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1865.5">Indigo</tspan></text>
+</g>
+<g id="colors_18">
+<g id="_system/color_179">
+<rect id="color_179" x="172" y="1850" width="58" height="40" rx="4" fill="#EEF2FF"/>
+<g id="value_179">
+<text id="Name_179" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1907.27">50</tspan></text>
+<text id="#HEX_179" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="1921.27">#eef2ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_180">
+<rect id="color_180" x="238" y="1850" width="58" height="40" rx="4" fill="#E0E7FF"/>
+<g id="value_180">
+<text id="Name_180" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1907.27">100</tspan></text>
+<text id="#HEX_180" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="1921.27">#e0e7ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_181">
+<rect id="color_181" x="304" y="1850" width="58" height="40" rx="4" fill="#C7D2FE"/>
+<g id="value_181">
+<text id="Name_181" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1907.27">200</tspan></text>
+<text id="#HEX_181" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="1921.27">#c7d2fe</tspan></text>
+</g>
+</g>
+<g id="_system/color_182">
+<rect id="color_182" x="370" y="1850" width="58" height="40" rx="4" fill="#A5B4FC"/>
+<g id="value_182">
+<text id="Name_182" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1907.27">300</tspan></text>
+<text id="#HEX_182" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="1921.27">#a5b4fc</tspan></text>
+</g>
+</g>
+<g id="_system/color_183">
+<rect id="color_183" x="436" y="1850" width="58" height="40" rx="4" fill="#818CF8"/>
+<g id="value_183">
+<text id="Name_183" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1907.27">400</tspan></text>
+<text id="#HEX_183" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="1921.27">#818cf8</tspan></text>
+</g>
+</g>
+<g id="_system/color_184">
+<rect id="color_184" x="502" y="1850" width="58" height="40" rx="4" fill="#6366F1"/>
+<g id="value_184">
+<text id="Name_184" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1907.27">500</tspan></text>
+<text id="#HEX_184" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="1921.27">#6366f1</tspan></text>
+</g>
+</g>
+<g id="_system/color_185">
+<rect id="color_185" x="568" y="1850" width="58" height="40" rx="4" fill="#4F46E5"/>
+<g id="value_185">
+<text id="Name_185" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1907.27">600</tspan></text>
+<text id="#HEX_185" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="1921.27">#4f46e5</tspan></text>
+</g>
+</g>
+<g id="_system/color_186">
+<rect id="color_186" x="634" y="1850" width="58" height="40" rx="4" fill="#4338CA"/>
+<g id="value_186">
+<text id="Name_186" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1907.27">700</tspan></text>
+<text id="#HEX_186" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="1921.27">#4338ca</tspan></text>
+</g>
+</g>
+<g id="_system/color_187">
+<rect id="color_187" x="700" y="1850" width="58" height="40" rx="4" fill="#3730A3"/>
+<g id="value_187">
+<text id="Name_187" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1907.27">800</tspan></text>
+<text id="#HEX_187" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="1921.27">#3730a3</tspan></text>
+</g>
+</g>
+<g id="_system/color_188">
+<rect id="color_188" x="766" y="1850" width="58" height="40" rx="4" fill="#312E81"/>
+<g id="value_188">
+<text id="Name_188" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1907.27">900</tspan></text>
+<text id="#HEX_188" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="1921.27">#312e81</tspan></text>
+</g>
+</g>
+<g id="_system/color_189">
+<rect id="color_189" x="832" y="1850" width="58" height="40" rx="4" fill="#1E1B4B"/>
+<g id="value_189">
+<text id="Name_189" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1907.27">950</tspan></text>
+<text id="#HEX_189" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="1921.27">#1e1b4b</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_19">
+<g id="name_19">
+<text id="base_19" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="1971.5">Violet</tspan></text>
+</g>
+<g id="colors_19">
+<g id="_system/color_190">
+<rect id="color_190" x="172" y="1956" width="58" height="40" rx="4" fill="#F5F3FF"/>
+<g id="value_190">
+<text id="Name_190" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2013.27">50</tspan></text>
+<text id="#HEX_190" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2027.27">#f5f3ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_191">
+<rect id="color_191" x="238" y="1956" width="58" height="40" rx="4" fill="#EDE9FE"/>
+<g id="value_191">
+<text id="Name_191" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2013.27">100</tspan></text>
+<text id="#HEX_191" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2027.27">#ede9fe</tspan></text>
+</g>
+</g>
+<g id="_system/color_192">
+<rect id="color_192" x="304" y="1956" width="58" height="40" rx="4" fill="#DDD6FE"/>
+<g id="value_192">
+<text id="Name_192" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2013.27">200</tspan></text>
+<text id="#HEX_192" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2027.27">#ddd6fe</tspan></text>
+</g>
+</g>
+<g id="_system/color_193">
+<rect id="color_193" x="370" y="1956" width="58" height="40" rx="4" fill="#C4B5FD"/>
+<g id="value_193">
+<text id="Name_193" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2013.27">300</tspan></text>
+<text id="#HEX_193" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2027.27">#c4b5fd</tspan></text>
+</g>
+</g>
+<g id="_system/color_194">
+<rect id="color_194" x="436" y="1956" width="58" height="40" rx="4" fill="#A78BFA"/>
+<g id="value_194">
+<text id="Name_194" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2013.27">400</tspan></text>
+<text id="#HEX_194" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2027.27">#a78bfa</tspan></text>
+</g>
+</g>
+<g id="_system/color_195">
+<rect id="color_195" x="502" y="1956" width="58" height="40" rx="4" fill="#8B5CF6"/>
+<g id="value_195">
+<text id="Name_195" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2013.27">500</tspan></text>
+<text id="#HEX_195" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2027.27">#8b5cf6</tspan></text>
+</g>
+</g>
+<g id="_system/color_196">
+<rect id="color_196" x="568" y="1956" width="58" height="40" rx="4" fill="#7C3AED"/>
+<g id="value_196">
+<text id="Name_196" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2013.27">600</tspan></text>
+<text id="#HEX_196" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2027.27">#7c3aed</tspan></text>
+</g>
+</g>
+<g id="_system/color_197">
+<rect id="color_197" x="634" y="1956" width="58" height="40" rx="4" fill="#6D28D9"/>
+<g id="value_197">
+<text id="Name_197" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2013.27">700</tspan></text>
+<text id="#HEX_197" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2027.27">#6d28d9</tspan></text>
+</g>
+</g>
+<g id="_system/color_198">
+<rect id="color_198" x="700" y="1956" width="58" height="40" rx="4" fill="#5B21B6"/>
+<g id="value_198">
+<text id="Name_198" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2013.27">800</tspan></text>
+<text id="#HEX_198" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2027.27">#5b21b6</tspan></text>
+</g>
+</g>
+<g id="_system/color_199">
+<rect id="color_199" x="766" y="1956" width="58" height="40" rx="4" fill="#4C1D95"/>
+<g id="value_199">
+<text id="Name_199" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2013.27">900</tspan></text>
+<text id="#HEX_199" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2027.27">#4c1d95</tspan></text>
+</g>
+</g>
+<g id="_system/color_200">
+<rect id="color_200" x="832" y="1956" width="58" height="40" rx="4" fill="#2E1065"/>
+<g id="value_200">
+<text id="Name_200" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2013.27">950</tspan></text>
+<text id="#HEX_200" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2027.27">#2e1065</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_20">
+<g id="name_20">
+<text id="base_20" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="2077.5">Purple</tspan></text>
+</g>
+<g id="colors_20">
+<g id="_system/color_201">
+<rect id="color_201" x="172" y="2062" width="58" height="40" rx="4" fill="#FAF5FF"/>
+<g id="value_201">
+<text id="Name_201" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2119.27">50</tspan></text>
+<text id="#HEX_201" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2133.27">#faf5ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_202">
+<rect id="color_202" x="238" y="2062" width="58" height="40" rx="4" fill="#F3E8FF"/>
+<g id="value_202">
+<text id="Name_202" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2119.27">100</tspan></text>
+<text id="#HEX_202" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2133.27">#f3e8ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_203">
+<rect id="color_203" x="304" y="2062" width="58" height="40" rx="4" fill="#E9D5FF"/>
+<g id="value_203">
+<text id="Name_203" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2119.27">200</tspan></text>
+<text id="#HEX_203" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2133.27">#e9d5ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_204">
+<rect id="color_204" x="370" y="2062" width="58" height="40" rx="4" fill="#D8B4FE"/>
+<g id="value_204">
+<text id="Name_204" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2119.27">300</tspan></text>
+<text id="#HEX_204" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2133.27">#d8b4fe</tspan></text>
+</g>
+</g>
+<g id="_system/color_205">
+<rect id="color_205" x="436" y="2062" width="58" height="40" rx="4" fill="#C084FC"/>
+<g id="value_205">
+<text id="Name_205" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2119.27">400</tspan></text>
+<text id="#HEX_205" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2133.27">#c084fc</tspan></text>
+</g>
+</g>
+<g id="_system/color_206">
+<rect id="color_206" x="502" y="2062" width="58" height="40" rx="4" fill="#A855F7"/>
+<g id="value_206">
+<text id="Name_206" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2119.27">500</tspan></text>
+<text id="#HEX_206" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2133.27">#a855f7</tspan></text>
+</g>
+</g>
+<g id="_system/color_207">
+<rect id="color_207" x="568" y="2062" width="58" height="40" rx="4" fill="#9333EA"/>
+<g id="value_207">
+<text id="Name_207" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2119.27">600</tspan></text>
+<text id="#HEX_207" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2133.27">#9333ea</tspan></text>
+</g>
+</g>
+<g id="_system/color_208">
+<rect id="color_208" x="634" y="2062" width="58" height="40" rx="4" fill="#7E22CE"/>
+<g id="value_208">
+<text id="Name_208" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2119.27">700</tspan></text>
+<text id="#HEX_208" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2133.27">#7e22ce</tspan></text>
+</g>
+</g>
+<g id="_system/color_209">
+<rect id="color_209" x="700" y="2062" width="58" height="40" rx="4" fill="#6B21A8"/>
+<g id="value_209">
+<text id="Name_209" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2119.27">800</tspan></text>
+<text id="#HEX_209" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2133.27">#6b21a8</tspan></text>
+</g>
+</g>
+<g id="_system/color_210">
+<rect id="color_210" x="766" y="2062" width="58" height="40" rx="4" fill="#581C87"/>
+<g id="value_210">
+<text id="Name_210" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2119.27">900</tspan></text>
+<text id="#HEX_210" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2133.27">#581c87</tspan></text>
+</g>
+</g>
+<g id="_system/color_211">
+<rect id="color_211" x="832" y="2062" width="58" height="40" rx="4" fill="#3B0764"/>
+<g id="value_211">
+<text id="Name_211" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2119.27">950</tspan></text>
+<text id="#HEX_211" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2133.27">#3b0764</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_21">
+<g id="name_21">
+<text id="base_21" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="2183.5">Fuchsia</tspan></text>
+</g>
+<g id="colors_21">
+<g id="_system/color_212">
+<rect id="color_212" x="172" y="2168" width="58" height="40" rx="4" fill="#FDF4FF"/>
+<g id="value_212">
+<text id="Name_212" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2225.27">50</tspan></text>
+<text id="#HEX_212" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2239.27">#fdf4ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_213">
+<rect id="color_213" x="238" y="2168" width="58" height="40" rx="4" fill="#FAE8FF"/>
+<g id="value_213">
+<text id="Name_213" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2225.27">100</tspan></text>
+<text id="#HEX_213" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2239.27">#fae8ff</tspan></text>
+</g>
+</g>
+<g id="_system/color_214">
+<rect id="color_214" x="304" y="2168" width="58" height="40" rx="4" fill="#F5D0FE"/>
+<g id="value_214">
+<text id="Name_214" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2225.27">200</tspan></text>
+<text id="#HEX_214" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2239.27">#f5d0fe</tspan></text>
+</g>
+</g>
+<g id="_system/color_215">
+<rect id="color_215" x="370" y="2168" width="58" height="40" rx="4" fill="#F0ABFC"/>
+<g id="value_215">
+<text id="Name_215" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2225.27">300</tspan></text>
+<text id="#HEX_215" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2239.27">#f0abfc</tspan></text>
+</g>
+</g>
+<g id="_system/color_216">
+<rect id="color_216" x="436" y="2168" width="58" height="40" rx="4" fill="#E879F9"/>
+<g id="value_216">
+<text id="Name_216" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2225.27">400</tspan></text>
+<text id="#HEX_216" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2239.27">#e879f9</tspan></text>
+</g>
+</g>
+<g id="_system/color_217">
+<rect id="color_217" x="502" y="2168" width="58" height="40" rx="4" fill="#D946EF"/>
+<g id="value_217">
+<text id="Name_217" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2225.27">500</tspan></text>
+<text id="#HEX_217" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2239.27">#d946ef</tspan></text>
+</g>
+</g>
+<g id="_system/color_218">
+<rect id="color_218" x="568" y="2168" width="58" height="40" rx="4" fill="#C026D3"/>
+<g id="value_218">
+<text id="Name_218" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2225.27">600</tspan></text>
+<text id="#HEX_218" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2239.27">#c026d3</tspan></text>
+</g>
+</g>
+<g id="_system/color_219">
+<rect id="color_219" x="634" y="2168" width="58" height="40" rx="4" fill="#A21CAF"/>
+<g id="value_219">
+<text id="Name_219" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2225.27">700</tspan></text>
+<text id="#HEX_219" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2239.27">#a21caf</tspan></text>
+</g>
+</g>
+<g id="_system/color_220">
+<rect id="color_220" x="700" y="2168" width="58" height="40" rx="4" fill="#86198F"/>
+<g id="value_220">
+<text id="Name_220" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2225.27">800</tspan></text>
+<text id="#HEX_220" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2239.27">#86198f</tspan></text>
+</g>
+</g>
+<g id="_system/color_221">
+<rect id="color_221" x="766" y="2168" width="58" height="40" rx="4" fill="#701A75"/>
+<g id="value_221">
+<text id="Name_221" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2225.27">900</tspan></text>
+<text id="#HEX_221" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2239.27">#701a75</tspan></text>
+</g>
+</g>
+<g id="_system/color_222">
+<rect id="color_222" x="832" y="2168" width="58" height="40" rx="4" fill="#4A044E"/>
+<g id="value_222">
+<text id="Name_222" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2225.27">950</tspan></text>
+<text id="#HEX_222" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2239.27">#4a044e</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_22">
+<g id="name_22">
+<text id="base_22" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="2289.5">Pink</tspan></text>
+</g>
+<g id="colors_22">
+<g id="_system/color_223">
+<rect id="color_223" x="172" y="2274" width="58" height="40" rx="4" fill="#FDF2F8"/>
+<g id="value_223">
+<text id="Name_223" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2331.27">50</tspan></text>
+<text id="#HEX_223" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2345.27">#fdf2f8</tspan></text>
+</g>
+</g>
+<g id="_system/color_224">
+<rect id="color_224" x="238" y="2274" width="58" height="40" rx="4" fill="#FCE7F3"/>
+<g id="value_224">
+<text id="Name_224" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2331.27">100</tspan></text>
+<text id="#HEX_224" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2345.27">#fce7f3</tspan></text>
+</g>
+</g>
+<g id="_system/color_225">
+<rect id="color_225" x="304" y="2274" width="58" height="40" rx="4" fill="#FBCFE8"/>
+<g id="value_225">
+<text id="Name_225" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2331.27">200</tspan></text>
+<text id="#HEX_225" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2345.27">#fbcfe8</tspan></text>
+</g>
+</g>
+<g id="_system/color_226">
+<rect id="color_226" x="370" y="2274" width="58" height="40" rx="4" fill="#F9A8D4"/>
+<g id="value_226">
+<text id="Name_226" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2331.27">300</tspan></text>
+<text id="#HEX_226" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2345.27">#f9a8d4</tspan></text>
+</g>
+</g>
+<g id="_system/color_227">
+<rect id="color_227" x="436" y="2274" width="58" height="40" rx="4" fill="#F472B6"/>
+<g id="value_227">
+<text id="Name_227" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2331.27">400</tspan></text>
+<text id="#HEX_227" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2345.27">#f472b6</tspan></text>
+</g>
+</g>
+<g id="_system/color_228">
+<rect id="color_228" x="502" y="2274" width="58" height="40" rx="4" fill="#EC4899"/>
+<g id="value_228">
+<text id="Name_228" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2331.27">500</tspan></text>
+<text id="#HEX_228" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2345.27">#ec4899</tspan></text>
+</g>
+</g>
+<g id="_system/color_229">
+<rect id="color_229" x="568" y="2274" width="58" height="40" rx="4" fill="#DB2777"/>
+<g id="value_229">
+<text id="Name_229" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2331.27">600</tspan></text>
+<text id="#HEX_229" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2345.27">#db2777</tspan></text>
+</g>
+</g>
+<g id="_system/color_230">
+<rect id="color_230" x="634" y="2274" width="58" height="40" rx="4" fill="#BE185D"/>
+<g id="value_230">
+<text id="Name_230" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2331.27">700</tspan></text>
+<text id="#HEX_230" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2345.27">#be185d</tspan></text>
+</g>
+</g>
+<g id="_system/color_231">
+<rect id="color_231" x="700" y="2274" width="58" height="40" rx="4" fill="#9D174D"/>
+<g id="value_231">
+<text id="Name_231" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2331.27">800</tspan></text>
+<text id="#HEX_231" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2345.27">#9d174d</tspan></text>
+</g>
+</g>
+<g id="_system/color_232">
+<rect id="color_232" x="766" y="2274" width="58" height="40" rx="4" fill="#831843"/>
+<g id="value_232">
+<text id="Name_232" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2331.27">900</tspan></text>
+<text id="#HEX_232" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2345.27">#831843</tspan></text>
+</g>
+</g>
+<g id="_system/color_233">
+<rect id="color_233" x="832" y="2274" width="58" height="40" rx="4" fill="#500724"/>
+<g id="value_233">
+<text id="Name_233" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2331.27">950</tspan></text>
+<text id="#HEX_233" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2345.27">#500724</tspan></text>
+</g>
+</g>
+</g>
+</g>
+<g id="_system/color-group_23">
+<g id="name_23">
+<text id="base_23" fill="#161C2B" xml:space="preserve" style="white-space: pre" font-family="Inter" font-size="16" font-weight="bold" letter-spacing="0px"><tspan x="48" y="2395.5">Rose</tspan></text>
+</g>
+<g id="colors_23">
+<g id="_system/color_234">
+<rect id="color_234" x="172" y="2380" width="58" height="40" rx="4" fill="#FFF1F2"/>
+<g id="value_234">
+<text id="Name_234" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2437.27">50</tspan></text>
+<text id="#HEX_234" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="172" y="2451.27">#fff1f2</tspan></text>
+</g>
+</g>
+<g id="_system/color_235">
+<rect id="color_235" x="238" y="2380" width="58" height="40" rx="4" fill="#FFE4E6"/>
+<g id="value_235">
+<text id="Name_235" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2437.27">100</tspan></text>
+<text id="#HEX_235" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="238" y="2451.27">#ffe4e6</tspan></text>
+</g>
+</g>
+<g id="_system/color_236">
+<rect id="color_236" x="304" y="2380" width="58" height="40" rx="4" fill="#FECDD3"/>
+<g id="value_236">
+<text id="Name_236" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2437.27">200</tspan></text>
+<text id="#HEX_236" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="304" y="2451.27">#fecdd3</tspan></text>
+</g>
+</g>
+<g id="_system/color_237">
+<rect id="color_237" x="370" y="2380" width="58" height="40" rx="4" fill="#FDA4AF"/>
+<g id="value_237">
+<text id="Name_237" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2437.27">300</tspan></text>
+<text id="#HEX_237" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="370" y="2451.27">#fda4af</tspan></text>
+</g>
+</g>
+<g id="_system/color_238">
+<rect id="color_238" x="436" y="2380" width="58" height="40" rx="4" fill="#FB7185"/>
+<g id="value_238">
+<text id="Name_238" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2437.27">400</tspan></text>
+<text id="#HEX_238" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="436" y="2451.27">#fb7185</tspan></text>
+</g>
+</g>
+<g id="_system/color_239">
+<rect id="color_239" x="502" y="2380" width="58" height="40" rx="4" fill="#F43F5E"/>
+<g id="value_239">
+<text id="Name_239" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2437.27">500</tspan></text>
+<text id="#HEX_239" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="502" y="2451.27">#f43f5e</tspan></text>
+</g>
+</g>
+<g id="_system/color_240">
+<rect id="color_240" x="568" y="2380" width="58" height="40" rx="4" fill="#E11D48"/>
+<g id="value_240">
+<text id="Name_240" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2437.27">600</tspan></text>
+<text id="#HEX_240" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="568" y="2451.27">#e11d48</tspan></text>
+</g>
+</g>
+<g id="_system/color_241">
+<rect id="color_241" x="634" y="2380" width="58" height="40" rx="4" fill="#BE123C"/>
+<g id="value_241">
+<text id="Name_241" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2437.27">700</tspan></text>
+<text id="#HEX_241" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="634" y="2451.27">#be123c</tspan></text>
+</g>
+</g>
+<g id="_system/color_242">
+<rect id="color_242" x="700" y="2380" width="58" height="40" rx="4" fill="#9F1239"/>
+<g id="value_242">
+<text id="Name_242" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2437.27">800</tspan></text>
+<text id="#HEX_242" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="700" y="2451.27">#9f1239</tspan></text>
+</g>
+</g>
+<g id="_system/color_243">
+<rect id="color_243" x="766" y="2380" width="58" height="40" rx="4" fill="#881337"/>
+<g id="value_243">
+<text id="Name_243" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2437.27">900</tspan></text>
+<text id="#HEX_243" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="766" y="2451.27">#881337</tspan></text>
+</g>
+</g>
+<g id="_system/color_244">
+<rect id="color_244" x="832" y="2380" width="58" height="40" rx="4" fill="#4C0519"/>
+<g id="value_244">
+<text id="Name_244" fill="#27272A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2437.27">950</tspan></text>
+<text id="#HEX_244" fill="#71717A" xml:space="preserve" style="white-space: pre" font-family="SF Pro Display" font-size="12" letter-spacing="0em"><tspan x="832" y="2451.27">#4c0519</tspan></text>
+</g>
+</g>
+</g>
+</g>
+</g>
+<defs>
+<filter id="filter0_dd_537_3" x="232" y="46" width="70" height="52" filterUnits="userSpaceOnUse" color-interpolation-filters="sRGB">
+<feFlood flood-opacity="0" result="BackgroundImageFix"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="4"/>
+<feGaussianBlur stdDeviation="3"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.1 0"/>
+<feBlend mode="normal" in2="BackgroundImageFix" result="effect1_dropShadow_537_3"/>
+<feColorMatrix in="SourceAlpha" type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 127 0" result="hardAlpha"/>
+<feOffset dy="2"/>
+<feGaussianBlur stdDeviation="2"/>
+<feColorMatrix type="matrix" values="0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0 0.06 0"/>
+<feBlend mode="normal" in2="effect1_dropShadow_537_3" result="effect2_dropShadow_537_3"/>
+<feBlend mode="normal" in="SourceGraphic" in2="effect2_dropShadow_537_3" result="shape"/>
+</filter>
+</defs>
+</svg>
