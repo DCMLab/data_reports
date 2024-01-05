@@ -37,7 +37,6 @@ from dimcat.plotting import write_image
 from git import Repo
 
 import utils
-from create_gantt import create_gantt, fill_yaxis_gaps
 from utils import (
     DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
@@ -338,33 +337,6 @@ def make_diatonics_rectangles(phrase_timeline_data):
     return shapes
 
 
-def plot_phrase(
-    phrase_timeline_data,
-    colorscale=None,
-    add_shapes=True,
-):
-    shapes = make_diatonics_rectangles(phrase_timeline_data)
-    dummy_resource_value = phrase_timeline_data.Resource.iat[0]
-    phrase_timeline_data = fill_yaxis_gaps(
-        phrase_timeline_data, "chord_tone_tpc", Resource=dummy_resource_value
-    )
-    if phrase_timeline_data.Task.isna().any():
-        names = ms3.transform(phrase_timeline_data.chord_tone_tpc, ms3.fifths2name)
-        phrase_timeline_data.Task.fillna(names, inplace=True)
-    # return phrase_timeline_data
-    corpus, piece, phrase_id, *_ = phrase_timeline_data.index[0]
-    title = f"Phrase {phrase_id} from {corpus}/{piece}"
-    kwargs = dict(title=title, colors=colorscale)
-    if add_shapes:
-        kwargs["shapes"] = shapes
-    fig = create_gantt(
-        phrase_timeline_data.sort_values("chord_tone_tpc", ascending=False), **kwargs
-    )
-    fig.update_layout(hovermode="x unified", legend_traceorder="grouped")
-    # fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
-    return fig
-
-
 # %%
 n_phrases = max(timeline_data.index.levels[2])
 # {degree: utils.TailwindColorsHex.get_color(DEGREE2COLOR[degree]) for degree in phrase_timeline_data.Resource.unique()}
@@ -374,8 +346,12 @@ colorscale = DEGREE2COLOR
 phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
 
 # %%
-fig = plot_phrase(phrase_timeline_data, colorscale=colorscale)
-plot_phrase(phrase_timeline_data, colorscale=colorscale, add_shapes=False).show()
+fig = utils.plot_phrase(phrase_timeline_data, colorscale=colorscale)
+utils.plot_phrase(
+    phrase_timeline_data,
+    colorscale=colorscale,
+    shapes=make_diatonics_rectangles(phrase_timeline_data),
+).show()
 fig
 
 # %%

@@ -5,7 +5,7 @@
 import argparse
 import os
 from fractions import Fraction as frac
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 import pandas as pd
 import plotly.figure_factory as ff
@@ -186,7 +186,7 @@ def create_gantt(
     title="Gantt chart",
     colors=None,
     layout=None,
-    shapes=None,
+    shapes: Optional[List[dict]] = None,
     annotations=None,
     **kwargs,
 ):

@@ -37,7 +37,11 @@ import ms3
 import numpy as np
 import pandas as pd
 from dimcat import resources
-from dimcat.data.resources.utils import make_group_start_mask, merge_columns_into_one
+from dimcat.data.resources.utils import (
+    make_group_start_mask,
+    merge_columns_into_one,
+    subselect_multiindex_from_df,
+)
 from dimcat.plotting import make_box_plot, write_image
 from git import Repo
 
@@ -200,10 +204,6 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
         "subsequent_root_roman"
     )
     subsequent_root_roman.where(all_but_ultima_selector, inplace=True)
-    # numeral_type_effective_key = pd.concat(
-    #     [numeral_type_effective_key, expected_root, subsequent_root, subsequent_root_roman],
-    #     axis=1,
-    # )
     merge_with_previous = (expected_root == subsequent_root).fillna(False)
     copy_decision_from_previous = (expected_root.eq(expected_root.shift())).fillna(
         False
@@ -219,6 +219,18 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
         root_roman_criterion.where(~fill_preparation_chain)
         .ffill()
         .rename("root_roman_or_its_dominant")
+    )
+    numeral_type_effective_key = numeral_type_effective_key.from_resource_and_dataframe(
+        numeral_type_effective_key,
+        pd.concat(
+            [
+                numeral_type_effective_key,
+                expected_root,
+                subsequent_root,
+                subsequent_root_roman,
+            ],
+            axis=1,
+        ),
     )
     return numeral_type_effective_key.regroup_phrases(root_roman_criterion)
 
@@ -251,18 +263,8 @@ utils._compare_criteria_entropies(
 ```
 
 ```{code-cell}
-n_phrases = max(root_roman_or_its_dominant.index.levels[2])
-phrase_df = root_roman_or_its_dominant.query(f"phrase_id == {choice(range(n_phrases))}")
-phrase_df
-```
-
-```{code-cell}
-
-```
-
-```{code-cell}
-def make_resource_column(timeline_data):
-    is_dominant = timeline_data.is_dominant
+def make_simple_resource_column(timeline_data):
+    is_dominant = timeline_data.expected_root.notna()
     group_levels = is_dominant.index.names[:-1]
     stage_has_dominant = is_dominant.groupby(group_levels).any()
     is_tonic_resolution = ~is_dominant & stage_has_dominant.reindex(timeline_data.index)
@@ -284,9 +286,6 @@ def make_timeline_data(root_roman_or_its_dominant):
                 ms3.roman_numeral2fifths,
                 ["effective_localkey_resolved", "globalkey_is_minor"],
             ).rename("effective_local_tonic_tpc"),
-            utils.make_dominant_selector(root_roman_or_its_dominant).rename(
-                "is_dominant"
-            ),
         ],
         axis=1,
     )
@@ -302,15 +301,73 @@ def make_timeline_data(root_roman_or_its_dominant):
         timeline_data, exploded_chord_tones, left_index=True, right_index=True
     )
     timeline_data = pd.concat(
-        [timeline_data, make_resource_column(timeline_data)], axis=1
-    )
+        [timeline_data, make_simple_resource_column(timeline_data)], axis=1
+    ).rename(columns=dict(chord="Description"))
     return timeline_data
-
-
-timeline_data = make_timeline_data(root_roman_or_its_dominant)
-timeline_data.head(100)
 ```
 
 ```{code-cell}
+timeline_data = make_timeline_data(root_roman_or_its_dominant)
+timeline_data.head(50)
+```
 
+```{code-cell}
+n_phrases = max(timeline_data.index.levels[2])
+color_shade = 500
+colorscale = {
+    resource: utils.TailwindColorsHex.get_color(color_name, color_shade)
+    for resource, color_name in zip(
+        ("dominant", "tonic resolution", "other"), ("red", "blue", "gray")
+    )
+}
+```
+
+```{code-cell}
+phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
+```
+
+```{code-cell}
+fig = utils.plot_phrase(
+    phrase_timeline_data,
+    colorscale=colorscale,
+    # shapes=make_diatonics_rectangles(phrase_timeline_data)
+)
+fig
+```
+
+```{code-cell}
+phrase_timeline_data
+```
+
+```{code-cell}
+def subselect_dominant_stages(timeline_data):
+    """Returns a copy where all remaining stages contain at least one dominant."""
+    dominant_stage_mask = (
+        timeline_data.expected_root.notna().groupby(level=[0, 1, 2, 3]).any()
+    )
+    dominant_stage_index = dominant_stage_mask[dominant_stage_mask].index
+    all_dominant_stages = subselect_multiindex_from_df(
+        timeline_data, dominant_stage_index
+    )
+    return all_dominant_stages
+
+
+all_dominant_stages = subselect_dominant_stages(timeline_data)
+all_dominant_stages
+```
+
+```{code-cell}
+gpb = all_dominant_stages.groupby(level=[0, 1, 2, 3])
+expected_roots = gpb.expected_root.nunique()
+expected_roots[expected_roots.gt(1)]
+```
+
+```{code-cell}
+unique_resource_vals = gpb.Resource.unique()
+unique_resource_vals.head()
+```
+
+```{code-cell}
+n_root_roman = gpb.root_roman_or_its_dominant.nunique()
+n_root_roman[n_root_roman.gt(1)]
 ```

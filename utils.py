@@ -34,6 +34,8 @@ from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
 from scipy.stats import entropy
 
+from create_gantt import create_gantt, fill_yaxis_gaps
+
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
 DEFAULT_OUTPUT_FORMAT = ".png"
@@ -117,7 +119,7 @@ COLUMN2SUNBURST_TITLE = dict(
 )
 
 
-class TailwindColorNames(FriendlyEnum):
+class TailwindBaseColor(FriendlyEnum):
     SLATE = "SLATE"
     GRAY = "GRAY"
     ZINC = "ZINC"
@@ -144,9 +146,10 @@ shade_: TypeAlias = Literal[50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950
 
 class TailwindColors:
     """Color palette: look for tailwindcss_v3.3.3(.png|.svg)"""
+
     @classmethod
     def get_color(
-        cls, name: TailwindColorNames | str, shade: Optional[shade_] = None
+        cls, name: TailwindBaseColor | str, shade: Optional[shade_] = None
     ) -> Tuple[int, int, int]:
         if shade is None:
             name_upper = name.upper()
@@ -155,22 +158,24 @@ class TailwindColors:
             raise ValueError(
                 f"Shade has not been specified and name does not match any of the class members: {name_upper}"
             )
-        tailwind_name = TailwindColorNames(name)
+        tailwind_name = TailwindBaseColor(name)
         member = f"{tailwind_name.name}_{shade:03d}"
         return cls.get_color(member)
 
     @classmethod
     def iter_colors(
         cls,
-        name: Optional[TailwindColorNames] = None,
+        name: Optional[TailwindBaseColor | Iterable[TailwindBaseColor]] = None,
         shades: Optional[shade_ | Iterable[shade_]] = None,
         as_hsv: bool = False,
         names=True,
     ) -> Iterator[Tuple[str, Tuple[int, int, int]]] | Iterator[Tuple[int, int, int]]:
         if name is None:
-            name_iterator = (name.name for name in TailwindColorNames)
+            name_iterator = (name.name for name in TailwindBaseColor)
         else:
-            name_iterator = (TailwindColorNames(name).name,)
+            if isinstance(name, str):
+                name = [name]
+            name_iterator = [TailwindBaseColor(name).name for name in name]
         if shades is None:
             shades = (50, 100, 200, 300, 400, 500, 600, 700, 800, 900, 950)
         elif isinstance(shades, int):
@@ -2136,3 +2141,28 @@ def make_start_finish(duration_qb: pd.Series) -> pd.DataFrame:
 
 
 # endregion phrase Gantt helpers
+def plot_phrase(
+    phrase_timeline_data,
+    colorscale=None,
+    shapes: Optional[List[dict]] = None,
+) -> go.Figure:
+    """Timeline (Gantt) data for a single phrase."""
+    dummy_resource_value = phrase_timeline_data.Resource.iat[0]
+    phrase_timeline_data = fill_yaxis_gaps(
+        phrase_timeline_data, "chord_tone_tpc", Resource=dummy_resource_value
+    )
+    if phrase_timeline_data.Task.isna().any():
+        names = ms3.transform(phrase_timeline_data.chord_tone_tpc, ms3.fifths2name)
+        phrase_timeline_data.Task.fillna(names, inplace=True)
+    # return phrase_timeline_data
+    corpus, piece, phrase_id, *_ = phrase_timeline_data.index[0]
+    title = f"Phrase {phrase_id} from {corpus}/{piece}"
+    kwargs = dict(title=title, colors=colorscale)
+    if shapes:
+        kwargs["shapes"] = shapes
+    fig = create_gantt(
+        phrase_timeline_data.sort_values("chord_tone_tpc", ascending=False), **kwargs
+    )
+    fig.update_layout(hovermode="x", legend_traceorder="grouped")
+    # fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
+    return fig
