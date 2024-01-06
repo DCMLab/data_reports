@@ -169,6 +169,8 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
             "localkey_is_minor",
             "effective_localkey_resolved",
             "effective_localkey_is_minor",
+            "timesig",
+            "mn_onset",
             "numeral",
             "root_roman",
             "chord_type",
@@ -281,10 +283,6 @@ utils._compare_criteria_entropies(
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root.notna()
     group_levels = is_dominant.index.names[:-1]
@@ -379,10 +377,6 @@ def make_timeline_data(root_roman_or_its_dominant, detailed=False):
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 DETAILED_FUNCTIONS = True
 timeline_data = make_timeline_data(
     root_roman_or_its_dominant, detailed=DETAILED_FUNCTIONS
@@ -391,10 +385,6 @@ timeline_data.head(50)
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 n_phrases = max(timeline_data.index.levels[2])
 
 
@@ -512,20 +502,12 @@ colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 phrase_timeline_data = timeline_data.query(
     f"phrase_id == {choice(range(n_phrases))}"
 )  # 5932")
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 fig = utils.plot_phrase(
     phrase_timeline_data,
     colorscale=colorscale,
@@ -543,10 +525,6 @@ make_localkey_rectangles(phrase_timeline_data)
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 def subselect_dominant_stages(timeline_data):
     """Returns a copy where all remaining stages contain at least one dominant."""
     dominant_stage_mask = (
@@ -564,29 +542,17 @@ all_dominant_stages
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 gpb = all_dominant_stages.groupby(level=[0, 1, 2, 3])
 expected_roots = gpb.expected_root.nunique()
 expected_roots[expected_roots.gt(1)]
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 unique_resource_vals = gpb.Resource.unique()
 unique_resource_vals.head()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 n_root_roman = gpb.root_roman_or_its_dominant.nunique()
 n_root_roman[n_root_roman.gt(1)]
 ```

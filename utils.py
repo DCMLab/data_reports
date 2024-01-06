@@ -4,6 +4,7 @@ import colorsys
 import os
 import re
 from collections import Counter, defaultdict
+from fractions import Fraction
 from functools import cache
 from numbers import Number
 from typing import Dict, Hashable, Iterable, Iterator, List, Literal, Optional, Tuple
@@ -23,7 +24,7 @@ from dimcat.data.resources.facets import add_chord_tone_intervals
 from dimcat.data.resources.features import extend_bass_notes_feature
 from dimcat.data.resources.results import TypeAlias, _entropy
 from dimcat.data.resources.utils import merge_columns_into_one
-from dimcat.plotting import make_bar_plot
+from dimcat.plotting import make_bar_plot, update_figure_layout
 from dimcat.utils import grams, make_transition_matrix
 from git import Repo
 from IPython.display import display
@@ -2147,6 +2148,15 @@ def plot_phrase(
     phrase_timeline_data,
     colorscale=None,
     shapes: Optional[List[dict]] = None,
+    layout: Optional[dict] = None,
+    font_size: Optional[int] = None,  # for everything
+    textfont_size: Optional[
+        int
+    ] = None,  # for traces, independently of axis labels, legends, etc.
+    x_axis: Optional[dict] = None,
+    y_axis: Optional[dict] = None,
+    color_axis: Optional[dict] = None,
+    traces_settings: Optional[dict] = None,
 ) -> go.Figure:
     """Timeline (Gantt) data for a single phrase."""
     dummy_resource_value = phrase_timeline_data.Resource.iat[0]
@@ -2167,6 +2177,32 @@ def plot_phrase(
     )
     # fig.update_layout(hovermode="x", legend_traceorder="grouped")
     # fig.update_traces(hovertemplate="Task: %{text}<br>Start: %{x}<br>Finish: %{y}")
+    if "timesig" in phrase_timeline_data.columns and "mn_onset" in phrase_timeline_data:
+        timesigs = phrase_timeline_data.timesig.dropna().unique()
+        if len(timesigs) == 1:
+            timesig = timesigs[0]
+            measure_duration = Fraction(timesig) * 4.0
+            phrase_end_offset = -phrase_timeline_data.mn_onset.iat[0] * 4.0
+            if x_axis is None:
+                x_axis = dict(
+                    dtick=measure_duration,
+                    tick0=phrase_end_offset,
+                )
+            else:
+                if "dtick" not in x_axis:
+                    x_axis["dtick"] = measure_duration
+                if "tick0" not in x_axis:
+                    x_axis["tick0"] = phrase_end_offset
+    update_figure_layout(
+        fig,
+        layout=layout,
+        font_size=font_size,
+        textfont_size=textfont_size,
+        x_axis=x_axis,
+        y_axis=y_axis,
+        color_axis=color_axis,
+        traces_settings=traces_settings,
+    )
     return fig
 
 
