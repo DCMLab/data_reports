@@ -162,7 +162,9 @@ def make_diatonics_criterion(
 
 ```{code-cell} ipython3
 def make_root_roman_or_its_dominants_criterion(
-    phrase_annotations, query: Optional[str] = None, inspect_masks: bool = False
+    phrase_annotations: resources.PhraseAnnotations,
+    query: Optional[str] = None,
+    inspect_masks: bool = False,
 ):
     """For computing this criterion, dominants take on the numeral of their expected tonic chord except when they are
     part of a dominant chain that resolves as expected. In this case, the entire chain takes on the numeral of the
@@ -170,9 +172,11 @@ def make_root_roman_or_its_dominants_criterion(
     chain of dominants resolving into the respective chord are grouped into a stage. All other numeral groups form
     individual stages.
     """
-    numeral_type_effective_key = utils.get_phrase_chord_tones(
+    # region prepare required chord features
+    phrase_data = utils.get_phrase_chord_tones(
         phrase_annotations,
         additional_columns=[
+            "relativeroot",
             "localkey_resolved",
             "localkey_is_minor",
             "effective_localkey_resolved",
@@ -185,37 +189,39 @@ def make_root_roman_or_its_dominants_criterion(
         ],
         query=query,
     )
-    localkey_tonic = ms3.transform(
-        numeral_type_effective_key,
+    localkey_tonic_fifths = ms3.transform(
+        phrase_data,
         ms3.roman_numeral2fifths,
         ["localkey_resolved", "globalkey_is_minor"],
     )
-    localkey_tonic_tpc = localkey_tonic.add(
-        ms3.transform(numeral_type_effective_key.globalkey, ms3.name2fifths)
+    localkey_tonic_tpc = localkey_tonic_fifths.add(
+        ms3.transform(phrase_data.globalkey, ms3.name2fifths)
     ).rename("localkey_tonic_tpc")
-    dominant_selector = utils.make_dominant_selector(numeral_type_effective_key)
-    expected_root = ms3.transform(
-        numeral_type_effective_key,
+    expected_root_tpc = ms3.transform(
+        phrase_data,
         ms3.roman_numeral2fifths,
         ["effective_localkey", "globalkey_is_minor"],
-    ).rename("expected_root")
-    expected_root = expected_root.where(dominant_selector).astype("Int64")
+    ).rename("expected_root_tpc")
+    is_dominant = utils.make_dominant_selector(phrase_data)
+    expected_root_tpc = expected_root_tpc.where(is_dominant).astype("Int64")
+    expected_tonic = phrase_data.relativeroot.fillna(
+        phrase_data.effective_localkey_is_minor.map({True: "i", False: "I"})
+    )  # this is equivalent to the effective_localkey (relative to the global tonic), but relative to the localkey
     effective_numeral = (
         ms3.transform(
-            numeral_type_effective_key,
+            phrase_data,
             ms3.rel2abs_key,
             ["numeral", "effective_localkey_resolved", "globalkey_is_minor"],
         )
         .astype("string")
         .rename("effective_numeral")
     )
-
     subsequent_root = (
         ms3.transform(
             pd.concat(
                 [
                     effective_numeral,
-                    numeral_type_effective_key.globalkey_is_minor,
+                    phrase_data.globalkey_is_minor,
                 ],
                 axis=1,
             ),
@@ -225,62 +231,91 @@ def make_root_roman_or_its_dominants_criterion(
         .astype("Int64")
         .rename("subsequent_root")
     )
+    # set ultima rows (first of phrase_id groups) to NA
     all_but_ultima_selector = ~make_group_start_mask(subsequent_root, "phrase_id")
     subsequent_root.where(all_but_ultima_selector, inplace=True)
-    subsequent_root_roman = numeral_type_effective_key.root_roman.shift().rename(
+    subsequent_root_roman = phrase_data.root_roman.shift().rename(
         "subsequent_root_roman"
     )
     subsequent_root_roman.where(all_but_ultima_selector, inplace=True)
+
+    # endregion prepare required chord features
+    # region prepare masks
+
     # naming can be confusing: phrase data is expected to be reversed, i.e. the first row is a phrase's ultima chord
     # hence, when column names say "subsequent", the corresponding variable names say "previous" to avoid confusion
     # regarding the direction of the shift. In other words, .shift() yields previous values (values of preceding rows)
     # that correspond to subsequent chords
-    merge_with_previous = (expected_root == subsequent_root).fillna(False)
-    copy_decision_from_previous = (expected_root.eq(expected_root.shift())).fillna(
+    merge_with_previous = (expected_root_tpc == subsequent_root).fillna(False)
+    copy_decision_from_previous = expected_root_tpc.eq(
+        expected_root_tpc.shift()
+    ).fillna(
         False
-    )  # has same expectation as subsequent dominant and will take on its value, i.e., when the end of a dominant chain
-    # is resolved, the entire chain takes on the resolution as criterion value; otherwise it takes its own
-    # effective_localkey as value, which is equivalent to the expected tonic chord
-    fill_preparation_chain = (
-        copy_decision_from_previous
-        & merge_with_previous.shift().fillna(False)
-        & all_but_ultima_selector
-    )  # mask for those dominants that follow a dominant which resolves as expected
-    keep_root = ~(merge_with_previous | fill_preparation_chain)
-    root_roman_criterion = numeral_type_effective_key.root_roman.where(
-        keep_root, subsequent_root_roman
-    )  #
-    root_roman_criterion = (
-        root_roman_criterion.where(~fill_preparation_chain)
-        .ffill()
-        .rename("root_roman_or_its_dominants")
+    )  # has same expectation as previous dominant and will take on its value if the end of a dominant chain
+    # is resolved; otherwise it keeps its own expected tonic as value
+
+    dominant_grouper, _ = make_adjacency_groups(is_dominant, groupby="phrase_id")
+    dominant_group_resolves = (
+        merge_with_previous.groupby(dominant_grouper).first().to_dict()
+    )  # True for those dominant groups where the first 'merge_with_previous' is True, the other groups are left alone
+    potential_dominant_chain_mask = merge_with_previous | copy_decision_from_previous
+    dominant_chains_groupby = potential_dominant_chain_mask.groupby(dominant_grouper)
+    dominant_chain_fill_indices = []
+    for (group, dominant_chain), index in zip(
+        dominant_chains_groupby, dominant_chains_groupby.indices.values()
+    ):
+        if not dominant_group_resolves[group]:
+            continue
+        for do_fill, ix in zip(dominant_chain[1:], index[1:]):
+            # collect all indices following the first (which is already merged and will provide the root_numeral to be
+            # propagated) which are either the same dominant (copy_decision_from_previous) or the previous dominant's
+            # dominant (merge_with_previous), but stop when the chain is broken, leaving unconnected dominants alone
+            # with their own expected resolutions
+            if not do_fill:
+                break
+            dominant_chain_fill_indices.append(ix)
+    dominant_chain_fill_mask = np.zeros_like(potential_dominant_chain_mask, bool)
+    dominant_chain_fill_mask[dominant_chain_fill_indices] = True
+
+    # endregion prepare masks
+
+    # region make criterion
+
+    root_roman_criterion = expected_tonic.where(
+        is_dominant, phrase_data.root_roman
+    ).rename("root_roman_or_its_dominants")
+    root_roman_criterion.where(
+        ~merge_with_previous, subsequent_root_roman, inplace=True
     )
+    root_roman_criterion = root_roman_criterion.where(~dominant_chain_fill_mask).ffill()
+
+    # endregion make criterion
+
     concatenate_this = [
         localkey_tonic_tpc,
-        numeral_type_effective_key,
+        phrase_data,
         effective_numeral,
-        expected_root,
+        expected_root_tpc,
         subsequent_root,
         subsequent_root_roman,
     ]
     if inspect_masks:
         concatenate_this += [
-            pd.Series(
-                all_but_ultima_selector,
-                index=numeral_type_effective_key.index,
-                name="all_but_ultima_selector",
-            ),
             merge_with_previous.rename("merge_with_previous"),
             copy_decision_from_previous.rename("copy_decision_from_previous"),
-            fill_preparation_chain.rename("fill_preparation_chain"),
-            keep_root.rename("keep_root"),
+            potential_dominant_chain_mask.rename("potential_dominant_chain_mask"),
+            pd.Series(
+                dominant_chain_fill_mask,
+                index=phrase_data.index,
+                name="dominant_chain_fill_mask",
+            ),
         ]
 
-    numeral_type_effective_key = numeral_type_effective_key.from_resource_and_dataframe(
-        numeral_type_effective_key,
+    phrase_data = phrase_data.from_resource_and_dataframe(
+        phrase_data,
         pd.concat(concatenate_this, axis=1),
     )
-    return numeral_type_effective_key.regroup_phrases(root_roman_criterion)
+    return phrase_data.regroup_phrases(root_roman_criterion)
 
 
 root_roman_or_its_dominants = make_root_roman_or_its_dominants_criterion(
@@ -314,7 +349,7 @@ utils._compare_criteria_entropies(
 
 ```{code-cell} ipython3
 def make_simple_resource_column(timeline_data, name="Resource"):
-    is_dominant = timeline_data.expected_root.notna()
+    is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
     stage_has_dominant = is_dominant.groupby(group_levels).any()
     is_tonic_resolution = ~is_dominant & stage_has_dominant.reindex(timeline_data.index)
@@ -335,7 +370,7 @@ def make_detailed_resource_column(timeline_data, name="Resource"):
     is_dim = leading_tone_is_root & timeline_data.chord_type.eq("o")
     is_dim7 = leading_tone_is_root & timeline_data.chord_type.eq("o7")
     if_halfdim7 = timeline_data.chord_type.eq("%7")
-    is_dominant = timeline_data.expected_root.notna()
+    is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
     stage_has_dominant = is_dominant.groupby(group_levels).any()
     is_tonic_resolution = ~is_dominant & stage_has_dominant.reindex(timeline_data.index)
@@ -571,7 +606,7 @@ make_localkey_rectangles(phrase_timeline_data)
 def subselect_dominant_stages(timeline_data):
     """Returns a copy where all remaining stages contain at least one dominant."""
     dominant_stage_mask = (
-        timeline_data.expected_root.notna().groupby(level=[0, 1, 2, 3]).any()
+        timeline_data.expected_root_tpc.notna().groupby(level=[0, 1, 2, 3]).any()
     )
     dominant_stage_index = dominant_stage_mask[dominant_stage_mask].index
     all_dominant_stages = subselect_multiindex_from_df(
@@ -586,8 +621,8 @@ all_dominant_stages
 
 ```{code-cell} ipython3
 gpb = all_dominant_stages.groupby(level=[0, 1, 2, 3])
-expected_roots = gpb.expected_root.nunique()
-expected_roots[expected_roots.gt(1)]
+expected_root_tpcs = gpb.expected_root_tpc.nunique()
+expected_root_tpcs[expected_root_tpcs.gt(1)]
 ```
 
 ```{code-cell} ipython3
