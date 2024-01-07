@@ -161,7 +161,15 @@ def make_diatonics_criterion(
 ```
 
 ```{code-cell} ipython3
-def make_root_roman_or_dominant_criterion(phrase_annotations):
+def make_root_roman_or_its_dominants_criterion(
+    phrase_annotations, query: Optional[str] = None, inspect_masks: bool = False
+):
+    """For computing this criterion, dominants take on the numeral of their expected tonic chord except when they are
+    part of a dominant chain that resolves as expected. In this case, the entire chain takes on the numeral of the
+    last expected tonic chord. This results in all chords that are adjacent to their corresponding dominant or to a
+    chain of dominants resolving into the respective chord are grouped into a stage. All other numeral groups form
+    individual stages.
+    """
     numeral_type_effective_key = utils.get_phrase_chord_tones(
         phrase_annotations,
         additional_columns=[
@@ -175,6 +183,7 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
             "root_roman",
             "chord_type",
         ],
+        query=query,
     )
     localkey_tonic = ms3.transform(
         numeral_type_effective_key,
@@ -222,42 +231,63 @@ def make_root_roman_or_dominant_criterion(phrase_annotations):
         "subsequent_root_roman"
     )
     subsequent_root_roman.where(all_but_ultima_selector, inplace=True)
+    # naming can be confusing: phrase data is expected to be reversed, i.e. the first row is a phrase's ultima chord
+    # hence, when column names say "subsequent", the corresponding variable names say "previous" to avoid confusion
+    # regarding the direction of the shift. In other words, .shift() yields previous values (values of preceding rows)
+    # that correspond to subsequent chords
     merge_with_previous = (expected_root == subsequent_root).fillna(False)
     copy_decision_from_previous = (expected_root.eq(expected_root.shift())).fillna(
         False
-    )
+    )  # has same expectation as subsequent dominant and will take on its value, i.e., when the end of a dominant chain
+    # is resolved, the entire chain takes on the resolution as criterion value; otherwise it takes its own
+    # effective_localkey as value, which is equivalent to the expected tonic chord
     fill_preparation_chain = (
-        copy_decision_from_previous & merge_with_previous.shift().fillna(False)
-    ) & all_but_ultima_selector
+        copy_decision_from_previous
+        & merge_with_previous.shift().fillna(False)
+        & all_but_ultima_selector
+    )  # mask for those dominants that follow a dominant which resolves as expected
     keep_root = ~(merge_with_previous | fill_preparation_chain)
     root_roman_criterion = numeral_type_effective_key.root_roman.where(
         keep_root, subsequent_root_roman
-    )
+    )  #
     root_roman_criterion = (
         root_roman_criterion.where(~fill_preparation_chain)
         .ffill()
-        .rename("root_roman_or_its_dominant")
+        .rename("root_roman_or_its_dominants")
     )
+    concatenate_this = [
+        localkey_tonic_tpc,
+        numeral_type_effective_key,
+        effective_numeral,
+        expected_root,
+        subsequent_root,
+        subsequent_root_roman,
+    ]
+    if inspect_masks:
+        concatenate_this += [
+            pd.Series(
+                all_but_ultima_selector,
+                index=numeral_type_effective_key.index,
+                name="all_but_ultima_selector",
+            ),
+            merge_with_previous.rename("merge_with_previous"),
+            copy_decision_from_previous.rename("copy_decision_from_previous"),
+            fill_preparation_chain.rename("fill_preparation_chain"),
+            keep_root.rename("keep_root"),
+        ]
+
     numeral_type_effective_key = numeral_type_effective_key.from_resource_and_dataframe(
         numeral_type_effective_key,
-        pd.concat(
-            [
-                localkey_tonic_tpc,
-                numeral_type_effective_key,
-                effective_numeral,
-                expected_root,
-                subsequent_root,
-                subsequent_root_roman,
-            ],
-            axis=1,
-        ),
+        pd.concat(concatenate_this, axis=1),
     )
     return numeral_type_effective_key.regroup_phrases(root_roman_criterion)
 
 
-root_roman_or_its_dominant = make_root_roman_or_dominant_criterion(phrase_annotations)
-criterion2stages["root_roman_or_its_dominant"] = root_roman_or_its_dominant
-root_roman_or_its_dominant.head(100)
+root_roman_or_its_dominants = make_root_roman_or_its_dominants_criterion(
+    phrase_annotations
+)
+criterion2stages["root_roman_or_its_dominants"] = root_roman_or_its_dominants
+root_roman_or_its_dominants.head(100)
 ```
 
 ```{code-cell} ipython3
@@ -329,22 +359,22 @@ def make_detailed_resource_column(timeline_data, name="Resource"):
     return resource_column
 
 
-def make_timeline_data(root_roman_or_its_dominant, detailed=False):
+def make_timeline_data(root_roman_or_its_dominants, detailed=False):
     timeline_data = pd.concat(
         [
-            root_roman_or_its_dominant,
-            root_roman_or_its_dominant.groupby(
+            root_roman_or_its_dominants,
+            root_roman_or_its_dominants.groupby(
                 "phrase_id", group_keys=False, sort=False
             ).duration_qb.apply(utils.make_start_finish),
             ms3.transform(
-                root_roman_or_its_dominant,
+                root_roman_or_its_dominants,
                 ms3.roman_numeral2fifths,
                 ["effective_localkey_resolved", "globalkey_is_minor"],
             ).rename("effective_local_tonic_tpc"),
         ],
         axis=1,
     )
-    exploded_chord_tones = root_roman_or_its_dominant.chord_tone_tpcs.explode()
+    exploded_chord_tones = root_roman_or_its_dominants.chord_tone_tpcs.explode()
     exploded_chord_tones = pd.DataFrame(
         dict(
             chord_tone_tpc=exploded_chord_tones,
@@ -379,7 +409,7 @@ def make_timeline_data(root_roman_or_its_dominant, detailed=False):
 ```{code-cell} ipython3
 DETAILED_FUNCTIONS = True
 timeline_data = make_timeline_data(
-    root_roman_or_its_dominant, detailed=DETAILED_FUNCTIONS
+    root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
 )
 timeline_data.head(50)
 ```
@@ -502,9 +532,15 @@ colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
 ```{code-cell} ipython3
-phrase_timeline_data = timeline_data.query(
-    f"phrase_id == {choice(range(n_phrases))}"
-)  # 5932")
+PIN_PHRASE_ID = 2358
+# 5932
+
+if PIN_PHRASE_ID is None:
+    phrase_timeline_data = timeline_data.query(
+        f"phrase_id == {choice(range(n_phrases))}"
+    )
+else:
+    phrase_timeline_data = timeline_data.query(f"phrase_id == {PIN_PHRASE_ID}")
 ```
 
 ```{code-cell} ipython3
@@ -517,7 +553,14 @@ fig
 ```
 
 ```{code-cell} ipython3
-phrase_timeline_data
+phrase_2358 = make_root_roman_or_its_dominants_criterion(
+    phrase_annotations, query="phrase_id == 2358", inspect_masks=True
+)
+phrase_2358.iloc[-20:]
+```
+
+```{code-cell} ipython3
+phrase_2358.iloc[-20:, -8:]
 ```
 
 ```{code-cell} ipython3
@@ -553,6 +596,6 @@ unique_resource_vals.head()
 ```
 
 ```{code-cell} ipython3
-n_root_roman = gpb.root_roman_or_its_dominant.nunique()
+n_root_roman = gpb.root_roman_or_its_dominants.nunique()
 n_root_roman[n_root_roman.gt(1)]
 ```

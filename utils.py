@@ -2095,6 +2095,7 @@ def make_dominant_selector(phrase_data):
 def get_phrase_chord_tones(
     phrase_annotations: resources.PhraseAnnotations,
     additional_columns: Optional[Iterable[str]] = None,
+    query: Optional[str] = None,
 ) -> resources.PhraseData:
     """"""
     columns = [
@@ -2114,9 +2115,7 @@ def get_phrase_chord_tones(
     else:
         add_relative_chord_tones = False
     chord_tones = phrase_annotations.get_phrase_data(
-        reverse=True,
-        columns=columns,
-        drop_levels="phrase_component",
+        reverse=True, columns=columns, drop_levels="phrase_component", query=query
     )
     df = chord_tones.df
     df.chord_tones.where(df.chord_tones != (), inplace=True)
