@@ -590,6 +590,8 @@ def subselect_dominant_stages(timeline_data):
         timeline_data.expected_root_tpc.notna().groupby(level=[0, 1, 2, 3]).any()
     )
     dominant_stage_index = dominant_stage_mask[dominant_stage_mask].index
+    if len(dominant_stage_index) == 0:
+        return pd.DataFrame()
     all_dominant_stages = subselect_multiindex_from_df(
         timeline_data, dominant_stage_index
     )
@@ -623,16 +625,15 @@ FLATWISE_COLORS = [
 
 def _make_shape_data_for_numeral(
     numeral: str,
-    globalkey: str,
-    globalkey_is_minor: bool,
+    local_tonic_tpc: str,
+    effective_localkey_is_minor: bool,
     x0: Number,
     x1: Number,
     y_min: int,
-    local_tonic_tpc: int,
 ):
-    numeral_tpc = ms3.roman_numeral2fifths(
-        numeral, globalkey_is_minor
-    ) + ms3.name2fifths(globalkey)
+    numeral_tpc = (
+        ms3.roman_numeral2fifths(numeral, effective_localkey_is_minor) + local_tonic_tpc
+    )
     y_root = numeral_tpc - y_min
     text = numeral
     first_numeral_component = numeral.split("/")[0]
@@ -667,9 +668,8 @@ def _make_shape_data_for_numeral(
     return shape_data
 
 
-def _get_tonicization_area_shape_data(all_dominant_stages, groupby_levels):
+def _get_stage_shape_data(all_dominant_stages, groupby_levels, y_min):
     area_shape_data = []
-    y_min = phrase_timeline_data.chord_tone_tpc.min()
     for _, group_df in all_dominant_stages.groupby(groupby_levels):
         first_row = group_df.iloc[0]
         numeral = first_row.root_roman_or_its_dominants
@@ -686,12 +686,11 @@ def _get_tonicization_area_shape_data(all_dominant_stages, groupby_levels):
         if add_stage_area:
             shape_data = _make_shape_data_for_numeral(
                 numeral=numeral,
-                globalkey=first_row.globalkey,
-                globalkey_is_minor=first_row.globalkey_is_minor,
+                local_tonic_tpc=first_row.localkey_tonic_tpc,
+                effective_localkey_is_minor=first_row.effective_localkey_is_minor,
                 x0=x0,
                 x1=x1,
                 y_min=y_min,
-                local_tonic_tpc=first_row.localkey_tonic_tpc,
             )
             shape_data["legendgroup"] = "stage"
             area_shape_data.append(shape_data)
@@ -707,12 +706,11 @@ def _get_tonicization_area_shape_data(all_dominant_stages, groupby_levels):
                 numeral = last_row.root_roman_or_its_dominant
                 shape_data = _make_shape_data_for_numeral(
                     numeral=numeral,
-                    globalkey=last_row.globalkey,
-                    globalkey_is_minor=last_row.globalkey_is_minor,
+                    local_tonic_tpc=first_row.localkey_tonic_tpc,
+                    effective_localkey_is_minor=first_row.effective_localkey_is_minor,
                     x0=x0,
                     x1=x1,
                     y_min=y_min,
-                    local_tonic_tpc=last_row.localkey_tonic_tpc,
                 )
                 shape_data["legendgroup"] = "tonicization"
                 area_shape_data.append(shape_data)
@@ -739,46 +737,53 @@ def _make_tonicization_shapes(
             y_root
         )
     rectangle_settings = dict(
+        x0=x0,
+        x1=x1,
+        y0=y0_primary,
+        y1=y1_primary,
+        text=text,
         legendgroup=legendgroup,
-        line_width=0,
-        opacity=0.3,
         layer="below",
         textposition="middle center",
         label=dict(font=dict(size=100)),
     )
+    if legendgroup == "stage":
+        rectangle_settings["fillcolor"] = primary_color
+        rectangle_settings["line_width"] = 0
+        rectangle_settings["opacity"] = 0.3
+    else:
+        rectangle_settings["line_color"] = primary_color
+        rectangle_settings["line_width"] = 5
     result.append(
         utils.make_rectangle_shape(
-            x0=x0,
-            x1=x1,
-            y0=y0_primary,
-            y1=y1_primary,
-            text=text,
-            fillcolor=primary_color,
             **rectangle_settings,
         )
     )
     result.append(make_tonic_line(y_root, x0, x1, line_dash="dot"))
-    if is_minor:
-        if y0_secondary is not None:
-            result.append(
-                utils.make_rectangle_shape(
-                    x0=x0,
-                    x1=x1,
-                    y0=y0_secondary,
-                    y1=y1_secondary,
-                    fillcolor=secondary_color,
-                    **rectangle_settings,
-                )
+    if is_minor and y0_secondary is not None:
+        rectangle_settings["y0"] = y0_secondary
+        rectangle_settings["y1"] = y1_secondary
+        rectangle_settings["line_dash"] = "dot"
+        if legendgroup == "stage":
+            rectangle_settings["fillcolor"] = secondary_color
+        else:
+            rectangle_settings["line_color"] = secondary_color
+        result.append(
+            utils.make_rectangle_shape(
+                **rectangle_settings,
             )
+        )
     return result
 
 
 def get_tonicization_data(phrase_timeline_data):
     all_dominant_stages = subselect_dominant_stages(phrase_timeline_data)
     groupby_levels = all_dominant_stages.index.names[:-1]
-    area_shape_data = _get_tonicization_area_shape_data(
-        all_dominant_stages, groupby_levels
+    y_min = phrase_timeline_data.chord_tone_tpc.min()
+    area_shape_data = _get_stage_shape_data(
+        all_dominant_stages, groupby_levels, y_min=y_min
     )
+    area_shape_data += _get_tonicization_shape_data(phrase_timeline_data)
     shapes = []
     for shape_data in area_shape_data:
         shapes.extend(_make_tonicization_shapes(**shape_data))
@@ -788,10 +793,44 @@ def get_tonicization_data(phrase_timeline_data):
     return shapes
 
 
+def _get_tonicization_shape_data(phrase_timeline_data):
+    out_of_stage_tonicizations = phrase_timeline_data.expected_root_tpc.eq(
+        phrase_timeline_data.subsequent_root_tpc
+    ) & phrase_timeline_data.root_roman_or_its_dominant.ne(
+        phrase_timeline_data.root_roman_or_its_dominants
+    )
+    if not out_of_stage_tonicizations.any():
+        return []
+    area_shape_data = []
+    y_min = phrase_timeline_data.chord_tone_tpc.min()
+    grouping, _ = make_adjacency_groups(
+        phrase_timeline_data.root_roman_or_its_dominant, groupby="phrase_id"
+    )
+    groups_to_consider = out_of_stage_tonicizations.groupby(grouping).any().to_dict()
+    for group, rectangle_data in phrase_timeline_data.groupby(grouping):
+        if not groups_to_consider[group]:
+            continue
+        x0, x1 = rectangle_data.Start.min(), rectangle_data.Finish.max()
+        last_row = rectangle_data.iloc[-1]
+        numeral = last_row.root_roman_or_its_dominant
+        shape_data = _make_shape_data_for_numeral(
+            numeral=numeral,
+            local_tonic_tpc=last_row.localkey_tonic_tpc,
+            effective_localkey_is_minor=last_row.effective_localkey_is_minor,
+            x0=x0,
+            x1=x1,
+            y_min=y_min,
+        )
+        shape_data["legendgroup"] = "tonicization"
+        area_shape_data.append(shape_data)
+    return area_shape_data
+
+
 colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 
 # %%
-PIN_PHRASE_ID = 6832
+PIN_PHRASE_ID = None
+# 827
 # 2358
 # 5932
 
@@ -812,8 +851,11 @@ fig = utils.plot_phrase(
 fig
 
 # %%
+make_localkey_shapes(phrase_timeline_data)
+
+# %%
 make_root_roman_or_its_dominants_criterion(
-    phrase_annotations, query="phrase_id == 6832", inspect_masks=True
+    phrase_annotations, query="phrase_id == 827", inspect_masks=True
 )
 
 # %%
@@ -823,7 +865,6 @@ phrase_timeline_data
 make_localkey_shapes(phrase_timeline_data)
 
 # %%
-
 all_dominant_stages = subselect_dominant_stages(timeline_data)
 all_dominant_stages
 
