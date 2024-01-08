@@ -197,7 +197,11 @@ def _make_root_roman_or_its_dominants_criterion(
     # regarding the direction of the shift. In other words, .shift() yields previous values (values of preceding rows)
     # that correspond to subsequent chords
     merge_with_previous = (expected_root_tpc == subsequent_root_tpc).fillna(False)
-    copy_decision_from_previous = expected_root_tpc.eq(
+    copy_decision_from_previous = effective_numeral.where(is_dominant)
+    copy_decision_from_previous = copy_decision_from_previous.eq(
+        copy_decision_from_previous.shift()
+    ).fillna(False)
+    copy_chain_decision_from_previous = expected_root_tpc.eq(
         expected_root_tpc.shift()
     ).fillna(
         False
@@ -207,7 +211,9 @@ def _make_root_roman_or_its_dominants_criterion(
     dominant_group_resolves = (
         merge_with_previous.groupby(dominant_grouper).first().to_dict()
     )  # True for those dominant groups where the first 'merge_with_previous' is True, the other groups are left alone
-    potential_dominant_chain_mask = merge_with_previous | copy_decision_from_previous
+    potential_dominant_chain_mask = (
+        merge_with_previous | copy_chain_decision_from_previous
+    )
     dominant_chains_groupby = potential_dominant_chain_mask.groupby(dominant_grouper)
     dominant_chain_fill_indices = []
     for (group, dominant_chain), index in zip(
@@ -217,31 +223,44 @@ def _make_root_roman_or_its_dominants_criterion(
             continue
         for do_fill, ix in zip(dominant_chain[1:], index[1:]):
             # collect all indices following the first (which is already merged and will provide the root_numeral to be
-            # propagated) which are either the same dominant (copy_decision_from_previous) or the previous dominant's
-            # dominant (merge_with_previous), but stop when the chain is broken, leaving unconnected dominants alone
-            # with their own expected resolutions
+            # propagated) which are either the same dominant (copy_chain_decision_from_previous) or the previous
+            # dominant's dominant (merge_with_previous), but stop when the chain is broken, leaving unconnected
+            # dominants alone with their own expected resolutions
             if not do_fill:
                 break
             dominant_chain_fill_indices.append(ix)
     dominant_chain_fill_mask = np.zeros_like(potential_dominant_chain_mask, bool)
     dominant_chain_fill_mask[dominant_chain_fill_indices] = True
     # endregion prepare masks
-    # region make criterion
-    root_roman_criterion = expected_tonic.where(is_dominant, phrase_data.root_roman)
-    root_roman_criterion.where(
+    # region make criteria
+
+    # without dominant chains
+    # for this criterion, only those dominants that resolve as expected take on the value of their expected tonic, so
+    # that, otherwise, they are available for merging with their own dominant
+    root_dominant_criterion = expected_tonic.where(
+        is_dominant & merge_with_previous, phrase_data.root_roman
+    )
+    root_dominant_criterion.where(
         ~merge_with_previous, subsequent_root_roman, inplace=True
     )
     root_dominant_criterion = (
-        root_roman_criterion.where(~copy_decision_from_previous)
+        root_dominant_criterion.where(~copy_decision_from_previous)
         .ffill()
         .rename("root_roman_or_its_dominant")
     )
+
+    # with dominant chains
+    # for this criterion, all dominants
+    root_dominants_criterion = expected_tonic.where(is_dominant, phrase_data.root_roman)
+    root_dominants_criterion.where(
+        ~merge_with_previous, subsequent_root_roman, inplace=True
+    )
     root_dominants_criterion = (
-        root_roman_criterion.where(~dominant_chain_fill_mask)
+        root_dominants_criterion.where(~dominant_chain_fill_mask)
         .ffill()
         .rename("root_roman_or_its_dominants")
     )
-    # endregion make criterion
+    # endregion make criteria
     concatenate_this = [
         localkey_tonic_tpc,
         phrase_data,
@@ -256,6 +275,9 @@ def _make_root_roman_or_its_dominants_criterion(
         concatenate_this += [
             merge_with_previous.rename("merge_with_previous"),
             copy_decision_from_previous.rename("copy_decision_from_previous"),
+            copy_chain_decision_from_previous.rename(
+                "copy_chain_decision_from_previous"
+            ),
             potential_dominant_chain_mask.rename("potential_dominant_chain_mask"),
             pd.Series(
                 dominant_chain_fill_mask,
@@ -489,7 +511,7 @@ def make_function_colors(detailed=False):
     return colorscale
 
 
-def make_tonic_line(y_root, x0, x1):
+def make_tonic_line(y_root: int, x0: Number, x1: Number, line_dash="dash"):
     return dict(
         type="line",
         x0=x0,
@@ -497,7 +519,7 @@ def make_tonic_line(y_root, x0, x1):
         y0=y_root,
         y1=y_root,
         line_width=1,
-        line_dash="dash",
+        line_dash=line_dash,
     )
 
 
@@ -544,7 +566,7 @@ def _make_localkey_shapes(
         )
     )
     result.append(make_tonic_line(y_root, x0, x1))
-    text = "parallel minor" if is_minor else "parallel major"
+    text = "parallel major" if is_minor else "parallel minor"
     if y0_secondary is not None:
         result.append(
             utils.make_rectangle_shape(
@@ -578,22 +600,6 @@ def make_localkey_shapes(phrase_timeline_data):
     return shapes
 
 
-colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
-```
-
-```{code-cell} ipython3
-PIN_PHRASE_ID = 2358
-# 5932
-
-if PIN_PHRASE_ID is None:
-    phrase_timeline_data = timeline_data.query(
-        f"phrase_id == {choice(range(n_phrases))}"
-    )
-else:
-    phrase_timeline_data = timeline_data.query(f"phrase_id == {PIN_PHRASE_ID}")
-```
-
-```{code-cell} ipython3
 def subselect_dominant_stages(timeline_data):
     """Returns a copy where all remaining stages contain at least one dominant."""
     dominant_stage_mask = (
@@ -619,26 +625,30 @@ SHARPWISE_COLORS = [
 ]
 FLATWISE_COLORS = [
     "LIME",
-    "FUCHSIA",
     "GREEN",
-    "PINK",
+    "BLUE",
+    "CYAN",
     "EMERALD",
-    "ROSE",
+    "INDIGO",
     "TEAL",
+    "VIOLET",
     "SLATE",
     "STONE",
 ]
-# "CYAN", "BLUE", "INDIGO", "VIOLET"
 
 
 def _make_shape_data_for_numeral(
     numeral: str,
+    globalkey: str,
+    globalkey_is_minor: bool,
     x0: Number,
     x1: Number,
     y_min: int,
     local_tonic_tpc: int,
 ):
-    numeral_tpc = ms3.roman_numeral2fifths(numeral)
+    numeral_tpc = ms3.roman_numeral2fifths(
+        numeral, globalkey_is_minor
+    ) + ms3.name2fifths(globalkey)
     y_root = numeral_tpc - y_min
     text = numeral
     first_numeral_component = numeral.split("/")[0]
@@ -657,11 +667,11 @@ def _make_shape_data_for_numeral(
         else:
             primary_color = ("SKY", 500)
     else:
+        color_index = abs(distance_to_local_tonic) - 1
         if distance_to_local_tonic > 0:
-            color_order = SHARPWISE_COLORS
+            color = SHARPWISE_COLORS[color_index]
         else:
-            color_order = FLATWISE_COLORS
-        color = color_order[distance_to_local_tonic]
+            color = FLATWISE_COLORS[color_index]
         primary_color = (color, 500)
     shape_data["primary_color"] = utils.TailwindColorsHex.get_color(*primary_color)
     if tonicized_is_minor:
@@ -692,6 +702,8 @@ def _get_tonicization_area_shape_data(all_dominant_stages, groupby_levels):
         if add_stage_area:
             shape_data = _make_shape_data_for_numeral(
                 numeral=numeral,
+                globalkey=first_row.globalkey,
+                globalkey_is_minor=first_row.globalkey_is_minor,
                 x0=x0,
                 x1=x1,
                 y_min=y_min,
@@ -711,6 +723,8 @@ def _get_tonicization_area_shape_data(all_dominant_stages, groupby_levels):
                 numeral = last_row.root_roman_or_its_dominant
                 shape_data = _make_shape_data_for_numeral(
                     numeral=numeral,
+                    globalkey=last_row.globalkey,
+                    globalkey_is_minor=last_row.globalkey_is_minor,
                     x0=x0,
                     x1=x1,
                     y_min=y_min,
@@ -745,6 +759,8 @@ def _make_tonicization_shapes(
         line_width=0,
         opacity=0.3,
         layer="below",
+        textposition="middle center",
+        label=dict(font=dict(size=100)),
     )
     result.append(
         utils.make_rectangle_shape(
@@ -757,7 +773,7 @@ def _make_tonicization_shapes(
             **rectangle_settings,
         )
     )
-    result.append(make_tonic_line(y_root, x0, x1))
+    result.append(make_tonic_line(y_root, x0, x1, line_dash="dot"))
     if is_minor:
         if y0_secondary is not None:
             result.append(
@@ -782,11 +798,29 @@ def get_tonicization_data(phrase_timeline_data):
     shapes = []
     for shape_data in area_shape_data:
         shapes.extend(_make_tonicization_shapes(**shape_data))
-    shapes[0].update(dict(showlegend=True, name="tonicized area"))
-    shapes[1].update(dict(showlegend=True, name="tonicized pitch class"))
+    if len(shapes):
+        shapes[0].update(dict(showlegend=True, name="tonicized area"))
+        shapes[1].update(dict(showlegend=True, name="tonicized pitch class"))
     return shapes
 
 
+colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
+```
+
+```{code-cell} ipython3
+PIN_PHRASE_ID = 6832
+# 2358
+# 5932
+
+if PIN_PHRASE_ID is None:
+    phrase_timeline_data = timeline_data.query(
+        f"phrase_id == {choice(range(n_phrases))}"
+    )
+else:
+    phrase_timeline_data = timeline_data.query(f"phrase_id == {PIN_PHRASE_ID}")
+```
+
+```{code-cell} ipython3
 fig = utils.plot_phrase(
     phrase_timeline_data,
     colorscale=colorscale,
@@ -797,20 +831,9 @@ fig
 ```
 
 ```{code-cell} ipython3
-base_colors = [c.value for c in utils.TailwindBaseColor]
-base_colors
-```
-
-```{code-cell} ipython3
-len(base_colors) - 2 - 5
-```
-
-```{code-cell} ipython3
-
-```
-
-```{code-cell} ipython3
-phrase_timeline_data.query("stage == 2 & substage in (15, 16)").index.unique()
+make_root_roman_or_its_dominants_criterion(
+    phrase_annotations, query="phrase_id == 6832", inspect_masks=True
+)
 ```
 
 ```{code-cell} ipython3
@@ -822,7 +845,6 @@ make_localkey_shapes(phrase_timeline_data)
 ```
 
 ```{code-cell} ipython3
-
 
 all_dominant_stages = subselect_dominant_stages(timeline_data)
 all_dominant_stages

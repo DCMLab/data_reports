@@ -2220,14 +2220,12 @@ def make_rectangle_shape(
 ) -> dict:
     result = dict(type="rect", x0=x0, x1=x1, y0=y0, y1=y1, layer=layer, **kwargs)
     if text:
-        label = dict(
-            text=f"<b>{text}</b>",
-            textposition=textposition,
-        )
-        if "label" in result:
-            result["label"].update(label)
-        else:
-            result["label"] = label
+        label = result.get("label", dict())
+        if "text" not in label:
+            label["text"] = text
+        if "textposition" not in label:
+            label["textposition"] = textposition
+        result["label"] = label
     return result
 
 
