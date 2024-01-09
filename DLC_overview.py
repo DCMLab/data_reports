@@ -22,21 +22,24 @@
 # %load_ext autoreload
 # %autoreload 2
 import os
+from collections import defaultdict
+from typing import Dict, Iterator, List, Optional
 
 import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from dimcat import filters
-from dimcat.plotting import write_image
+from dimcat.plotting import update_figure_layout, write_image
 from git import Repo
 from IPython.display import display
+from plotly.subplots import make_subplots
 
 # %%
 from utils import (
     CORPUS_COLOR_SCALE,
     DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
     STD_LAYOUT,
     corpus_mean_composition_years,
     get_corpus_display_name,
@@ -45,7 +48,7 @@ from utils import (
     resolve_dir,
 )
 
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
+RESULTS_PATH = os.path.abspath("/home/laser/git/DLC/img")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -115,32 +118,9 @@ def make_summary(metadata_df):
     return metadata_df[piece_is_annotated].copy()
 
 
-# %% tags=["hide-input"]
-summary = make_summary(all_metadata)
-bar_data = pd.concat(
-    [
-        mean_composition_years.rename("year"),
-        summary.groupby(level="corpus").size().rename("pieces"),
-    ],
-    axis=1,
-).reset_index()
-
-N = len(summary)
-fig = px.bar(
-    bar_data,
-    x="year",
-    y="pieces",
-    color="corpus",
-    color_discrete_map=corpus_colors,
-    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
-)
-fig.update_traces(width=5)
-fig.update_layout(**STD_LAYOUT)
-fig.update_traces(width=5)
-save_figure_as(fig, "pieces_timeline_bars")
-fig.show()
-
 # %%
+summary = make_summary(all_metadata)
+N = len(summary)
 summary
 
 # %% [markdown]
@@ -163,9 +143,212 @@ fig = px.histogram(
 fig.update_traces(xbins=dict(size=10))
 fig.update_layout(**STD_LAYOUT)
 fig.update_legends(font=dict(size=16))
-save_figure_as(fig, "pieces_timeline_histogram", height=1250)
+# save_figure_as(fig, "pieces_timeline_histogram", height=1250)
 fig.show()
 
+
+# %%
+all_subcorpora = pd.read_csv("/home/laser/git/workflow_deployment/all_subcorpora.csv")
+is_public = all_subcorpora.dcml_corpora.notna()
+# is_dlc = all_subcorpora.distant_listening_corpus.notna()
+# is_dlc_and_unpublished = all_subcorpora[~is_public & is_dlc]
+# new_corpora = set(is_dlc_and_unpublished.repo_name)
+# summary["unpublished"] = summary.index.get_level_values("corpus").isin(new_corpora)
+# summary["novelty"] = summary.unpublished.map({True: "new addition", False: "published elsewhere"})
+published_corpora = all_subcorpora.loc[is_public, "repo_name"]
+repo2published_mapper = defaultdict(lambda: "Romantic Piano Corpus")
+repo2published_mapper.update(
+    dict(
+        ABC="Annotated Beethoven Corpus",
+        corelli="Corelli Trio Sonatas",
+        mozart_piano_sonatas="Mozart Piano Sonatas",
+    )
+)
+repo2published_mapper = dict(
+    zip(published_corpora, published_corpora.map(repo2published_mapper))
+)
+repo2publication_mapper = defaultdict(lambda: "DLC")
+repo2publication_mapper.update(repo2published_mapper)
+summary["first published"] = summary.index.get_level_values("corpus").map(
+    repo2publication_mapper
+)
+hist_data = summary.reset_index().sort_values(
+    "first published", key=lambda S: S.eq("DLC")
+)  # DLC always last bar
+hist_data.corpus = hist_data.corpus.map(corpus_names)
+
+# %%
+hist_data.head()
+
+# %%
+fig = px.histogram(
+    hist_data,
+    x="composed_end",
+    color="first published",
+    labels=dict(
+        composed_end="composition year",
+        count="pieces",
+    ),
+    color_discrete_map=corpus_name_colors,
+    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
+)
+fig.update_traces(xbins=dict(size=20))
+fig.update_layout(**STD_LAYOUT)
+fig.update_legends(font=dict(size=16))
+
+# %%
+COLOR_MAPPING = dict(
+    zip(
+        (
+            "DLC",
+            "Annotated Beethoven Corpus",
+            "Romantic Piano Corpus",
+            "Corelli Trio Sonatas",
+            "Mozart Piano Sonatas",
+        ),
+        px.colors.qualitative.Set1,
+    )
+)
+
+
+def make_histogram_traces(
+    hist_data,
+    x: str = "composed_end",
+    y: Optional[str] = None,
+    color="first published",
+    discrete_colors: Optional[List | Dict] = COLOR_MAPPING,
+    **kwargs,
+) -> Iterator[go.Histogram]:
+    color_palette_is_dict = None
+    if discrete_colors is not None:
+        color_palette_is_dict = isinstance(discrete_colors, dict)
+
+    def get_group_color(group, i):
+        if color_palette_is_dict is None:
+            return
+        if color_palette_is_dict:
+            return discrete_colors[group]
+        return discrete_colors[i]
+
+    for i, (group, group_df) in enumerate(hist_data.groupby(color, sort=False)):
+        y_data = None if not y else group_df[y]
+        trace = go.Histogram(
+            x=group_df[x],
+            y=y_data,
+            name=group,
+            marker_color=get_group_color(group, i),
+            **kwargs,
+        )
+        yield trace
+
+
+def make_single_go_histogram(
+    hist_data,
+    x="composed_end",
+    y=None,
+    color="first published",
+    histfunc=None,
+    discrete_colors: Optional[List | Dict] = None,
+    xbins=20,
+    barmode="stack",
+) -> go.Figure:
+    fig = go.Figure()
+    for trace in make_histogram_traces(
+        hist_data,
+        x=x,
+        y=y,
+        color=color,
+        histfunc=histfunc,
+        discrete_colors=discrete_colors,
+    ):
+        fig.add_trace(trace)
+    if barmode:
+        fig.update_layout(barmode=barmode)
+    if xbins:
+        fig.update_traces(xbins=dict(size=xbins))
+    return fig
+
+
+fig = make_single_go_histogram(
+    hist_data,
+)
+update_figure_layout(
+    fig, x_axis=dict(title_text="composition year"), y_axis=dict(title_text="# pieces")
+)
+fig
+
+
+# %%
+def make_stacked_go_histograms(
+    hist_data,
+    y: List[Optional[str]],
+    histfunc: List[Optional[str]],
+    x="composed_end",
+    color="first published",
+    xaxis_labels: Optional[str | List[str]] = None,
+    yaxis_labels: Optional[str | List[str]] = None,
+    xbins=20,
+    barmode="stack",
+) -> go.Figure:
+    n_histograms = len(y)
+    assert len(histfunc) == n_histograms
+    fig = make_subplots(rows=n_histograms)
+    for histogram_i, (y, histfunc) in enumerate(zip(y, histfunc), start=1):
+        showlegend = histogram_i == n_histograms  # show legend for last histogram
+        for trace_group, trace in enumerate(
+            make_histogram_traces(
+                hist_data,
+                x=x,
+                y=y,
+                histfunc=histfunc,
+                color=color,
+                showlegend=showlegend,
+            )
+        ):
+            trace["legendgroup"] = f"group{trace_group}"
+            fig.append_trace(trace, histogram_i, 1)
+    if barmode:
+        fig.update_layout(barmode=barmode)
+    if xbins:
+        fig.update_traces(xbins=dict(size=xbins))
+    if xaxis_labels:
+        if isinstance(xaxis_labels, str):
+            fig.update_xaxes(title_text=xaxis_labels, row=n_histograms)
+        else:
+            assert len(xaxis_labels) == n_histograms
+            for row, label in enumerate(xaxis_labels, start=1):
+                fig.update_xaxes(title_text=label, row=row)
+    if yaxis_labels:
+        if isinstance(yaxis_labels, str):
+            fig.update_yaxes(title_text=yaxis_labels, row=n_histograms)
+        else:
+            assert len(yaxis_labels) == n_histograms
+            for row, label in enumerate(yaxis_labels, start=1):
+                fig.update_yaxes(title_text=label, row=row)
+    return fig
+
+
+fig = make_stacked_go_histograms(
+    hist_data,
+    y=[None, "n_onsets", "label_count"],
+    histfunc=[None, "sum", "sum"],
+    xaxis_labels="composition year",
+    yaxis_labels=["# pieces", "# notes", "# annotation labels"],
+)
+update_figure_layout(
+    fig,
+    title_text="Size of the Distant Listening Corpus",
+    legend=dict(
+        orientation="h",  # show entries horizontally
+        xanchor="center",  # use center of legend as anchor
+        x=0.5,
+        y=-0.2,
+        traceorder="reversed",
+    ),
+    height=800,
+)
+write_image(fig, make_output_path("corpus_size"))
+fig
 
 # %% [markdown]
 # ## Dimensions
