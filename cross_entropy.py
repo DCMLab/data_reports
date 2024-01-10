@@ -24,7 +24,7 @@
 # # %load_ext autoreload
 # # %autoreload 2
 import os
-from typing import Iterable, Optional
+from typing import Iterable, List, Optional
 
 import dimcat as dc
 import ms3
@@ -143,29 +143,37 @@ def compute_cross_entropies(
     return _compute_cross_entropies(P_probs, Q_probs)
 
 
-def mean_of_other_groups(df, group):
+# %% [markdown]
+# ![uniqueness](img/uniqueness_white_fig2.6_p68.png)
+# Fig. 2.6 from White, C. (2022). The music in the data: Corpus analysis, music analysis, and tonal traditions
+# (1st ed.). Routledge. https://doi.org/10.4324/9781003285663 p. 68
+
+
+# %%
+def mean_of_other_groups(df, excluded_group: str) -> pd.Series:
     """Computes the mean (of cross-entropies or whatever) for each row but only after dropping the column named
-    ``group``. When the NxM dataframe contains some prediction metric of N entities predicting each other, this
-    allows to retrieve the mean of pr
+    ``group``. In the context of :func:`compute_corpus_uniqueness`, this function is applied corpus-group-wise to
+    compute means of all other corpora's cross-entropies, exluding the piece's corpus itself.
     """
-    df = df.drop(group, axis=1)  # do not include corpus predicting its own pieces
-    piecewise_mean = df.mean(axis=1)
+    if excluded_group in df.columns:
+        df = df.drop(
+            excluded_group, axis=1
+        )  # do not include corpus predicting its own pieces
+    # piecewise_mean = df.mean(axis=1)
+    all_values = df.melt()["value"]
     return pd.Series(
         {
-            "corpus": utils.get_corpus_display_name(group),
-            "uniqueness": piecewise_mean.mean(),
-            "sem": piecewise_mean.sem(),
+            "corpus": utils.get_corpus_display_name(excluded_group),
+            "uniqueness": all_values.mean(),
+            "sem": all_values.sem(),
         }
     )
 
 
-# %% [markdown]
-# ![uniqueness](img/uniqueness_white_fig2.6_p68.png)
-
-
-# %%
 def compute_corpus_uniqueness(chord_proportions):
-    """Computes the cross entropies between"""
+    """Computes the cross entropies between each piece relative to every corpus (i.e., corpus as model predicting the
+    piece) and averages for the pieces of each corpus the cross-entropies relative to all other corpora except itself.
+    """
     piece_by_corpus = compute_cross_entropies(chord_proportions, "piece", "corpus")
     corpus_uniqueness = pd.DataFrame(
         [
@@ -176,15 +184,59 @@ def compute_corpus_uniqueness(chord_proportions):
     return corpus_uniqueness
 
 
-def plot_uniqueness(chord_proportions, chronological_corpus_names):
+def compute_chronological_corpus_uniqueness(
+    chord_proportions,
+    chronological_corpus_names: List[str],
+):
+    """Computes the corpus uniqueness as the mean predictability (cross entropy) of the historically older corpora.
+    To
+    """
+    piece_by_corpus = compute_cross_entropies(chord_proportions, "piece", "corpus")
+    piece_by_corpus = piece_by_corpus.loc[
+        chronological_corpus_names, chronological_corpus_names
+    ]
+    groupby = piece_by_corpus.groupby("corpus")
+    corpus_uniqueness = []
+    for corpus in chronological_corpus_names:
+        df = groupby.get_group(corpus)
+        corpus_col_position = df.columns.get_loc(corpus)
+        if corpus_col_position == 0:
+            continue
+        corpus_uniqueness.append(
+            mean_of_other_groups(df.iloc(axis=1)[:corpus_col_position], corpus)
+        )
+    return pd.DataFrame(corpus_uniqueness)
+
+
+def plot_uniqueness(
+    chord_proportions,
+    chronological_corpus_names: List[str],
+    only_among_historically_older: bool = False,
+):
     corpus_uniqueness = compute_corpus_uniqueness(chord_proportions)
+    if only_among_historically_older:
+        corpus_uniqueness_amongst_older = compute_chronological_corpus_uniqueness(
+            chord_proportions, chronological_corpus_names
+        )
+        corpus_uniqueness = pd.concat(
+            [corpus_uniqueness, corpus_uniqueness_amongst_older],
+            keys=["all other", "historically older"],
+            names=["relative to"],
+        ).reset_index()
+        color = "relative to"
+    else:
+        color = None
+    display_names = [
+        utils.get_corpus_display_name(c) for c in chronological_corpus_names
+    ]
     return make_bar_plot(
         corpus_uniqueness,
         x_col="corpus",
         y_col="uniqueness",
         error_y="sem",
+        color=color,
         title="Uniqueness of corpus pieces as average cross-entropy relative to other corpora",
-        category_orders=dict(corpus=chronological_corpus_names),
+        category_orders=dict(corpus=display_names),
         layout=dict(autosize=False),
         height=800,
         width=1200,
@@ -193,6 +245,8 @@ def plot_uniqueness(chord_proportions, chronological_corpus_names):
 
 # %% [markdown]
 # ![coherence](img/coherence_white_fig.2.6_p68.png)
+# Fig. 2.6 from White, C. (2022). The music in the data: Corpus analysis, music analysis, and tonal traditions
+# (1st ed.). Routledge. https://doi.org/10.4324/9781003285663 p. 68
 
 
 # %%
@@ -206,16 +260,20 @@ def compute_corpus_coherence(
             pivot_index="chord_and_mode",
             pivot_columns=("corpus", "piece"),
             pivot_values="duration_qb",
-        )
-        piece_by_piece = _compute_cross_entropies(corpus_probs)
+        )  # VxP (vocab size x pieces)
+        piece_by_piece = _compute_cross_entropies(
+            corpus_probs
+        )  # PxP (each containing all other pieces "predicting"
+        # the respective piece, i.e., the cross-entropy of a given piece's distribution relative to all other pieces)
         np.fill_diagonal(piece_by_piece.values, np.nan)  # exclude self-predictions
-        by_other_pieces = piece_by_piece.mean(axis=1)
+        # by_other_pieces = piece_by_piece.mean(axis=1)
+        all_values = df.melt()["value"]
         corpuswise_coherence.append(
             pd.Series(
                 {
                     "corpus": utils.get_corpus_display_name(corpus),
-                    "coherence": by_other_pieces.mean(),
-                    "sem": by_other_pieces.sem(),
+                    "coherence": all_values.mean(),
+                    "sem": all_values.sem(),
                 }
             )
         )
@@ -224,13 +282,16 @@ def compute_corpus_coherence(
 
 def plot_coherence(chord_proportions, chronological_corpus_names):
     corpus_coherence = compute_corpus_coherence(chord_proportions)
+    display_names = [
+        utils.get_corpus_display_name(c) for c in chronological_corpus_names
+    ]
     return make_bar_plot(
         corpus_coherence,
         x_col="corpus",
         y_col="coherence",
         error_y="sem",
         title="Coherence of corpus pieces as average cross-entropy relative to other pieces",
-        category_orders=dict(corpus=chronological_corpus_names),
+        category_orders=dict(corpus=display_names),
         layout=dict(autosize=False),
         height=800,
         width=1200,
@@ -265,8 +326,11 @@ chord_proportions.make_ranking_table()
 # %%
 corpus_by_corpus = compute_cross_entropies(chord_proportions, "corpus")
 chronological_corpus_names = analyzed_D.get_metadata().get_corpus_names(func=None)
+corpus_by_corpus_chronological = corpus_by_corpus.loc[
+    chronological_corpus_names, chronological_corpus_names
+]
 px.imshow(
-    corpus_by_corpus.loc[chronological_corpus_names, chronological_corpus_names],
+    corpus_by_corpus_chronological,
     color_continuous_scale="RdBu_r",
     title="Cross-entropy of chord distributions between corpora",
     width=1000,
@@ -274,7 +338,7 @@ px.imshow(
 )
 
 # %%
-plot_uniqueness(chord_proportions, chronological_corpus_names)
+plot_uniqueness(chord_proportions, chronological_corpus_names, True)
 
 # %%
 plot_coherence(chord_proportions, chronological_corpus_names)
