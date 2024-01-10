@@ -37,25 +37,26 @@ from dimcat.data.resources.dc import UnitOfAnalysis
 from dimcat.plotting import make_bar_plot, make_scatter_plot, write_image
 from git import Repo
 
-from utils import (
-    DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
-    get_corpus_display_name,
-    get_repo_name,
-    print_heading,
-    resolve_dir,
-)
+import utils
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "reduction"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "reduction"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(
+        filename,
+        extension=extension,
+        path=path,
+    )
 
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -85,8 +86,15 @@ def _compute_cross_entropies(P_column_vectors, Q_column_vectors=None):
 
 
 def _make_groupwise_probabilities(
-    grouped_absolute_values, pivot_index, pivot_columns, pivot_values, smoothing=1e-20
-):
+    grouped_absolute_values: resources.Durations,
+    pivot_index,
+    pivot_columns,
+    pivot_values,
+    smoothing=1e-20,
+) -> pd.DataFrame:
+    """Pivots the table, turning group chunks into columns, adds the smoothing value to each cell, and normalizes each
+    column.
+    """
     grouped_values = grouped_absolute_values.pivot_table(
         values=pivot_values, index=pivot_index, columns=pivot_columns, fill_value=0
     )
@@ -100,7 +108,12 @@ def make_groupwise_probabilities(
     analysis_result: resources.Durations,
     group_cols: Optional[UnitOfAnalysis | str | Iterable[str]] = UnitOfAnalysis.GROUP,
     smoothing: Optional[float] = 1e-20,
-):
+) -> pd.DataFrame:
+    """Turns a Durations result (long format, absolute durations in quarter notes) into an NxM matrix of M probability
+    distributions where N is the vocabulary size of the value_column (x_column) and M is the number of groups according
+    to the group_cols argument. The columns are normalized after adding the smoothing value to each cell, to avoid
+    log(0) errors.
+    """
     group_cols = analysis_result._resolve_group_cols_arg(group_cols)
     grouped_results = analysis_result.combine_results(group_cols=group_cols)
     pivot_index = analysis_result.x_column
@@ -130,7 +143,7 @@ def mean_of_other_groups(df, group):
     piecewise_mean = df.mean(axis=1)
     return pd.Series(
         {
-            "corpus": get_corpus_display_name(group),
+            "corpus": utils.get_corpus_display_name(group),
             "uniqueness": piecewise_mean.mean(),
             "sem": piecewise_mean.sem(),
         }
@@ -180,7 +193,7 @@ def compute_corpus_coherence(
         corpuswise_coherence.append(
             pd.Series(
                 {
-                    "corpus": get_corpus_display_name(corpus),
+                    "corpus": utils.get_corpus_display_name(corpus),
                     "coherence": by_other_pieces.mean(),
                     "sem": by_other_pieces.sem(),
                 }
@@ -205,12 +218,12 @@ def plot_coherence(chord_proportions, chronological_corpus_names):
 
 
 # %% tags=["hide-input"]
-package_path = resolve_dir(
+package_path = utils.resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
 repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
