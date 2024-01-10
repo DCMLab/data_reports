@@ -35,6 +35,7 @@ from dimcat import resources
 from dimcat.data.resources import Durations
 from dimcat.data.resources.dc import UnitOfAnalysis
 from dimcat.plotting import make_bar_plot, make_scatter_plot, write_image
+from dimcat.utils import get_middle_composition_year
 from git import Repo
 
 import utils
@@ -250,10 +251,10 @@ def plot_uniqueness(
 
 
 # %%
-def compute_corpus_coherence(
+def compute_corpus_incoherence(
     chord_proportions,
 ):
-    corpuswise_coherence = []
+    corpuswise_incoherence = []
     for corpus, df in chord_proportions.groupby("corpus"):
         corpus_probs = _make_groupwise_probabilities(
             df,
@@ -267,30 +268,30 @@ def compute_corpus_coherence(
         # the respective piece, i.e., the cross-entropy of a given piece's distribution relative to all other pieces)
         np.fill_diagonal(piece_by_piece.values, np.nan)  # exclude self-predictions
         # by_other_pieces = piece_by_piece.mean(axis=1)
-        all_values = df.melt()["value"]
-        corpuswise_coherence.append(
+        all_values = piece_by_piece.melt()["value"]
+        corpuswise_incoherence.append(
             pd.Series(
                 {
                     "corpus": utils.get_corpus_display_name(corpus),
-                    "coherence": all_values.mean(),
+                    "incoherence": all_values.mean(),
                     "sem": all_values.sem(),
                 }
             )
         )
-    return pd.DataFrame(corpuswise_coherence)
+    return pd.DataFrame(corpuswise_incoherence)
 
 
-def plot_coherence(chord_proportions, chronological_corpus_names):
-    corpus_coherence = compute_corpus_coherence(chord_proportions)
+def plot_incoherence(chord_proportions, chronological_corpus_names):
+    corpus_incoherence = compute_corpus_incoherence(chord_proportions)
     display_names = [
         utils.get_corpus_display_name(c) for c in chronological_corpus_names
     ]
     return make_bar_plot(
-        corpus_coherence,
+        corpus_incoherence,
         x_col="corpus",
-        y_col="coherence",
+        y_col="incoherence",
         error_y="sem",
-        title="Coherence of corpus pieces as average cross-entropy relative to other pieces",
+        title="Incoherence of corpus pieces as average cross-entropy relative to other pieces",
         category_orders=dict(corpus=display_names),
         layout=dict(autosize=False),
         height=800,
@@ -341,21 +342,36 @@ px.imshow(
 plot_uniqueness(chord_proportions, chronological_corpus_names, True)
 
 # %%
-plot_coherence(chord_proportions, chronological_corpus_names)
+plot_incoherence(chord_proportions, chronological_corpus_names)
 
 # %%
-corpus_coherence = compute_corpus_coherence(chord_proportions)
+chord_proportions.reset_index("piece").groupby("corpus").piece.nunique()
+
+
+# %%
+corpus_incoherence = compute_corpus_incoherence(chord_proportions)
 corpus_uniqueness = compute_corpus_uniqueness(chord_proportions)
-uniqueness_coherence = corpus_uniqueness.merge(corpus_coherence, on="corpus")
-make_scatter_plot(
-    uniqueness_coherence,
+uniqueness_incoherence = corpus_uniqueness.merge(corpus_incoherence, on="corpus")
+mean_comp_years = get_middle_composition_year(analyzed_D.get_metadata())
+corpus_features = mean_comp_years.groupby("corpus").agg(["mean", "size"])
+corpus_features.columns = ["mean_composition_year", "pieces"]
+corpus_features.index = corpus_features.index.map(utils.get_corpus_display_name)
+uniqueness_incoherence = uniqueness_incoherence.merge(corpus_features, on="corpus")
+fig = make_scatter_plot(
+    uniqueness_incoherence,
     x_col="uniqueness",
-    y_col="coherence",
+    y_col="incoherence",
     error_x="sem_x",
     error_y="sem_y",
     hover_data=["corpus"],
-    title="Uniqueness vs. coherence of corpus pieces",
+    color="mean_composition_year",
+    color_continuous_scale="bluered",  # "sunsetdark", # "blackbody"
+    size="pieces",
+    title="Uniqueness vs. incoherence of corpus pieces",
     layout=dict(autosize=False),
     height=800,
     width=1200,
 )
+fig
+
+# %%
