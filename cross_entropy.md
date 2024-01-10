@@ -12,7 +12,7 @@ kernelspec:
   name: revamp
 ---
 
-# Information gain of antecedents and consequents
+# Cross entropies between corpora
 
 ToDo:
 * Uniqueness in Bezug auf das vorher Dagewesene
@@ -136,6 +136,11 @@ def compute_cross_entropies(
     Q_groups: Optional[UnitOfAnalysis | str | Iterable[str]] = None,
     smoothing: float = 1e-20,
 ):
+    """If Q_groups is None, returns an PxP matrix of cross-entropies between all pairs of groups according to the
+    P_groups argument. If Q_groups is specified, returns an PxQ matrix of cross-entropies between all pairs of groups
+    according to the P_groups and Q_groups arguments. This is often interpreted as the information surplus that it takes
+    to encode q using a code optimized for encoding p.
+    """
     P_probs = make_groupwise_probabilities(analysis_result, P_groups, smoothing)
     if Q_groups is None:
         return _compute_cross_entropies(P_probs)
@@ -144,7 +149,11 @@ def compute_cross_entropies(
 
 
 def mean_of_other_groups(df, group):
-    df = df.drop(group, axis=1)  # do include corpus predicting its own pieces
+    """Computes the mean (of cross-entropies or whatever) for each row but only after dropping the column named
+    ``group``. When the NxM dataframe contains some prediction metric of N entities predicting each other, this
+    allows to retrieve the mean of pr
+    """
+    df = df.drop(group, axis=1)  # do not include corpus predicting its own pieces
     piecewise_mean = df.mean(axis=1)
     return pd.Series(
         {
@@ -153,9 +162,13 @@ def mean_of_other_groups(df, group):
             "sem": piecewise_mean.sem(),
         }
     )
+```
 
+![uniqueness](img/uniqueness_white_fig2.6_p68.png)
 
+```{code-cell}
 def compute_corpus_uniqueness(chord_proportions):
+    """Computes the cross entropies between"""
     piece_by_corpus = compute_cross_entropies(chord_proportions, "piece", "corpus")
     corpus_uniqueness = pd.DataFrame(
         [
@@ -179,8 +192,11 @@ def plot_uniqueness(chord_proportions, chronological_corpus_names):
         height=800,
         width=1200,
     )
+```
 
+![coherence](img/coherence_white_fig.2.6_p68.png)
 
+```{code-cell}
 def compute_corpus_coherence(
     chord_proportions,
 ):
