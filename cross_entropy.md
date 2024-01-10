@@ -25,8 +25,8 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
-# %load_ext autoreload
-# %autoreload 2
+%load_ext autoreload
+%autoreload 2
 import os
 from typing import Iterable, List, Optional
 
@@ -35,6 +35,7 @@ import ms3
 import numpy as np
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from dimcat import resources
 from dimcat.data.resources import Durations
 from dimcat.data.resources.dc import UnitOfAnalysis
@@ -111,7 +112,7 @@ def _make_groupwise_probabilities(
 
 
 def make_groupwise_probabilities(
-    analysis_result: resources.Durations,
+    analysis_result: resources.Result,
     group_cols: Optional[UnitOfAnalysis | str | Iterable[str]] = UnitOfAnalysis.GROUP,
     smoothing: Optional[float] = 1e-20,
 ) -> pd.DataFrame:
@@ -122,9 +123,9 @@ def make_groupwise_probabilities(
     """
     group_cols = analysis_result._resolve_group_cols_arg(group_cols)
     grouped_results = analysis_result.combine_results(group_cols=group_cols)
-    pivot_index = analysis_result.x_column
+    pivot_index = grouped_results.x_column
     pivot_columns = group_cols
-    pivot_values = analysis_result.y_column
+    pivot_values = grouped_results.y_column
     group_probabilities = _make_groupwise_probabilities(
         grouped_results, pivot_index, pivot_columns, pivot_values, smoothing
     )
@@ -132,7 +133,7 @@ def make_groupwise_probabilities(
 
 
 def compute_cross_entropies(
-    analysis_result: resources.Durations,
+    analysis_result: resources.Result,
     P_groups: UnitOfAnalysis | str | Iterable[str],
     Q_groups: Optional[UnitOfAnalysis | str | Iterable[str]] = None,
     smoothing: float = 1e-20,
@@ -253,15 +254,18 @@ Fig. 2.6 from White, C. (2022). The music in the data: Corpus analysis, music an
 
 ```{code-cell}
 def compute_corpus_incoherence(
-    chord_proportions,
+    analysis_result,
 ):
     corpuswise_incoherence = []
-    for corpus, df in chord_proportions.groupby("corpus"):
+    grouped_results = analysis_result.combine_results(group_cols=["corpus", "piece"])
+    pivot_index = grouped_results.x_column
+    pivot_values = grouped_results.y_column
+    for corpus, df in grouped_results.groupby("corpus"):
         corpus_probs = _make_groupwise_probabilities(
             df,
-            pivot_index="chord_and_mode",
+            pivot_index=pivot_index,
             pivot_columns=("corpus", "piece"),
-            pivot_values="duration_qb",
+            pivot_values=pivot_values,
         )  # VxP (vocab size x pieces)
         piece_by_piece = _compute_cross_entropies(
             corpus_probs
@@ -331,18 +335,26 @@ chord_proportions.make_ranking_table()
 ```
 
 ```{code-cell}
-corpus_by_corpus = compute_cross_entropies(chord_proportions, "corpus")
+def plot_corpus_by_corpus(
+    result: resources.Result,
+    chronological_corpus_names: List[str] = None,
+) -> go.Figure:
+    corpus_by_corpus = compute_cross_entropies(result, "corpus")
+    if chronological_corpus_names:
+        corpus_by_corpus_chronological = corpus_by_corpus.loc[
+            chronological_corpus_names, chronological_corpus_names
+        ]
+    return px.imshow(
+        corpus_by_corpus_chronological,
+        color_continuous_scale="RdBu_r",
+        title=f"Cross-entropy between corpora of distributions over chord {result.name.lower()}",
+        width=1000,
+        height=1000,
+    )
+
+
 chronological_corpus_names = analyzed_D.get_metadata().get_corpus_names(func=None)
-corpus_by_corpus_chronological = corpus_by_corpus.loc[
-    chronological_corpus_names, chronological_corpus_names
-]
-px.imshow(
-    corpus_by_corpus_chronological,
-    color_continuous_scale="RdBu_r",
-    title="Cross-entropy of chord distributions between corpora",
-    width=1000,
-    height=1000,
-)
+plot_corpus_by_corpus(chord_proportions, chronological_corpus_names)
 ```
 
 ```{code-cell}
@@ -354,36 +366,69 @@ plot_incoherence(chord_proportions, chronological_corpus_names)
 ```
 
 ```{code-cell}
-chord_proportions.reset_index("piece").groupby("corpus").piece.nunique()
+def plot_uniqueness_incoherence(
+    analysis_result: resources.Result, metadata: Optional[resources.Metadata] = None
+) -> go.Figure:
+    corpus_incoherence = compute_corpus_incoherence(analysis_result)
+    corpus_uniqueness = compute_corpus_uniqueness(analysis_result)
+    uniqueness_incoherence = corpus_uniqueness.merge(corpus_incoherence, on="corpus")
+    if metadata is not None:
+        mean_comp_years = get_middle_composition_year(metadata)
+        corpus_features = mean_comp_years.groupby("corpus").agg(["mean", "size"])
+        corpus_features.columns = ["mean_composition_year", "pieces"]
+        corpus_features.index = corpus_features.index.map(utils.get_corpus_display_name)
+        uniqueness_incoherence = uniqueness_incoherence.merge(
+            corpus_features, on="corpus"
+        )
+        color = "mean_composition_year"
+        size = "pieces"
+    else:
+        color = None
+        size = None
+    return make_scatter_plot(
+        uniqueness_incoherence,
+        x_col="uniqueness",
+        y_col="incoherence",
+        error_x="sem_x",
+        error_y="sem_y",
+        hover_data=["corpus"],
+        color=color,
+        color_continuous_scale="bluered",  # "sunsetdark", # "blackbody"
+        size=size,
+        title="Uniqueness vs. incoherence of corpus pieces",
+        layout=dict(autosize=False),
+        height=800,
+        width=1200,
+    )
+
+
+plot_uniqueness_incoherence(chord_proportions, analyzed_D.get_metadata())
 ```
 
 ```{code-cell}
-corpus_incoherence = compute_corpus_incoherence(chord_proportions)
-corpus_uniqueness = compute_corpus_uniqueness(chord_proportions)
-uniqueness_incoherence = corpus_uniqueness.merge(corpus_incoherence, on="corpus")
-mean_comp_years = get_middle_composition_year(analyzed_D.get_metadata())
-corpus_features = mean_comp_years.groupby("corpus").agg(["mean", "size"])
-corpus_features.columns = ["mean_composition_year", "pieces"]
-corpus_features.index = corpus_features.index.map(utils.get_corpus_display_name)
-uniqueness_incoherence = uniqueness_incoherence.merge(corpus_features, on="corpus")
-fig = make_scatter_plot(
-    uniqueness_incoherence,
-    x_col="uniqueness",
-    y_col="incoherence",
-    error_x="sem_x",
-    error_y="sem_y",
-    hover_data=["corpus"],
-    color="mean_composition_year",
-    color_continuous_scale="bluered",  # "sunsetdark", # "blackbody"
-    size="pieces",
-    title="Uniqueness vs. incoherence of corpus pieces",
-    layout=dict(autosize=False),
-    height=800,
-    width=1200,
-)
-fig
+chord_bgt: resources.NgramTable = harmony_labels.apply_step("BigramAnalyzer")
+chord_bigrams = chord_bgt.make_bigram_tuples()
+chord_bigrams.make_ranking_table()
+```
+
+## Same evaluations based on chord bigrams
+
+```{code-cell}
+plot_corpus_by_corpus(chord_bigrams, chronological_corpus_names)
 ```
 
 ```{code-cell}
+plot_uniqueness(chord_bigrams, chronological_corpus_names, True)
+```
 
+```{code-cell}
+chord_bigrams.combine_results("corpus")
+```
+
+```{code-cell}
+plot_incoherence(chord_bigrams, chronological_corpus_names)
+```
+
+```{code-cell}
+plot_uniqueness_incoherence(chord_bigrams, analyzed_D.get_metadata())
 ```
