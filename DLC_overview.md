@@ -36,44 +36,34 @@ import plotly.express as px
 import plotly.graph_objects as go
 from dimcat import filters
 from dimcat.plotting import update_figure_layout, write_image
+from dimcat.utils import get_middle_composition_year
 from git import Repo
 from IPython.display import display
 from plotly.subplots import make_subplots
+
+import utils
 ```
 
 ```{code-cell}
-from utils import (
-    CORPUS_COLOR_SCALE,
-    DEFAULT_OUTPUT_FORMAT,
-    STD_LAYOUT,
-    corpus_mean_composition_years,
-    get_corpus_display_name,
-    get_repo_name,
-    print_heading,
-    resolve_dir,
-)
+
 
 RESULTS_PATH = os.path.abspath("/home/laser/git/DLC/img")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
-
-
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def save_figure_as(fig, filename, format=None, directory=RESULTS_PATH, **kwargs):
+    write_image(fig, filename, format=format, directory=directory, **kwargs)
 ```
 
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir(
+package_path = utils.resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
 repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
@@ -88,10 +78,12 @@ all_metadata
 ```
 
 ```{code-cell}
-mean_composition_years = corpus_mean_composition_years(all_metadata)
+mean_composition_years = utils.corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
+corpus_colors = dict(zip(chronological_order, utils.CORPUS_COLOR_SCALE))
+corpus_names = {
+    corp: utils.get_corpus_display_name(corp) for corp in chronological_order
+}
 chronological_corpus_names = list(corpus_names.values())
 corpus_name_colors = {
     corpus_names[corp]: color for corp, color in corpus_colors.items()
@@ -147,9 +139,9 @@ fig = px.histogram(
     color_discrete_map=corpus_name_colors,
     title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
 )
-fig.update_traces(xbins=dict(size=10))
-fig.update_layout(**STD_LAYOUT)
-fig.update_legends(font=dict(size=16))
+update_figure_layout(
+    fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
+)
 # save_figure_as(fig, "pieces_timeline_histogram", height=1250)
 fig.show()
 ```
@@ -201,9 +193,9 @@ fig = px.histogram(
     color_discrete_map=corpus_name_colors,
     title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
 )
-fig.update_traces(xbins=dict(size=20))
-fig.update_layout(**STD_LAYOUT)
-fig.update_legends(font=dict(size=16))
+update_figure_layout(
+    fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
+)
 ```
 
 ```{code-cell}
@@ -259,8 +251,8 @@ def make_single_go_histogram(
     color="first published",
     histfunc=None,
     discrete_colors: Optional[List | Dict] = None,
-    xbins=20,
     barmode="stack",
+    **kwargs,
 ) -> go.Figure:
     fig = go.Figure()
     for trace in make_histogram_traces(
@@ -274,16 +266,17 @@ def make_single_go_histogram(
         fig.add_trace(trace)
     if barmode:
         fig.update_layout(barmode=barmode)
-    if xbins:
-        fig.update_traces(xbins=dict(size=xbins))
     return fig
 
 
 fig = make_single_go_histogram(
     hist_data,
+    xbins_start=1600,
 )
 update_figure_layout(
-    fig, x_axis=dict(title_text="composition year"), y_axis=dict(title_text="# pieces")
+    fig,
+    x_axis=dict(title_text="composition year"),
+    y_axis=dict(title_text="# pieces"),
 )
 fig
 ```
@@ -348,22 +341,39 @@ fig = make_stacked_go_histograms(
 update_figure_layout(
     fig,
     title_text="Size of the Distant Listening Corpus",
+    traces_settings=dict(xbins=dict(size=25, start=1575)),
     legend=dict(
-        orientation="h",  # show entries horizontally
-        xanchor="center",  # use center of legend as anchor
-        x=0.5,
-        y=-0.2,
+        title_text="Data report",
         traceorder="reversed",
+        itemsizing="constant",
+        xanchor="right",
+        bgcolor="lightgray",
+        bordercolor="gray",
+        borderwidth=2,
+        x=1.1,
+        y=1.1,
+        # orientation="h",  # show entries horizontally
+        # xanchor="center",  # use center of legend as anchor
+        # x=0.5,
+        # y=-0.1,
     ),
-    height=800,
+    font_size=25,
 )
-write_image(fig, make_output_path("corpus_size"))
+save_figure_as(fig, "corpus_size", height=1200, width=1440, format="pdf")
 fig
 ```
 
 ## Dimensions
 
 ### Overview
+
+```{code-cell}
+def piece_order(_):
+    return get_middle_composition_year(all_metadata)
+
+
+all_metadata.sort_values("composed_start", key=piece_order)
+```
 
 ```{code-cell}
 def make_overview_table(groupby, group_name="pieces"):
@@ -450,10 +460,10 @@ if includes_annotations:
         f"{len(all_chords.groupby(level=[0,1]))} documents."
     )
     all_annotations["corpus_name"] = all_annotations.index.get_level_values(0).map(
-        get_corpus_display_name
+        utils.get_corpus_display_name
     )
     all_chords["corpus_name"] = all_chords.index.get_level_values(0).map(
-        get_corpus_display_name
+        utils.get_corpus_display_name
     )
 else:
     print("Dataset contains no annotations.")

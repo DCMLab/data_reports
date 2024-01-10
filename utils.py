@@ -988,6 +988,21 @@ def load_facets(
     return facets
 
 
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=None,
+) -> str:
+    if extension:
+        extension = "." + extension.lstrip(".")
+    else:
+        extension = DEFAULT_OUTPUT_FORMAT
+    file = f"{filename}{extension}"
+    if path:
+        return resolve_dir(os.path.join(path, file))
+    return file
+
+
 def make_sunburst(
     chords: pd.DataFrame,
     parent: str,
