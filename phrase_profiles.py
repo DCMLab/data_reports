@@ -22,7 +22,7 @@
 
 import os
 from math import ceil
-from typing import List
+from typing import List, Optional
 
 import dimcat as dc
 import ms3
@@ -30,6 +30,7 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import plotly.express as px
+import plotly.graph_objects as go
 from dimcat import resources
 from dimcat.plotting import write_image
 from git import Repo
@@ -133,11 +134,16 @@ unigram_distribution
 
 
 # %%
-def plot_pca(data, info="data"):
+def plot_pca(
+    data,
+    info="data",
+    show_features=20,
+) -> Optional[go.Figure]:
     phrase_pca = PCA(3)
     decomposed_phrases = pd.DataFrame(phrase_pca.fit_transform(data), index=data.index)
     print(
-        f"Explained variance: {phrase_pca.explained_variance_} ({phrase_pca.explained_variance_.sum():.1%})"
+        f"Explained variance ratio: {phrase_pca.explained_variance_ratio_} "
+        f"({phrase_pca.explained_variance_ratio_.sum():.1%})"
     )
     fig = px.scatter_3d(
         decomposed_phrases.reset_index(),
@@ -148,13 +154,31 @@ def plot_pca(data, info="data"):
         hover_name="piece",
         title=f"3 principal components of the {info}",
     )
-    return fig
+    if show_features < 1:
+        return fig
+    fig.show()
+    for i in range(3):
+        component = pd.Series(
+            phrase_pca.components_[i], index=data.columns, name="coefficient"
+        ).sort_values(ascending=False, key=abs)
+        fig = px.bar(
+            component.iloc[:show_features],
+            labels=dict(index="feature", value="coefficient"),
+            title=f"{show_features} most weighted features of component {i+1}",
+        )
+        fig.show()
 
 
 plot_pca(tf, "chord frequency matrix")
 
 # %%
 plot_pca(tf.mul(idf), "tf-idf matrix")
+
+# %%
+plot_pca(f.fillna(0.0).mul(idf), "f-idf matrix")
+
+# %% [markdown]
+# ## Reduced chords (without suspensions, additions, alterations)
 
 # %%
 unigram_distribution, f, tf, df, idf = prepare_data(
@@ -163,10 +187,24 @@ unigram_distribution, f, tf, df, idf = prepare_data(
 unigram_distribution
 
 # %%
-plot_pca(tf, "chord frequency matrix")
+plot_pca(tf, "(reduced) chord frequency matrix")
 
 # %%
-plot_pca(tf.mul(idf), "tf-idf matrix")
+plot_pca(tf.mul(idf), "tf-idf matrix (reduced chords)")
+
+# %% [markdown]
+# ## Only root, regardless of chord type or inversion
+
+# %%
+unigram_distribution, f, tf, df, idf = prepare_data(phrase_annotations, "root")
+unigram_distribution
+
+# %%
+plot_pca(tf, "root frequency matrix")
+
+
+# %% [markdown]
+# ## Grid search on variance explained by PCA components
 
 
 # %%
@@ -189,7 +227,7 @@ def do_pca_grid_search(
         for n_components in range(1, up_to + 1):
             pca = PCA(n_components)
             _ = pca.fit_transform(selected_data)
-            variance = pca.explained_variance_.sum()
+            variance = pca.explained_variance_ratio_.sum()
             grid_search[n_features - 1, n_components - 1] = variance
             print(f"{variance:.1%}", end=" ")
         print()
