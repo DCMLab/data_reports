@@ -28,8 +28,8 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
-%load_ext autoreload
-%autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 
 import os
 from typing import List, Optional
@@ -271,7 +271,9 @@ plot_pca(tf, "chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 ### Phrases entirely in major
 
 ```{code-cell} ipython3
-px.histogram(PHRASE_LENGTH)
+pl_log = np.log2(PHRASE_LENGTH)
+PL_NORM = pl_log.add(-pl_log.min()).div(pl_log.max() - pl_log.min())
+px.histogram(PL_NORM)
 ```
 
 ```{code-cell} ipython3
@@ -280,7 +282,31 @@ plot_pca(
     mode_tf["major"],
     "chord frequency matrix for phrases in major",
     color=PHRASE_COMPOSITION_YEAR,
-    size=PHRASE_LENGTH / PHRASE_LENGTH.sum(),
+    size=None,
+)
+```
+
+#### Inspection
+
+Inspecting the phrases that make up one of the edges of the tetrahedron (the one from `(-0.24, -0.30, 0.89)` to
+`(-0.47, 0.81, 0.07)`) reveals phrases that have only few and only main chords, i.e. those that are among the highest
+coefficients.
+
+```{code-cell} ipython3
+line = [9556, 14611, 4256, 3023, 5734, 13050, 7073, 3476, 14258]
+```
+
+```{code-cell} ipython3
+phrase_annotations.query("phrase_id in @line").groupby("phrase_id").chord.unique()
+```
+
+```{code-cell} ipython3
+mode_f = {group: df for group, df in f.groupby(PHRASE_MODE_TERNARY)}
+plot_pca(
+    mode_f["major"],
+    "chord proportion matrix for phrases in major",
+    color=PHRASE_COMPOSITION_YEAR,
+    size=None,
 )
 ```
 
@@ -288,6 +314,14 @@ plot_pca(
 plot_pca(
     mode_tf["minor"],
     "chord frequency matrix for phrases in minor",
+    color=PHRASE_COMPOSITION_YEAR,
+)
+```
+
+```{code-cell} ipython3
+plot_pca(
+    mode_f["minor"],
+    "chord proportions matrix for phrases in minor",
     color=PHRASE_COMPOSITION_YEAR,
 )
 ```
