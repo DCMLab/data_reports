@@ -21,7 +21,7 @@
 # # %autoreload 2
 
 import os
-from typing import Optional
+from typing import Dict, Optional
 
 import dimcat as dc
 import ms3
@@ -33,6 +33,8 @@ from dimcat import resources
 from dimcat.plotting import update_figure_layout, write_image
 from dimcat.utils import get_middle_composition_year
 from git import Repo
+from scipy.spatial import ConvexHull
+from sklearn.cluster import KMeans
 from sklearn.decomposition import PCA
 
 import utils
@@ -98,8 +100,16 @@ def prepare_data(harmony_labels, feature, smooth=1e-20):
     return unigram_distribution, f, tf, df, idf
 
 
+def make_pca(data, n_components=3):
+    pca = PCA(n_components)
+    pca.set_output(transform="pandas")
+    pca.fit(data)
+    return pca
+
+
 def plot_pca(
-    data,
+    data=None,
+    pca_coordinates=None,
     info="data",
     show_features=20,
     color="corpus",
@@ -107,15 +117,19 @@ def plot_pca(
     size=None,
     **kwargs,
 ) -> Optional[go.Figure]:
-    piece_pca = PCA(3)
-    decomposed_pieces = pd.DataFrame(
-        piece_pca.fit_transform(data), index=data.index, columns=["c1", "c2", "c3"]
-    )
-    print(
-        f"Explained variance ratio: {piece_pca.explained_variance_ratio_} "
-        f"({piece_pca.explained_variance_ratio_.sum():.1%})"
-    )
-    concatenate_this = [decomposed_pieces]
+    if data is None:
+        assert (
+            pca_coordinates is not None
+        ), "Either data or a fitted PCA object must be given"
+    else:
+        assert data is not None, "Either data or a fitted PCA object must be given"
+        pca = make_pca(data)
+        pca_coordinates = pca.transform(data)
+        print(
+            f"Explained variance ratio: {pca.explained_variance_ratio_} "
+            f"({pca_coordinates.explained_variance_ratio_.sum():.1%})"
+        )
+    concatenate_this = [pca_coordinates]
     hover_data = ["corpus"]
     if color is not None:
         if isinstance(color, pd.Series):
@@ -135,12 +149,12 @@ def plot_pca(
     if len(concatenate_this) > 1:
         scatter_data = pd.concat(concatenate_this, axis=1).reset_index()
     else:
-        scatter_data = decomposed_pieces
+        scatter_data = pca_coordinates
     fig = px.scatter_3d(
         scatter_data.reset_index(),
-        x="c1",
-        y="c2",
-        z="c3",
+        x="pca0",
+        y="pca1",
+        z="pca2",
         color=color,
         symbol=symbol,
         hover_data=hover_data,
@@ -156,13 +170,16 @@ def plot_pca(
         fig,
         scene_dragmode="orbit",
         traces_settings=dict(marker=marker_settings),
+        legend=dict(itemsizing="constant"),
     )
     if show_features < 1:
         return fig
     fig.show()
     for i in range(3):
         component = pd.Series(
-            piece_pca.components_[i], index=data.columns, name="coefficient"
+            pca_coordinates.components_[i],
+            index=pca_coordinates.columns,
+            name="coefficient",
         ).sort_values(ascending=False, key=abs)
         fig = px.bar(
             component.iloc[:show_features],
@@ -200,8 +217,53 @@ unigram_distribution
 # %%
 plot_pca(tf, "chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 
+
+# %%
+def get_hull_coordinates(
+    pca_coordinates: pd.DataFrame,
+    cluster_labels,
+) -> Dict[int | str, pd.DataFrame]:
+    cluster_hulls = {}
+    for cluster, coordinates in pca_coordinates.groupby(cluster_labels):
+        if len(coordinates) < 4:
+            cluster_hulls[cluster] = coordinates
+            continue
+        hull = ConvexHull(points=coordinates)
+        cluster_hulls[cluster] = coordinates.take(hull.vertices)
+    return cluster_hulls
+
+
+def plot_kmeans(data, n_clusters, cluster_data_itself: bool = False, **kwargs):
+    pca = make_pca(data)
+    pca_coordinates = pca.transform(data)
+    kmeans = KMeans(n_clusters=n_clusters, n_init="auto", random_state=42)
+    if cluster_data_itself:
+        kmeans.fit(data)
+    else:
+        kmeans.fit(pca_coordinates)
+    fig = plot_pca(pca_coordinates=pca_coordinates, show_features=0, **kwargs)
+    cluster_labels = "cluster" + pd.Series(
+        kmeans.labels_, index=data.index, name="cluster"
+    ).astype(str)
+    cluster_hulls = get_hull_coordinates(pca_coordinates, cluster_labels)
+    for clust, coordinates in cluster_hulls.items():
+        fig.add_trace(
+            go.Mesh3d(
+                alphahull=0,
+                opacity=0.1,
+                x=coordinates.pca0,
+                y=coordinates.pca1,
+                z=coordinates.pca2,
+                hoverinfo="skip",
+            )
+        )
+    return fig
+
+
+plot_kmeans(tf, 22, cluster_data_itself=False)
+
 # %% [markdown]
-# ### Phrases entirely in major
+# ### Pieces in global major vs. minor
 
 # %%
 pl_log = np.log2(PIECE_LENGTH)
@@ -213,8 +275,8 @@ mode_tf = {group: df for group, df in tf.groupby(PIECE_MODE)}
 plot_pca(
     mode_tf["major"],
     "chord frequency matrix for pieces in major",
-    color=PIECE_COMPOSITION_YEAR,
-    size=PIECE_LENGTH,
+    # color=PIECE_COMPOSITION_YEAR,
+    size=PL_NORM,
 )
 
 # %%
@@ -222,7 +284,7 @@ mode_f = {group: df for group, df in f.groupby(PIECE_MODE)}
 plot_pca(
     mode_f["major"],
     "chord proportion matrix for pieces in major",
-    color=PIECE_COMPOSITION_YEAR,
+    # color=PIECE_COMPOSITION_YEAR,
     size=None,
 )
 
@@ -230,14 +292,14 @@ plot_pca(
 plot_pca(
     mode_tf["minor"],
     "chord frequency matrix for pieces in minor",
-    color=PIECE_COMPOSITION_YEAR,
+    # color=PIECE_COMPOSITION_YEAR,
 )
 
 # %%
 plot_pca(
     mode_f["minor"],
     "chord proportions matrix for pieces in minor",
-    color=PIECE_COMPOSITION_YEAR,
+    # color=PIECE_COMPOSITION_YEAR,
 )
 
 # %% [markdown]
