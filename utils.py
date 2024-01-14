@@ -25,7 +25,7 @@ from dimcat.data.resources.features import extend_bass_notes_feature
 from dimcat.data.resources.results import TypeAlias, _entropy
 from dimcat.data.resources.utils import merge_columns_into_one
 from dimcat.plotting import make_bar_plot, update_figure_layout
-from dimcat.utils import grams, make_transition_matrix
+from dimcat.utils import get_middle_composition_year, grams, make_transition_matrix
 from git import Repo
 from IPython.display import display
 from matplotlib import gridspec
@@ -35,6 +35,7 @@ from plotly import graph_objects as go
 from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
 from scipy.stats import entropy
+from sklearn.decomposition import PCA
 
 from create_gantt import create_gantt, fill_yaxis_gaps
 
@@ -824,14 +825,17 @@ def color_background(x, color="#ffffb3"):
 
 
 def corpus_mean_composition_years(
-    df: pd.DataFrame, year_column: str = "composed_end"
+    df: pd.DataFrame,
+    composed_start_column: str = "composed_start",
+    composed_end_column: str = "composed_end",
+    name: str = "mean_composition_year",
 ) -> pd.Series:
     """Expects a dataframe containing ``year_column`` and computes its means by grouping on the first index level
     ('corpus' by default).
     Returns the result as a series where the index contains corpus names and the values are mean composition years.
     """
-    years = pd.to_numeric(df[year_column], errors="coerce")
-    return years.groupby(level=0).mean().sort_values()
+    years = get_middle_composition_year(df, composed_start_column, composed_end_column)
+    return years.groupby(level=0).mean().sort_values().rename(name)
 
 
 def chronological_corpus_order(
@@ -841,7 +845,7 @@ def chronological_corpus_order(
     Returns the corpus names in chronological order
     """
     mean_composition_years = corpus_mean_composition_years(
-        df=df, year_column=year_column
+        df=df, composed_end_column=year_column
     )
     return mean_composition_years.index.to_list()
 
@@ -1057,6 +1061,12 @@ def make_sunburst(
     return fig
 
 
+def merge_index_levels(index, join_str=True):
+    if index.nlevels > 1:
+        return merge_columns_into_one(index.to_frame(index=False), join_str=join_str)
+    return index
+
+
 def plot_cum(
     S=None,
     cum=None,
@@ -1156,6 +1166,87 @@ def plot_cum(
     fig.update_yaxes(**left_y_axis)
     fig.update_yaxes(**right_y_axis)
     return fig
+
+
+def plot_pca(
+    data,
+    info="data",
+    show_features=20,
+    color="corpus",
+    symbol=None,
+    size=None,
+    **kwargs,
+) -> Optional[go.Figure]:
+    phrase_pca = PCA(3)
+    decomposed_phrases = pd.DataFrame(
+        phrase_pca.fit_transform(data), index=data.index, columns=["c1", "c2", "c3"]
+    )
+    print(
+        f"Explained variance ratio: {phrase_pca.explained_variance_ratio_} "
+        f"({phrase_pca.explained_variance_ratio_.sum():.1%})"
+    )
+    concatenate_this = [decomposed_phrases]
+    hover_data = list(data.index.names)
+    if color is not None:
+        if isinstance(color, pd.Series):
+            concatenate_this.append(color)
+            color = color.name
+        hover_data.append(color)
+    if symbol is not None:
+        if isinstance(symbol, pd.Series):
+            concatenate_this.append(symbol)
+            symbol = symbol.name
+        hover_data.append(symbol)
+
+    if size is None:
+        constant_size = 3
+    elif isinstance(size, Number):
+        constant_size = size
+    else:
+        constant_size = 0
+        if isinstance(size, pd.Series):
+            concatenate_this.append(size)
+            size = size.name
+        hover_data.append(size)
+    if len(concatenate_this) > 1:
+        scatter_data = pd.concat(concatenate_this, axis=1).reset_index()
+    else:
+        scatter_data = decomposed_phrases
+    fig = px.scatter_3d(
+        scatter_data.reset_index(),
+        x="c1",
+        y="c2",
+        z="c3",
+        color=color,
+        symbol=symbol,
+        hover_data=hover_data,
+        hover_name=hover_data[-1],
+        title=f"3 principal components of the {info}",
+        height=800,
+        **kwargs,
+    )
+    marker_settings = dict(opacity=0.3)
+    if constant_size:
+        marker_settings["size"] = constant_size
+    update_figure_layout(
+        fig,
+        legend={"itemsizing": "constant"},
+        traces_settings=dict(marker=marker_settings),
+    )
+    if show_features < 1:
+        return fig
+    fig.show()
+    for i in range(3):
+        index = merge_index_levels(data.columns)
+        component = pd.Series(
+            phrase_pca.components_[i], index=index, name="coefficient"
+        ).sort_values(ascending=False, key=abs)
+        fig = px.bar(
+            component.iloc[:show_features],
+            labels=dict(index="feature", value="coefficient"),
+            title=f"{show_features} most weighted features of component {i+1}",
+        )
+        fig.show()
 
 
 def plot_transition_heatmaps(
@@ -1258,6 +1349,38 @@ def prepare_sunburst_data(
         .fillna(terminal_symbol)
     )
     return chord_data
+
+
+def prepare_tf_idf_data(
+    long_format_data: pd.DataFrame,
+    index: str | List[str],
+    columns: str | List[str],
+    smooth=1e-20,
+) -> Tuple[pd.Series, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    unigram_distribution = (
+        long_format_data.groupby(columns).duration_qb.sum().sort_values(ascending=False)
+    )
+    absolute_frequency_matrix = long_format_data.pivot_table(
+        index=index,
+        columns=columns,
+        values="duration_qb",
+        aggfunc="sum",
+    )
+    tf = (
+        absolute_frequency_matrix.fillna(0.0)
+        .add(smooth)
+        .div(absolute_frequency_matrix.sum(axis=1), axis=0)
+    )  # term frequency
+    (
+        D,
+        V,
+    ) = absolute_frequency_matrix.shape  # D = number of documents, V = vocabulary size
+    df = (
+        absolute_frequency_matrix.notna().sum().sort_values(ascending=False)
+    )  # absolute document frequency
+    f = absolute_frequency_matrix.fillna(0.0)
+    idf = pd.Series(np.log(D / df), index=df.index)  # inverse document frequency
+    return unigram_distribution, f, tf, df, idf
 
 
 def prettify_counts(counter_object: Counter):

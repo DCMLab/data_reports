@@ -27,19 +27,17 @@
 # # %autoreload 2
 
 import os
-from typing import List, Optional
+from typing import List, Tuple
 
 import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from dimcat import resources
-from dimcat.plotting import update_figure_layout, write_image
+from dimcat.plotting import write_image
 from dimcat.utils import get_middle_composition_year
 from git import Repo
-from sklearn.decomposition import PCA
 
 import utils
 
@@ -111,7 +109,9 @@ def make_phrase_bigram_table(
     return phrase_bgt
 
 
-def prepare_data(phrase_annotations, features, smooth=1e-20):
+def prepare_data(
+    phrase_annotations: pd.DataFrame, features: str | List[str], smooth=1e-20
+) -> Tuple[pd.Series, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
     if isinstance(features, str):
         features = [features]
     if "duration_qb" in features:
@@ -120,95 +120,13 @@ def prepare_data(phrase_annotations, features, smooth=1e-20):
         columns = features + ["duration_qb"]
     phrase_data = make_phrase_data(phrase_annotations, columns)
     phrase_data_df = phrase_data.df.dropna()
-    unigram_distribution = (
-        phrase_data_df.groupby(features).duration_qb.sum().sort_values(ascending=False)
-    )
-    f = phrase_data_df.pivot_table(
-        index=["corpus", "piece", "phrase_id"],
+    groupby = ["corpus", "piece", "phrase_id"]
+    return utils.prepare_tf_idf_data(
+        phrase_data_df,
+        index=groupby,
         columns=features,
-        values="duration_qb",
-        aggfunc="sum",
-    )  # so-called "count frequency", here weighted by chord duration
-    tf = f.fillna(0.0).add(smooth).div(f.sum(axis=1), axis=0)  # term frequency
-    D, V = f.shape  # D = number of documents, V = vocabulary size
-    df = f.notna().sum().sort_values(ascending=False)  # absolute document frequency
-    f = f.fillna(0.0)
-    idf = pd.Series(np.log(D / df), index=df.index)  # inverse document frequency
-    return unigram_distribution, f, tf, df, idf
-
-
-def plot_pca(
-    data,
-    info="data",
-    show_features=20,
-    color="corpus",
-    symbol=None,
-    size=None,
-    **kwargs,
-) -> Optional[go.Figure]:
-    phrase_pca = PCA(3)
-    decomposed_phrases = pd.DataFrame(
-        phrase_pca.fit_transform(data), index=data.index, columns=["c1", "c2", "c3"]
+        smooth=smooth,
     )
-    print(
-        f"Explained variance ratio: {phrase_pca.explained_variance_ratio_} "
-        f"({phrase_pca.explained_variance_ratio_.sum():.1%})"
-    )
-    concatenate_this = [decomposed_phrases]
-    hover_data = ["corpus", "piece"]
-    if color is not None:
-        if isinstance(color, pd.Series):
-            concatenate_this.append(color)
-            color = color.name
-        hover_data.append(color)
-    if symbol is not None:
-        if isinstance(symbol, pd.Series):
-            concatenate_this.append(symbol)
-            symbol = symbol.name
-        hover_data.append(symbol)
-    if size is not None:
-        if isinstance(size, pd.Series):
-            concatenate_this.append(size)
-            size = size.name
-        hover_data.append(size)
-    if len(concatenate_this) > 1:
-        scatter_data = pd.concat(concatenate_this, axis=1).reset_index()
-    else:
-        scatter_data = decomposed_phrases
-    fig = px.scatter_3d(
-        scatter_data.reset_index(),
-        x="c1",
-        y="c2",
-        z="c3",
-        color=color,
-        symbol=symbol,
-        hover_data=hover_data,
-        hover_name="phrase_id",
-        title=f"3 principal components of the {info}",
-        height=800,
-        **kwargs,
-    )
-    marker_settings = dict(opacity=0.3)
-    if size is None:
-        marker_settings["size"] = 3
-    update_figure_layout(
-        fig,
-        legend={"itemsizing": "constant"},
-        traces_settings=dict(marker=marker_settings),
-    )
-    if show_features < 1:
-        return fig
-    fig.show()
-    for i in range(3):
-        component = pd.Series(
-            phrase_pca.components_[i], index=data.columns, name="coefficient"
-        ).sort_values(ascending=False, key=abs)
-        fig = px.bar(
-            component.iloc[:show_features],
-            labels=dict(index="feature", value="coefficient"),
-            title=f"{show_features} most weighted features of component {i+1}",
-        )
-        fig.show()
 
 
 # %%
@@ -256,7 +174,7 @@ unigram_distribution
 # Chord symbols carry their mode information, so it is to expected that modes be clearly separated.
 
 # %%
-plot_pca(tf, "chord frequency matrix", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(tf, "chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 
 # %% [markdown]
 # ### Phrases entirely in major
@@ -268,7 +186,7 @@ px.histogram(PL_NORM)
 
 # %%
 mode_tf = {group: df for group, df in tf.groupby(PHRASE_MODE_TERNARY)}
-plot_pca(
+utils.plot_pca(
     mode_tf["major"],
     "chord frequency matrix for phrases in major",
     color=PHRASE_COMPOSITION_YEAR,
@@ -290,7 +208,7 @@ phrase_annotations.query("phrase_id in @line").groupby("phrase_id").chord.unique
 
 # %%
 mode_f = {group: df for group, df in f.groupby(PHRASE_MODE_TERNARY)}
-plot_pca(
+utils.plot_pca(
     mode_f["major"],
     "chord proportion matrix for phrases in major",
     color=PHRASE_COMPOSITION_YEAR,
@@ -298,14 +216,14 @@ plot_pca(
 )
 
 # %%
-plot_pca(
+utils.plot_pca(
     mode_tf["minor"],
     "chord frequency matrix for phrases in minor",
     color=PHRASE_COMPOSITION_YEAR,
 )
 
 # %%
-plot_pca(
+utils.plot_pca(
     mode_f["minor"],
     "chord proportions matrix for phrases in minor",
     color=PHRASE_COMPOSITION_YEAR,
@@ -315,7 +233,7 @@ plot_pca(
 # ### PCA of tf-idf
 
 # %%
-plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
 
 # %% [markdown]
 # ### For comparison: PCA of t-idf (absolute chord durations weighted by idf)
@@ -323,7 +241,7 @@ plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
 # PCA consistently explains a multiple of the variance for f-idf compared to tf-idf (normalized chord weights)
 
 # %%
-plot_pca(f.fillna(0.0).mul(idf), "f-idf matrix", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(f.fillna(0.0).mul(idf), "f-idf matrix", **SCATTER_PLOT_SETTINGS)
 
 # %% [markdown]
 # ## Reduced chords (without suspensions, additions, alterations)
@@ -335,68 +253,10 @@ unigram_distribution, f, tf, df, idf = prepare_data(
 unigram_distribution
 
 # %%
-plot_pca(tf, "(reduced) chord frequency matrix", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(tf, "(reduced) chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 
 # %%
-plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTINGS)
-
-
-# %%
-def plot_pca(
-    data, info="data", show_features=20, color="corpus", symbol=None, **kwargs
-) -> Optional[go.Figure]:
-    phrase_pca = PCA(3)
-    decomposed_phrases = pd.DataFrame(
-        phrase_pca.fit_transform(data), index=data.index, columns=["c1", "c2", "c3"]
-    )
-    print(
-        f"Explained variance ratio: {phrase_pca.explained_variance_ratio_} "
-        f"({phrase_pca.explained_variance_ratio_.sum():.1%})"
-    )
-    concatenate_this = [decomposed_phrases]
-    if color is not None:
-        if isinstance(color, pd.Series):
-            concatenate_this.append(color)
-            color = color.name
-    if symbol is not None:
-        if isinstance(symbol, pd.Series):
-            concatenate_this.append(symbol)
-            symbol = symbol.name
-    if len(concatenate_this) > 1:
-        scatter_data = pd.concat(concatenate_this, axis=1).reset_index()
-    else:
-        scatter_data = decomposed_phrases
-    fig = px.scatter_3d(
-        scatter_data.reset_index(),
-        x="c1",
-        y="c2",
-        z="c3",
-        color=color,
-        symbol=symbol,
-        hover_data=["piece", "corpus"],
-        hover_name="phrase_id",
-        title=f"3 principal components of the {info}",
-        height=800,
-        **kwargs,
-    )
-    update_figure_layout(
-        fig,
-        legend={"itemsizing": "constant"},
-        traces_settings=dict(marker_size=3, marker_opacity=0.3),
-    )
-    if show_features < 1:
-        return fig
-    fig.show()
-    for i in range(3):
-        component = pd.Series(
-            phrase_pca.components_[i], index=data.columns, name="coefficient"
-        ).sort_values(ascending=False, key=abs)
-        fig = px.bar(
-            component.iloc[:show_features],
-            labels=dict(index="feature", value="coefficient"),
-            title=f"{show_features} most weighted features of component {i+1}",
-        )
-        fig.show()
+utils.plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTINGS)
 
 
 # %% [markdown]
@@ -409,7 +269,7 @@ unigram_distribution, f, tf, df, idf = prepare_data(phrase_annotations, "root")
 unigram_distribution
 
 # %%
-plot_pca(tf, "root frequency matrix", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(tf, "root frequency matrix", **SCATTER_PLOT_SETTINGS)
 
 # %% [markdown]
 # ## Grid search on variance explained by PCA components
