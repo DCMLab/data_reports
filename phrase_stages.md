@@ -45,9 +45,8 @@ from dimcat.data.resources.utils import (
     subselect_multiindex_from_df,
 )
 from dimcat.plotting import make_box_plot, write_image
+from docs.notebooks import utils
 from git import Repo
-
-import utils
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
@@ -201,9 +200,13 @@ def _make_root_roman_or_its_dominants_criterion(
     )  # has same expectation as previous dominant and will take on its value if the end of a dominant chain
     # is resolved; otherwise it keeps its own expected tonic as value
     dominant_grouper, _ = make_adjacency_groups(is_dominant, groupby="phrase_id")
-    dominant_group_resolves = (
-        merge_with_previous.groupby(dominant_grouper).first().to_dict()
-    )  # True for those dominant groups where the first 'merge_with_previous' is True, the other groups are left alone
+    first_merge_index_in_group = {
+        group: mask.values.argmax()
+        for group, mask in merge_with_previous.groupby(dominant_grouper)
+        if mask.any()
+    }  # for each dominant group where at least one dominant resolves ('merge_with_previous' is True), the index of
+    # the revelant row within the group, which serves as signal for a potential dominant chain starting with this index
+    # to be fille with the expected resolution of its first member
     potential_dominant_chain_mask = (
         merge_with_previous | copy_chain_decision_from_previous
     )
@@ -212,9 +215,11 @@ def _make_root_roman_or_its_dominants_criterion(
     for (group, dominant_chain), index in zip(
         dominant_chains_groupby, dominant_chains_groupby.indices.values()
     ):
-        if not dominant_group_resolves[group]:
+        fill_after = first_merge_index_in_group.get(group)
+        if fill_after is None:
             continue
-        for do_fill, ix in zip(dominant_chain[1:], index[1:]):
+        fill_from = fill_after + 1
+        for do_fill, ix in zip(dominant_chain[fill_from:], index[fill_from:]):
             # collect all indices following the first (which is already merged and will provide the root_numeral to be
             # propagated) which are either the same dominant (copy_chain_decision_from_previous) or the previous
             # dominant's dominant (merge_with_previous), but stop when the chain is broken, leaving unconnected
@@ -331,7 +336,7 @@ def make_root_roman_or_its_dominants_criterion(
 
 
 root_roman_or_its_dominants = make_root_roman_or_its_dominants_criterion(
-    phrase_annotations
+    phrase_annotations,  # query=f"phrase_id == 9649", inspect_masks=True
 )
 criterion2stages["root_roman_or_its_dominants"] = root_roman_or_its_dominants
 root_roman_or_its_dominants.head(100)
@@ -360,8 +365,6 @@ utils._compare_criteria_entropies(
 ```
 
 ```{code-cell} ipython3
-
-
 def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
@@ -506,7 +509,7 @@ def make_function_colors(detailed=False):
     return colorscale
 
 
-def make_tonic_line(y_root: int, x0: Number, x1: Number, line_dash="dash"):
+def make_tonic_line(y_root: int, x0: Number, x1: Number, line_dash="longdash"):
     return dict(
         type="line",
         x0=x0,
@@ -790,7 +793,7 @@ def _make_tonicization_shapes(
             **rectangle_settings,
         )
     )
-    result.append(make_tonic_line(y_root, x0, x1, line_dash="dot"))
+    result.append(make_tonic_line(y_root, x0, x1, line_dash="dash"))
     if is_minor and y0_secondary is not None:
         rectangle_settings["y0"] = y0_secondary
         rectangle_settings["y1"] = y1_secondary
