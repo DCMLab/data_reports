@@ -38,6 +38,7 @@ from dimcat.base import FriendlyEnum
 from dimcat.data.resources.utils import (
     make_adjacency_groups,
     make_group_start_mask,
+    make_groups_lasts_mask,
     subselect_multiindex_from_df,
 )
 from dimcat.plotting import make_box_plot, write_image
@@ -145,7 +146,7 @@ def _make_root_roman_or_its_dominants_criterion(
         .astype("string")
         .rename("effective_numeral")
     )
-    subsequent_root_tpc = (
+    root_tpc = (
         ms3.transform(
             pd.concat(
                 [
@@ -156,10 +157,10 @@ def _make_root_roman_or_its_dominants_criterion(
             ),
             ms3.roman_numeral2fifths,
         )
-        .shift()
         .astype("Int64")
-        .rename("subsequent_root_tpc")
+        .rename("root_tpc")
     )
+    subsequent_root_tpc = root_tpc.shift().rename("subsequent_root_tpc")
     # set ultima rows (first of phrase_id groups) to NA
     all_but_ultima_selector = ~make_group_start_mask(subsequent_root_tpc, "phrase_id")
     subsequent_root_tpc.where(all_but_ultima_selector, inplace=True)
@@ -256,6 +257,7 @@ def _make_root_roman_or_its_dominants_criterion(
         effective_numeral,
         expected_tonic,
         expected_root_tpc,
+        root_tpc,
         subsequent_root_tpc,
         subsequent_root_roman,
         subsequent_numeral_is_minor,
@@ -871,10 +873,11 @@ def get_tonicization_data(
 colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 
 # %%
-PIN_PHRASE_ID = 9649
+PIN_PHRASE_ID = 5932
 # 827
 # 2358
 # 5932
+# 9649
 
 if PIN_PHRASE_ID is None:
     current_id = choice(range(n_phrases))
@@ -899,10 +902,165 @@ fig
 get_tonicization_data(phrase_timeline_data)
 
 # %%
-stage_inspection_data
+phrase_timeline_data
 
 # %%
-phrase_timeline_data
+stage_inspection_data
+
+
+# %%
+def make_extended_tonicization_shape_data(stage_inspection_data):
+    dominant_grouper, group2expected_root_tpc = ms3.adjacency_groups(
+        stage_inspection_data.expected_root_tpc, na_values="bfill", prevent_merge=False
+    )
+    stage_data = pd.concat(
+        [
+            stage_inspection_data,
+            utils.make_start_finish(stage_inspection_data.df.duration_qb),
+            dominant_grouper.rename("dominant_group"),
+            dominant_grouper.map(group2expected_root_tpc).rename(
+                "group_expects_root_tpc"
+            ),
+        ],
+        axis=1,
+    )
+    shape_data = []
+
+    def new_shape_skeleton():
+        return dict(
+            x0=None,
+            x1=None,
+            expected_root_tpc=None,
+            expected_tonic=None,
+            minor=None,
+            line=None,
+        )
+
+    def initialize_next_shape():
+        nonlocal current_shape
+        if current_shape["x0"] is not None:
+            shape_data.append(dict(current_shape))
+        current_shape = new_shape_skeleton()
+
+    def new_solid_shape(row):
+        nonlocal current_shape
+        initialize_next_shape()
+        current_shape["x0"] = row.Start
+        current_shape["x1"] = row.Finish
+        current_shape["expected_root_tpc"] = row.expected_root_tpc
+        current_shape["expected_tonic"] = row.expected_tonic
+        current_shape["minor"] = row.expected_tonic.islower()
+        current_shape["line"] = "solid"
+
+    def new_dotted_shape(row, minor):
+        nonlocal current_shape
+        initialize_next_shape()
+        current_shape["x0"] = row.Start
+        current_shape["x1"] = row.Finish
+        current_shape["expected_root_tpc"] = row.group_expects_root_tpc
+        current_shape["minor"] = minor
+        current_shape["line"] = "dotted"
+
+    def prolong_solid_shape(row):
+        nonlocal current_shape
+        current_shape["x1"] = row.Finish
+
+    def prolong_dotted_range(row, minor):
+        nonlocal current_shape
+        if current_shape["minor"] == minor:
+            current_shape["x1"] = row.Finish
+        else:
+            initialize_next_shape()
+            new_dotted_shape(row, minor)
+
+    def chord_fits_range(row, root_tpc) -> Optional[bool]:
+        leading_tone_tpc = root_tpc + 5
+        if row.highest_tpc > leading_tone_tpc:
+            return
+        lowest_tpc_major = leading_tone_tpc - 7
+        lowest_tpc_minor = leading_tone_tpc - 10
+        if row.lowest_tpc >= lowest_tpc_major:
+            # fits in the major key range
+            return False
+        elif row.lowest_tpc >= lowest_tpc_minor:
+            # fits in the minor key range
+            return True
+        return
+
+    current_shape = new_shape_skeleton()
+    for row in stage_data.iloc[::-1].itertuples():
+        if not pd.isnull(
+            row.expected_root_tpc
+        ):  # this is a dominant and starts or prolongs a solid-line rectangle
+            if current_shape["x0"] is None:
+                # no shape currently active
+                new_solid_shape(row)
+            else:
+                if current_shape["line"] == "solid":
+                    if current_shape["expected_root_tpc"] == row.expected_root_tpc:
+                        prolong_solid_shape(row)
+                    else:
+                        new_solid_shape(row)
+                else:
+                    new_solid_shape(row)
+        elif current_shape["x0"] is None:
+            # no shape currently active, skip the gap until the next dominant
+            continue
+        elif current_shape["line"] == "solid":
+            if row.group_expects_root_tpc == row.root_tpc:
+                # this is a resolution of the previous dominant (in terms of the chord root)
+                prolong_solid_shape(row)
+            else:
+                # check whether this chord's TPC range fits in as a prolongation of a tonicized key
+                mode_range = chord_fits_range(row, current_shape["expected_root_tpc"])
+                if mode_range is None:
+                    # does not fit in either range
+                    initialize_next_shape()
+                    continue
+                new_dotted_shape(row, minor=mode_range)
+        else:
+            # current shape is dotted, check whether this chord prolongs its TPC range or its parallel key's TPC range
+            mode_range = chord_fits_range(row, current_shape["expected_root_tpc"])
+            if mode_range is None:
+                # does not fit in either range
+                initialize_next_shape()
+                continue
+            if row.group_expects_root_tpc == current_shape["expected_root_tpc"]:
+                # prolongs the tonicized key's range
+                prolong_dotted_range(row, minor=mode_range)
+            else:
+                initialize_next_shape()
+    initialize_next_shape()
+    return shape_data
+
+
+make_extended_tonicization_shape_data(stage_inspection_data)
+
+# %%
+
+make_groups_lasts_mask(stage_inspection_data, "expected_root_tpc")
+
+# %% [raw]
+# from pandas.core.indexers.objects import BaseIndexer
+# import numpy.typing as npt
+#
+#
+# class DominantsToEndIndexer(BaseIndexer):
+#
+#      def get_window_bounds(
+#         self,
+#         num_values: int = 0,
+#         min_periods: int | None = None,
+#         center: bool | None = None,
+#         closed: str | None = None,
+#         step: int | None = None,
+#     ) -> Tuple[npt.NDArray, npt.NDArray]:
+#         return (
+#             np.zeros(num_values, dtype=np.int64),
+#             np.arange(1, num_values + 1, dtype=np.int64),
+#         )
+#
+# indexer = DominantsToEndIndexer()
 
 # %%
 
