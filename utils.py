@@ -13,6 +13,7 @@ import colorlover
 import frictionless as fl
 import ms3
 import numpy as np
+import numpy.typing as npt
 
 # import modin.pandas as pd
 import pandas as pd
@@ -1843,7 +1844,12 @@ def get_max_range(widths) -> Tuple[int, int, int]:
     return first_ix, last_ix + 1, maximum
 
 
-def merge_up_to_max_width(lowest_tpc, tpc_width, largest):
+def merge_up_to_max_width(
+    lowest_tpc: npt.NDArray, tpc_width: npt.NDArray, largest: int
+) -> Tuple[npt.NDArray, npt.NDArray]:
+    """Spans = lowest_tpc + tpc_width. Spans greater equal ``largest`` are left untouched. Smaller spans are merged as
+    long as the merge does not result in a range larger than ``largest``.
+    """
     lowest, highest = None, None
     merge_n = 0
     result_l, result_w = [], []
@@ -1887,8 +1893,40 @@ def merge_up_to_max_width(lowest_tpc, tpc_width, largest):
 
 
 def _compute_smallest_fifth_ranges(
-    lowest_tpc, tpc_width, smallest=6, largest=9, verbose=False
-):
+    lowest_tpc: npt.NDArray,
+    tpc_width: npt.NDArray,
+    smallest: int = 6,
+    largest: int = 9,
+    verbose: bool = False,
+) -> Tuple[npt.NDArray, npt.NDArray]:
+    """Recursively groups the given TPC "hull" into diatonic bands. Each entry of the two arrays represents a chord,
+    in a way that lowest_tpc is the lowest tonal pitch class on the line of fifths, and tpc_width (by addition)
+    represents the distance to the highest tonal pitch class on the line of fifths.
+
+    Recursive mechanism:
+
+    * Stop criterion: if ``max(tpc_width) ≤ smallest``, merge the whole hull into one band up to a
+      range of ``smallest``.
+    * Otherwise split the hull in three parts: left, middle, right: Middle spans the left_most to the
+      right-most occurrence of max(tpc_width). Process the middle part by leaving all spans ``≥ largest`` untouched
+      and merging smaller spans as long as the merge does not result in a range larger than ``largest``.
+    * Process left and right recursively.
+
+    Args:
+        lowest_tpc: Lowest tonal pitch class on the line of fifths for each chord in the sequence.
+        tpc_width: For each chord, the span of tonal pitch classes on the line of fifths.
+        smallest:
+            Stop criterion: if ``max(tpc_width) <= smallest``, merge the whole hull into one band
+            up to a range of ``smallest``. Defaults to 6, which corresponds to 6 fifths, i.e., 7 tones of a diatonic.
+        largest:
+            Merge adjacent spans up to this range. Defaults to 9, which corresponds to 9 fifths, i.e.,
+            10 tones of a major-minor extended diatonic.
+        verbose:
+            Print log messages.
+
+    Returns:
+        Hull representing merged spans of tonal pitch classes on the line of fifths.
+    """
     if len(lowest_tpc) < 2:
         return lowest_tpc, tpc_width
     first_max_ix, last_max_ix, max_val = get_max_range(tpc_width)
@@ -1899,7 +1937,7 @@ def _compute_smallest_fifth_ranges(
             print(
                 f"Calling merge_up_to_max_width({lowest_tpc}, {tpc_width}) because max_val {max_val} < {largest}"
             )
-        return merge_up_to_max_width(lowest_tpc, tpc_width, largest=largest)
+        return merge_up_to_max_width(lowest_tpc, tpc_width, largest=smallest)
     left_l, left_w = _compute_smallest_fifth_ranges(
         lowest_tpc[:first_max_ix],
         tpc_width[:first_max_ix],
@@ -1924,7 +1962,30 @@ def _compute_smallest_fifth_ranges(
     return result_l, result_w
 
 
-def compute_smallest_diatonics(phrase_data, smallest=6, largest=9, verbose=False):
+def compute_smallest_diatonics(
+    phrase_data: resources.PhraseData,
+    smallest: int = 6,
+    largest: int = 9,
+    verbose: bool = False,
+) -> pd.DataFrame:
+    """Recursively computes diatonic bands based on a lower and an upper bound.
+
+    Args:
+        phrase_data: PhraseData for a single phrase (requires the columns 'lowest_tpc' and 'tpc_width').
+        smallest:
+            Stop criterion: if ``max(tpc_width) <= smallest``, merge the whole hull into
+            bands spanning ``≤ smallest`` fifths. Defaults to 6, which corresponds to 6 fifths,
+            i.e., 7 tones of a diatonic.
+        largest:
+            Merge adjacent spans up to this range. Defaults to 9, which corresponds to 9 fifths, i.e.,
+            10 tones of a major-minor extended diatonic.
+        verbose:
+            Print log messages.
+
+    Returns:
+        A DataFrame with columns 'lowest_tpc' and 'tpc_width' representing the merged spans of tonal
+        pitch classes for the given chord sequence.
+    """
     lowest, widths = _compute_smallest_fifth_ranges(
         phrase_data.lowest_tpc.values,
         phrase_data.tpc_width.values,
@@ -1938,7 +1999,9 @@ def compute_smallest_diatonics(phrase_data, smallest=6, largest=9, verbose=False
 
 
 def make_criterion(
-    phrase_feature,
+    phrase_feature: resources.PhraseAnnotations
+    | resources.PhraseComponents
+    | resources.PhraseLabels,
     criterion_name: Optional[str] = None,
     columns="chord",
     components="body",
@@ -1949,7 +2012,9 @@ def make_criterion(
     join_str: Optional[str | bool] = None,
     fillna: Optional[Hashable] = None,
 ) -> pd.Series:
-    """Function sets the defaults for the stage TSVs produced in the following."""
+    """Convenience function for calling ``.get_phrase_data()`` with certain defaults and merging
+    the resulting columns into one (when multiple).
+    """
     phrase_data = phrase_feature.get_phrase_data(
         columns=columns,
         components=components,

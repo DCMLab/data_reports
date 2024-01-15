@@ -1058,7 +1058,6 @@ make_extended_tonicization_shape_data(stage_inspection_data)
 ```
 
 ```{code-cell} ipython3
-
 make_groups_lasts_mask(stage_inspection_data, "expected_root_tpc")
 ```
 
