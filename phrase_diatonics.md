@@ -306,6 +306,32 @@ timeline_data.head()
 ```
 
 ```{code-cell} ipython3
+def make_rectangle_shape(group_df, y_min):
+    result = dict(
+        type="rect",
+        x0=group_df.Start.min(),
+        x1=group_df.Finish.max(),
+        fillcolor="LightSalmon",
+        opacity=0.5,
+        line_width=0,
+        layer="below",
+    )
+    first_row = group_df.iloc[0]
+    lowest_tpc = first_row.diatonics_lowest_tpc
+    tpc_width = first_row.diatonics_tpc_width
+    highest_tpc = lowest_tpc + tpc_width
+    result["y0"] = lowest_tpc - y_min - 0.5
+    result["y1"] = highest_tpc - y_min + 0.5
+    diatonic = ms3.fifths2name(highest_tpc - 5)
+    try:
+        text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
+        result["label"] = dict(
+            text=text,
+            textposition="top left",
+        )
+    except AttributeError:
+        raise
+    return result
 
 
 def make_diatonics_rectangles(phrase_timeline_data):
@@ -314,19 +340,31 @@ def make_diatonics_rectangles(phrase_timeline_data):
         phrase_timeline_data[["diatonics_lowest_tpc", "diatonics_tpc_width"]]
     )
     rectangle_grouper, _ = make_adjacency_groups(diatonics)
-    y_min = phrase_timeline_data.chord_tone_tpc.min()
+    min_y = phrase_timeline_data.chord_tone_tpc.min()
     for group, group_df in phrase_timeline_data.groupby(rectangle_grouper):
-        first_row = group_df.iloc[0]
-        lowest_tpc = first_row.diatonics_lowest_tpc
-        tpc_width = first_row.diatonics_tpc_width
-        highest_tpc = lowest_tpc + tpc_width
-        x0, x1 = first_row.Start.min(), first_row.Finish.max()
-        y0 = lowest_tpc - y_min - 0.5
-        y1 = highest_tpc - y_min + 0.5
-        diatonic = ms3.fifths2name(highest_tpc - 5)
-        text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
-        shapes.append(utils.make_rectangle_shape(x0=x0, x1=x1, y0=y0, y1=y1, text=text))
+        shapes.append(make_rectangle_shape(group_df, y_min=min_y))
     return shapes
+
+
+# def make_diatonics_rectangles(phrase_timeline_data):
+#     shapes = []
+#     diatonics = merge_columns_into_one(
+#         phrase_timeline_data[["diatonics_lowest_tpc", "diatonics_tpc_width"]]
+#     )
+#     rectangle_grouper, _ = make_adjacency_groups(diatonics)
+#     y_min = phrase_timeline_data.chord_tone_tpc.min()
+#     for group, group_df in phrase_timeline_data.groupby(rectangle_grouper):
+#         first_row = group_df.iloc[0]
+#         lowest_tpc = first_row.diatonics_lowest_tpc
+#         tpc_width = first_row.diatonics_tpc_width
+#         highest_tpc = lowest_tpc + tpc_width
+#         x0, x1 = first_row.Start.min(), first_row.Finish.max()
+#         y0 = lowest_tpc - y_min - 0.5
+#         y1 = highest_tpc - y_min + 0.5
+#         diatonic = ms3.fifths2name(highest_tpc - 5)
+#         text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
+#         shapes.append(utils.make_rectangle_shape(x0=x0, x1=x1, y0=y0, y1=y1, text=text))
+#     return shapes
 ```
 
 ```{code-cell} ipython3
