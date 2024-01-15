@@ -41,8 +41,9 @@ from dimcat.data.resources.utils import (
     subselect_multiindex_from_df,
 )
 from dimcat.plotting import make_box_plot, write_image
-from docs.notebooks import utils
 from git import Repo
+
+import utils
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
@@ -338,26 +339,26 @@ criterion2stages["root_roman_or_its_dominants"] = root_roman_or_its_dominants
 root_roman_or_its_dominants.head(100)
 
 
-# %% [raw]
+# %% [raw] jupyter={"outputs_hidden": false}
 # utils.compare_criteria_metrics(criterion2stages, height=1000)
 
-# %% [raw]
+# %% [raw] jupyter={"outputs_hidden": false}
 # utils._compare_criteria_stage_durations(
 #     criterion2stages, chronological_corpus_names=chronological_corpus_names
 # )
 
-# %% [raw]
+# %% [raw] jupyter={"outputs_hidden": false}
 # utils._compare_criteria_phrase_lengths(
 #     criterion2stages, chronological_corpus_names=chronological_corpus_names
 # )
 
-# %% [raw]
+# %% [raw] jupyter={"outputs_hidden": false}
 # utils._compare_criteria_entropies(
 #     criterion2stages, chronological_corpus_names=chronological_corpus_names
 # )
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
@@ -467,7 +468,7 @@ def make_timeline_data(root_roman_or_its_dominants, detailed=True):
     return timeline_data
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def make_function_colors(detailed=True):
     if detailed:
         colorscale = {
@@ -681,47 +682,47 @@ def get_stage_shape_data(all_dominant_stages, groupby_levels, y_min):
     for _, group_df in all_dominant_stages.groupby(groupby_levels):
         first_row = group_df.iloc[0]
         numeral = first_row.root_roman_or_its_dominants
-        add_stage_area = not (numeral == "i" and first_row.localkey_is_minor) and not (
-            numeral == "I" and not first_row.localkey_is_minor
-        )
-        other_resolved_dominants = group_df.expected_root_tpc.eq(
-            group_df.subsequent_root_tpc
-        ) & group_df.root_roman_or_its_dominant.ne(group_df.root_roman_or_its_dominants)
-        add_tonicized_areas = other_resolved_dominants.any()
-        if not (add_stage_area or add_tonicized_areas):
-            continue
+        # add_stage_area = not (numeral == "i" and first_row.localkey_is_minor) and not (
+        #     numeral == "I" and not first_row.localkey_is_minor
+        # )
+        # other_resolved_dominants = group_df.expected_root_tpc.eq(
+        #     group_df.subsequent_root_tpc
+        # ) & group_df.root_roman_or_its_dominant.ne(group_df.root_roman_or_its_dominants)
+        # add_tonicized_areas = other_resolved_dominants.any()
+        # if not (add_stage_area or add_tonicized_areas):
+        #     continue
         x0, x1 = group_df.Start.min(), group_df.Finish.max()
-        if add_stage_area:
-            shape_data = make_shape_data_for_numeral(
-                numeral=numeral,
-                local_tonic_tpc=first_row.localkey_tonic_tpc,
-                globalkey_is_minor=first_row.globalkey_is_minor,
-                x0=x0,
-                x1=x1,
-                y_min=y_min,
-            )
-            shape_data["legendgroup"] = "stage"
-            area_shape_data.append(shape_data)
-        if add_tonicized_areas:
-            unique_substages = group_df[other_resolved_dominants].index.unique()
-            stage_name, substage_name = unique_substages.names[-2:]
-            for *_, stage, substage in unique_substages:
-                rectangle_data = group_df.query(
-                    f"{stage_name} == {stage} & {substage_name} in [{substage - 1}, {substage}]"
-                )
-                x0, x1 = rectangle_data.Start.min(), rectangle_data.Finish.max()
-                last_row = rectangle_data.iloc[-1]
-                numeral = last_row.root_roman_or_its_dominant
-                shape_data = make_shape_data_for_numeral(
-                    numeral=numeral,
-                    local_tonic_tpc=first_row.localkey_tonic_tpc,
-                    globalkey_is_minor=first_row.globalkey_is_minor,
-                    x0=x0,
-                    x1=x1,
-                    y_min=y_min,
-                )
-                shape_data["legendgroup"] = "tonicization"
-                area_shape_data.append(shape_data)
+        # if add_stage_area:
+        shape_data = make_shape_data_for_numeral(
+            numeral=numeral,
+            local_tonic_tpc=first_row.localkey_tonic_tpc,
+            globalkey_is_minor=first_row.globalkey_is_minor,
+            x0=x0,
+            x1=x1,
+            y_min=y_min,
+        )
+        shape_data["legendgroup"] = "stage"
+        area_shape_data.append(shape_data)
+        # if add_tonicized_areas:
+        #     unique_substages = group_df[other_resolved_dominants].index.unique()
+        #     stage_name, substage_name = unique_substages.names[-2:]
+        #     for *_, stage, substage in unique_substages:
+        #         rectangle_data = group_df.query(
+        #             f"{stage_name} == {stage} & {substage_name} in [{substage - 1}, {substage}]"
+        #         )
+        #         x0, x1 = rectangle_data.Start.min(), rectangle_data.Finish.max()
+        #         last_row = rectangle_data.iloc[-1]
+        #         numeral = last_row.root_roman_or_its_dominant
+        #         shape_data = make_shape_data_for_numeral(
+        #             numeral=numeral,
+        #             local_tonic_tpc=first_row.localkey_tonic_tpc,
+        #             globalkey_is_minor=first_row.globalkey_is_minor,
+        #             x0=x0,
+        #             x1=x1,
+        #             y_min=y_min,
+        #         )
+        #         shape_data["legendgroup"] = "tonicization"
+        #         area_shape_data.append(shape_data)
     return area_shape_data
 
 
@@ -775,7 +776,7 @@ def make_tonicization_shapes(
         legendgroup=legendgroup,
         layer="below",
         textposition="middle center",
-        label=dict(font=dict(size=100)),
+        label=dict(font=dict(size=70)),
     )
     if legendgroup == "stage":
         rectangle_settings["fillcolor"] = primary_color
@@ -797,6 +798,7 @@ def make_tonicization_shapes(
         tonic_line_dash = "dashdot"
     result.append(make_tonic_line(y_root, x0, x1, line_dash=tonic_line_dash))
     if is_minor and y0_secondary is not None:
+        del rectangle_settings["text"]
         rectangle_settings["y0"] = y0_secondary
         rectangle_settings["y1"] = y1_secondary
         rectangle_settings["line_dash"] = secondary_line_dash
@@ -979,7 +981,7 @@ def make_extended_tonicization_shape_data(stage_inspection_data):
         return
 
     current_shape = new_shape_skeleton()
-    for row in stage_data.iloc[::-1].itertuples():
+    for row in stage_data.iloc[::-1].itertuples(index=False):
         if not pd.isnull(
             row.expected_root_tpc
         ):  # this is a dominant and starts or prolongs a solid-line rectangle
@@ -988,8 +990,15 @@ def make_extended_tonicization_shape_data(stage_inspection_data):
                 new_solid_shape(row)
             else:
                 if current_shape["primary_line_dash"] == "solid":
-                    if current_shape["root_tpc"] == row.expected_root_tpc:
+                    if current_shape["root_tpc"] in (
+                        row.expected_root_tpc,
+                        row.root_tpc,
+                    ):
                         prolong_solid_shape(row, is_dominant=True)
+                        if current_shape["root_tpc"] != row.expected_root_tpc:
+                            # this dominant resolves the previous one, so it prolonges the solid rectangle, but
+                            # then starts a new one for the new expected root
+                            new_solid_shape(row, is_dominant=True)
                     else:
                         new_solid_shape(row, is_dominant=True)
                 else:
@@ -1034,7 +1043,7 @@ def get_extended_tonicization_shape_data(stage_inspection_data, y_min):
     return shapes
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 DETAILED_FUNCTIONS = True
 timeline_data = make_timeline_data(
     root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
@@ -1043,7 +1052,7 @@ n_phrases = max(timeline_data.index.levels[2])
 colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def plot_phrase_stages(
     phrase_annotations,
     phrase_id,
@@ -1076,9 +1085,9 @@ def plot_phrase_stages(
     return fig
 
 
-plot_phrase_stages(phrase_annotations, phrase_id=5932)
+plot_phrase_stages(phrase_annotations, phrase_id=5932)  # 4157)
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 PIN_PHRASE_ID = None
 # 827
 # 2358
@@ -1093,10 +1102,10 @@ else:
     current_id = PIN_PHRASE_ID
 plot_phrase_stages(phrase_annotations, phrase_id=current_id)
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 plot_phrase_stages(phrase_annotations, phrase_id=2358)
 
-# %% [raw]
+# %% [raw] jupyter={"outputs_hidden": false}
 # from pandas.core.indexers.objects import BaseIndexer
 # import numpy.typing as npt
 #

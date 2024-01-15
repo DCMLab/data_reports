@@ -27,7 +27,6 @@ from dimcat.data.resources.results import TypeAlias, _entropy
 from dimcat.data.resources.utils import merge_columns_into_one
 from dimcat.plotting import make_bar_plot, update_figure_layout
 from dimcat.utils import get_middle_composition_year, grams, make_transition_matrix
-from docs.notebooks.create_gantt import create_gantt, fill_yaxis_gaps
 from git import Repo
 from IPython.display import display
 from matplotlib import gridspec
@@ -38,6 +37,8 @@ from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
 from scipy.stats import entropy
 from sklearn.decomposition import PCA
+
+from create_gantt import create_gantt, fill_yaxis_gaps
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
