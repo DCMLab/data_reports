@@ -233,7 +233,9 @@ def _make_root_roman_or_its_dominants_criterion(
 
     # with dominant chains
     # for this criterion, all dominants
-    root_dominants_criterion = expected_tonic.where(is_dominant, phrase_data.root_roman)
+    root_dominants_criterion = expected_tonic.where(
+        is_dominant & all_but_ultima_selector, phrase_data.root_roman
+    )
     root_dominants_criterion.where(
         ~merge_with_previous, subsequent_root_roman, inplace=True
     )
