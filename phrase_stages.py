@@ -38,7 +38,6 @@ from dimcat.base import FriendlyEnum
 from dimcat.data.resources.utils import (
     make_adjacency_groups,
     make_group_start_mask,
-    make_groups_lasts_mask,
     subselect_multiindex_from_df,
 )
 from dimcat.plotting import make_box_plot, write_image
@@ -121,20 +120,25 @@ def _make_root_roman_or_its_dominants_criterion(
         ms3.roman_numeral2fifths,
         ["localkey_resolved", "globalkey_is_minor"],
     )
-    localkey_tonic_tpc = localkey_tonic_fifths.add(
-        ms3.transform(phrase_data.globalkey, ms3.name2fifths)
-    ).rename("localkey_tonic_tpc")
-    expected_root_tpc = ms3.transform(
-        phrase_data,
-        ms3.roman_numeral2fifths,
-        ["effective_localkey", "globalkey_is_minor"],
-    ).rename("expected_root_tpc")
+    globalkey_tpc = ms3.transform(phrase_data.globalkey, ms3.name2fifths)
+    localkey_tonic_tpc = localkey_tonic_fifths.add(globalkey_tpc).rename(
+        "localkey_tonic_tpc"
+    )
+    expected_root_tpc = (
+        ms3.transform(
+            phrase_data,
+            ms3.roman_numeral2fifths,
+            ["effective_localkey", "globalkey_is_minor"],
+        )
+        .add(globalkey_tpc)
+        .rename("expected_root_tpc")
+    )
     is_dominant = utils.make_dominant_selector(phrase_data)
     expected_root_tpc = expected_root_tpc.where(is_dominant).astype("Int64")
-    expected_tonic = phrase_data.relativeroot.fillna(
+    expected_numeral = phrase_data.relativeroot.fillna(
         phrase_data.effective_localkey_is_minor.map({True: "i", False: "I"})
     ).rename(
-        "expected_tonic"
+        "expected_numeral"
     )  # this is equivalent to the effective_localkey (which is relative to the global tonic),
     # but relative to the localkey
     effective_numeral = (
@@ -157,6 +161,7 @@ def _make_root_roman_or_its_dominants_criterion(
             ),
             ms3.roman_numeral2fifths,
         )
+        .add(globalkey_tpc)
         .astype("Int64")
         .rename("root_tpc")
     )
@@ -225,7 +230,7 @@ def _make_root_roman_or_its_dominants_criterion(
     # without dominant chains
     # for this criterion, only those dominants that resolve as expected take on the value of their expected tonic, so
     # that, otherwise, they are available for merging with their own dominant
-    root_dominant_criterion = expected_tonic.where(
+    root_dominant_criterion = expected_numeral.where(
         is_dominant & merge_with_previous, phrase_data.root_roman
     )
     root_dominant_criterion.where(
@@ -239,7 +244,7 @@ def _make_root_roman_or_its_dominants_criterion(
 
     # with dominant chains
     # for this criterion, all dominants
-    root_dominants_criterion = expected_tonic.where(
+    root_dominants_criterion = expected_numeral.where(
         is_dominant & all_but_ultima_selector, phrase_data.root_roman
     )
     root_dominants_criterion.where(
@@ -255,7 +260,7 @@ def _make_root_roman_or_its_dominants_criterion(
         localkey_tonic_tpc,
         phrase_data,
         effective_numeral,
-        expected_tonic,
+        expected_numeral,
         expected_root_tpc,
         root_tpc,
         subsequent_root_tpc,
@@ -372,6 +377,7 @@ class DetailedFunction(FriendlyEnum):
     V7 = "D7"
     vii07 = "rootless D79"
     viio7 = "rootless D7b9"
+    aug6 = "augmented 6th"
     OTHER = "other"
 
 
@@ -385,9 +391,10 @@ def make_detailed_resource_column(timeline_data, name="Resource"):
     )
     is_dim = leading_tone_is_root & timeline_data.chord_type.eq("o")
     is_dim7 = leading_tone_is_root & timeline_data.chord_type.eq("o7")
-    if_halfdim7 = timeline_data.chord_type.eq("%7")
+    if_halfdim7 = leading_tone_is_root & timeline_data.chord_type.eq("%7")
     is_dominant = timeline_data.expected_root_tpc.notna()
-    group_levels = is_dominant.index.names[:-1]
+    is_aug6 = timeline_data.chord_type.isin(("Fr", "Ger", "It"))
+    group_levels = is_dominant.index.names[:-1]  # groupby substages by stage
     stage_has_dominant = is_dominant.groupby(group_levels).any()
     is_tonic_resolution = ~is_dominant & stage_has_dominant.reindex(timeline_data.index)
     is_minor_resolution = timeline_data.effective_numeral.str.islower()
@@ -399,6 +406,7 @@ def make_detailed_resource_column(timeline_data, name="Resource"):
     resource_column.where(~is_dominant_seventh, DetailedFunction.V7.value, inplace=True)
     resource_column.where(~if_halfdim7, DetailedFunction.vii07.value, inplace=True)
     resource_column.where(~is_dim7, DetailedFunction.viio7.value, inplace=True)
+    resource_column.where(~is_aug6, DetailedFunction.aug6.value, inplace=True)
     resource_column.where(
         ~(is_tonic_resolution & is_minor_resolution),
         DetailedFunction.i.value,
@@ -412,7 +420,7 @@ def make_detailed_resource_column(timeline_data, name="Resource"):
     return resource_column
 
 
-def make_timeline_data(root_roman_or_its_dominants, detailed=False):
+def make_timeline_data(root_roman_or_its_dominants, detailed=True):
     timeline_data = pd.concat(
         [
             root_roman_or_its_dominants,
@@ -460,28 +468,19 @@ def make_timeline_data(root_roman_or_its_dominants, detailed=False):
 
 
 # %%
-DETAILED_FUNCTIONS = True
-timeline_data = make_timeline_data(
-    root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
-)
-timeline_data.head(50)
-
-# %%
-n_phrases = max(timeline_data.index.levels[2])
-
-
-def make_function_colors(detailed=False):
+def make_function_colors(detailed=True):
     if detailed:
         colorscale = {
             resource: utils.TailwindColorsHex.get_color(color_name)
             for resource, color_name in [
                 (DetailedFunction.i.value, "PURPLE_700"),
                 (DetailedFunction.I.value, "SKY_500"),
-                (DetailedFunction.V.value, "RED_400"),
-                (DetailedFunction.vii.value, "RED_500"),
-                (DetailedFunction.V7.value, "RED_600"),
-                (DetailedFunction.vii07.value, "RED_700"),
-                (DetailedFunction.viio7.value, "RED_900"),
+                (DetailedFunction.V.value, "RED_300"),
+                (DetailedFunction.vii.value, "RED_400"),
+                (DetailedFunction.V7.value, "RED_500"),
+                (DetailedFunction.vii07.value, "RED_600"),
+                (DetailedFunction.viio7.value, "RED_700"),
+                (DetailedFunction.aug6.value, "RED_800"),
                 (DetailedFunction.OTHER.value, "GRAY_500"),
             ]
         }
@@ -496,7 +495,7 @@ def make_function_colors(detailed=False):
     return colorscale
 
 
-def make_tonic_line(y_root: int, x0: Number, x1: Number, line_dash="longdash"):
+def make_tonic_line(y_root: int, x0: Number, x1: Number, line_dash="solid"):
     return dict(
         type="line",
         x0=x0,
@@ -550,7 +549,7 @@ def _make_localkey_shapes(
             legendgroup="localkey",
         )
     )
-    result.append(make_tonic_line(y_root, x0, x1))
+    result.append(make_tonic_line(y_root, x0, x1, line_dash="solid"))
     text = "parallel major" if is_minor else "parallel minor"
     if y0_secondary is not None:
         result.append(
@@ -600,9 +599,9 @@ def subselect_dominant_stages(timeline_data):
 
 
 SHARPWISE_COLORS = [
-    "RED",
-    "ROSE",
-    "ORANGE",
+    "RED",  # localkey + 1 fifths
+    "ROSE",  # + 2
+    "ORANGE",  # + 3 etc.
     "PINK",
     "AMBER",
     "FUCHSIA",
@@ -611,9 +610,9 @@ SHARPWISE_COLORS = [
     "STONE",
 ]
 FLATWISE_COLORS = [
-    "LIME",
-    "GREEN",
-    "BLUE",
+    "LIME",  # localkey - 1 fifths
+    "GREEN",  # - 2
+    "BLUE",  # - 3 etc.
     "CYAN",
     "EMERALD",
     "INDIGO",
@@ -624,31 +623,20 @@ FLATWISE_COLORS = [
 ]
 
 
-def _make_shape_data_for_numeral(
-    numeral: str,
-    local_tonic_tpc: str,
-    effective_localkey_is_minor: bool,
+def style_shape_data_by_root(
+    root_tpc: int,
+    minor: bool,
+    localkey_tonic_tpc: int,
+    y_min: int,
     x0: Number,
     x1: Number,
-    y_min: int,
+    **kwargs,
 ):
-    numeral_tpc = (
-        ms3.roman_numeral2fifths(numeral, effective_localkey_is_minor) + local_tonic_tpc
-    )
-    y_root = numeral_tpc - y_min
-    text = numeral
-    first_numeral_component = numeral.split("/")[0]
-    tonicized_is_minor = first_numeral_component.islower()
-    shape_data = dict(
-        x0=x0,
-        x1=x1,
-        y_root=y_root,
-        is_minor=tonicized_is_minor,
-        text=text,
-    )
-    distance_to_local_tonic = numeral_tpc - local_tonic_tpc
+    y_root = root_tpc - y_min
+    shape_data = dict(x0=x0, x1=x1, y_root=y_root, is_minor=minor, **kwargs)
+    distance_to_local_tonic = int(root_tpc - localkey_tonic_tpc)
     if distance_to_local_tonic == 0:
-        if tonicized_is_minor:
+        if minor:
             primary_color = ("PURPLE", 700)
         else:
             primary_color = ("SKY", 500)
@@ -658,9 +646,9 @@ def _make_shape_data_for_numeral(
             color = SHARPWISE_COLORS[color_index]
         else:
             color = FLATWISE_COLORS[color_index]
-        primary_color = (color, 500)
+        primary_color = (color, 600)
     shape_data["primary_color"] = utils.TailwindColorsHex.get_color(*primary_color)
-    if tonicized_is_minor:
+    if minor:
         color_name, color_shade = primary_color
         color_shade -= 300
         shape_data["secondary_color"] = utils.TailwindColorsHex.get_color(
@@ -669,7 +657,25 @@ def _make_shape_data_for_numeral(
     return shape_data
 
 
-def _get_stage_shape_data(all_dominant_stages, groupby_levels, y_min):
+def make_shape_data_for_numeral(
+    numeral: str,
+    local_tonic_tpc: str,
+    globalkey_is_minor: bool,
+    x0: Number,
+    x1: Number,
+    y_min: int,
+):
+    numeral_tpc = (
+        ms3.roman_numeral2fifths(numeral, globalkey_is_minor) + local_tonic_tpc
+    )
+    first_numeral_component = numeral.split("/")[0]
+    tonicized_is_minor = first_numeral_component.islower()
+    return style_shape_data_by_root(
+        numeral_tpc, tonicized_is_minor, local_tonic_tpc, y_min, x0, x1, text=numeral
+    )
+
+
+def get_stage_shape_data(all_dominant_stages, groupby_levels, y_min):
     """Returns filled rectangle shapes for all non-tonic stages"""
     area_shape_data = []
     for _, group_df in all_dominant_stages.groupby(groupby_levels):
@@ -686,10 +692,10 @@ def _get_stage_shape_data(all_dominant_stages, groupby_levels, y_min):
             continue
         x0, x1 = group_df.Start.min(), group_df.Finish.max()
         if add_stage_area:
-            shape_data = _make_shape_data_for_numeral(
+            shape_data = make_shape_data_for_numeral(
                 numeral=numeral,
                 local_tonic_tpc=first_row.localkey_tonic_tpc,
-                effective_localkey_is_minor=first_row.effective_localkey_is_minor,
+                globalkey_is_minor=first_row.globalkey_is_minor,
                 x0=x0,
                 x1=x1,
                 y_min=y_min,
@@ -706,10 +712,10 @@ def _get_stage_shape_data(all_dominant_stages, groupby_levels, y_min):
                 x0, x1 = rectangle_data.Start.min(), rectangle_data.Finish.max()
                 last_row = rectangle_data.iloc[-1]
                 numeral = last_row.root_roman_or_its_dominant
-                shape_data = _make_shape_data_for_numeral(
+                shape_data = make_shape_data_for_numeral(
                     numeral=numeral,
                     local_tonic_tpc=first_row.localkey_tonic_tpc,
-                    effective_localkey_is_minor=first_row.effective_localkey_is_minor,
+                    globalkey_is_minor=first_row.globalkey_is_minor,
                     x0=x0,
                     x1=x1,
                     y_min=y_min,
@@ -719,7 +725,7 @@ def _get_stage_shape_data(all_dominant_stages, groupby_levels, y_min):
     return area_shape_data
 
 
-def _make_tonicization_shapes(
+def make_tonicization_shapes(
     y_root: int,
     is_minor: bool,
     x0: Number,
@@ -727,6 +733,8 @@ def _make_tonicization_shapes(
     legendgroup: Literal["stage"] | str,
     primary_color: str,
     secondary_color: Optional[str] = None,
+    primary_line_dash: str = "solid",
+    secondary_line_dash: str = "dot",
     text: Optional[str] = None,
 ) -> List[dict]:
     """Turns 'shape data' dicts into the corresponding rectangle shapes, applying different styles according to
@@ -762,6 +770,7 @@ def _make_tonicization_shapes(
         x1=x1,
         y0=y0_primary,
         y1=y1_primary,
+        line_dash=primary_line_dash,
         text=text,
         legendgroup=legendgroup,
         layer="below",
@@ -774,17 +783,23 @@ def _make_tonicization_shapes(
         rectangle_settings["opacity"] = 0.3
     else:
         rectangle_settings["line_color"] = primary_color
-        rectangle_settings["line_width"] = 5
+        rectangle_settings["line_width"] = 3
     result.append(
         utils.make_rectangle_shape(
             **rectangle_settings,
         )
     )
-    result.append(make_tonic_line(y_root, x0, x1, line_dash="dash"))
+    if legendgroup == "stage":
+        tonic_line_dash = "longdash"
+    elif primary_line_dash == "solid":
+        tonic_line_dash = "longdashdot"
+    else:
+        tonic_line_dash = "dashdot"
+    result.append(make_tonic_line(y_root, x0, x1, line_dash=tonic_line_dash))
     if is_minor and y0_secondary is not None:
         rectangle_settings["y0"] = y0_secondary
         rectangle_settings["y1"] = y1_secondary
-        rectangle_settings["line_dash"] = "dot"
+        rectangle_settings["line_dash"] = secondary_line_dash
         if legendgroup == "stage":
             rectangle_settings["fillcolor"] = secondary_color
         else:
@@ -797,7 +812,7 @@ def _make_tonicization_shapes(
     return result
 
 
-def _get_tonicization_shape_data(phrase_timeline_data):
+def get_tonicization_shape_data(phrase_timeline_data):
     """Uses :func:`_make_shape_data_for_numeral` to create shape data for all resolving tonicizations that are not
     already covered by a stage.
     """
@@ -820,10 +835,10 @@ def _get_tonicization_shape_data(phrase_timeline_data):
         x0, x1 = rectangle_data.Start.min(), rectangle_data.Finish.max()
         last_row = rectangle_data.iloc[-1]
         numeral = last_row.root_roman_or_its_dominant
-        shape_data = _make_shape_data_for_numeral(
+        shape_data = make_shape_data_for_numeral(
             numeral=numeral,
             local_tonic_tpc=last_row.localkey_tonic_tpc,
-            effective_localkey_is_minor=last_row.effective_localkey_is_minor,
+            globalkey_is_minor=last_row.globalkey_is_minor,
             x0=x0,
             x1=x1,
             y_min=y_min,
@@ -836,7 +851,7 @@ def _get_tonicization_shape_data(phrase_timeline_data):
 def get_tonicization_data(
     phrase_timeline_data,
     stages: bool = True,
-    tonicizations: bool = True,
+    tonicizations: bool = False,
 ):
     """Collects shape data from the selected functions and turns it into corresponding Plotly shapes using
     :func:`_make_tonicization_shapes`.
@@ -846,7 +861,8 @@ def get_tonicization_data(
         phrase_timeline_data: Chords of a single phrase with exploded chord tones.
         stages: By default (True), non-tonic stages are highlighted by filled rectangles.
         tonicizations:
-            By default (True), tonicizations are highlighted by outlined rectangles. Tonicizations are
+            By default (True), tonicizations are highlighted by outlined rectangles. Implementation
+            superseded by :func:`get_extended_tonicization_data`.
 
     Returns:
 
@@ -856,59 +872,20 @@ def get_tonicization_data(
     y_min = phrase_timeline_data.chord_tone_tpc.min()
     area_shape_data = []
     if stages:
-        area_shape_data += _get_stage_shape_data(
+        area_shape_data += get_stage_shape_data(
             all_dominant_stages, groupby_levels, y_min=y_min
         )
     if tonicizations:
-        area_shape_data += _get_tonicization_shape_data(phrase_timeline_data)
+        area_shape_data += get_tonicization_shape_data(phrase_timeline_data)
     shapes = []
     for shape_data in area_shape_data:
-        shapes.extend(_make_tonicization_shapes(**shape_data))
+        shapes.extend(make_tonicization_shapes(**shape_data))
     if len(shapes):
         shapes[0].update(dict(showlegend=True, name="tonicized area"))
         shapes[1].update(dict(showlegend=True, name="tonicized pitch class"))
     return shapes
 
 
-colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
-
-# %%
-PIN_PHRASE_ID = 5932
-# 827
-# 2358
-# 5932
-# 9649
-
-if PIN_PHRASE_ID is None:
-    current_id = choice(range(n_phrases))
-else:
-    current_id = PIN_PHRASE_ID
-phrase_timeline_data = timeline_data.query(f"phrase_id == {current_id}")
-# phrase_stages_data = root_roman_or_its_dominants.query(f"phrase_id == {current_id}")
-stage_inspection_data = make_root_roman_or_its_dominants_criterion(
-    phrase_annotations, query=f"phrase_id == {current_id}", inspect_masks=True
-)
-
-# %%
-fig = utils.plot_phrase(
-    phrase_timeline_data,
-    colorscale=colorscale,
-    shapes=make_localkey_shapes(phrase_timeline_data)
-    + get_tonicization_data(phrase_timeline_data),
-)
-fig
-
-# %%
-get_tonicization_data(phrase_timeline_data)
-
-# %%
-phrase_timeline_data
-
-# %%
-stage_inspection_data
-
-
-# %%
 def make_extended_tonicization_shape_data(stage_inspection_data):
     dominant_grouper, group2expected_root_tpc = ms3.adjacency_groups(
         stage_inspection_data.expected_root_tpc, na_values="bfill", prevent_merge=False
@@ -930,10 +907,12 @@ def make_extended_tonicization_shape_data(stage_inspection_data):
         return dict(
             x0=None,
             x1=None,
-            expected_root_tpc=None,
-            expected_tonic=None,
+            localkey_tonic_tpc=None,
+            root_tpc=None,
+            # text=None,
             minor=None,
-            line=None,
+            primary_line_dash=None,
+            legendgroup="tonicization",
         )
 
     def initialize_next_shape():
@@ -942,43 +921,55 @@ def make_extended_tonicization_shape_data(stage_inspection_data):
             shape_data.append(dict(current_shape))
         current_shape = new_shape_skeleton()
 
-    def new_solid_shape(row):
+    def new_solid_shape(row, is_dominant=True):
         nonlocal current_shape
         initialize_next_shape()
         current_shape["x0"] = row.Start
         current_shape["x1"] = row.Finish
-        current_shape["expected_root_tpc"] = row.expected_root_tpc
-        current_shape["expected_tonic"] = row.expected_tonic
-        current_shape["minor"] = row.expected_tonic.islower()
-        current_shape["line"] = "solid"
+        current_shape["localkey_tonic_tpc"] = row.localkey_tonic_tpc
+        if is_dominant:
+            current_shape["root_tpc"] = row.expected_root_tpc
+            current_shape["minor"] = row.expected_numeral.islower()
+            # current_shape["text"] = row.expected_numeral
+        else:
+            current_shape["root_tpc"] = row.root_tpc
+            current_shape["minor"] = row.effective_numeral.islower()
+        current_shape["primary_line_dash"] = "solid"
 
-    def new_dotted_shape(row, minor):
+    def new_dashed_shape(row, minor):
         nonlocal current_shape
         initialize_next_shape()
         current_shape["x0"] = row.Start
         current_shape["x1"] = row.Finish
-        current_shape["expected_root_tpc"] = row.group_expects_root_tpc
+        current_shape["localkey_tonic_tpc"] = row.localkey_tonic_tpc
+        current_shape["root_tpc"] = row.group_expects_root_tpc
         current_shape["minor"] = minor
-        current_shape["line"] = "dotted"
+        current_shape["primary_line_dash"] = "dash"
 
-    def prolong_solid_shape(row):
+    def prolong_solid_shape(row, is_dominant=True):
         nonlocal current_shape
-        current_shape["x1"] = row.Finish
+        if is_dominant:
+            minor = row.expected_numeral.islower()
+        else:
+            minor = row.effective_numeral.islower()
+        if current_shape["minor"] == minor:
+            current_shape["x1"] = row.Finish
+        else:
+            new_solid_shape(row, is_dominant=is_dominant)
 
-    def prolong_dotted_range(row, minor):
+    def prolong_dashed_shape(row, minor):
         nonlocal current_shape
         if current_shape["minor"] == minor:
             current_shape["x1"] = row.Finish
         else:
-            initialize_next_shape()
-            new_dotted_shape(row, minor)
+            new_dashed_shape(row, minor)
 
     def chord_fits_range(row, root_tpc) -> Optional[bool]:
         leading_tone_tpc = root_tpc + 5
         if row.highest_tpc > leading_tone_tpc:
             return
-        lowest_tpc_major = leading_tone_tpc - 7
-        lowest_tpc_minor = leading_tone_tpc - 10
+        lowest_tpc_major = leading_tone_tpc - 6
+        lowest_tpc_minor = leading_tone_tpc - 9
         if row.lowest_tpc >= lowest_tpc_major:
             # fits in the major key range
             return False
@@ -996,48 +987,114 @@ def make_extended_tonicization_shape_data(stage_inspection_data):
                 # no shape currently active
                 new_solid_shape(row)
             else:
-                if current_shape["line"] == "solid":
-                    if current_shape["expected_root_tpc"] == row.expected_root_tpc:
-                        prolong_solid_shape(row)
+                if current_shape["primary_line_dash"] == "solid":
+                    if current_shape["root_tpc"] == row.expected_root_tpc:
+                        prolong_solid_shape(row, is_dominant=True)
                     else:
-                        new_solid_shape(row)
+                        new_solid_shape(row, is_dominant=True)
                 else:
-                    new_solid_shape(row)
+                    new_solid_shape(row, is_dominant=True)
         elif current_shape["x0"] is None:
             # no shape currently active, skip the gap until the next dominant
             continue
-        elif current_shape["line"] == "solid":
+        elif current_shape["primary_line_dash"] == "solid":
             if row.group_expects_root_tpc == row.root_tpc:
                 # this is a resolution of the previous dominant (in terms of the chord root)
-                prolong_solid_shape(row)
+                prolong_solid_shape(row, is_dominant=False)
             else:
                 # check whether this chord's TPC range fits in as a prolongation of a tonicized key
-                mode_range = chord_fits_range(row, current_shape["expected_root_tpc"])
+                mode_range = chord_fits_range(row, current_shape["root_tpc"])
                 if mode_range is None:
                     # does not fit in either range
                     initialize_next_shape()
                     continue
-                new_dotted_shape(row, minor=mode_range)
+                new_dashed_shape(row, minor=mode_range)
         else:
-            # current shape is dotted, check whether this chord prolongs its TPC range or its parallel key's TPC range
-            mode_range = chord_fits_range(row, current_shape["expected_root_tpc"])
+            # current shape is dashed, check whether this chord prolongs its TPC range or its parallel key's TPC range
+            mode_range = chord_fits_range(row, current_shape["root_tpc"])
             if mode_range is None:
                 # does not fit in either range
                 initialize_next_shape()
                 continue
-            if row.group_expects_root_tpc == current_shape["expected_root_tpc"]:
+            if row.group_expects_root_tpc == current_shape["root_tpc"]:
                 # prolongs the tonicized key's range
-                prolong_dotted_range(row, minor=mode_range)
+                prolong_dashed_shape(row, minor=mode_range)
             else:
                 initialize_next_shape()
     initialize_next_shape()
     return shape_data
 
 
-make_extended_tonicization_shape_data(stage_inspection_data)
+def get_extended_tonicization_shape_data(stage_inspection_data, y_min):
+    tonicization_shapes = make_extended_tonicization_shape_data(stage_inspection_data)
+    shapes = []
+    for shape_info in tonicization_shapes:
+        shape_data = style_shape_data_by_root(y_min=y_min, **shape_info)
+        shapes.extend(make_tonicization_shapes(**shape_data))
+    return shapes
+
 
 # %%
-make_groups_lasts_mask(stage_inspection_data, "expected_root_tpc")
+DETAILED_FUNCTIONS = True
+timeline_data = make_timeline_data(
+    root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
+)
+n_phrases = max(timeline_data.index.levels[2])
+colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
+
+
+# %%
+def plot_phrase_stages(
+    phrase_annotations,
+    phrase_id,
+    localkey_shapes: bool = True,
+    stage_shapes: bool = True,
+    tonicization_shapes: bool = True,
+    detailed_functions=True,
+):
+    stage_data = make_root_roman_or_its_dominants_criterion(
+        phrase_annotations, query=f"phrase_id == {phrase_id}"
+    )
+    phrase_timeline_data = make_timeline_data(stage_data, detailed=detailed_functions)
+    colorscale = make_function_colors(detailed=detailed_functions)
+    shapes = []
+    if localkey_shapes:
+        shapes.extend(make_localkey_shapes(phrase_timeline_data))
+    if stage_shapes:
+        shapes.extend(
+            get_tonicization_data(
+                phrase_timeline_data, stages=True, tonicizations=False
+            )
+        )
+    if tonicization_shapes:
+        shapes.extend(
+            get_extended_tonicization_shape_data(
+                stage_data, y_min=phrase_timeline_data.chord_tone_tpc.min()
+            )
+        )
+    fig = utils.plot_phrase(phrase_timeline_data, colorscale=colorscale, shapes=shapes)
+    return fig
+
+
+plot_phrase_stages(phrase_annotations, phrase_id=5932)
+
+# %%
+PIN_PHRASE_ID = None
+# 827
+# 2358
+# 5932
+# 9649
+
+# bugfix: 4157
+
+if PIN_PHRASE_ID is None:
+    current_id = choice(range(n_phrases))
+else:
+    current_id = PIN_PHRASE_ID
+plot_phrase_stages(phrase_annotations, phrase_id=current_id)
+
+# %%
+plot_phrase_stages(phrase_annotations, phrase_id=2358)
 
 # %% [raw]
 # from pandas.core.indexers.objects import BaseIndexer
@@ -1060,25 +1117,3 @@ make_groups_lasts_mask(stage_inspection_data, "expected_root_tpc")
 #         )
 #
 # indexer = DominantsToEndIndexer()
-
-# %%
-
-# %%
-make_localkey_shapes(phrase_timeline_data)
-
-# %%
-all_dominant_stages = subselect_dominant_stages(timeline_data)
-all_dominant_stages
-
-# %%
-gpb = all_dominant_stages.groupby(level=[0, 1, 2, 3])
-expected_root_tpcs = gpb.expected_root_tpc.nunique()
-expected_root_tpcs[expected_root_tpcs.gt(1)]
-
-# %%
-unique_resource_vals = gpb.Resource.unique()
-unique_resource_vals.head()
-
-# %%
-n_root_roman = gpb.root_roman_or_its_dominants.nunique()
-n_root_roman[n_root_roman.gt(1)]
