@@ -31,7 +31,7 @@ tags: [hide-cell]
 import os
 from numbers import Number
 from random import choice
-from typing import List, Optional, Tuple
+from typing import List, Literal, Optional, Tuple
 
 import dimcat as dc
 import ms3
@@ -48,29 +48,22 @@ from dimcat.plotting import make_box_plot, write_image
 from git import Repo
 
 import utils
-from utils import (
-    DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
-    get_repo_name,
-    print_heading,
-    resolve_dir,
-)
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell} ipython3
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "phrases"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "phrases"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename, extension=None):
-    if extension:
-        extension = "." + extension.lstrip(".")
-    else:
-        extension = DEFAULT_OUTPUT_FORMAT
-    return os.path.join(RESULTS_PATH, f"{filename}{extension}")
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
 
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -80,12 +73,12 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-package_path = resolve_dir(
+package_path = utils.resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
 repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
@@ -685,6 +678,7 @@ def _make_shape_data_for_numeral(
 
 
 def _get_stage_shape_data(all_dominant_stages, groupby_levels, y_min):
+    """Returns filled rectangle shapes for all non-tonic stages"""
     area_shape_data = []
     for _, group_df in all_dominant_stages.groupby(groupby_levels):
         first_row = group_df.iloc[0]
@@ -738,11 +732,30 @@ def _make_tonicization_shapes(
     is_minor: bool,
     x0: Number,
     x1: Number,
-    legendgroup: str,
+    legendgroup: Literal["stage"] | str,
     primary_color: str,
     secondary_color: Optional[str] = None,
     text: Optional[str] = None,
 ) -> List[dict]:
+    """Turns 'shape data' dicts into the corresponding rectangle shapes, applying different styles according to
+    'legendgroup' and 'is_minor'.
+
+    Args:
+        y_root: Coordinate of the root pitch, i.e. tonic_tpc - y_min.
+        is_minor:
+            If True and 'secondary_color' is not None, a secondary rectangle is added to account for minor's +3 range.
+        x0: Leftmost x coordinate.
+        x1: Rightmost x coordinate.
+        legendgroup: If 'stage', the rectangle(s) will be filled, otherwise they will be outlined.
+        primary_color: Color of the rectangle.
+        secondary_color:
+            Only relevant when 'is_minor' is True: If a secondary color is specified, a secondary rectangle
+            will be added to account for minor's +3 range.
+        text: The tonicized numeral.
+
+    Returns:
+        A list of rectangle shapes that can be added to a Plotly figure.
+    """
     result = []
     if is_minor:
         y0_primary, y1_primary, y0_secondary, y1_secondary = get_minor_y_coordinates(
@@ -792,24 +805,10 @@ def _make_tonicization_shapes(
     return result
 
 
-def get_tonicization_data(phrase_timeline_data):
-    all_dominant_stages = subselect_dominant_stages(phrase_timeline_data)
-    groupby_levels = all_dominant_stages.index.names[:-1]
-    y_min = phrase_timeline_data.chord_tone_tpc.min()
-    area_shape_data = _get_stage_shape_data(
-        all_dominant_stages, groupby_levels, y_min=y_min
-    )
-    area_shape_data += _get_tonicization_shape_data(phrase_timeline_data)
-    shapes = []
-    for shape_data in area_shape_data:
-        shapes.extend(_make_tonicization_shapes(**shape_data))
-    if len(shapes):
-        shapes[0].update(dict(showlegend=True, name="tonicized area"))
-        shapes[1].update(dict(showlegend=True, name="tonicized pitch class"))
-    return shapes
-
-
 def _get_tonicization_shape_data(phrase_timeline_data):
+    """Uses :func:`_make_shape_data_for_numeral` to create shape data for all resolving tonicizations that are not
+    already covered by a stage.
+    """
     out_of_stage_tonicizations = phrase_timeline_data.expected_root_tpc.eq(
         phrase_timeline_data.subsequent_root_tpc
     ) & phrase_timeline_data.root_roman_or_its_dominant.ne(
@@ -842,21 +841,61 @@ def _get_tonicization_shape_data(phrase_timeline_data):
     return area_shape_data
 
 
+def get_tonicization_data(
+    phrase_timeline_data,
+    stages: bool = True,
+    tonicizations: bool = True,
+):
+    """Collects shape data from the selected functions and turns it into corresponding Plotly shapes using
+    :func:`_make_tonicization_shapes`.
+
+
+    Args:
+        phrase_timeline_data: Chords of a single phrase with exploded chord tones.
+        stages: By default (True), non-tonic stages are highlighted by filled rectangles.
+        tonicizations:
+            By default (True), tonicizations are highlighted by outlined rectangles. Tonicizations are
+
+    Returns:
+
+    """
+    all_dominant_stages = subselect_dominant_stages(phrase_timeline_data)
+    groupby_levels = all_dominant_stages.index.names[:-1]
+    y_min = phrase_timeline_data.chord_tone_tpc.min()
+    area_shape_data = []
+    if stages:
+        area_shape_data += _get_stage_shape_data(
+            all_dominant_stages, groupby_levels, y_min=y_min
+        )
+    if tonicizations:
+        area_shape_data += _get_tonicization_shape_data(phrase_timeline_data)
+    shapes = []
+    for shape_data in area_shape_data:
+        shapes.extend(_make_tonicization_shapes(**shape_data))
+    if len(shapes):
+        shapes[0].update(dict(showlegend=True, name="tonicized area"))
+        shapes[1].update(dict(showlegend=True, name="tonicized pitch class"))
+    return shapes
+
+
 colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
 ```{code-cell} ipython3
-PIN_PHRASE_ID = None
+PIN_PHRASE_ID = 9649
 # 827
 # 2358
 # 5932
 
 if PIN_PHRASE_ID is None:
-    phrase_timeline_data = timeline_data.query(
-        f"phrase_id == {choice(range(n_phrases))}"
-    )
+    current_id = choice(range(n_phrases))
 else:
-    phrase_timeline_data = timeline_data.query(f"phrase_id == {PIN_PHRASE_ID}")
+    current_id = PIN_PHRASE_ID
+phrase_timeline_data = timeline_data.query(f"phrase_id == {current_id}")
+# phrase_stages_data = root_roman_or_its_dominants.query(f"phrase_id == {current_id}")
+stage_inspection_data = make_root_roman_or_its_dominants_criterion(
+    phrase_annotations, query=f"phrase_id == {current_id}", inspect_masks=True
+)
 ```
 
 ```{code-cell} ipython3
@@ -870,17 +909,19 @@ fig
 ```
 
 ```{code-cell} ipython3
-make_localkey_shapes(phrase_timeline_data)
+get_tonicization_data(phrase_timeline_data)
 ```
 
 ```{code-cell} ipython3
-make_root_roman_or_its_dominants_criterion(
-    phrase_annotations, query="phrase_id == 827", inspect_masks=True
-)
+stage_inspection_data
 ```
 
 ```{code-cell} ipython3
 phrase_timeline_data
+```
+
+```{code-cell} ipython3
+
 ```
 
 ```{code-cell} ipython3
