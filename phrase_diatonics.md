@@ -41,13 +41,6 @@ from dimcat.plotting import write_image
 from git import Repo
 
 import utils
-from utils import (
-    DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
-    get_repo_name,
-    print_heading,
-    resolve_dir,
-)
 
 %load_ext autoreload
 %autoreload 2
@@ -58,7 +51,7 @@ pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell} ipython3
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "phrases"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "phrases"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -66,7 +59,7 @@ def make_output_path(filename, extension=None):
     if extension:
         extension = "." + extension.lstrip(".")
     else:
-        extension = DEFAULT_OUTPUT_FORMAT
+        extension = utils.DEFAULT_OUTPUT_FORMAT
     return os.path.join(RESULTS_PATH, f"{filename}{extension}")
 
 
@@ -77,12 +70,12 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-package_path = resolve_dir(
+package_path = utils.resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
 repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
@@ -327,11 +320,12 @@ def make_diatonics_rectangles(phrase_timeline_data):
         lowest_tpc = first_row.diatonics_lowest_tpc
         tpc_width = first_row.diatonics_tpc_width
         highest_tpc = lowest_tpc + tpc_width
+        x0, x1 = first_row.Start.min(), first_row.Finish.max()
         y0 = lowest_tpc - y_min - 0.5
         y1 = highest_tpc - y_min + 0.5
         diatonic = ms3.fifths2name(highest_tpc - 5)
         text = diatonic if tpc_width < 7 else f"{diatonic}/{diatonic.lower()}"
-        shapes.append(utils.make_rectangle_shape(group_df, y0=y0, y1=y1, text=text))
+        shapes.append(utils.make_rectangle_shape(x0=x0, x1=x1, y0=y0, y1=y1, text=text))
     return shapes
 ```
 
@@ -400,7 +394,7 @@ fig
 
 ```{code-cell} ipython3
 for criterion, stages in criterion2stages.items():
-    print_heading(criterion)
+    utils.print_heading(criterion)
     values = stages.df.query("phrase_id == 9773").iloc[:, 0].to_list()
     print(values[28])
     print()
