@@ -25,7 +25,7 @@ tags: [hide-cell]
 # %autoreload 2
 
 import os
-from typing import Dict, Optional
+from typing import Dict
 
 import dimcat as dc
 import ms3
@@ -34,12 +34,11 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 from dimcat import resources
-from dimcat.plotting import update_figure_layout, write_image
+from dimcat.plotting import write_image
 from dimcat.utils import get_middle_composition_year
 from git import Repo
 from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
-from sklearn.decomposition import PCA
 
 import utils
 
@@ -106,95 +105,6 @@ def prepare_data(harmony_labels, feature, smooth=1e-20):
     f = f.fillna(0.0)
     idf = pd.Series(np.log(D / df), index=df.index)  # inverse document frequency
     return unigram_distribution, f, tf, df, idf
-
-
-def make_pca(data, n_components=3):
-    pca = PCA(n_components)
-    pca.set_output(transform="pandas")
-    pca.fit(data)
-    return pca
-
-
-def plot_pca(
-    data=None,
-    pca_coordinates=None,
-    info="data",
-    show_features=20,
-    color="corpus",
-    symbol=None,
-    size=None,
-    **kwargs,
-) -> Optional[go.Figure]:
-    if data is None:
-        assert (
-            pca_coordinates is not None
-        ), "Either data or a fitted PCA object must be given"
-    else:
-        assert data is not None, "Either data or a fitted PCA object must be given"
-        pca = make_pca(data)
-        pca_coordinates = pca.transform(data)
-        print(
-            f"Explained variance ratio: {pca.explained_variance_ratio_} "
-            f"({pca_coordinates.explained_variance_ratio_.sum():.1%})"
-        )
-    concatenate_this = [pca_coordinates]
-    hover_data = ["corpus"]
-    if color is not None:
-        if isinstance(color, pd.Series):
-            concatenate_this.append(color)
-            color = color.name
-        hover_data.append(color)
-    if symbol is not None:
-        if isinstance(symbol, pd.Series):
-            concatenate_this.append(symbol)
-            symbol = symbol.name
-        hover_data.append(symbol)
-    if size is not None:
-        if isinstance(size, pd.Series):
-            concatenate_this.append(size)
-            size = size.name
-        hover_data.append(size)
-    if len(concatenate_this) > 1:
-        scatter_data = pd.concat(concatenate_this, axis=1).reset_index()
-    else:
-        scatter_data = pca_coordinates
-    fig = px.scatter_3d(
-        scatter_data.reset_index(),
-        x="pca0",
-        y="pca1",
-        z="pca2",
-        color=color,
-        symbol=symbol,
-        hover_data=hover_data,
-        hover_name="piece",
-        title=f"3 principal components of the {info}",
-        height=800,
-        **kwargs,
-    )
-    marker_settings = dict(opacity=0.3)
-    if size is None:
-        marker_settings["size"] = 3
-    update_figure_layout(
-        fig,
-        scene_dragmode="orbit",
-        traces_settings=dict(marker=marker_settings),
-        legend=dict(itemsizing="constant"),
-    )
-    if show_features < 1:
-        return fig
-    fig.show()
-    for i in range(3):
-        component = pd.Series(
-            pca_coordinates.components_[i],
-            index=pca_coordinates.columns,
-            name="coefficient",
-        ).sort_values(ascending=False, key=abs)
-        fig = px.bar(
-            component.iloc[:show_features],
-            labels=dict(index="feature", value="coefficient"),
-            title=f"{show_features} most weighted features of component {i+1}",
-        )
-        fig.show()
 ```
 
 ```{code-cell} ipython3
@@ -223,7 +133,7 @@ unigram_distribution
 Chord symbols carry their mode information, so it is to expected that modes be clearly separated.
 
 ```{code-cell} ipython3
-plot_pca(tf, "chord frequency matrix", **SCATTER_PLOT_SETTINGS)
+# plot_pca(tf, "chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 ```
 
 ```{code-cell} ipython3
@@ -242,14 +152,14 @@ def get_hull_coordinates(
 
 
 def plot_kmeans(data, n_clusters, cluster_data_itself: bool = False, **kwargs):
-    pca = make_pca(data)
+    pca = utils.make_pca(data)
     pca_coordinates = pca.transform(data)
     kmeans = KMeans(n_clusters=n_clusters, n_init="auto", random_state=42)
     if cluster_data_itself:
         kmeans.fit(data)
     else:
         kmeans.fit(pca_coordinates)
-    fig = plot_pca(pca_coordinates=pca_coordinates, show_features=0, **kwargs)
+    fig = utils.plot_pca(pca_coordinates=pca_coordinates, show_features=0, **kwargs)
     cluster_labels = "cluster" + pd.Series(
         kmeans.labels_, index=data.index, name="cluster"
     ).astype(str)
@@ -276,14 +186,14 @@ plot_kmeans(tf, 22, cluster_data_itself=False)
 ```{code-cell} ipython3
 pl_log = np.log2(PIECE_LENGTH)
 PL_NORM = pl_log.add(-pl_log.min()).div(pl_log.max() - pl_log.min())
-px.histogram(PL_NORM)
+px.histogram(PL_NORM, title="log-normalized phrase lengths")
 ```
 
 ```{code-cell} ipython3
 mode_tf = {group: df for group, df in tf.groupby(PIECE_MODE)}
-plot_pca(
+utils.plot_pca(
     mode_tf["major"],
-    "chord frequency matrix for pieces in major",
+    info="chord frequency matrix for pieces in major",
     # color=PIECE_COMPOSITION_YEAR,
     size=PL_NORM,
 )
@@ -291,7 +201,7 @@ plot_pca(
 
 ```{code-cell} ipython3
 mode_f = {group: df for group, df in f.groupby(PIECE_MODE)}
-plot_pca(
+utils.plot_pca(
     mode_f["major"],
     "chord proportion matrix for pieces in major",
     # color=PIECE_COMPOSITION_YEAR,
@@ -300,7 +210,7 @@ plot_pca(
 ```
 
 ```{code-cell} ipython3
-plot_pca(
+utils.plot_pca(
     mode_tf["minor"],
     "chord frequency matrix for pieces in minor",
     # color=PIECE_COMPOSITION_YEAR,
@@ -308,7 +218,7 @@ plot_pca(
 ```
 
 ```{code-cell} ipython3
-plot_pca(
+utils.plot_pca(
     mode_f["minor"],
     "chord proportions matrix for pieces in minor",
     # color=PIECE_COMPOSITION_YEAR,
@@ -318,7 +228,7 @@ plot_pca(
 ### PCA of tf-idf
 
 ```{code-cell} ipython3
-plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
 ```
 
 ### For comparison: PCA of t-idf (absolute chord durations weighted by idf)
@@ -326,7 +236,7 @@ plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
 PCA consistently explains a multiple of the variance for f-idf compared to tf-idf (normalized chord weights)
 
 ```{code-cell} ipython3
-plot_pca(f.fillna(0.0).mul(idf), "f-idf matrix")
+utils.plot_pca(f.fillna(0.0).mul(idf), "f-idf matrix")
 ```
 
 ## Reduced chords (without suspensions, additions, alterations)
@@ -339,7 +249,7 @@ unigram_distribution
 ```
 
 ```{code-cell} ipython3
-plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTINGS)
 ```
 
 ## Only root, regardless of chord type or inversion
@@ -352,7 +262,7 @@ unigram_distribution
 ```
 
 ```{code-cell} ipython3
-plot_pca(tf, "root frequency matrix")
+utils.plot_pca(tf, "root frequency matrix")
 ```
 
 ## Grid search on variance explained by PCA components

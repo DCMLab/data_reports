@@ -1169,8 +1169,16 @@ def plot_cum(
     return fig
 
 
+def make_pca(data, n_components=3):
+    pca = PCA(n_components)
+    pca.set_output(transform="pandas")
+    pca.fit(data)
+    return pca
+
+
 def plot_pca(
-    data,
+    data=None,
+    pca_coordinates=None,
     info="data",
     show_features=20,
     color="corpus",
@@ -1178,16 +1186,20 @@ def plot_pca(
     size=None,
     **kwargs,
 ) -> Optional[go.Figure]:
-    phrase_pca = PCA(3)
-    decomposed_phrases = pd.DataFrame(
-        phrase_pca.fit_transform(data), index=data.index, columns=["c1", "c2", "c3"]
-    )
-    print(
-        f"Explained variance ratio: {phrase_pca.explained_variance_ratio_} "
-        f"({phrase_pca.explained_variance_ratio_.sum():.1%})"
-    )
-    concatenate_this = [decomposed_phrases]
-    hover_data = list(data.index.names)
+    if data is None:
+        assert (
+            pca_coordinates is not None
+        ), "Either data or a fitted PCA object must be given"
+    else:
+        assert data is not None, "Either data or a fitted PCA object must be given"
+        pca = make_pca(data)
+        pca_coordinates = pca.transform(data)
+        print(
+            f"Explained variance ratio: {pca.explained_variance_ratio_} "
+            f"({pca.explained_variance_ratio_.sum():.1%})"
+        )
+    concatenate_this = [pca_coordinates]
+    hover_data = ["corpus"]
     if color is not None:
         if isinstance(color, pd.Series):
             concatenate_this.append(color)
@@ -1212,12 +1224,12 @@ def plot_pca(
     if len(concatenate_this) > 1:
         scatter_data = pd.concat(concatenate_this, axis=1).reset_index()
     else:
-        scatter_data = decomposed_phrases
+        scatter_data = pca_coordinates
     fig = px.scatter_3d(
         scatter_data.reset_index(),
-        x="c1",
-        y="c2",
-        z="c3",
+        x="pca0",
+        y="pca1",
+        z="pca2",
         color=color,
         symbol=symbol,
         hover_data=hover_data,
@@ -1231,7 +1243,7 @@ def plot_pca(
         marker_settings["size"] = constant_size
     update_figure_layout(
         fig,
-        legend={"itemsizing": "constant"},
+        scene_dragmode="orbit",
         traces_settings=dict(marker=marker_settings),
     )
     if show_features < 1:
@@ -1240,7 +1252,9 @@ def plot_pca(
     for i in range(3):
         index = merge_index_levels(data.columns)
         component = pd.Series(
-            phrase_pca.components_[i], index=index, name="coefficient"
+            pca.components_[i],
+            index=index,
+            name="coefficient",
         ).sort_values(ascending=False, key=abs)
         fig = px.bar(
             component.iloc[:show_features],
