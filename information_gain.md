@@ -40,7 +40,7 @@ pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell}
-RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "reduction"))
+RESULTS_PATH = os.path.expanduser("~/git/diss/32_phrases/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -166,15 +166,23 @@ ig_values
 ```
 
 ```{code-cell}
-make_bar_plot(
+fig = make_bar_plot(
     ig_values,
     x_col="group",
     y_col="information_gain",
     color="category",
-    title="Information gain of several predictors on the subsequent chord",
+    # title="Information gain of several predictors on the subsequent chord",
     barmode="group",
     labels=dict(category="predictor"),
 )
+write_image(
+    fig,
+    "information_gain_of_several_predictors_on_the_subsequent_chord.pdf",
+    RESULTS_PATH,
+    width=1000,
+    height=500,
+)
+fig
 ```
 
 ```{code-cell}
