@@ -14,7 +14,7 @@ kernelspec:
 
 # Chord profiles for pieces in the DLC
 
-```{code-cell} ipython3
+```{code-cell}
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -46,7 +46,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "pieces"))
 # os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -67,7 +67,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 :tags: [hide-input]
 
 package_path = utils.resolve_dir(
@@ -83,12 +83,12 @@ chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
 D
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 harmony_labels: resources.PhraseAnnotations = D.get_feature("HarmonyLabels")
 harmony_labels
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 def prepare_data(harmony_labels, feature, smooth=1e-20):
     unigram_distribution = (
         harmony_labels.groupby(feature).duration_qb.sum().sort_values(ascending=False)
@@ -107,7 +107,7 @@ def prepare_data(harmony_labels, feature, smooth=1e-20):
     return unigram_distribution, f, tf, df, idf
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 PIECE_LENGTH = (
     harmony_labels.groupby(["corpus", "piece"])
     .duration_qb.sum()
@@ -123,7 +123,7 @@ SCATTER_PLOT_SETTINGS = dict(
 
 ## Full chord symbols
 
-```{code-cell} ipython3
+```{code-cell}
 unigram_distribution, f, tf, df, idf = prepare_data(harmony_labels, "chord_and_mode")
 unigram_distribution
 ```
@@ -132,11 +132,11 @@ unigram_distribution
 
 Chord symbols carry their mode information, so it is to expected that modes be clearly separated.
 
-```{code-cell} ipython3
+```{code-cell}
 # plot_pca(tf, "chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 def get_hull_coordinates(
     pca_coordinates: pd.DataFrame,
     cluster_labels,
@@ -183,13 +183,13 @@ plot_kmeans(tf, 22, cluster_data_itself=False)
 
 ### Pieces in global major vs. minor
 
-```{code-cell} ipython3
+```{code-cell}
 pl_log = np.log2(PIECE_LENGTH)
 PL_NORM = pl_log.add(-pl_log.min()).div(pl_log.max() - pl_log.min())
 px.histogram(PL_NORM, title="log-normalized phrase lengths")
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 mode_tf = {group: df for group, df in tf.groupby(PIECE_MODE)}
 utils.plot_pca(
     mode_tf["major"],
@@ -199,7 +199,7 @@ utils.plot_pca(
 )
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 mode_f = {group: df for group, df in f.groupby(PIECE_MODE)}
 utils.plot_pca(
     mode_f["major"],
@@ -209,7 +209,7 @@ utils.plot_pca(
 )
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 utils.plot_pca(
     mode_tf["minor"],
     "chord frequency matrix for pieces in minor",
@@ -217,7 +217,7 @@ utils.plot_pca(
 )
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 utils.plot_pca(
     mode_f["minor"],
     "chord proportions matrix for pieces in minor",
@@ -227,7 +227,7 @@ utils.plot_pca(
 
 ### PCA of tf-idf
 
-```{code-cell} ipython3
+```{code-cell}
 utils.plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
 ```
 
@@ -235,20 +235,20 @@ utils.plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
 
 PCA consistently explains a multiple of the variance for f-idf compared to tf-idf (normalized chord weights)
 
-```{code-cell} ipython3
+```{code-cell}
 utils.plot_pca(f.fillna(0.0).mul(idf), "f-idf matrix")
 ```
 
 ## Reduced chords (without suspensions, additions, alterations)
 
-```{code-cell} ipython3
+```{code-cell}
 unigram_distribution, f, tf, df, idf = prepare_data(
     harmony_labels, "chord_reduced_and_mode"
 )
 unigram_distribution
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 utils.plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTINGS)
 ```
 
@@ -256,12 +256,12 @@ utils.plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTI
 
 PCA plot has straight lines. Th
 
-```{code-cell} ipython3
+```{code-cell}
 unigram_distribution, f, tf, df, idf = prepare_data(harmony_labels, "root")
 unigram_distribution
 ```
 
-```{code-cell} ipython3
+```{code-cell}
 utils.plot_pca(tf, "root frequency matrix")
 ```
 
