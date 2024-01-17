@@ -55,7 +55,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "chord_profiles"))
+RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -68,48 +68,10 @@ def make_output_path(filename, extension=None):
 
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
+    if not any(key in kwargs for key in ("height", "width")):
+        kwargs["width"] = 1280
+        kwargs["height"] = 720
     write_image(fig, filename, directory, **kwargs)
-
-
-# %% tags=["hide-input"]
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
-D
-
-# %%
-label_slicer = slicers.HarmonyLabelSlicer()
-sliced_D = label_slicer.process(D)
-
-# %%
-sliced_notes = sliced_D.get_feature(resources.Notes)
-sliced_notes
-
-# %%
-slice_info = label_slicer.slice_metadata.droplevel(-1)
-merge_columns = [col for col in slice_info.columns if col not in sliced_notes.columns]
-slice_info = join_df_on_index(
-    slice_info[merge_columns], sliced_notes.index, how="right"
-)
-chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
-chord_slices = pd.concat([chord_slices, transpose_notes_to_c(chord_slices)], axis=1)
-chord_slices
-
-# %%
-chord_profiles = chord_slices.groupby(
-    ["corpus", "chord_and_mode", "fifths_over_local_tonic"]
-).duration_qb.sum()
-normalization = chord_profiles.groupby(["corpus", "chord_and_mode"]).sum()
-chord_profiles = pd.concat(
-    [chord_profiles, chord_profiles.div(normalization).rename("proportion")], axis=1
-)
-chord_profiles
 
 
 # %%
@@ -174,107 +136,108 @@ def plot_chord_profiles(
     return fig
 
 
-plot_chord_profiles(chord_profiles, "i, minor", log_y=True)
-
-# %%
-plot_chord_profiles(chord_profiles, "V7, minor")
-
-# %%
-chord_slices.head()
-
-# %%
-_, _, _, chord_df, _ = utils.prepare_tf_idf_data(
-    chord_slices,
-    index=["corpus"],
-    columns="chord_and_mode",
-)
-chord_df
-
-# %%
-reload(utils)
-
-
-def prepare_data(
+def prepare_chord_tone_data(
     chord_slices: pd.DataFrame,
-    chord_and_mode: str | Iterable[str],
     groupby: str | List[str],
+    chord_and_mode: Optional[str | Iterable[str]] = None,
     smooth=1e-20,
 ) -> Tuple[pd.Series, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
-    features = ["fifths_over_local_tonic"]
     if isinstance(groupby, str):
         groupby = [groupby]
+    if chord_and_mode is None:
+        return utils.prepare_tf_idf_data(
+            chord_slices,
+            index=groupby,
+            columns=["chord_and_mode", "fifths_over_local_tonic"],
+            smooth=smooth,
+        )
     if isinstance(chord_and_mode, str):
         absolute_data = chord_slices.query(f"chord_and_mode == '{chord_and_mode}'")
         return utils.prepare_tf_idf_data(
             absolute_data,
             index=groupby,
-            columns=features,
+            columns=["fifths_over_local_tonic"],
             smooth=smooth,
         )
-    results = [prepare_data(chord_slices, cm, groupby, smooth) for cm in chord_and_mode]
+    results = [
+        prepare_chord_tone_data(
+            chord_slices, groupby=groupby, chord_and_mode=cm, smooth=smooth
+        )
+        for cm in chord_and_mode
+    ]
     concatenated_results = []
     for tup in zip(*results):
         concatenated_results.append(pd.concat(tup, axis=1, keys=chord_and_mode))
     return tuple(concatenated_results)
 
 
-unigram_distribution, f, tf, df, idf = prepare_data(
-    chord_slices, chord_and_mode=["I, major", "V7, major"], groupby="corpus"
-)
-unigram_distribution
+def prepare_numeral_chord_tone_data(
+    chord_slices: pd.DataFrame,
+    groupby: str | List[str],
+    numeral: Optional[str | Iterable[str]] = None,
+    smooth=1e-20,
+) -> Tuple[pd.Series, pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    if isinstance(groupby, str):
+        groupby = [groupby]
+    if numeral is None:
+        return utils.prepare_tf_idf_data(
+            chord_slices,
+            index=groupby,
+            columns=["numeral", "fifths_over_local_tonic"],
+            smooth=smooth,
+        )
+    if isinstance(numeral, str):
+        absolute_data = chord_slices.query(f"numeral == '{numeral}'")
+        return utils.prepare_tf_idf_data(
+            absolute_data,
+            index=groupby,
+            columns=["numeral", "fifths_over_local_tonic"],
+            smooth=smooth,
+        )
+    results = [
+        prepare_numeral_chord_tone_data(
+            chord_slices, groupby=groupby, numeral=cm, smooth=smooth
+        )
+        for cm in numeral
+    ]
+    concatenated_results = []
+    for tup in zip(*results):
+        concatenated_results.append(pd.concat(tup, axis=1, keys=numeral))
+    return tuple(concatenated_results)
 
-# %%
-reload(utils)
-metadata = D.get_metadata()
-CORPUS_YEARS = utils.corpus_mean_composition_years(metadata)
-CORPUS_YEARS
 
-# %%
-reload(utils)
-utils.plot_pca(
-    tf,
-    "concatenated chord-tone-profile vectors of I and V7",
-    color=CORPUS_YEARS,
-    size=5,
-)
-
-# %%
-full_unigrams, f, tf, df, idf = utils.prepare_tf_idf_data(
-    chord_slices,
-    index=["corpus", "piece"],
-    columns=["chord_and_mode", "fifths_over_local_tonic"],
-)
-
-# %%
-full_unigrams
-
-# %%
-vocabulary = merge_columns_into_one(df.index.to_frame(index=False), join_str=True)
-doc_freq_data = pd.DataFrame(
-    dict(
-        chord_tones=vocabulary,
-        document_frequency=df.values,
-        rank=range(1, len(vocabulary) + 1),
+def make_chord_tone_profile(chord_slices: pd.DataFrame) -> pd.DataFrame:
+    """Chord tone profiles in long format. Come with the absolute column 'duration_qb' and the
+    relative column 'proportion', normalized per chord per corpus.
+    """
+    chord_tone_profiles = chord_slices.groupby(
+        ["corpus", "chord_and_mode", "fifths_over_local_tonic"]
+    ).duration_qb.sum()
+    normalization = chord_tone_profiles.groupby(["corpus", "chord_and_mode"]).sum()
+    chord_tone_profiles = pd.concat(
+        [
+            chord_tone_profiles,
+            chord_tone_profiles.div(normalization).rename("proportion"),
+        ],
+        axis=1,
     )
-)
-N = f.shape[0]
-make_scatter_plot(
-    doc_freq_data,
-    x_col="rank",
-    y_col="document_frequency",
-    hover_data="chord_tones",
-    log_x=True,
-    log_y=True,
-    title=f"Document frequency of chord tones (N = {N})",
-)
+    return chord_tone_profiles
 
-# %%
-culled_vocabulary = df[df.ge(N / 3)]
-culled_tf = tf.loc[:, culled_vocabulary.index]
-culled_tf.shape
 
-# %%
-reload(utils)
+def compare_corpus_frequencies(chord_slices, features: str | Iterable[str]):
+    if isinstance(features, str):
+        features = [features]
+    doc_freqs = []
+    for feature in features:
+        _, _, _, df, _ = utils.prepare_tf_idf_data(
+            chord_slices,
+            index=["corpus"],
+            columns=feature,
+        )
+        doc_freqs.append(df.astype("Int64").rename("corpus_frequency"))
+    if len(doc_freqs) == 1:
+        return doc_freqs[0]
+    return pd.concat([series.reset_index() for series in doc_freqs], axis=1)
 
 
 def make_cosine_distances(
@@ -313,6 +276,121 @@ def plot_cosine_distances(tf: pd.DataFrame, standardize=True):
     return fig
 
 
+# %% tags=["hide-input"]
+package_path = utils.resolve_dir(
+    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+)
+repo = Repo(os.path.dirname(package_path))
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3.__version__}")
+D = dc.Dataset.from_package(package_path)
+metadata = D.get_metadata()
+CORPUS_YEARS = utils.corpus_mean_composition_years(metadata)
+CORPUS_YEARS
+D
+
+# %%
+label_slicer = slicers.HarmonyLabelSlicer()
+sliced_D = label_slicer.process(D)
+
+# %%
+sliced_notes = sliced_D.get_feature(resources.Notes)
+sliced_notes
+
+# %%
+slice_info = label_slicer.slice_metadata.droplevel(-1)
+merge_columns = [col for col in slice_info.columns if col not in sliced_notes.columns]
+slice_info = join_df_on_index(
+    slice_info[merge_columns], sliced_notes.index, how="right"
+)
+chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
+chord_slices = pd.concat([chord_slices, transpose_notes_to_c(chord_slices)], axis=1)
+chord_slices
+
+# %% [markdown]
+# ### Corpus frequencies of chord labels
+
+# %%
+corpus_frequencies = compare_corpus_frequencies(
+    chord_slices, ["chord_and_mode", "chord_reduced_and_mode", "numeral"]
+)
+corpus_frequencies
+
+# %%
+corpus_frequencies.iloc[:30].to_clipboard()
+
+# %% [markdown]
+# ### Vocabulary
+#
+# Features are `(chord, chord_tone)` tuples.
+
+# %%
+full_unigrams, f, tf, df, idf = prepare_chord_tone_data(
+    chord_slices,
+    groupby=["corpus", "piece"],
+)
+print(f"Shape: {tf.shape}")
+
+
+# %%
+full_unigrams
+
+# %%
+vocabulary = merge_columns_into_one(df.index.to_frame(index=False), join_str=True)
+doc_freq_data = pd.DataFrame(
+    dict(
+        chord_tones=vocabulary,
+        document_frequency=df.values,
+        rank=range(1, len(vocabulary) + 1),
+    )
+)
+D, V = f.shape
+fig = make_scatter_plot(
+    doc_freq_data,
+    x_col="rank",
+    y_col="document_frequency",
+    hover_data="chord_tones",
+    log_x=True,
+    log_y=True,
+    title=f"Document frequency of chord tones (D = {D}), V = {V}",
+)
+save_figure_as(fig, "document_frequency_of_chord_tones")
+fig
+
+# %%
+selected_numerals = corpus_frequencies.loc[
+    corpus_frequencies.iloc[:, -1] == 39, "numeral"
+]
+absolute_numeral_data = chord_slices[chord_slices.numeral.isin(selected_numerals)]
+absolute_numeral_data.head(5)
+
+# %%
+chord_slices.query("numeral in @selected_numerals").pivot_table(
+    index=["corpus", "piece"],
+    columns=["numeral", "fifths_over_local_tonic"],
+    values="duration_qb",
+    aggfunc="sum",
+)
+
+# %%
+utils.plot_pca(
+    tf,
+    "concatenated chord-tone-profile vectors of I and V7",
+    color=CORPUS_YEARS,
+    size=5,
+)
+
+# %%
+
+# %%
+culled_vocabulary = df[df.ge(D / 3)]
+culled_tf = tf.loc[:, culled_vocabulary.index]
+culled_tf.shape
+
+# %%
+reload(utils)
 plot_cosine_distances(culled_tf, standardize=True)
 
 
@@ -392,6 +470,15 @@ def test_equivalence(arr, metric="cosine"):
 # for metric in metrics:
 #     print(metric, test_equivalence(Arr[:, :-25670], metric))
 
+
+# %%
+chord_tone_profiles = make_chord_tone_profile(chord_slices)
+
+# %%
+plot_chord_profiles(chord_tone_profiles, "i, minor", log_y=True)
+
+# %%
+plot_chord_profiles(chord_tone_profiles, "V7, minor")
 
 # %%
 pipeline = [
