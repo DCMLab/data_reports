@@ -39,12 +39,15 @@ from dimcat.data.resources.utils import (
 from dimcat.plotting import make_bar_plot, make_scatter_plot, write_image
 from git import Repo
 from matplotlib import pyplot as plt
-from scipy.cluster.hierarchy import dendrogram
+from scipy.cluster.hierarchy import dendrogram  # , linkage
+from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import AgglomerativeClustering
+from sklearn.metrics import pairwise_distances
 from sklearn.metrics.pairwise import cosine_distances
 from sklearn.preprocessing import Normalizer, StandardScaler
 
 import utils
+from dendrograms import Dendrogram, TableDocumentDescriber
 
 plt.rcParams["figure.dpi"] = 300
 
@@ -80,15 +83,15 @@ print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 label_slicer = slicers.HarmonyLabelSlicer()
 sliced_D = label_slicer.process(D)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 sliced_notes = sliced_D.get_feature(resources.Notes)
 sliced_notes
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 slice_info = label_slicer.slice_metadata.droplevel(-1)
 merge_columns = [col for col in slice_info.columns if col not in sliced_notes.columns]
 slice_info = join_df_on_index(
@@ -98,7 +101,7 @@ chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
 chord_slices = pd.concat([chord_slices, transpose_notes_to_c(chord_slices)], axis=1)
 chord_slices
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 chord_profiles = chord_slices.groupby(
     ["corpus", "chord_and_mode", "fifths_over_local_tonic"]
 ).duration_qb.sum()
@@ -109,7 +112,7 @@ chord_profiles = pd.concat(
 chord_profiles
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def sort_tpcs(
     tpcs: Iterable[int], ascending: bool = True, start: Optional[int] = None
 ) -> list[int]:
@@ -173,13 +176,13 @@ def plot_chord_profiles(
 
 plot_chord_profiles(chord_profiles, "i, minor", log_y=True)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 plot_chord_profiles(chord_profiles, "V7, minor")
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 chord_slices.head()
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 _, _, _, chord_df, _ = utils.prepare_tf_idf_data(
     chord_slices,
     index=["corpus"],
@@ -187,7 +190,7 @@ _, _, _, chord_df, _ = utils.prepare_tf_idf_data(
 )
 chord_df
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 reload(utils)
 
 
@@ -220,13 +223,13 @@ unigram_distribution, f, tf, df, idf = prepare_data(
 )
 unigram_distribution
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 reload(utils)
 metadata = D.get_metadata()
 CORPUS_YEARS = utils.corpus_mean_composition_years(metadata)
 CORPUS_YEARS
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 reload(utils)
 utils.plot_pca(
     tf,
@@ -235,17 +238,17 @@ utils.plot_pca(
     size=5,
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 full_unigrams, f, tf, df, idf = utils.prepare_tf_idf_data(
     chord_slices,
     index=["corpus", "piece"],
     columns=["chord_and_mode", "fifths_over_local_tonic"],
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 full_unigrams
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 vocabulary = merge_columns_into_one(df.index.to_frame(index=False), join_str=True)
 doc_freq_data = pd.DataFrame(
     dict(
@@ -265,12 +268,12 @@ make_scatter_plot(
     title=f"Document frequency of chord tones (N = {N})",
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 culled_vocabulary = df[df.ge(N / 3)]
 culled_tf = tf.loc[:, culled_vocabulary.index]
 culled_tf.shape
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 reload(utils)
 
 
@@ -353,15 +356,42 @@ plot_dendrogram(ac, truncate_mode="level", p=0)
 plt.title("Hierarchical Clustering using maximum cosine distances")
 # plt.savefig('aggl_mvt_max_cos.png', bbox_inches='tight')
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # sliced_notes.store_resource(
 #     basepath="~/dimcat_data",
 #     name="sliced_notes"
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # restored = dc.deserialize_json_file("/home/laser/dimcat_data/sliced_notes.resource.json")
 # restored.df
+
+# %%
+ac.fit_predict(cos_distance_matrix)
+lm = linkage_matrix(ac)  # probably want to use this to have better control
+# lm = linkage(cos_distance_matrix)
+describer = TableDocumentDescriber(metadata.reset_index())
+plt.figure(figsize=(10, 60))
+ddg = Dendrogram(lm, describer, labels)
+
+
+# %%
+def test_equivalence(arr, metric="cosine"):
+    scipy_result = squareform(pdist(arr, metric=metric))
+    sklearn_result = pairwise_distances(arr, metric=metric)
+    return np.isclose(scipy_result, sklearn_result).all()
+
+
+# np.savez_compressed("tf_matrix.npz", tf.values, allow_pickle=False)
+# npz = np.load("tf_matrix.npz")
+# Arr = npz["arr_0"]
+# Arr.shape
+# metrics = ["braycurtis", "canberra", "chebyshev", "cityblock", "correlation", "cosine", "dice", "euclidean",
+#           "hamming", "jaccard", "mahalanobis", "matching", "minkowski", "rogerstanimoto", "russellrao", "seuclidean",
+#          "sokalmichener", "sokalsneath", "sqeuclidean", "yule"]
+# for metric in metrics:
+#     print(metric, test_equivalence(Arr[:, :-25670], metric))
+
 
 # %%
 pipeline = [
@@ -373,42 +403,42 @@ analyzed_D = D.apply_step(*pipeline)
 harmony_labels = analyzed_D.get_feature("HarmonyLabels")
 harmony_labels
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 sliced_D = analyzed_D.apply_step(slicers.KeySlicer)
 sliced_D
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 key_slices = sliced_D.get_feature("HarmonyLabels")
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 sliced_notes = sliced_D.get_feature(resources.Notes)
 sliced_notes
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 slicer = sliced_D.get_last_step("Slicer")
 type(slicer)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 normal_notes = analyzed_D.get_feature("Notes")
 normal_notes
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 normal_notes
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 sn = slicer.process_resource(normal_notes)
 sn
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 normal_notes = analyzed_D.get_feature(resources.Notes)
 normal_notes
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 harmony_labels.loc[
     harmony_labels["scale_degrees_major"] == ("1", "3", "5", "b7"), "chord"
 ].value_counts()
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 sd_maj_sonorities = (
     harmony_labels.groupby("scale_degrees_major")
     .duration_qb.sum()
@@ -422,7 +452,7 @@ pd.concat(
     axis=1,
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 sd_major_occurrences = (
     harmony_labels.groupby("scale_degrees_major")
     .size()
@@ -434,7 +464,7 @@ sd_major_occurrences.index = sd_major_occurrences.index.rename("rank") + 1
 sd_major_occurrences = sd_major_occurrences.reset_index()
 px.scatter(sd_major_occurrences, x="rank", y="frequency", log_y=True)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 px.scatter(
     sd_major_occurrences,
     x="rank",
@@ -444,7 +474,7 @@ px.scatter(
 )
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 
 
 def find_index_of_r1_r2(C: pd.Series) -> Tuple[int, int]:
@@ -473,10 +503,10 @@ def compute_h(df) -> int | float:
 
 compute_h(sd_major_occurrences)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 sd_major_occurrences.iloc[130:150]
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 sd_sonorities = (
     harmony_labels.groupby("scale_degrees")
     .duration_qb.sum()
@@ -490,10 +520,10 @@ pd.concat(
 chord_proportions: resources.Durations = harmony_labels.apply_step("Proportions")
 chord_proportions.make_ranking_table(drop_cols="chord_and_mode").iloc[:50, :50]
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 chord_proportions.make_ranking_table(["mode"], drop_cols="chord_and_mode")
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 piece2profile = {
     group: profile["duration_qb"].droplevel(
         ["corpus", "piece", "mode", "chord_and_mode"]
@@ -505,16 +535,16 @@ piece_profiles.sort_index(
     key=lambda _: pd.Index(piece_profiles.notna().sum(axis=1)), ascending=False
 ).iloc[:50, :50]
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 piece_profiles.sort_index(
     key=lambda _: pd.Index(piece_profiles.sum(axis=1)), ascending=False
 ).iloc[:50, :50]
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 corpus_proportions = chord_proportions.combine_results().droplevel("chord_and_mode")
 corpus_proportions
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 corpus2profile = {
     group: profile["duration_qb"].droplevel(["corpus", "mode"])
     for group, profile in corpus_proportions.groupby(["corpus", "mode"])
@@ -530,11 +560,11 @@ chord_occurrence_mask = chord_occurrence_mask.sort_index(
 )
 corpus_profiles.sort_index(key=lambda _: pd.Index(corpus_frequency), ascending=False)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 mask_with_sum = pd.concat(
     [chord_occurrence_mask, chord_occurrence_mask.sum(axis=1).rename("sum")], axis=1
 )
 mask_with_sum.to_csv(make_output_path("chord_occurrence_mask", "tsv"), sep="\t")
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 analyzed_D
