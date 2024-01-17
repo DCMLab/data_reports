@@ -1,0 +1,3 @@
+[submodule "pydelta"]
+	path = pydelta
+	url = git@github.com:johentsch/pydelta.git
