@@ -1907,7 +1907,7 @@ def _compute_smallest_fifth_ranges(
     Recursive mechanism:
 
     * Stop criterion: if ``max(tpc_width) ≤ smallest``, merge the whole hull into one band up to a
-      range of ``smallest``.
+      range of ``largest``.
     * Otherwise split the hull in three parts: left, middle, right: Middle spans the left_most to the
       right-most occurrence of max(tpc_width). Process the middle part by leaving all spans ``≥ largest`` untouched
       and merging smaller spans as long as the merge does not result in a range larger than ``largest``.
@@ -1918,7 +1918,7 @@ def _compute_smallest_fifth_ranges(
         tpc_width: For each chord, the span of tonal pitch classes on the line of fifths.
         smallest:
             Stop criterion: if ``max(tpc_width) <= smallest``, merge the whole hull into one band
-            up to a range of ``smallest``. Defaults to 6, which corresponds to 6 fifths, i.e., 7 tones of a diatonic.
+            up to a range of ``largest``. Defaults to 6, which corresponds to 6 fifths, i.e., 7 tones of a diatonic.
         largest:
             Merge adjacent spans up to this range. Defaults to 9, which corresponds to 9 fifths, i.e.,
             10 tones of a major-minor extended diatonic.
@@ -1938,7 +1938,7 @@ def _compute_smallest_fifth_ranges(
             print(
                 f"Calling merge_up_to_max_width({lowest_tpc}, {tpc_width}) because max_val {max_val} < {largest}"
             )
-        return merge_up_to_max_width(lowest_tpc, tpc_width, largest=smallest)
+        return merge_up_to_max_width(lowest_tpc, tpc_width, largest=largest)
     left_l, left_w = _compute_smallest_fifth_ranges(
         lowest_tpc[:first_max_ix],
         tpc_width[:first_max_ix],
@@ -1975,7 +1975,7 @@ def compute_smallest_diatonics(
         phrase_data: PhraseData for a single phrase (requires the columns 'lowest_tpc' and 'tpc_width').
         smallest:
             Stop criterion: if ``max(tpc_width) <= smallest``, merge the whole hull into
-            bands spanning ``≤ smallest`` fifths. Defaults to 6, which corresponds to 6 fifths,
+            bands spanning ``≤ largest`` fifths. Defaults to 6, which corresponds to 6 fifths,
             i.e., 7 tones of a diatonic.
         largest:
             Merge adjacent spans up to this range. Defaults to 9, which corresponds to 9 fifths, i.e.,
@@ -2124,6 +2124,9 @@ def compare_criteria_metrics(
     name2phrase_data: Dict[str, resources.PhraseData], **kwargs
 ):
     metrics = get_metrics_means(name2phrase_data).reset_index()
+    layout = dict(showlegend=False)
+    if more_layout := kwargs.pop("layout", None):
+        layout.update(more_layout)
     return make_bar_plot(
         metrics,
         facet_row="metric",
@@ -2131,7 +2134,7 @@ def compare_criteria_metrics(
         x_col="mean",
         y_col="criterion",
         x_axis=dict(matches=None, showticklabels=True),
-        layout=dict(showlegend=False),
+        layout=layout,
         error_x="sem",
         orientation="h",
         labels=dict(entropy="entropy of stage distributions in bits", corpus=""),
