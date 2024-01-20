@@ -14,7 +14,7 @@ kernelspec:
 
 # Chord Profiles
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -25,7 +25,7 @@ tags: [hide-cell]
 %autoreload 0
 import os
 from importlib import reload
-from typing import Iterable, List, Literal, Optional, Tuple
+from typing import Iterable, List, Literal, Optional, Tuple, Union
 
 import dimcat as dc
 import ms3
@@ -49,7 +49,7 @@ from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import AgglomerativeClustering
 from sklearn.metrics import pairwise_distances
 from sklearn.metrics.pairwise import cosine_distances
-from sklearn.preprocessing import Normalizer, StandardScaler
+from sklearn.preprocessing import Normalizer, RobustScaler, StandardScaler
 
 import utils
 from dendrograms import Dendrogram, TableDocumentDescriber
@@ -60,7 +60,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -80,7 +80,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def sort_tpcs(
     tpcs: Iterable[int], ascending: bool = True, start: Optional[int] = None
 ) -> list[int]:
@@ -138,6 +138,36 @@ def plot_chord_profiles(
         title=f"Chord profiles of {chord_and_mode}",
         category_orders=category_orders,
         **kwargs,
+    )
+    return fig
+
+
+def plot_document_frequency(
+    chord_tones: resources.PrevalenceMatrix, info: str = "chord tones", **kwargs
+):
+    df = chord_tones.document_frequencies()
+    vocabulary = merge_columns_into_one(df.index.to_frame(index=False), join_str=True)
+    doc_freq_data = pd.DataFrame(
+        dict(
+            chord_tones=vocabulary,
+            document_frequency=df.values,
+            rank=range(1, len(vocabulary) + 1),
+        )
+    )
+    D, V = chord_tones.shape
+    settings = dict(
+        x_col="rank",
+        y_col="document_frequency",
+        hover_data="chord_tones",
+        log_x=True,
+        log_y=True,
+        title=f"Document frequency of {info} (D = {D}, V = {V})",
+    )
+    if kwargs:
+        settings.update(kwargs)
+    fig = make_scatter_plot(
+        doc_freq_data,
+        **settings,
     )
     return fig
 
@@ -212,6 +242,22 @@ def prepare_numeral_chord_tone_data(
     return tuple(concatenated_results)
 
 
+def replace_boolean_column_level_with_mode(
+    matrix: resources.PrevalenceMatrix,
+    level: int = 0,
+    name: str = "mode",
+):
+    """Replaces True with 'minor' and False with 'major' in the given column index level and renames it.
+    Function operates inplace.
+    """
+    old_columns = matrix._df.columns
+    bool_values = old_columns.levels[level]
+    mode_values = bool_values.map({True: "minor", False: "major"})
+    new_columns = old_columns.set_levels(mode_values, level=0)
+    new_columns.set_names(name, level=level, inplace=True)
+    matrix._df.columns = new_columns
+
+
 def make_chord_tone_profile(chord_slices: pd.DataFrame) -> pd.DataFrame:
     """Chord tone profiles in long format. Come with the absolute column 'duration_qb' and the
     relative column 'proportion', normalized per chord per corpus.
@@ -240,9 +286,9 @@ def compare_corpus_frequencies(
         analyzer = prevalence.PrevalenceAnalyzer(index="corpus", columns=feature)
         matrix = analyzer.process(chord_slices)
         doc_freqs.append(
-            matrix.document_frequencies(name="corpus_frequency").sort_values(
-                ascending=False
-            )
+            matrix.document_frequencies(name="corpus_frequency")
+            .sort_values(ascending=False)
+            .astype("Int64")
         )
     if len(doc_freqs) == 1:
         return doc_freqs[0]
@@ -250,7 +296,10 @@ def compare_corpus_frequencies(
 
 
 def make_cosine_distances(
-    tf, standardize=True, norm: Optional[Literal["l1", "l2", "max"]] = None
+    tf,
+    standardize=False,
+    norm: Optional[Literal["l1", "l2", "max"]] = None,
+    flat_index: bool = False,  # useful for plotting
 ):
     if standardize:
         scaler = StandardScaler()
@@ -260,7 +309,10 @@ def make_cosine_distances(
         scaler = Normalizer(norm=norm)
         scaler.set_output(transform="pandas")
         tf = scaler.fit_transform(tf)
-    index = utils.merge_index_levels(tf.index)
+    if flat_index:
+        index = utils.merge_index_levels(tf.index)
+    else:
+        index = tf.index
     distance_matrix = pd.DataFrame(cosine_distances(tf), index=index, columns=index)
     return distance_matrix
 
@@ -285,7 +337,7 @@ def plot_cosine_distances(tf: pd.DataFrame, standardize=True):
     return fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = utils.resolve_dir(
@@ -297,24 +349,28 @@ print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
-metadata = D.get_metadata()
-CORPUS_YEARS = utils.corpus_mean_composition_years(metadata)
-CORPUS_YEARS
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 label_slicer = slicers.HarmonyLabelSlicer()
 sliced_D = label_slicer.process(D)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sliced_notes = sliced_D.get_feature(resources.Notes)
 sliced_notes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 slice_info = label_slicer.slice_metadata.droplevel(-1)
+slice_info["root_fifths_over_global_tonic"] = (
+    ms3.transform(
+        slice_info[["effective_localkey_resolved", "globalkey_is_minor"]],
+        ms3.roman_numeral2fifths,
+    ).rename("root_fifths_over_global_tonic")
+    + slice_info.root
+)
 merge_columns = [col for col in slice_info.columns if col not in sliced_notes.columns]
 slice_info = join_df_on_index(
     slice_info[merge_columns], sliced_notes.index, how="right"
@@ -324,80 +380,36 @@ chord_slices = pd.concat([chord_slices, transpose_notes_to_c(chord_slices)], axi
 chord_slices = resources.DimcatResource.from_dataframe(chord_slices, "chord_slices")
 ```
 
-### Corpus frequencies of chord labels
+## Document frequencies of chord features
 
-```{code-cell}
+```{code-cell} ipython3
 compare_corpus_frequencies(
-    chord_slices, ["chord_and_mode", "chord_reduced_and_mode", "numeral"]
+    chord_slices,
+    [
+        "chord_reduced_and_mode",
+        ["effective_localkey_is_minor", "numeral"],
+        "root",
+        "root_fifths_over_global_tonic",
+    ],
 )
 ```
 
-### Vocabulary
+## Create chord-tone profiles for multiple chord features
 
-Features are `(chord, chord_tone)` tuples.
+Tokens are `(feature, ..., chord_tone)` tuples.
 
-```{code-cell}
-chord_tones: resources.PrevalenceMatrix = chord_slices.apply_step(
+```{code-cell} ipython3
+chord_reduced: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
-        columns=["chord_and_mode", "fifths_over_local_tonic"],
+        columns=["chord_reduced_and_mode", "fifths_over_local_tonic"],
         index=["corpus", "piece"],
     )
 )
-print(f"Shape: {chord_tones.shape}")
+print(f"Shape: {chord_reduced.shape}")
 ```
 
-```{code-cell}
-def plot_document_frequency(chord_tones: resources.PrevalenceMatrix, **kwargs):
-    df = chord_tones.document_frequencies()
-    vocabulary = merge_columns_into_one(df.index.to_frame(index=False), join_str=True)
-    doc_freq_data = pd.DataFrame(
-        dict(
-            chord_tones=vocabulary,
-            document_frequency=df.values,
-            rank=range(1, len(vocabulary) + 1),
-        )
-    )
-    D, V = chord_tones.shape
-    settings = dict(
-        x_col="rank",
-        y_col="document_frequency",
-        hover_data="chord_tones",
-        log_x=True,
-        log_y=True,
-        title=f"Document frequency of chord tones (D = {D}, V = {V})",
-    )
-    if kwargs:
-        settings.update(kwargs)
-    fig = make_scatter_plot(
-        doc_freq_data,
-        **settings,
-    )
-    return fig
-
-
-fig = plot_document_frequency(chord_tones)
-save_figure_as(fig, "document_frequency_of_chord_tones")
-fig
-```
-
-```{code-cell}
-def replace_boolean_column_level_with_mode(
-    matrix: resources.PrevalenceMatrix,
-    level: int = 0,
-    name: str = "mode",
-):
-    """Replaces True with 'minor' and False with 'major' in the given column index level and renames it.
-    Function operates inplace.
-    """
-    old_columns = matrix._df.columns
-    bool_values = old_columns.levels[level]
-    mode_values = bool_values.map({True: "minor", False: "major"})
-    new_columns = old_columns.set_levels(mode_values, level=0)
-    new_columns.set_names(name, level=level, inplace=True)
-    matrix._df.columns = new_columns
-
-
+```{code-cell} ipython3
 numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -407,10 +419,214 @@ numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
 )
 print(f"Shape: {numerals.shape}")
 replace_boolean_column_level_with_mode(numerals)
+```
+
+```{code-cell} ipython3
+roots: resources.PrevalenceMatrix = chord_slices.apply_step(
+    dc.DimcatConfig(
+        "PrevalenceAnalyzer",
+        columns=["root", "fifths_over_local_tonic"],
+        index=["corpus", "piece"],
+    )
+)
+print(f"Shape: {roots.shape}")
+```
+
+```{code-cell} ipython3
+root_fifths_over_global_tonic = chord_slices.apply_step(
+    dc.DimcatConfig(
+        "PrevalenceAnalyzer",
+        columns=["root_fifths_over_global_tonic", "fifths_over_local_tonic"],
+        index=["corpus", "piece"],
+    )
+)
+print(f"Shape: {root_fifths_over_global_tonic.shape}")
+```
+
+### Document frequencies of the tokens
+
+```{code-cell} ipython3
+fig = plot_document_frequency(chord_reduced)
+save_figure_as(fig, "document_frequency_of_chord_tones")
+fig
+```
+
+```{code-cell} ipython3
+plot_document_frequency(numerals, info="numerals")
+```
+
+```{code-cell} ipython3
+plot_document_frequency(roots, info="roots")
+```
+
+```{code-cell} ipython3
+plot_document_frequency(
+    root_fifths_over_global_tonic, info="root relative to global tonic"
+)
+```
+
+## Principal Component Analyses
+
+```{code-cell} ipython3
+# chord_reduced.query("piece in ['op03n12a', 'op03n12b']").dropna(axis=1, how='all')
+```
+
+```{code-cell} ipython3
+metadata = D.get_metadata()
+CORPUS_YEARS = utils.corpus_mean_composition_years(metadata)
+PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
+utils.plot_pca(
+    chord_reduced.relative,
+    info="chord-tone profiles of reduced chords",
+    color=PIECE_YEARS,
+)
+```
+
+```{code-cell} ipython3
+utils.plot_pca(
+    chord_reduced.combine_results("corpus").relative,
+    info="chord-tone profiles of reduced chords",
+    color=CORPUS_YEARS,
+    size=5,
+)
+```
+
+```{code-cell} ipython3
+utils.plot_pca(
+    numerals.relative, info="numeral profiles of numerals", color=PIECE_YEARS
+)
+```
+
+```{code-cell} ipython3
+utils.plot_pca(
+    numerals.combine_results("corpus").relative,
+    info="chord-tone profiles of numerals",
+    color=CORPUS_YEARS,
+    size=5,
+)
+```
+
+```{code-cell} ipython3
+utils.plot_pca(
+    roots.relative, info="root profiles of chord roots (local)", color=PIECE_YEARS
+)
+```
+
+```{code-cell} ipython3
+utils.plot_pca(
+    roots.combine_results("corpus").relative,
+    info="chord-tone profiles of chord roots (local)",
+    color=CORPUS_YEARS,
+    size=5,
+)
+```
+
+```{code-cell} ipython3
+utils.plot_pca(
+    root_fifths_over_global_tonic.relative,
+    info="root profiles of chord roots (global)",
+    color=PIECE_YEARS,
+)
+```
+
+```{code-cell} ipython3
+utils.plot_pca(
+    root_fifths_over_global_tonic.combine_results("corpus").relative,
+    info="chord-tone profiles of chord roots (global)",
+    color=CORPUS_YEARS,
+    size=5,
+)
+```
+
+### Scaled PCA
+
+minuscule augmentation of explained variance.
+
+```{code-cell} ipython3
+scaler = RobustScaler()
+scaler.set_output(transform="pandas")
+scaled = scaler.fit_transform(chord_reduced.relative)
+utils.plot_pca(scaled, info="chord-tone profiles", color=PIECE_YEARS)
+```
+
+# Classification
+
+```{code-cell} ipython3
+
+```
+
+```{code-cell} ipython3
+def get_lower_triangle_values(data: Union[pd.DataFrame, np.array], offset: int = 0):
+    is_dataframe = isinstance(data, pd.DataFrame)
+    if is_dataframe:
+        matrix = data.values
+    else:
+        matrix = data
+    i, j = np.tril_indices_from(matrix, offset)
+    values = matrix[i, j]
+    if not is_dataframe:
+        return values
+    try:
+        level_0 = utils.merge_index_levels(data.index[i])
+        level_1 = utils.merge_index_levels(data.columns[j])
+        index = pd.MultiIndex.from_arrays([level_0, level_1])
+    except Exception:
+        print(data.index[i], data.columns[j])
+    return pd.Series(values, index=index)
+```
+
+```{code-cell} ipython3
+cos_dist_chord_tones = make_cosine_distances(
+    chord_reduced.relative, standardize=False, flat_index=False
+)
+# np.fill_diagonal(cos_dist_chord_tones.values, np.nan)
+cos_dist_chord_tones.iloc[:10, :10]
+```
+
+```{code-cell} ipython3
+ABC = cos_dist_chord_tones.loc(axis=1)[["ABC"]]
+ABC.shape
+```
+
+```{code-cell} ipython3
+def cross_corpus_distances(
+    group_of_columns: pd.DataFrame, group_name: str, group_level: int | str = 0
+):
+    rows = []
+    for group, group_distances in group_of_columns.groupby(level=group_level):
+        if group == group_name:
+            i, j = np.tril_indices_from(group_distances, -1)
+            distances = group_distances.values[i, j]
+        else:
+            distances = group_distances.values.flatten()
+        mean_distance = np.mean(distances)
+        sem = np.std(distances) / np.sqrt(distances.shape[0] - 1)
+        row = pd.Series(
+            {
+                "corpus": utils.get_corpus_display_name(group),
+                "mean_distance": mean_distance,
+                "sem": sem,
+            }
+        )
+        rows.append(row)
+    return pd.DataFrame(rows)
+
+
+ABC_corpus_distances = cross_corpus_distances(ABC, "ABC")
+make_bar_plot(
+    ABC_corpus_distances.sort_values("mean_distance"),
+    x_col="corpus",
+    y_col="mean_distance",
+    error_y="sem",
+    title="Mean cosine distances between pieces of all corpora and ABC",
+)
+```
+
+```{code-cell} ipython3
 numerals.iloc[:10, :10]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 corpus_numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -422,7 +638,7 @@ replace_boolean_column_level_with_mode(corpus_numerals)
 corpus_numerals.document_frequencies()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # selected_numerals = corpus_frequencies_old.loc[
 #     corpus_frequencies_old.iloc[:, -1] == 39, "numeral"
 # ]
@@ -430,30 +646,20 @@ corpus_numerals.document_frequencies()
 # absolute_numeral_data.head(5)
 ```
 
-```{code-cell}
-type(numerals.iloc[0].name)
-```
-
-```{code-cell}
+```{code-cell} ipython3
 reload(utils)
-utils.plot_pca(
-    chord_tones.combine_results("corpus").relative,
-    info="chord-tone profiles",
-    color=CORPUS_YEARS,
-    size=5,
-)
 ```
 
-```{code-cell}
-culled_chord_tones = chord_tones.get_culled_matrix(1 / 3)
+```{code-cell} ipython3
+culled_chord_tones = chord_reduced.get_culled_matrix(1 / 3)
 culled_chord_tones.shape
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 plot_cosine_distances(culled_chord_tones.relative, standardize=True)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def linkage_matrix(model):
     # Create linkage matrix and then plot the dendrogram
 
@@ -484,7 +690,7 @@ cos_distance_matrix = make_cosine_distances(culled_chord_tones.relative)
 cos_distance_matrix
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 labels = cos_distance_matrix.index.to_list()
 ac = AgglomerativeClustering(
     metric="precomputed", linkage="complete", distance_threshold=0, n_clusters=None
@@ -507,7 +713,7 @@ restored = dc.deserialize_json_file("/home/laser/dimcat_data/sliced_notes.resour
 restored.df
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 ac.fit_predict(cos_distance_matrix)
 lm = linkage_matrix(ac)  # probably want to use this to have better control
 # lm = linkage(cos_distance_matrix)
@@ -516,7 +722,7 @@ plt.figure(figsize=(10, 60))
 ddg = Dendrogram(lm, describer, labels)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def test_equivalence(arr, metric="cosine"):
     scipy_result = squareform(pdist(arr, metric=metric))
     sklearn_result = pairwise_distances(arr, metric=metric)
@@ -534,19 +740,19 @@ def test_equivalence(arr, metric="cosine"):
 #     print(metric, test_equivalence(Arr[:, :-25670], metric))
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chord_tone_profiles = make_chord_tone_profile(chord_slices)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 plot_chord_profiles(chord_tone_profiles, "i, minor", log_y=True)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 plot_chord_profiles(chord_tone_profiles, "V7, minor")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 pipeline = [
     "HasHarmonyLabelsFilter",
     "ModeGrouper",
@@ -557,51 +763,51 @@ harmony_labels = analyzed_D.get_feature("HarmonyLabels")
 harmony_labels
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sliced_D = analyzed_D.apply_step(slicers.KeySlicer)
 sliced_D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 key_slices = sliced_D.get_feature("HarmonyLabels")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sliced_notes = sliced_D.get_feature(resources.Notes)
 sliced_notes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 slicer = sliced_D.get_last_step("Slicer")
 type(slicer)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 normal_notes = analyzed_D.get_feature("Notes")
 normal_notes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 normal_notes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sn = slicer.process_resource(normal_notes)
 sn
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 normal_notes = analyzed_D.get_feature(resources.Notes)
 normal_notes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 harmony_labels.loc[
     harmony_labels["scale_degrees_major"] == ("1", "3", "5", "b7"), "chord"
 ].value_counts()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sd_maj_sonorities = (
     harmony_labels.groupby("scale_degrees_major")
     .duration_qb.sum()
@@ -616,7 +822,7 @@ pd.concat(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sd_major_occurrences = (
     harmony_labels.groupby("scale_degrees_major")
     .size()
@@ -629,7 +835,7 @@ sd_major_occurrences = sd_major_occurrences.reset_index()
 px.scatter(sd_major_occurrences, x="rank", y="frequency", log_y=True)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 px.scatter(
     sd_major_occurrences,
     x="rank",
@@ -639,7 +845,7 @@ px.scatter(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 
 def find_index_of_r1_r2(C: pd.Series) -> Tuple[int, int]:
@@ -669,11 +875,11 @@ def compute_h(df) -> int | float:
 compute_h(sd_major_occurrences)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sd_major_occurrences.iloc[130:150]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sd_sonorities = (
     harmony_labels.groupby("scale_degrees")
     .duration_qb.sum()
@@ -684,16 +890,16 @@ pd.concat(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chord_proportions: resources.Durations = harmony_labels.apply_step("Proportions")
 chord_proportions.make_ranking_table(drop_cols="chord_and_mode").iloc[:50, :50]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chord_proportions.make_ranking_table(["mode"], drop_cols="chord_and_mode")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 piece2profile = {
     group: profile["duration_qb"].droplevel(
         ["corpus", "piece", "mode", "chord_and_mode"]
@@ -706,18 +912,18 @@ piece_profiles.sort_index(
 ).iloc[:50, :50]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 piece_profiles.sort_index(
     key=lambda _: pd.Index(piece_profiles.sum(axis=1)), ascending=False
 ).iloc[:50, :50]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 corpus_proportions = chord_proportions.combine_results().droplevel("chord_and_mode")
 corpus_proportions
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 corpus2profile = {
     group: profile["duration_qb"].droplevel(["corpus", "mode"])
     for group, profile in corpus_proportions.groupby(["corpus", "mode"])
@@ -734,13 +940,13 @@ chord_occurrence_mask = chord_occurrence_mask.sort_index(
 corpus_profiles.sort_index(key=lambda _: pd.Index(corpus_frequency), ascending=False)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 mask_with_sum = pd.concat(
     [chord_occurrence_mask, chord_occurrence_mask.sum(axis=1).rename("sum")], axis=1
 )
 mask_with_sum.to_csv(make_output_path("chord_occurrence_mask", "tsv"), sep="\t")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 analyzed_D
 ```
