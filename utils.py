@@ -864,6 +864,13 @@ def cumulative_fraction(S, start_from_zero=False):
     return values_df
 
 
+def flatten_series_name(series: pd.Series) -> pd.Series:
+    if not isinstance(series.name, tuple):
+        return series
+    new_name = ", ".join(series.name)
+    return series.rename(new_name)
+
+
 def frictionless_field2modin_dtype(name, _) -> Optional[str]:
     category_fields = [  # often recurring string values
         "act_dur",
@@ -1062,10 +1069,13 @@ def make_sunburst(
     return fig
 
 
-def merge_index_levels(index, join_str=True):
-    if index.nlevels > 1:
-        return merge_columns_into_one(index.to_frame(index=False), join_str=join_str)
-    return index
+def merge_index_levels(index, join_str=True) -> pd.Index:
+    if index.nlevels == 1:
+        return index
+    if join_str:
+        series = merge_columns_into_one(index.to_frame(index=False), join_str=join_str)
+        return pd.Index(series)
+    return index.to_flat_index()
 
 
 def plot_cum(
@@ -1169,11 +1179,38 @@ def plot_cum(
     return fig
 
 
-def make_pca(data, n_components=3):
+def make_pca(data, n_components=3) -> PCA:
     pca = PCA(n_components)
     pca.set_output(transform="pandas")
     pca.fit(data)
     return pca
+
+
+def get_pca_coordinates(
+    data,
+    n_components=3,
+    concat=False,
+) -> Tuple[pd.DataFrame, PCA]:
+    """Returns a DataFrame with the PCA coordinates for and index like the given data.
+
+    Args:
+        data: N x M DataFrame with N observations and M features.
+        n_components: Number of principal components to compute and return.
+        concat:
+            By default (False), only ``n_components`` columns are returned. Pass True to concatenate them
+            to the original data as additional columns.
+
+    Returns:
+        A DataFrame containing N x n_components columns representing a decomposition of the given data in terms of
+        the ``n_components`` first principal components.
+    """
+    pca = PCA(n_components)
+    pca.set_output(transform="pandas")
+    coordinates = pca.fit_transform(data)
+    coordinates.index = data.index
+    if concat:
+        coordinates = pd.concat([data, coordinates], axis=1)
+    return coordinates, pca
 
 
 def plot_pca(
@@ -1192,14 +1229,14 @@ def plot_pca(
         ), "Either data or a fitted PCA object must be given"
     else:
         assert data is not None, "Either data or a fitted PCA object must be given"
-        pca = make_pca(data)
-        pca_coordinates = pca.transform(data)
+        pca_coordinates, pca = get_pca_coordinates(data, n_components=3)
         print(
             f"Explained variance ratio: {pca.explained_variance_ratio_} "
             f"({pca.explained_variance_ratio_.sum():.1%})"
         )
     concatenate_this = [pca_coordinates]
-    hover_data = ["corpus"]
+    coordinates_reset = pca_coordinates.reset_index()
+    hover_data = coordinates_reset.columns.to_list()
     if color is not None:
         if isinstance(color, pd.Series):
             concatenate_this.append(color)
@@ -1224,9 +1261,9 @@ def plot_pca(
     if len(concatenate_this) > 1:
         scatter_data = pd.concat(concatenate_this, axis=1).reset_index()
     else:
-        scatter_data = pca_coordinates
+        scatter_data = coordinates_reset
     fig = px.scatter_3d(
-        scatter_data.reset_index(),
+        scatter_data,
         x="pca0",
         y="pca1",
         z="pca2",

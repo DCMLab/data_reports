@@ -17,8 +17,8 @@
 # # Chord Profiles
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# # %load_ext autoreload
-# # %autoreload 0
+# %load_ext autoreload
+# %autoreload 0
 import os
 from importlib import reload
 from typing import Iterable, List, Literal, Optional, Tuple
@@ -37,6 +37,7 @@ from dimcat.data.resources.utils import (
     transpose_notes_to_c,
 )
 from dimcat.plotting import make_bar_plot, make_scatter_plot, write_image
+from dimcat.steps.analyzers import prevalence
 from git import Repo
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram  # , linkage
@@ -224,17 +225,20 @@ def make_chord_tone_profile(chord_slices: pd.DataFrame) -> pd.DataFrame:
     return chord_tone_profiles
 
 
-def compare_corpus_frequencies(chord_slices, features: str | Iterable[str]):
+def compare_corpus_frequencies(
+    chord_slices: resources.DimcatResource, features: str | Iterable[str]
+):
     if isinstance(features, str):
         features = [features]
     doc_freqs = []
     for feature in features:
-        _, _, _, df, _ = utils.prepare_tf_idf_data(
-            chord_slices,
-            index=["corpus"],
-            columns=feature,
+        analyzer = prevalence.PrevalenceAnalyzer(index="corpus", columns=feature)
+        matrix = analyzer.process(chord_slices)
+        doc_freqs.append(
+            matrix.document_frequencies(name="corpus_frequency").sort_values(
+                ascending=False
+            )
         )
-        doc_freqs.append(df.astype("Int64").rename("corpus_frequency"))
     if len(doc_freqs) == 1:
         return doc_freqs[0]
     return pd.concat([series.reset_index() for series in doc_freqs], axis=1)
@@ -307,19 +311,15 @@ slice_info = join_df_on_index(
 )
 chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
 chord_slices = pd.concat([chord_slices, transpose_notes_to_c(chord_slices)], axis=1)
-chord_slices
+chord_slices = resources.DimcatResource.from_dataframe(chord_slices, "chord_slices")
 
 # %% [markdown]
 # ### Corpus frequencies of chord labels
 
 # %%
-corpus_frequencies = compare_corpus_frequencies(
+compare_corpus_frequencies(
     chord_slices, ["chord_and_mode", "chord_reduced_and_mode", "numeral"]
 )
-corpus_frequencies
-
-# %%
-corpus_frequencies.iloc[:30].to_clipboard()
 
 # %% [markdown]
 # ### Vocabulary
@@ -327,71 +327,114 @@ corpus_frequencies.iloc[:30].to_clipboard()
 # Features are `(chord, chord_tone)` tuples.
 
 # %%
-full_unigrams, f, tf, df, idf = prepare_chord_tone_data(
-    chord_slices,
-    groupby=["corpus", "piece"],
-)
-print(f"Shape: {tf.shape}")
-
-
-# %%
-full_unigrams
-
-# %%
-vocabulary = merge_columns_into_one(df.index.to_frame(index=False), join_str=True)
-doc_freq_data = pd.DataFrame(
-    dict(
-        chord_tones=vocabulary,
-        document_frequency=df.values,
-        rank=range(1, len(vocabulary) + 1),
+chord_tones: resources.PrevalenceMatrix = chord_slices.apply_step(
+    dc.DimcatConfig(
+        "PrevalenceAnalyzer",
+        columns=["chord_and_mode", "fifths_over_local_tonic"],
+        index=["corpus", "piece"],
     )
 )
-D, V = f.shape
-fig = make_scatter_plot(
-    doc_freq_data,
-    x_col="rank",
-    y_col="document_frequency",
-    hover_data="chord_tones",
-    log_x=True,
-    log_y=True,
-    title=f"Document frequency of chord tones (D = {D}), V = {V}",
-)
+print(f"Shape: {chord_tones.shape}")
+
+
+# %%
+def plot_document_frequency(chord_tones: resources.PrevalenceMatrix, **kwargs):
+    df = chord_tones.document_frequencies()
+    vocabulary = merge_columns_into_one(df.index.to_frame(index=False), join_str=True)
+    doc_freq_data = pd.DataFrame(
+        dict(
+            chord_tones=vocabulary,
+            document_frequency=df.values,
+            rank=range(1, len(vocabulary) + 1),
+        )
+    )
+    D, V = chord_tones.shape
+    settings = dict(
+        x_col="rank",
+        y_col="document_frequency",
+        hover_data="chord_tones",
+        log_x=True,
+        log_y=True,
+        title=f"Document frequency of chord tones (D = {D}, V = {V})",
+    )
+    if kwargs:
+        settings.update(kwargs)
+    fig = make_scatter_plot(
+        doc_freq_data,
+        **settings,
+    )
+    return fig
+
+
+fig = plot_document_frequency(chord_tones)
 save_figure_as(fig, "document_frequency_of_chord_tones")
 fig
 
-# %%
-selected_numerals = corpus_frequencies.loc[
-    corpus_frequencies.iloc[:, -1] == 39, "numeral"
-]
-absolute_numeral_data = chord_slices[chord_slices.numeral.isin(selected_numerals)]
-absolute_numeral_data.head(5)
 
 # %%
-chord_slices.query("numeral in @selected_numerals").pivot_table(
-    index=["corpus", "piece"],
-    columns=["numeral", "fifths_over_local_tonic"],
-    values="duration_qb",
-    aggfunc="sum",
+def replace_boolean_column_level_with_mode(
+    matrix: resources.PrevalenceMatrix,
+    level: int = 0,
+    name: str = "mode",
+):
+    """Replaces True with 'minor' and False with 'major' in the given column index level and renames it.
+    Function operates inplace.
+    """
+    old_columns = matrix._df.columns
+    bool_values = old_columns.levels[level]
+    mode_values = bool_values.map({True: "minor", False: "major"})
+    new_columns = old_columns.set_levels(mode_values, level=0)
+    new_columns.set_names(name, level=level, inplace=True)
+    matrix._df.columns = new_columns
+
+
+numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
+    dc.DimcatConfig(
+        "PrevalenceAnalyzer",
+        columns=["effective_localkey_is_minor", "numeral", "fifths_over_local_tonic"],
+        index=["corpus", "piece"],
+    )
 )
+print(f"Shape: {numerals.shape}")
+replace_boolean_column_level_with_mode(numerals)
+numerals.iloc[:10, :10]
 
 # %%
+corpus_numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
+    dc.DimcatConfig(
+        "PrevalenceAnalyzer",
+        columns=["effective_localkey_is_minor", "numeral"],
+        index="corpus",
+    )
+)
+replace_boolean_column_level_with_mode(corpus_numerals)
+corpus_numerals.document_frequencies()
+
+# %%
+# selected_numerals = corpus_frequencies_old.loc[
+#     corpus_frequencies_old.iloc[:, -1] == 39, "numeral"
+# ]
+# absolute_numeral_data = chord_slices[chord_slices.numeral.isin(selected_numerals)]
+# absolute_numeral_data.head(5)
+
+# %%
+type(numerals.iloc[0].name)
+
+# %%
+reload(utils)
 utils.plot_pca(
-    tf,
-    "concatenated chord-tone-profile vectors of I and V7",
+    chord_tones.combine_results("corpus").relative,
+    info="chord-tone profiles",
     color=CORPUS_YEARS,
     size=5,
 )
 
 # %%
+culled_chord_tones = chord_tones.get_culled_matrix(1 / 3)
+culled_chord_tones.shape
 
 # %%
-culled_vocabulary = df[df.ge(D / 3)]
-culled_tf = tf.loc[:, culled_vocabulary.index]
-culled_tf.shape
-
-# %%
-reload(utils)
-plot_cosine_distances(culled_tf, standardize=True)
+plot_cosine_distances(culled_chord_tones.relative, standardize=True)
 
 
 # %%
@@ -421,11 +464,11 @@ def plot_dendrogram(model, **kwargs):
     dendrogram(lm, **kwargs)
 
 
-cos_distance_matrix = make_cosine_distances(culled_tf)
+cos_distance_matrix = make_cosine_distances(culled_chord_tones.relative)
 cos_distance_matrix
 
 # %%
-labels = utils.merge_index_levels(tf.index).to_list()
+labels = cos_distance_matrix.index.to_list()
 ac = AgglomerativeClustering(
     metric="precomputed", linkage="complete", distance_threshold=0, n_clusters=None
 )
@@ -469,7 +512,6 @@ def test_equivalence(arr, metric="cosine"):
 #          "sokalmichener", "sokalsneath", "sqeuclidean", "yule"]
 # for metric in metrics:
 #     print(metric, test_equivalence(Arr[:, :-25670], metric))
-
 
 # %%
 chord_tone_profiles = make_chord_tone_profile(chord_slices)

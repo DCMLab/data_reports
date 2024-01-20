@@ -17,8 +17,8 @@
 # # Chord profiles for pieces in the DLC
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# # %load_ext autoreload
-# # %autoreload 2
+# %load_ext autoreload
+# %autoreload 2
 
 import os
 from typing import Dict
@@ -29,12 +29,13 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dimcat import resources
+from dimcat import analyzers, resources
 from dimcat.plotting import write_image
 from dimcat.utils import get_middle_composition_year
 from git import Repo
 from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
+from sklearn.preprocessing import RobustScaler
 
 import utils
 
@@ -79,25 +80,26 @@ D
 harmony_labels: resources.PhraseAnnotations = D.get_feature("HarmonyLabels")
 harmony_labels
 
+# %%
+chord_and_mode: resources.PrevalenceMatrix = analyzers.PrevalenceAnalyzer().process(
+    harmony_labels
+)
+print(f"Shape: {chord_and_mode.shape}")
+chord_and_mode.iloc[:10, :10]
 
 # %%
-def prepare_data(harmony_labels, feature, smooth=1e-20):
-    unigram_distribution = (
-        harmony_labels.groupby(feature).duration_qb.sum().sort_values(ascending=False)
-    )
-    f = harmony_labels.pivot_table(
-        index=["corpus", "piece"],
-        columns=feature,
-        values="duration_qb",
-        aggfunc="sum",
-    )  # so-called "count frequency", here weighted by chord duration
-    tf = f.fillna(0.0).add(smooth).div(f.sum(axis=1), axis=0)  # term frequency
-    D, V = f.shape  # D = number of documents, V = vocabulary size
-    df = f.notna().sum().sort_values(ascending=False)  # absolute document frequency
-    f = f.fillna(0.0)
-    idf = pd.Series(np.log(D / df), index=df.index)  # inverse document frequency
-    return unigram_distribution, f, tf, df, idf
+chord_and_mode.metadata
 
+# %%
+PIECE_LENGTH = (
+    harmony_labels.groupby(["corpus", "piece"])
+    .duration_qb.sum()
+    .rename("piece_duration")
+)
+
+# %%
+pl = chord_and_mode.metadata.length_qb.rename("piece_duration")
+pl
 
 # %%
 PIECE_LENGTH = (
@@ -106,19 +108,13 @@ PIECE_LENGTH = (
     .rename("piece_duration")
 )
 PIECE_MODE = harmony_labels.groupby(["corpus", "piece"]).globalkey_mode.first()
-PIECE_COMPOSITION_YEAR = get_middle_composition_year(D.get_metadata()).rename("year")
+PIECE_COMPOSITION_YEAR = get_middle_composition_year(chord_and_mode.metadata).rename(
+    "year"
+)
 SCATTER_PLOT_SETTINGS = dict(
     color=PIECE_MODE,
     color_discrete_map=dict(major="blue", minor="red", both="green"),
 )
-
-# %% [markdown]
-# ## Full chord symbols
-
-# %%
-unigram_distribution, f, tf, df, idf = prepare_data(harmony_labels, "chord_and_mode")
-unigram_distribution
-
 
 # %% [markdown]
 # ### Full chord frequency matrix
@@ -126,7 +122,28 @@ unigram_distribution
 # Chord symbols carry their mode information, so it is to expected that modes be clearly separated.
 
 # %%
-# plot_pca(tf, "chord frequency matrix", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(
+    data=chord_and_mode.relative, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS
+)
+
+
+# %%
+scaler = RobustScaler()
+scaler.set_output(transform="pandas")
+robust = scaler.fit_transform(chord_and_mode.relative)
+utils.plot_pca(data=robust, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS)
+
+# %%
+scaler = RobustScaler(quantile_range=(5, 95))
+scaler.set_output(transform="pandas")
+robust = scaler.fit_transform(chord_and_mode.relative)
+utils.plot_pca(data=robust, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS)
+
+# %%
+z = (
+    chord_and_mode.absolute - chord_and_mode.absolute.mean()
+) / chord_and_mode.absolute.std()
+utils.plot_pca(data=z, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 
 
 # %%
@@ -145,8 +162,7 @@ def get_hull_coordinates(
 
 
 def plot_kmeans(data, n_clusters, cluster_data_itself: bool = False, **kwargs):
-    pca = utils.make_pca(data)
-    pca_coordinates = pca.transform(data)
+    pca_coordinates, pca = utils.get_pca_coordinates(data, n_components=3)
     kmeans = KMeans(n_clusters=n_clusters, n_init="auto", random_state=42)
     if cluster_data_itself:
         kmeans.fit(data)
@@ -171,7 +187,7 @@ def plot_kmeans(data, n_clusters, cluster_data_itself: bool = False, **kwargs):
     return fig
 
 
-plot_kmeans(tf, 22, cluster_data_itself=False)
+plot_kmeans(chord_and_mode.relative, 22, cluster_data_itself=False)
 
 # %% [markdown]
 # ### Pieces in global major vs. minor
@@ -182,7 +198,7 @@ PL_NORM = pl_log.add(-pl_log.min()).div(pl_log.max() - pl_log.min())
 px.histogram(PL_NORM, title="log-normalized phrase lengths")
 
 # %%
-mode_tf = {group: df for group, df in tf.groupby(PIECE_MODE)}
+mode_tf = {group: df for group, df in chord_and_mode.relative.groupby(PIECE_MODE)}
 utils.plot_pca(
     mode_tf["major"],
     info="chord frequency matrix for pieces in major",
@@ -191,10 +207,10 @@ utils.plot_pca(
 )
 
 # %%
-mode_f = {group: df for group, df in f.groupby(PIECE_MODE)}
+mode_f = {group: df for group, df in chord_and_mode.absolute.groupby(PIECE_MODE)}
 utils.plot_pca(
     mode_f["major"],
-    "chord proportion matrix for pieces in major",
+    info="chord proportion matrix for pieces in major",
     # color=PIECE_COMPOSITION_YEAR,
     size=None,
 )
@@ -202,14 +218,14 @@ utils.plot_pca(
 # %%
 utils.plot_pca(
     mode_tf["minor"],
-    "chord frequency matrix for pieces in minor",
+    info="chord frequency matrix for pieces in minor",
     # color=PIECE_COMPOSITION_YEAR,
 )
 
 # %%
 utils.plot_pca(
     mode_f["minor"],
-    "chord proportions matrix for pieces in minor",
+    info="chord proportions matrix for pieces in minor",
     # color=PIECE_COMPOSITION_YEAR,
 )
 
@@ -217,7 +233,7 @@ utils.plot_pca(
 # ### PCA of tf-idf
 
 # %%
-utils.plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
+utils.plot_pca(chord_and_mode.tf_idf(), info="tf-idf matrix", **SCATTER_PLOT_SETTINGS)
 
 # %% [markdown]
 # ### For comparison: PCA of t-idf (absolute chord durations weighted by idf)
@@ -225,19 +241,34 @@ utils.plot_pca(tf.mul(idf), "tf-idf matrix", **SCATTER_PLOT_SETTINGS)
 # PCA consistently explains a multiple of the variance for f-idf compared to tf-idf (normalized chord weights)
 
 # %%
-utils.plot_pca(f.fillna(0.0).mul(idf), "f-idf matrix")
+utils.plot_pca(
+    chord_and_mode.absolute.mul(chord_and_mode.inverse_document_frequencies()),
+    info="tf-idf matrix",
+    **SCATTER_PLOT_SETTINGS,
+)
 
 # %% [markdown]
 # ## Reduced chords (without suspensions, additions, alterations)
 
 # %%
-unigram_distribution, f, tf, df, idf = prepare_data(
-    harmony_labels, "chord_reduced_and_mode"
+chord_reduced: resources.PrevalenceMatrix = harmony_labels.apply_step(
+    dc.DimcatConfig(
+        "PrevalenceAnalyzer",
+        columns="chord_reduced_and_mode",
+        index=["corpus", "piece"],
+    )
 )
-unigram_distribution
+chord_reduced.iloc[:10, :10]
 
 # %%
-utils.plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTINGS)
+chord_reduced.type_prevalence
+
+# %%
+utils.plot_pca(
+    chord_reduced.absolute.mul(chord_reduced.inverse_document_frequencies()),
+    info="f-idf matrix (reduced chords)",
+    **SCATTER_PLOT_SETTINGS,
+)
 
 # %% [markdown]
 # ## Only root, regardless of chord type or inversion
@@ -245,11 +276,16 @@ utils.plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTI
 # PCA plot has straight lines. Th
 
 # %%
-unigram_distribution, f, tf, df, idf = prepare_data(harmony_labels, "root")
-unigram_distribution
+root: resources.PrevalenceMatrix = harmony_labels.apply_step(
+    dc.DimcatConfig(
+        "PrevalenceAnalyzer",
+        columns="root",
+        index=["corpus", "piece"],
+    )
+)
 
 # %%
-utils.plot_pca(tf, "root frequency matrix")
+utils.plot_pca(root.relative, info="root frequency matrix")
 
 # %% [markdown]
 # ## Grid search on variance explained by PCA components
