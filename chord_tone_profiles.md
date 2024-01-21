@@ -24,30 +24,18 @@ tags: [hide-cell]
 %load_ext autoreload
 %autoreload 2
 import os
-from importlib import reload
 from typing import Tuple, Union
 
 import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
-import plotly.express as px
-import seaborn as sns
-from dimcat import resources, slicers
+from dimcat import resources
 from dimcat.plotting import make_bar_plot, write_image
 from git import Repo
 from matplotlib import pyplot as plt
 from scipy.cluster.hierarchy import dendrogram  # , linkage
-from scipy.spatial.distance import pdist, squareform
 from sklearn.cluster import AgglomerativeClustering
-from sklearn.metrics import (
-    ConfusionMatrixDisplay,
-    classification_report,
-    confusion_matrix,
-    pairwise_distances,
-)
-from sklearn.model_selection import LeaveOneOut, cross_validate, train_test_split
-from sklearn.svm import LinearSVC
 
 import utils
 from dendrograms import Dendrogram, TableDocumentDescriber
@@ -229,10 +217,6 @@ make_bar_plot(
 ```
 
 ```{code-cell} ipython3
-numerals.iloc[:10, :10]
-```
-
-```{code-cell} ipython3
 corpus_numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -242,18 +226,6 @@ corpus_numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
 )
 utils.replace_boolean_column_level_with_mode(corpus_numerals)
 corpus_numerals.document_frequencies()
-```
-
-```{code-cell} ipython3
-# selected_numerals = corpus_frequencies_old.loc[
-#     corpus_frequencies_old.iloc[:, -1] == 39, "numeral"
-# ]
-# absolute_numeral_data = chord_slices[chord_slices.numeral.isin(selected_numerals)]
-# absolute_numeral_data.head(5)
-```
-
-```{code-cell} ipython3
-reload(utils)
 ```
 
 ```{code-cell} ipython3
@@ -329,131 +301,6 @@ ddg = Dendrogram(lm, describer, labels)
 ```
 
 ```{code-cell} ipython3
-def test_equivalence(arr, metric="cosine"):
-    scipy_result = squareform(pdist(arr, metric=metric))
-    sklearn_result = pairwise_distances(arr, metric=metric)
-    return np.isclose(scipy_result, sklearn_result).all()
-
-
-# np.savez_compressed("tf_matrix.npz", tf.values, allow_pickle=False)
-# npz = np.load("tf_matrix.npz")
-# Arr = npz["arr_0"]
-# Arr.shape
-# metrics = ["braycurtis", "canberra", "chebyshev", "cityblock", "correlation", "cosine", "dice", "euclidean",
-#           "hamming", "jaccard", "mahalanobis", "matching", "minkowski", "rogerstanimoto", "russellrao", "seuclidean",
-#          "sokalmichener", "sokalsneath", "sqeuclidean", "yule"]
-# for metric in metrics:
-#     print(metric, test_equivalence(Arr[:, :-25670], metric))
-```
-
-```{code-cell} ipython3
-chord_tone_profiles = utils.make_chord_tone_profile(chord_slices)
-```
-
-```{code-cell} ipython3
-utils.plot_chord_profiles(chord_tone_profiles, "i, minor", log_y=True)
-```
-
-```{code-cell} ipython3
-utils.plot_chord_profiles(chord_tone_profiles, "V7, minor")
-```
-
-```{code-cell} ipython3
-pipeline = [
-    "HasHarmonyLabelsFilter",
-    "ModeGrouper",
-    "CorpusGrouper",
-]
-analyzed_D = D.apply_step(*pipeline)
-harmony_labels = analyzed_D.get_feature("HarmonyLabels")
-harmony_labels
-```
-
-```{code-cell} ipython3
-sliced_D = analyzed_D.apply_step(slicers.KeySlicer)
-sliced_D
-```
-
-```{code-cell} ipython3
-key_slices = sliced_D.get_feature("HarmonyLabels")
-```
-
-```{code-cell} ipython3
-sliced_notes = sliced_D.get_feature(resources.Notes)
-sliced_notes
-```
-
-```{code-cell} ipython3
-slicer = sliced_D.get_last_step("Slicer")
-type(slicer)
-```
-
-```{code-cell} ipython3
-normal_notes = analyzed_D.get_feature("Notes")
-normal_notes
-```
-
-```{code-cell} ipython3
-normal_notes
-```
-
-```{code-cell} ipython3
-sn = slicer.process_resource(normal_notes)
-sn
-```
-
-```{code-cell} ipython3
-normal_notes = analyzed_D.get_feature(resources.Notes)
-normal_notes
-```
-
-```{code-cell} ipython3
-harmony_labels.loc[
-    harmony_labels["scale_degrees_major"] == ("1", "3", "5", "b7"), "chord"
-].value_counts()
-```
-
-```{code-cell} ipython3
-sd_maj_sonorities = (
-    harmony_labels.groupby("scale_degrees_major")
-    .duration_qb.sum()
-    .sort_values(ascending=False)
-)
-pd.concat(
-    [
-        sd_maj_sonorities,
-        (sd_maj_sonorities / sd_maj_sonorities.sum()).rename("proportion"),
-    ],
-    axis=1,
-)
-```
-
-```{code-cell} ipython3
-sd_major_occurrences = (
-    harmony_labels.groupby("scale_degrees_major")
-    .size()
-    .rename("frequency")
-    .sort_values(ascending=False)
-    .reset_index()
-)
-sd_major_occurrences.index = sd_major_occurrences.index.rename("rank") + 1
-sd_major_occurrences = sd_major_occurrences.reset_index()
-px.scatter(sd_major_occurrences, x="rank", y="frequency", log_y=True)
-```
-
-```{code-cell} ipython3
-px.scatter(
-    sd_major_occurrences,
-    x="rank",
-    y="frequency",
-    log_x=True,
-    log_y=True,
-)
-```
-
-```{code-cell} ipython3
-
-
 def find_index_of_r1_r2(C: pd.Series) -> Tuple[int, int]:
     """Takes a Series representing C = 1 / (frequency(rank) - rank) and returns the indices of r1 and r2, left and
     right of the discontinuity."""
@@ -472,87 +319,8 @@ def compute_h(df) -> int | float:
     if (mask := df.frequency.eq(df["rank"])).any():
         h_ix = df.index[mask][0]
         return df.at[h_ix, "rank"]
-    C = 1 / (sd_major_occurrences.frequency - sd_major_occurrences["rank"])
+    C = 1 / (df.frequency - df["rank"])
     r1_i, r2_i = find_index_of_r1_r2(C)
     (r1, f_r1), (r2, f_r2) = df.loc[[r1_i, r2_i], ["rank", "frequency"]].values
     return (f_r1 * r2 - f_r2 * r1) / (r2 - r1 + f_r1 - f_r2)
-
-
-compute_h(sd_major_occurrences)
-```
-
-```{code-cell} ipython3
-sd_major_occurrences.iloc[130:150]
-```
-
-```{code-cell} ipython3
-sd_sonorities = (
-    harmony_labels.groupby("scale_degrees")
-    .duration_qb.sum()
-    .sort_values(ascending=False)
-)
-pd.concat(
-    [sd_sonorities, (sd_sonorities / sd_sonorities.sum()).rename("proportion")], axis=1
-)
-```
-
-```{code-cell} ipython3
-chord_proportions: resources.Durations = harmony_labels.apply_step("Proportions")
-chord_proportions.make_ranking_table(drop_cols="chord_and_mode").iloc[:50, :50]
-```
-
-```{code-cell} ipython3
-chord_proportions.make_ranking_table(["mode"], drop_cols="chord_and_mode")
-```
-
-```{code-cell} ipython3
-piece2profile = {
-    group: profile["duration_qb"].droplevel(
-        ["corpus", "piece", "mode", "chord_and_mode"]
-    )
-    for group, profile in chord_proportions.groupby(["corpus", "piece", "mode"])
-}
-piece_profiles = pd.concat(piece2profile, axis=1, names=["corpus", "piece", "mode"])
-piece_profiles.sort_index(
-    key=lambda _: pd.Index(piece_profiles.notna().sum(axis=1)), ascending=False
-).iloc[:50, :50]
-```
-
-```{code-cell} ipython3
-piece_profiles.sort_index(
-    key=lambda _: pd.Index(piece_profiles.sum(axis=1)), ascending=False
-).iloc[:50, :50]
-```
-
-```{code-cell} ipython3
-corpus_proportions = chord_proportions.combine_results().droplevel("chord_and_mode")
-corpus_proportions
-```
-
-```{code-cell} ipython3
-corpus2profile = {
-    group: profile["duration_qb"].droplevel(["corpus", "mode"])
-    for group, profile in corpus_proportions.groupby(["corpus", "mode"])
-}
-corpus_profiles = pd.concat(corpus2profile, axis=1, names=["corpus", "mode"])
-chord_occurrence_mask = corpus_profiles.notna()
-corpus_frequency = chord_occurrence_mask.sum(axis=1)
-chord_occurrence_mask = chord_occurrence_mask.sort_index(
-    key=lambda _: pd.Index(corpus_frequency), ascending=False
-)
-chord_occurrence_mask = chord_occurrence_mask.sort_index(
-    key=lambda _: pd.Index(chord_occurrence_mask.sum()), ascending=False, axis=1
-)
-corpus_profiles.sort_index(key=lambda _: pd.Index(corpus_frequency), ascending=False)
-```
-
-```{code-cell} ipython3
-mask_with_sum = pd.concat(
-    [chord_occurrence_mask, chord_occurrence_mask.sum(axis=1).rename("sum")], axis=1
-)
-mask_with_sum.to_csv(make_output_path("chord_occurrence_mask", "tsv"), sep="\t")
-```
-
-```{code-cell} ipython3
-analyzed_D
 ```
