@@ -19,7 +19,7 @@ import numpy.typing as npt
 import pandas as pd
 import plotly.express as px
 import seaborn as sns
-from dimcat import Dataset, utils
+from dimcat import Dataset
 from dimcat.base import FriendlyEnum, deserialize_json_file, get_setting
 from dimcat.data import resources
 from dimcat.data.resources.facets import add_chord_tone_intervals
@@ -2526,7 +2526,7 @@ def get_sliced_notes(
     cache_name: Optional[str] = "chord_slices",
 ):
     if basepath is None:
-        basepath = utils.resolve_dir(get_setting("default_basepath"))
+        basepath = resolve_dir(get_setting("default_basepath"))
     if cache_name:
         cache_path = os.path.join(basepath, f"{cache_name}.resource.json")
         if os.path.isfile(cache_path):
@@ -2702,7 +2702,7 @@ def prepare_chord_tone_data(
     if isinstance(groupby, str):
         groupby = [groupby]
     if chord_and_mode is None:
-        return utils.prepare_tf_idf_data(
+        return prepare_tf_idf_data(
             chord_slices,
             index=groupby,
             columns=["chord_and_mode", "fifths_over_local_tonic"],
@@ -2737,7 +2737,7 @@ def prepare_numeral_chord_tone_data(
     if isinstance(groupby, str):
         groupby = [groupby]
     if numeral is None:
-        return utils.prepare_tf_idf_data(
+        return prepare_tf_idf_data(
             chord_slices,
             index=groupby,
             columns=["numeral", "fifths_over_local_tonic"],
@@ -2745,7 +2745,7 @@ def prepare_numeral_chord_tone_data(
         )
     if isinstance(numeral, str):
         absolute_data = chord_slices.query(f"numeral == '{numeral}'")
-        return utils.prepare_tf_idf_data(
+        return prepare_tf_idf_data(
             absolute_data,
             index=groupby,
             columns=["numeral", "fifths_over_local_tonic"],
