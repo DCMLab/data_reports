@@ -38,6 +38,7 @@ from dimcat.data.resources.features import BassNotesFormat
 from dimcat.data.resources.utils import (
     join_df_on_index,
     merge_columns_into_one,
+    str2pd_interval,
     transpose_notes_to_c,
 )
 from dimcat.plotting import make_bar_plot, make_scatter_plot, write_image
@@ -252,7 +253,9 @@ def replace_boolean_column_level_with_mode(
     """
     old_columns = matrix._df.columns
     bool_values = old_columns.levels[level]
-    mode_values = bool_values.map({True: "minor", False: "major"})
+    mode_values = bool_values.map(
+        {True: "minor", False: "major", "True": "minor", "False": "major"}
+    )
     new_columns = old_columns.set_levels(mode_values, level=0)
     new_columns.set_names(name, level=level, inplace=True)
     matrix._df.columns = new_columns
@@ -353,31 +356,50 @@ D
 ```
 
 ```{code-cell} ipython3
-label_slicer = slicers.HarmonyLabelSlicer()
-sliced_D = label_slicer.process(D)
-```
+def get_sliced_notes(
+    D: dc.Dataset,
+    basepath: Optional[str] = None,
+    cache_name: Optional[str] = "chord_slices",
+):
+    if basepath is None:
+        basepath = utils.resolve_dir(dc.get_setting("default_basepath"))
+    if cache_name:
+        cache_path = os.path.join(basepath, f"{cache_name}.resource.json")
+        if os.path.isfile(cache_path):
+            chord_slices = dc.deserialize_json_file(cache_path)
+            chord_slices.load()
+            # work around for correct IntervalIndex deserialization
+            converted = list(map(str2pd_interval, chord_slices.index.levels[2]))
+            chord_slices._df.index = chord_slices._df.index.set_levels(
+                converted, level=2
+            )
+            return chord_slices
+    label_slicer = slicers.HarmonyLabelSlicer()
+    sliced_D = label_slicer.process(D)
+    sliced_notes = sliced_D.get_feature(resources.Notes)
+    slice_info = label_slicer.slice_metadata.droplevel(-1)
+    slice_info["root_fifths_over_global_tonic"] = (
+        ms3.transform(
+            slice_info[["effective_localkey_resolved", "globalkey_is_minor"]],
+            ms3.roman_numeral2fifths,
+        ).rename("root_fifths_over_global_tonic")
+        + slice_info.root
+    )
+    merge_columns = [
+        col for col in slice_info.columns if col not in sliced_notes.columns
+    ]
+    slice_info = join_df_on_index(
+        slice_info[merge_columns], sliced_notes.index, how="right"
+    )
+    chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
+    chord_slices = pd.concat([chord_slices, transpose_notes_to_c(chord_slices)], axis=1)
+    chord_slices = resources.DimcatResource.from_dataframe(chord_slices, "chord_slices")
+    chord_slices.store_resource(basepath=basepath, name="chord_slices")
+    return chord_slices
 
-```{code-cell} ipython3
-sliced_notes = sliced_D.get_feature(resources.Notes)
-sliced_notes
-```
 
-```{code-cell} ipython3
-slice_info = label_slicer.slice_metadata.droplevel(-1)
-slice_info["root_fifths_over_global_tonic"] = (
-    ms3.transform(
-        slice_info[["effective_localkey_resolved", "globalkey_is_minor"]],
-        ms3.roman_numeral2fifths,
-    ).rename("root_fifths_over_global_tonic")
-    + slice_info.root
-)
-merge_columns = [col for col in slice_info.columns if col not in sliced_notes.columns]
-slice_info = join_df_on_index(
-    slice_info[merge_columns], sliced_notes.index, how="right"
-)
-chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
-chord_slices = pd.concat([chord_slices, transpose_notes_to_c(chord_slices)], axis=1)
-chord_slices = resources.DimcatResource.from_dataframe(chord_slices, "chord_slices")
+chord_slices = get_sliced_notes(D)
+chord_slices.head(5)
 ```
 
 ## Document frequencies of chord features
@@ -551,8 +573,161 @@ utils.plot_pca(scaled, info="chord-tone profiles", color=PIECE_YEARS)
 
 # Classification
 
-```{code-cell} ipython3
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    classification_report,
+    confusion_matrix,
+)
+from sklearn.model_selection import (
+    LeaveOneOut,
+    cross_val_score,
+    cross_validate,
+    train_test_split,
+)
 
+```{code-cell} ipython3
+from sklearn.svm import LinearSVC
+
+
+def make_split(
+    matrix: resources.PrevalenceMatrix,
+):
+    X = matrix.relative
+    # first, drop corpora containing only one piece
+    pieces_per_corpus = X.groupby(level="corpus").size()
+    more_than_one = pieces_per_corpus[pieces_per_corpus > 1].index
+    X = X.loc[more_than_one]
+    # get the labels from the index level, then drop the level
+    y = X.index.get_level_values("corpus")
+    X = X.reset_index(level="corpus", drop=True)
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.1, stratify=y, random_state=np.random.RandomState(42)
+    )
+    return X_train, X_test, y_train, y_test
+
+
+class Classification:
+    def __init__(
+        self,
+        matrix: resources.PrevalenceMatrix,
+        clf,
+        cv,
+    ):
+        self.matrix = matrix
+        self.clf = clf
+        self.cv = cv
+        self.X_train, self.X_test, self.y_train, self.y_test = make_split(self.matrix)
+        self.score = None
+
+    def fit(
+        self,
+    ):
+        self.clf.fit(self.X_train, self.y_train)
+        self.y_pred = self.clf.predict(self.X_test)
+        self.score = self.clf.score(self.X_test, self.y_test)
+        self.classification_report = classification_report(
+            self.y_test, self.y_pred, output_dict=True
+        )
+        self.confusion_matrix = confusion_matrix(
+            self.y_test, self.y_pred, labels=self.clf.classes_
+        )
+        return self.score
+
+    def show_confusion_matrix(self):
+        return ConfusionMatrixDisplay(
+            confusion_matrix=self.confusion_matrix, display_labels=self.clf.classes_
+        )
+
+
+class CrossValidated(Classification):
+    def __init__(
+        self,
+        matrix: resources.PrevalenceMatrix,
+        clf,
+        cv,
+    ):
+        super().__init__(matrix, clf, cv)
+        self.cv_results = None
+        self.estimators = None
+        self.scores = None
+        self.best_estimator = None
+        self.best_score = None
+        self.best_params = None
+        self.best_index = None
+        self.best_estimator = None
+
+    def cross_validate(
+        self,
+    ):
+        self.cv_results = cross_validate(
+            self.clf,
+            self.X_train,
+            self.y_train,
+            cv=self.cv,
+            n_jobs=-1,
+            return_estimator=True,
+        )
+        self.estimators = self.cv_results["estimator"]
+        self.scores = pd.DataFrame(
+            {
+                "RandomForestClassifier": self.cv_results["test_score"],
+            }
+        )
+        self.best_index = self.scores.idxmax()
+        self.best_estimator = self.estimators[self.best_index]
+        self.best_score = self.scores.max()
+        self.best_params = self.best_estimator.get_params()
+        return self.cv_results
+
+
+# clf = RandomForestClassifier()
+clf = LinearSVC()
+cv = LeaveOneOut()
+RFC = Classification(matrix=chord_reduced, clf=clf, cv=cv)
+RFC.fit()
+```
+
+```{code-cell} ipython3
+RFC.show_confusion_matrix().plot()
+```
+
+```{code-cell} ipython3
+import seaborn as sns
+
+clf_report = RFC.classification_report
+sns.heatmap(pd.DataFrame(clf_report).iloc[:-1, :].T, annot=True, cmap="RdBu")
+```
+
+```{code-cell} ipython3
+scores = pd.DataFrame(
+    {
+        "RandomForestClassifier": cv_results["test_score"],
+    }
+)
+ax = scores.plot.kde(legend=True)
+ax.set_xlabel("Accuracy score")
+# ax.set_xlim([0, 0.7])
+_ = ax.set_title(
+    "Density of the accuracy scores for the different multiclass strategies"
+)
+```
+
+```{code-cell} ipython3
+best_index = scores.idxmax()
+best_estimator = cv_results["estimator"][best_index]
+best_score = scores.max()
+best_params = best_estimator.get_params()
+print(f"Best score: {best_score}")
+print(f"Best params: {best_params}")
+```
+
+```{code-cell} ipython3
+scores
+```
+
+```{code-cell} ipython3
+best_index
 ```
 
 ```{code-cell} ipython3
