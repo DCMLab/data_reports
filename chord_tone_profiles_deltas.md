@@ -116,7 +116,7 @@ def make_pydelta_corpus(
 ```{code-cell}
 features = {
     "global_root": (  # baseline globalkey-roots without any note information
-        ["root_fifths_over_global_tonic", "intervals_over_root"],
+        ["root_per_globalkey", "intervals_over_root"],
         "chord symbols (root per globalkey + intervals)",
     ),
     "local_root": (  # baseline localkey-roots without any note information
@@ -140,7 +140,7 @@ features = {
         "Tonicization tone profiles transposed to C (major or minor)",
     ),
     "global_root_ct": (
-        ["root_fifths_over_global_tonic", "fifths_over_root"],
+        ["root_per_globalkey", "fifths_over_root"],
         "Chord-tone profiles over root-per-globalkey",
     ),
     "local_root_ct": (
@@ -175,7 +175,7 @@ for feature_name, (feature_columns, info) in features.items():
     analyzer_config.update(columns=feature_columns)
     prevalence_matrix = chord_slices.apply_step(analyzer_config)
     corpus = make_pydelta_corpus(prevalence_matrix.relative, info=info, absolute=False)
-    if len(features) > 1:
+    if prevalence_matrix.columns.nlevels > 1:
         groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
             column_levels=feature_columns[:-1]
         )
@@ -185,6 +185,12 @@ for feature_name, (feature_columns, info) in features.items():
     else:
         groupwise = None
     data[feature_name] = DataTuple(corpus, groupwise, prevalence_matrix)
+```
+
+```{code-cell}
+for feature_name, (corpus, groupwise, prevalence_matrix) in data.items():
+    print(f"{feature_name}: {prevalence_matrix.n_types}")
+    print(prevalence_matrix.type_prevalence.iloc[:15])
 ```
 
 ## Compute deltas
@@ -198,13 +204,15 @@ selected_deltas = {
     name: func
     for name, func in delta.functions.deltas.items()
     if name
-    in ["cosine", "cosine-z_score", "manhattan-z_score", "manhattan-z_score-eder_std"]
+    in [
+        "cosine",
+        "cosine-z_score",  # Cosine Delta
+        "manhattan",
+        "manhattan-z_score",  # Burrow's Delta
+        "manhattan-z_score-eder_std" "sqeuclidean",  # Eder's Delta
+        "sqeuclidean-z_score",  # Quadratic Delta
+    ]
 }
-```
-
-```{code-cell}
-
-# n_vocab_sizes = 5
 parallel_processor = Parallel(-1, prefer="threads")
 
 
@@ -221,49 +229,85 @@ def apply_deltas(*corpus):
 
 def compute_deltas(
     data: Dict[str, DataTuple],
-    vocab_sizes: int | Iterable[int] = 5,
+    vocab_sizes: int | Iterable[Optional[int | float]] = 5,
+    test: bool = False,
 ) -> Dict[str, Dict[int, Dict[str, DataTuple]]]:
-    distance_matrices = defaultdict(dict)
+    distance_matrices = defaultdict(
+        lambda: defaultdict(list)
+    )  # feature -> delta_name -> [DataTuple]
     for feature_name, (corpus, groupwise, prevalence_matrix) in data.items():
+        print(f"Computing deltas for {feature_name}", end=": ")
+        vocabulary_size = prevalence_matrix.n_types
         if isinstance(vocab_sizes, int):
-            vocabulary_size = prevalence_matrix.n_types
             stride = math.ceil(vocabulary_size / vocab_sizes)
-            vocab_sizes = [i * stride for i in range(1, vocab_sizes + 1)]
-        for vocab_size in vocab_sizes:
-            print(f"Computing deltas for {feature_name} (vocab size {vocab_size})")
-            corpus_top_n = corpus.top_n(vocab_size)
-            groupwise_top_n = groupwise.top_n(vocab_size)
-            # small = delta.Corpus(
-            #             corpus=corpus_top_n.iloc[:10],
-            #             document_describer=corpus_top_n.document_describer,
-            #             metadata=corpus_top_n.metadata,
-            #             complete=False,
-            #             frequencies=True)
-            # small_groupwise = delta.Corpus(
-            #             corpus=groupwise_top_n.iloc[:10],
-            #             document_describer=groupwise_top_n.document_describer,
-            #             metadata=groupwise_top_n.metadata,
-            #             complete=False,
-            #             frequencies=True)
-            n_types = corpus_top_n.shape[
-                1
-            ]  # may be difference from vocab_size for the last iteration
-            corpus_top_n.metadata.ntypes = n_types
-            groupwise_top_n.metadata.ntypes = n_types
-            distance_matrices[feature_name][vocab_size] = apply_deltas(
-                corpus_top_n, groupwise_top_n
-            )
+            category2top_n = {i: i * stride for i in range(1, vocabulary_size + 1)}
+        else:
+            category2top_n = {}
+            filter_too_large = (
+                None in vocab_sizes
+            )  # since max-vocab is requested, skip other values that are larger
+            for size_category in vocab_sizes:
+                if size_category is None:
+                    category2top_n[None] = vocabulary_size
+                elif size_category < 1:
+                    category2top_n[size_category] = math.ceil(
+                        vocabulary_size * size_category
+                    )
+                elif filter_too_large and size_category > vocabulary_size:
+                    continue
+                else:
+                    category2top_n[size_category] = math.ceil(size_category)
+        groupwise_normalization = groupwise is not None
+        for size_category, top_n in category2top_n.items():
+            print(f"({size_category}, {top_n})", end=" ")
+            if size_category is not None:
+                corpus_top_n = corpus.top_n(top_n)
+                if groupwise_normalization:
+                    groupwise_top_n = groupwise.top_n(top_n)
+            if test:
+                corpus_top_n = delta.Corpus(
+                    corpus=corpus_top_n.sample(10),
+                    document_describer=corpus_top_n.document_describer,
+                    metadata=corpus_top_n.metadata,
+                    complete=False,
+                    frequencies=True,
+                )
+                if groupwise_normalization:
+                    groupwise_top_n = delta.Corpus(
+                        corpus=groupwise_top_n.sample(10),
+                        document_describer=groupwise_top_n.document_describer,
+                        metadata=groupwise_top_n.metadata,
+                        complete=False,
+                        frequencies=True,
+                    )
+            n_types = corpus_top_n.shape[1]
+            # size_category: the piece of information for computing the top_n; used as dict keys
+            # top_n: The information computed from that passed to Corpus.top_n() (stored in Corpus.metadata.words)
+            # n_types: The actual number of (most frequent) types in this corpus, which may be less than top_n
+            corpus_top_n.metadata.top_n = top_n
+            corpus_top_n.metadata.n_types = n_types
+            if groupwise_normalization:
+                groupwise_top_n.metadata.top_n = top_n
+                groupwise_top_n.metadata.n_types = n_types
+                results = apply_deltas(corpus_top_n, groupwise_top_n)
+            else:
+                results = apply_deltas(corpus_top_n)
+            for delta_name, delta_results in results.items():
+                distance_matrices[feature_name][delta_name].append(delta_results)
+        print()
     return distance_matrices
 
 
 def store_distance_matrices(distance_matrices, filepath):
     for feature_name, feature_data in distance_matrices.items():
-        for vocab_size, delta_data in feature_data.items():
-            for delta_name, delta_results in delta_data.items():
+        for delta_name, delta_results in feature_data.items():
+            for data_tuple in delta_results:  # one per vocab_size
                 print(".", end="")
+                vocab_size = data_tuple.corpus.metadata.top_n
                 name = f"{feature_name}_{vocab_size}_{delta_name}"
-                delta_results.corpus.save_to_zip(name + ".tsv", filepath)
-                delta_results.groupwise.save_to_zip(name + "_groupwise.tsv", filepath)
+                data_tuple.corpus.save_to_zip(name + ".tsv", filepath)
+                if data_tuple.groupwise is not None:
+                    data_tuple.groupwise.save_to_zip(name + "_groupwise.tsv", filepath)
 
 
 def load_distance_matrices(filepath):
@@ -288,15 +332,15 @@ def load_distance_matrices(filepath):
             )
             feature_name, vocab_size, delta_name, groupwise = match.groups()
             position = int(bool(groupwise))
-            distance_matrices[feature_name][int(vocab_size)][delta_name][position] = dm
+            distance_matrices[feature_name][delta_name][int(vocab_size)][position] = dm
     result = {}
     for feature_name, feature_data in distance_matrices.items():
         feature_results = {}
-        for vocab_size, delta_data in feature_data.items():
-            feature_results[vocab_size] = {
-                delta_name: DataTuple(*delta_data)
-                for delta_name, delta_data in delta_data.items()
-            }
+        for delta_name, delta_data in feature_data.items():
+            list_of_tuples = []
+            for vocab_size, delta_data in delta_data.items():
+                list_of_tuples.append(DataTuple(*delta_data))
+            feature_results[delta_name] = list_of_tuples
         result[feature_name] = feature_results
     return result
 
@@ -327,11 +371,11 @@ def get_distance_matrices(
     return distance_matrices
 
 
-distance_matrices = get_distance_matrices(data, vocab_sizes=(10, 100, 1000))
+distance_matrices = get_distance_matrices(data, vocab_sizes=[4, 100, 2 / 3, None])
 ```
 
 ```{code-cell}
-distance_matrices["roots_local"][679]["cosine"].corpus.metadata
+distance_matrices["roots_local"]["cosine"][0].corpus.metadata
 ```
 
 ```{code-cell}

@@ -90,7 +90,7 @@ utils.compare_corpus_frequencies(
         "chord_reduced_and_mode",
         ["effective_localkey_is_minor", "numeral"],
         "root",
-        "root_fifths_over_global_tonic",
+        "root_per_globalkey",
     ],
 )
 ```
@@ -134,14 +134,14 @@ print(f"Shape: {roots.shape}")
 ```
 
 ```{code-cell}
-root_fifths_over_global_tonic = chord_slices.apply_step(
+root_per_globalkey = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
-        columns=["root_fifths_over_global_tonic", "fifths_over_local_tonic"],
+        columns=["root_per_globalkey", "fifths_over_local_tonic"],
         index=["corpus", "piece"],
     )
 )
-print(f"Shape: {root_fifths_over_global_tonic.shape}")
+print(f"Shape: {root_per_globalkey.shape}")
 ```
 
 ### Document frequencies of the tokens
@@ -162,7 +162,7 @@ utils.plot_document_frequency(roots, info="roots")
 
 ```{code-cell}
 utils.plot_document_frequency(
-    root_fifths_over_global_tonic, info="root relative to global tonic"
+    root_per_globalkey, info="root relative to global tonic"
 )
 ```
 
@@ -224,7 +224,7 @@ utils.plot_pca(
 
 ```{code-cell}
 utils.plot_pca(
-    root_fifths_over_global_tonic.relative,
+    root_per_globalkey.relative,
     info="root profiles of chord roots (global)",
     color=PIECE_YEARS,
 )
@@ -232,7 +232,7 @@ utils.plot_pca(
 
 ```{code-cell}
 utils.plot_pca(
-    root_fifths_over_global_tonic.combine_results("corpus").relative,
+    root_per_globalkey.combine_results("corpus").relative,
     info="chord-tone profiles of chord roots (global)",
     color=CORPUS_YEARS,
     size=5,

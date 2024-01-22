@@ -95,7 +95,7 @@ utils.compare_corpus_frequencies(
         "chord_reduced_and_mode",
         ["effective_localkey_is_minor", "numeral"],
         "root",
-        "root_fifths_over_global_tonic",
+        "root_per_globalkey",
     ],
 )
 ```
@@ -139,14 +139,14 @@ print(f"Shape: {roots.shape}")
 ```
 
 ```{code-cell} ipython3
-root_fifths_over_global_tonic = chord_slices.apply_step(
+root_per_globalkey = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
-        columns=["root_fifths_over_global_tonic", "fifths_over_local_tonic"],
+        columns=["root_per_globalkey", "fifths_over_local_tonic"],
         index=["corpus", "piece"],
     )
 )
-print(f"Shape: {root_fifths_over_global_tonic.shape}")
+print(f"Shape: {root_per_globalkey.shape}")
 ```
 
 ```{code-cell} ipython3

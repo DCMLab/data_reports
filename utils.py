@@ -2838,11 +2838,14 @@ def make_chord_slices(
 ):
     """Merge the harmony labels on the note events such that each note can be related to the respective label."""
     slice_info = slice_info.droplevel(-1)
+    localkey_tpc = ms3.transform(
+        slice_info[["localkey", "globalkey_is_minor"]], ms3.roman_numeral2fifths
+    )
     concatenate_this = [
         # adds columns to harmony labels before joining on the notes
         slice_info,
         (
-            globalkey_tpc := ms3.transform(
+            ms3.transform(
                 slice_info.globalkey,
                 ms3.name2fifths,
             )
@@ -2853,7 +2856,7 @@ def make_chord_slices(
                 ms3.roman_numeral2fifths,
             ).fillna(0)
         ).rename("relativeroot_tpc"),
-        (slice_info.root - globalkey_tpc).rename("root_per_globalkey"),
+        (slice_info.root + localkey_tpc).rename("root_per_globalkey"),
         (slice_info.root - relativeroot_tpc).rename("root_per_tonicization"),
     ]
     slice_info = pd.concat(concatenate_this, axis=1)
