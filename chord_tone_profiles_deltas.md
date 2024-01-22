@@ -115,6 +115,7 @@ def make_pydelta_corpus(
 
 ```{code-cell}
 features = {
+
     "chord_reduced": (
         ["chord_reduced_and_mode", "fifths_over_local_tonic"],
         "reduced chords",
@@ -164,14 +165,6 @@ for feature_name, (feature_columns, info) in features.items():
 ## Compute deltas
 
 ```{code-cell}
-data["numerals"].corpus.types().sum()
-```
-
-```{code-cell}
-data["numerals"].prevalence_matrix.n_types
-```
-
-```{code-cell}
 delta.functions.deltas.keys()
 ```
 
@@ -179,7 +172,7 @@ delta.functions.deltas.keys()
 selected_deltas = {
     name: func
     for name, func in delta.functions.deltas.items()
-    if name in ["cosine", "cosine-z_score", "burrows2"]
+    if name in ["cosine", "cosine-z_score", "manhattan-z_score", "manhattan-z_score-eder_std"]
 }
 ```
 
@@ -229,7 +222,9 @@ def compute_deltas(
             n_types = corpus_top_n.shape[
                 1
             ]  # may be difference from vocab_size for the last iteration
-            distance_matrices[feature_name][n_types] = apply_deltas(
+            corpus_top_n.metadata.ntypes = n_types
+            groupwise_top_n.metadata.ntypes = n_types
+            distance_matrices[feature_name][vocab_size] = apply_deltas(
                 corpus_top_n, groupwise_top_n
             )
     return distance_matrices
@@ -307,48 +302,69 @@ distance_matrices = get_distance_matrices(data, vocab_sizes=(10, 100, 1000))
 ```
 
 ```{code-cell}
-distance_metrics_rows = []
-for feature_name, feature_data in distance_matrices.items():
-    for vocab_size, delta_data in feature_data.items():
-        for delta_name, delta_results in delta_data.items():
-            for norm, distance_matrix in delta_results._asdict().items():
-                if distance_matrix is None:
-                    continue
-                print(".", end="")
-                row = {
-                    "feature_name": feature_name,
-                    "vocab_size": vocab_size,
-                    "delta": delta_name,
-                    "norm": norm,
-                }
-                row.update(distance_matrix.evaluate())
-                distance_metrics_rows.append(row)
+distance_matrices["roots_local"][679]["cosine"].corpus.metadata
 ```
 
 ```{code-cell}
-distance_evaluations = pd.DataFrame(distance_metrics_rows)
-distance_evaluations["n_types"] = distance_evaluations.vocab_size.where(
-    distance_evaluations.vocab_size <= 100, 1000
-)
-distance_evaluations = distance_evaluations.melt(
-    id_vars=["feature_name", "vocab_size", "delta", "norm", "n_types"],
-    value_vars=["F-Ratio", "Fisher's LD", "Simple Score"],
-    var_name="metric",
-)
+def get_distance_evaluations(distance_matrices):
+    distance_metrics_rows = []
+    try:
+        for feature_name, feature_data in distance_matrices.items():
+            for vocab_size, delta_data in feature_data.items():
+                for delta_name, delta_results in delta_data.items():
+                    for norm, distance_matrix in delta_results._asdict().items():
+                        if distance_matrix is None:
+                            continue
+                        print(".", end="")
+                        row = {
+                            "feature_name": feature_name,
+                            "vocab_size": vocab_size,
+                            "delta": delta_name,
+                            "norm": norm,
+                        }
+                        # row.update(distance_matrix.metadata)
+                        for metric, value in distance_matrix.evaluate().items():
+                            distance_metrics_rows.append(dict(
+                                row,
+                                metric=metric,
+                                value=value
+                            ))
+                        clustering = delta.Clustering(distance_matrix)
+                        for metric, value in clustering.evaluate().items():
+                            distance_metrics_rows.append(dict(
+                                row,
+                                metric=metric,
+                                value=value
+                            ))
+    except KeyboardInterrupt:
+        return pd.DataFrame(distance_metrics_rows)
+    distance_evaluations = pd.DataFrame(distance_metrics_rows)
+    return distance_evaluations
+
+distance_evaluations = get_distance_evaluations(distance_matrices)
 distance_evaluations
 ```
 
 ```{code-cell}
-make_scatter_plot(
+# vocab_size = distance_evaluations.vocab_size.vocab_size(distance_evaluations.vocab_size <= 100, 1000)
+# distance_evaluations.feature_name += "<br>" + vocab_size.astype(str)
+# distance_evaluations
+```
+
+```{code-cell}
+fig = make_scatter_plot(
     distance_evaluations,
-    x_col="value",
-    y_col="delta",
-    symbol="n_types",
-    color="norm",
-    facet_col="metric",
-    facet_row="feature_name",
-    x_axis=dict(matches=None),
+    x_col="vocab_size",
+    y_col="value",
+    symbol="norm",
+    color="feature_name",
+    facet_col="delta",
+    facet_row="metric",
+    y_axis=dict(matches=None),
     traces_settings=dict(marker_size=10),
-    height=1000,
+    height=2000,
 )
+fig.for_each_xaxis(lambda xaxis: xaxis.update(showticklabels=True))
+save_figure_as(fig, "chord_tone_profiles_evaluation", height=2300, width=1200)
+fig
 ```
