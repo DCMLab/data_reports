@@ -8,33 +8,36 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.0
 #   kernelspec:
-#     display_name: revamp
+#     display_name: pydelta
 #     language: python
-#     name: revamp
+#     name: pydelta
 # ---
 
 # %% [markdown]
 # # Chord Profiles
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
+import math
+
 # %load_ext autoreload
 # %autoreload 2
 import os
-from typing import Tuple, Union
+import re
+from collections import defaultdict
+from typing import Dict, Iterable, NamedTuple, Optional
+from zipfile import ZipFile
 
+import delta
 import dimcat as dc
 import ms3
-import numpy as np
 import pandas as pd
 from dimcat import resources
-from dimcat.plotting import make_bar_plot, write_image
+from dimcat.plotting import make_scatter_plot, write_image
 from git import Repo
+from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
-from scipy.cluster.hierarchy import dendrogram  # , linkage
-from sklearn.cluster import AgglomerativeClustering
 
 import utils
-from dendrograms import Dendrogram, TableDocumentDescriber
 
 plt.rcParams["figure.dpi"] = 300
 
@@ -78,229 +81,258 @@ chord_slices = utils.get_sliced_notes(D)
 chord_slices.head(5)
 
 # %% [markdown]
-# ## Document frequencies of chord features
+# ## pydelta Corpus objects
 
 # %%
-utils.compare_corpus_frequencies(
-    chord_slices,
-    [
-        "chord_reduced_and_mode",
-        ["effective_localkey_is_minor", "numeral"],
-        "root",
-        "root_fifths_over_global_tonic",
-    ],
+describer = delta.TsvDocumentDescriber(D.get_metadata().reset_index())
+
+
+def make_pydelta_corpus(
+    matrix: pd.DataFrame,
+    info: str = "chords",
+    absolute: bool = True,
+) -> delta.Corpus:
+    metadata = delta.Metadata(
+        features=info,
+        ordered=False,
+        words=None,
+        corpus="Distant Listening Corpus",
+        complete=True,
+        frequencies=not absolute,
+    )
+    corpus = delta.Corpus(matrix, document_describer=describer, metadata=metadata)
+    corpus.index = utils.merge_index_levels(corpus.index)
+    return corpus
+
+
+# %%
+features = {
+    "chord_reduced": (
+        ["chord_reduced_and_mode", "fifths_over_local_tonic"],
+        "reduced chords",
+    ),
+    "numerals": (
+        ["effective_localkey_is_minor", "numeral", "fifths_over_local_tonic"],
+        "effective numerals",
+    ),
+    "roots_local": (
+        ["root", "fifths_over_local_tonic"],
+        "root intervals over local tonic",
+    ),
+    "roots_global": (
+        ["root_fifths_over_global_tonic", "fifths_over_local_tonic"],
+        "root intervals over global tonic",
+    ),
+}
+
+data = {}
+
+
+class DataTuple(NamedTuple):
+    corpus: delta.Corpus
+    groupwise: delta.Corpus = None
+    prevalence_matrix: Optional[resources.PrevalenceMatrix] = None
+
+
+analyzer_config = dc.DimcatConfig(
+    "PrevalenceAnalyzer",
+    index=["corpus", "piece"],
 )
+
+for feature_name, (feature_columns, info) in features.items():
+    print(f"Computing prevalence matrix and pydelta corpus for {info}")
+    analyzer_config.update(columns=feature_columns)
+    prevalence_matrix = chord_slices.apply_step(analyzer_config)
+    corpus = make_pydelta_corpus(prevalence_matrix.relative, info=info, absolute=False)
+    groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
+        column_levels=feature_columns[:-1]
+    )
+    groupwise = make_pydelta_corpus(
+        groupwise_prevalence.relative, info=f"groupwise {info}", absolute=False
+    )
+    data[feature_name] = DataTuple(corpus, groupwise, prevalence_matrix)
 
 # %% [markdown]
-# ## Create chord-tone profiles for multiple chord features
-#
-# Tokens are `(feature, ..., chord_tone)` tuples.
+# ## Compute deltas
 
 # %%
-chord_reduced: resources.PrevalenceMatrix = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["chord_reduced_and_mode", "fifths_over_local_tonic"],
-        index=["corpus", "piece"],
+data["numerals"].corpus.types().sum()
+
+# %%
+data["numerals"].prevalence_matrix.n_types
+
+# %%
+delta.functions.deltas.keys()
+
+# %%
+selected_deltas = {
+    name: func
+    for name, func in delta.functions.deltas.items()
+    if name in ["cosine", "cosine-z_score", "burrows2"]
+}
+
+# %%
+
+# n_vocab_sizes = 5
+parallel_processor = Parallel(-1, prefer="threads")
+
+
+def make_data_tuple(func, *corpus):
+    return DataTuple(*(func(c) for c in corpus))
+
+
+def apply_deltas(*corpus):
+    results = parallel_processor(
+        delayed(make_data_tuple)(func, *corpus) for func in selected_deltas.values()
     )
-)
-print(f"Shape: {chord_reduced.shape}")
+    return dict(zip(selected_deltas.keys(), results))
 
-# %%
-numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["effective_localkey_is_minor", "numeral", "fifths_over_local_tonic"],
-        index=["corpus", "piece"],
+
+def compute_deltas(
+    data: Dict[str, DataTuple],
+    vocab_sizes: int | Iterable[int] = 5,
+) -> Dict[str, Dict[int, Dict[str, DataTuple]]]:
+    distance_matrices = defaultdict(dict)
+    for feature_name, (corpus, groupwise, prevalence_matrix) in data.items():
+        if isinstance(vocab_sizes, int):
+            vocabulary_size = prevalence_matrix.n_types
+            stride = math.ceil(vocabulary_size / vocab_sizes)
+            vocab_sizes = [i * stride for i in range(1, vocab_sizes + 1)]
+        for vocab_size in vocab_sizes:
+            print(f"Computing deltas for {feature_name} (vocab size {vocab_size})")
+            corpus_top_n = corpus.top_n(vocab_size)
+            groupwise_top_n = groupwise.top_n(vocab_size)
+            # small = delta.Corpus(
+            #             corpus=corpus_top_n.iloc[:10],
+            #             document_describer=corpus_top_n.document_describer,
+            #             metadata=corpus_top_n.metadata,
+            #             complete=False,
+            #             frequencies=True)
+            # small_groupwise = delta.Corpus(
+            #             corpus=groupwise_top_n.iloc[:10],
+            #             document_describer=groupwise_top_n.document_describer,
+            #             metadata=groupwise_top_n.metadata,
+            #             complete=False,
+            #             frequencies=True)
+            n_types = corpus_top_n.shape[
+                1
+            ]  # may be difference from vocab_size for the last iteration
+            distance_matrices[feature_name][n_types] = apply_deltas(
+                corpus_top_n, groupwise_top_n
+            )
+    return distance_matrices
+
+
+def store_distance_matrices(distance_matrices, filepath):
+    for feature_name, feature_data in distance_matrices.items():
+        for vocab_size, delta_data in feature_data.items():
+            for delta_name, delta_results in delta_data.items():
+                print(".", end="")
+                name = f"{feature_name}_{vocab_size}_{delta_name}"
+                delta_results.corpus.save_to_zip(name + ".tsv", filepath)
+                delta_results.groupwise.save_to_zip(name + "_groupwise.tsv", filepath)
+
+
+def load_distance_matrices(filepath):
+    distance_matrices = defaultdict(
+        lambda: defaultdict(lambda: defaultdict(lambda: [None, None]))
     )
-)
-print(f"Shape: {numerals.shape}")
-utils.replace_boolean_column_level_with_mode(numerals)
-
-# %%
-roots: resources.PrevalenceMatrix = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["root", "fifths_over_local_tonic"],
-        index=["corpus", "piece"],
-    )
-)
-print(f"Shape: {roots.shape}")
-
-# %%
-root_fifths_over_global_tonic = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["root_fifths_over_global_tonic", "fifths_over_local_tonic"],
-        index=["corpus", "piece"],
-    )
-)
-print(f"Shape: {root_fifths_over_global_tonic.shape}")
-
-
-# %%
-def get_lower_triangle_values(data: Union[pd.DataFrame, np.array], offset: int = 0):
-    is_dataframe = isinstance(data, pd.DataFrame)
-    if is_dataframe:
-        matrix = data.values
-    else:
-        matrix = data
-    i, j = np.tril_indices_from(matrix, offset)
-    values = matrix[i, j]
-    if not is_dataframe:
-        return values
-    try:
-        level_0 = utils.merge_index_levels(data.index[i])
-        level_1 = utils.merge_index_levels(data.columns[j])
-        index = pd.MultiIndex.from_arrays([level_0, level_1])
-    except Exception:
-        print(data.index[i], data.columns[j])
-    return pd.Series(values, index=index)
-
-
-# %%
-cos_dist_chord_tones = utils.make_cosine_distances(
-    chord_reduced.relative, standardize=False, flat_index=False
-)
-# np.fill_diagonal(cos_dist_chord_tones.values, np.nan)
-cos_dist_chord_tones.iloc[:10, :10]
-
-# %%
-ABC = cos_dist_chord_tones.loc(axis=1)[["ABC"]]
-ABC.shape
-
-
-# %%
-def cross_corpus_distances(
-    group_of_columns: pd.DataFrame, group_name: str, group_level: int | str = 0
-):
-    rows = []
-    for group, group_distances in group_of_columns.groupby(level=group_level):
-        if group == group_name:
-            i, j = np.tril_indices_from(group_distances, -1)
-            distances = group_distances.values[i, j]
-        else:
-            distances = group_distances.values.flatten()
-        mean_distance = np.mean(distances)
-        sem = np.std(distances) / np.sqrt(distances.shape[0] - 1)
-        row = pd.Series(
-            {
-                "corpus": utils.get_corpus_display_name(group),
-                "mean_distance": mean_distance,
-                "sem": sem,
+    print(f"Loading {filepath}", end="")
+    with ZipFile(filepath, "r") as zip_handler:
+        for file in zip_handler.namelist():
+            print(".", end="")
+            match = re.match(r"(.+)_(\d+)_(.+?)(_groupwise)?\.tsv", file)
+            if not match:
+                continue
+            with zip_handler.open(file) as f:
+                matrix = pd.read_csv(f, sep="\t", index_col=0)
+            metadata = delta.Metadata.from_zip_file(file, zip_handler)
+            dm = delta.DistanceMatrix(
+                matrix, metadata=metadata, document_describer=describer
+            )
+            feature_name, vocab_size, delta_name, groupwise = match.groups()
+            position = int(bool(groupwise))
+            distance_matrices[feature_name][int(vocab_size)][delta_name][position] = dm
+    result = {}
+    for feature_name, feature_data in distance_matrices.items():
+        feature_results = {}
+        for vocab_size, delta_data in feature_data.items():
+            feature_results[vocab_size] = {
+                delta_name: DataTuple(*delta_data)
+                for delta_name, delta_data in delta_data.items()
             }
-        )
-        rows.append(row)
-    return pd.DataFrame(rows)
+        result[feature_name] = feature_results
+    return result
 
 
-ABC_corpus_distances = cross_corpus_distances(ABC, "ABC")
-make_bar_plot(
-    ABC_corpus_distances.sort_values("mean_distance"),
-    x_col="corpus",
-    y_col="mean_distance",
-    error_y="sem",
-    title="Mean cosine distances between pieces of all corpora and ABC",
+def get_distance_matrices(
+    data: Dict[str, DataTuple],
+    vocab_sizes: int | Iterable[int] = 5,
+    name: Optional[str] = "chord_tone_profile_deltas",
+    basepath: Optional[str] = None,
+):
+    filepath = None
+    if name:
+        if basepath is None:
+            basepath = dc.get_setting("default_basepath")
+        basepath = utils.resolve_dir(basepath)
+        name = "chord_tone_profile_deltas"
+        if isinstance(vocab_sizes, int):
+            zip_file = f"{name}_{vocab_sizes}.zip"
+        else:
+            zip_file = f"{name}_{'-'.join(map(str, vocab_sizes))}.zip"
+        filepath = os.path.join(basepath, zip_file)
+        if os.path.isfile(filepath):
+            return load_distance_matrices(filepath)
+    distance_matrices = compute_deltas(data, vocab_sizes)
+    if filepath:
+        print(f"Storing distance matrices to {filepath}", end="")
+        store_distance_matrices(distance_matrices, filepath)
+    return distance_matrices
+
+
+distance_matrices = get_distance_matrices(data, vocab_sizes=(10, 100, 1000))
+
+# %%
+distance_metrics_rows = []
+for feature_name, feature_data in distance_matrices.items():
+    for vocab_size, delta_data in feature_data.items():
+        for delta_name, delta_results in delta_data.items():
+            for norm, distance_matrix in delta_results._asdict().items():
+                if distance_matrix is None:
+                    continue
+                print(".", end="")
+                row = {
+                    "feature_name": feature_name,
+                    "vocab_size": vocab_size,
+                    "delta": delta_name,
+                    "norm": norm,
+                }
+                row.update(distance_matrix.evaluate())
+                distance_metrics_rows.append(row)
+
+# %%
+distance_evaluations = pd.DataFrame(distance_metrics_rows)
+distance_evaluations["n_types"] = distance_evaluations.vocab_size.where(
+    distance_evaluations.vocab_size <= 100, 1000
 )
-
-# %%
-corpus_numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["effective_localkey_is_minor", "numeral"],
-        index="corpus",
-    )
+distance_evaluations = distance_evaluations.melt(
+    id_vars=["feature_name", "vocab_size", "delta", "norm", "n_types"],
+    value_vars=["F-Ratio", "Fisher's LD", "Simple Score"],
+    var_name="metric",
 )
-utils.replace_boolean_column_level_with_mode(corpus_numerals)
-corpus_numerals.document_frequencies()
+distance_evaluations
 
 # %%
-culled_chord_tones = chord_reduced.get_culled_matrix(1 / 3)
-culled_chord_tones.shape
-
-# %%
-utils.plot_cosine_distances(culled_chord_tones.relative, standardize=True)
-
-
-# %%
-def linkage_matrix(model):
-    # Create linkage matrix and then plot the dendrogram
-
-    # create the counts of samples under each node
-    counts = np.zeros(model.children_.shape[0])
-    n_samples = len(model.labels_)
-    for i, merge in enumerate(model.children_):
-        current_count = 0
-        for child_idx in merge:
-            if child_idx < n_samples:
-                current_count += 1  # leaf node
-            else:
-                current_count += counts[child_idx - n_samples]
-        counts[i] = current_count
-
-    linkage_matrix = np.column_stack(
-        [model.children_, model.distances_, counts]
-    ).astype(float)
-    return linkage_matrix
-
-
-def plot_dendrogram(model, **kwargs):
-    lm = linkage_matrix(model)
-    dendrogram(lm, **kwargs)
-
-
-cos_distance_matrix = utils.make_cosine_distances(culled_chord_tones.relative)
-cos_distance_matrix
-
-# %%
-labels = cos_distance_matrix.index.to_list()
-ac = AgglomerativeClustering(
-    metric="precomputed", linkage="complete", distance_threshold=0, n_clusters=None
+make_scatter_plot(
+    distance_evaluations,
+    x_col="value",
+    y_col="delta",
+    symbol="n_types",
+    color="norm",
+    facet_col="metric",
+    facet_row="feature_name",
+    x_axis=dict(matches=None),
+    traces_settings=dict(marker_size=10),
+    height=1000,
 )
-ac.fit_predict(cos_distance_matrix)
-plot_dendrogram(ac, truncate_mode="level", p=0)
-plt.title("Hierarchical Clustering using maximum cosine distances")
-# plt.savefig('aggl_mvt_max_cos.png', bbox_inches='tight')
-
-# %% [raw]
-# sliced_notes.store_resource(
-#     basepath="~/dimcat_data",
-#     name="sliced_notes"
-# )
-
-# %% [raw]
-# restored = dc.deserialize_json_file("/home/laser/dimcat_data/sliced_notes.resource.json")
-# restored.df
-
-# %%
-ac.fit_predict(cos_distance_matrix)
-lm = linkage_matrix(ac)  # probably want to use this to have better control
-# lm = linkage(cos_distance_matrix)
-describer = TableDocumentDescriber(D.get_metadata().reset_index())
-plt.figure(figsize=(10, 60))
-ddg = Dendrogram(lm, describer, labels)
-
-
-# %%
-def find_index_of_r1_r2(C: pd.Series) -> Tuple[int, int]:
-    """Takes a Series representing C = 1 / (frequency(rank) - rank) and returns the indices of r1 and r2, left and
-    right of the discontinuity."""
-    r1_i = C.idxmax()
-    r2_i = C.lt(0).idxmax()
-    assert (
-        r2_i == r1_i + 1
-    ), f"Expected r1 and r2 to be one apart, but got r1_i = {r1_i}, r2_i = {r2_i}"
-    return r1_i, r2_i
-
-
-def compute_h(df) -> int | float:
-    """Computes the h-point of a DataFrame with columns "rank" and "frequency" and returns the rank of the h-point.
-    Returns a rank integer if a value with r = f(r) exists, otherwise rank float.
-    """
-    if (mask := df.frequency.eq(df["rank"])).any():
-        h_ix = df.index[mask][0]
-        return df.at[h_ix, "rank"]
-    C = 1 / (df.frequency - df["rank"])
-    r1_i, r2_i = find_index_of_r1_r2(C)
-    (r1, f_r1), (r2, f_r2) = df.loc[[r1_i, r2_i], ["rank", "frequency"]].values
-    return (f_r1 * r2 - f_r2 * r1) / (r2 - r1 + f_r1 - f_r2)
