@@ -107,21 +107,44 @@ def make_pydelta_corpus(
 
 # %%
 features = {
-    "chord_reduced": (
-        ["chord_reduced_and_mode", "fifths_over_local_tonic"],
-        "reduced chords",
+    "global_root": (  # baseline globalkey-roots without any note information
+        ["root_fifths_over_global_tonic", "intervals_over_root"],
+        "chord symbols (root per globalkey + intervals)",
     ),
-    "numerals": (
-        ["effective_localkey_is_minor", "numeral", "fifths_over_local_tonic"],
-        "effective numerals",
+    "local_root": (  # baseline localkey-roots without any note information
+        ["root", "intervals_over_root"],
+        "chord symbols (root per localkey + intervals)",
     ),
-    "roots_local": (
-        ["root", "fifths_over_local_tonic"],
-        "root intervals over local tonic",
+    "localized_root": (  # baseline root over tonicized key without any note information
+        ["root_per_tonicization", "intervals_over_root"],
+        "chord symbols (root per tonicization + intervals)",
     ),
-    "roots_global": (
-        ["root_fifths_over_global_tonic", "fifths_over_local_tonic"],
-        "root intervals over global tonic",
+    "globalkey_profiles": (  # baseline notes - globalkey
+        ["fifths_over_global_tonic"],
+        "Tone profiles transposed to C (major or minor)",
+    ),
+    "localkey_profiles": (  # baseline notes - localkey
+        ["fifths_over_local_tonic"],
+        "Localkey tone profiles transposed to C (major or minor)",
+    ),
+    "localized_profiles": (  # baseline notes - tonicized key
+        ["fifths_over_tonicization"],
+        "Tonicization tone profiles transposed to C (major or minor)",
+    ),
+    "global_root_ct": (
+        ["root_fifths_over_global_tonic", "fifths_over_root"],
+        "Chord-tone profiles over root-per-globalkey",
+    ),
+    "local_root_ct": (
+        ["root", "fifths_over_root"],
+        "Chord-tone profiles over root-per-localkey",
+    ),
+    "tonicization_root_ct": (
+        [
+            "root_per_tonicization",
+            "fifths_over_root",
+        ],
+        "Chord-tone profiles over root-per-tonicization",
     ),
 }
 
@@ -144,12 +167,15 @@ for feature_name, (feature_columns, info) in features.items():
     analyzer_config.update(columns=feature_columns)
     prevalence_matrix = chord_slices.apply_step(analyzer_config)
     corpus = make_pydelta_corpus(prevalence_matrix.relative, info=info, absolute=False)
-    groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
-        column_levels=feature_columns[:-1]
-    )
-    groupwise = make_pydelta_corpus(
-        groupwise_prevalence.relative, info=f"groupwise {info}", absolute=False
-    )
+    if len(features) > 1:
+        groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
+            column_levels=feature_columns[:-1]
+        )
+        groupwise = make_pydelta_corpus(
+            groupwise_prevalence.relative, info=f"groupwise {info}", absolute=False
+        )
+    else:
+        groupwise = None
     data[feature_name] = DataTuple(corpus, groupwise, prevalence_matrix)
 
 # %% [markdown]
@@ -243,7 +269,10 @@ def load_distance_matrices(filepath):
                 continue
             with zip_handler.open(file) as f:
                 matrix = pd.read_csv(f, sep="\t", index_col=0)
-            metadata = delta.Metadata.from_zip_file(file, zip_handler)
+            try:
+                metadata = delta.Metadata.from_zip_file(file, zip_handler)
+            except KeyError:
+                metadata = None
             dm = delta.DistanceMatrix(
                 matrix, metadata=metadata, document_describer=describer
             )

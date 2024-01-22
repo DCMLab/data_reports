@@ -2832,6 +2832,60 @@ def make_chord_slices(
     return chord_slices
 
 
+def make_chord_slices(
+    sliced_notes: resources.Notes,
+    slice_info: resources.HarmonyLabels,
+):
+    """Merge the harmony labels on the note events such that each note can be related to the respective label."""
+    slice_info = slice_info.droplevel(-1)
+    concatenate_this = [
+        # adds columns to harmony labels before joining on the notes
+        slice_info,
+        (
+            globalkey_tpc := ms3.transform(
+                slice_info.globalkey,
+                ms3.name2fifths,
+            )
+        ).rename("globalkey_tpc"),
+        (
+            relativeroot_tpc := ms3.transform(
+                slice_info[["relativeroot_resolved", "localkey_is_minor"]],
+                ms3.roman_numeral2fifths,
+            ).fillna(0)
+        ).rename("relativeroot_tpc"),
+        (slice_info.root - globalkey_tpc).rename("root_per_globalkey"),
+        (slice_info.root - relativeroot_tpc).rename("root_per_tonicization"),
+    ]
+    slice_info = pd.concat(concatenate_this, axis=1)
+    # do the join
+    added_columns = [
+        col for col in slice_info.columns if col not in sliced_notes.columns
+    ]
+    slice_info = join_df_on_index(
+        slice_info[added_columns], sliced_notes.index, how="right"
+    )
+    # merge harmony labels and notes allowing for notes to be transposed to C
+    chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
+    transposed_notes = transpose_notes_to_c(chord_slices)
+    # add more columns expressing notes as varies types of fifths profiles
+    concatenate_this = [
+        chord_slices,
+        transposed_notes,
+        (chord_slices.tpc - chord_slices.globalkey_tpc).rename(
+            "fifths_over_global_tonic"
+        ),
+        (
+            transposed_notes.fifths_over_local_tonic - chord_slices.relativeroot_tpc
+        ).rename("fifths_over_tonicization"),
+        (transposed_notes.fifths_over_local_tonic - chord_slices.root).rename(
+            "fifths_over_root"
+        ),
+    ]
+    # return concatenate_this
+    chord_slices = pd.concat(concatenate_this, axis=1)
+    return chord_slices
+
+
 def get_sliced_notes(
     D: Optional[Dataset] = None,
     basepath: Optional[str] = None,
