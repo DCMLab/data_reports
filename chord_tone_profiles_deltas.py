@@ -15,12 +15,10 @@
 
 # %% [markdown]
 # # Chord Profiles
-#
-#
-#
-#
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
+# %load_ext autoreload
+# %autoreload 2
 
 import math
 import os
@@ -195,8 +193,7 @@ def make_features(
     return data
 
 
-if not EVALUATIONS_ONLY:
-    data = make_features(chord_slices, features)
+data = None if EVALUATIONS_ONLY else make_features(chord_slices, features)
 
 
 # %%
@@ -266,11 +263,16 @@ def compute_deltas(
     data: Dict[str, DataTuple],
     vocab_sizes: int | Iterable[Optional[int | float]] = 5,
     test: bool = False,
+    first_n: Optional[int] = None,
 ) -> Dict[str, Dict[str, List[DataTuple]]]:
     distance_matrices = defaultdict(
         lambda: defaultdict(list)
     )  # feature -> delta_name -> [DataTuple]
-    for feature_name, (corpus, groupwise, prevalence_matrix) in data.items():
+    for i, (feature_name, (corpus, groupwise, prevalence_matrix)) in enumerate(
+        data.items()
+    ):
+        if first_n and not i < first_n:
+            break
         print(f"Computing deltas for {feature_name}", end=": ")
         vocabulary_size = prevalence_matrix.n_types
         if isinstance(vocab_sizes, int):
@@ -343,22 +345,26 @@ def store_distance_matrices(
     for feature_name, feature_data in distance_matrices.items():
         for delta_name, delta_results in feature_data.items():
             for data_tuple in delta_results:  # one per vocab_size
-                print(".", end="")
                 vocab_size = data_tuple.corpus.metadata.top_n
                 name = f"{feature_name}_{vocab_size}_{delta_name}"
                 data_tuple.corpus.save_to_zip(name + ".tsv", filepath)
                 if data_tuple.groupwise is not None:
                     data_tuple.groupwise.save_to_zip(name + "_groupwise.tsv", filepath)
+                print(".", end="")
 
 
-def load_distance_matrices(filepath):
+def load_distance_matrices(
+    filepath,
+    first_n: Optional[int] = None,
+):
     distance_matrices = defaultdict(
         lambda: defaultdict(lambda: defaultdict(lambda: [None, None]))
     )
     print(f"Loading {filepath}", end="")
     with ZipFile(filepath, "r") as zip_handler:
-        for file in zip_handler.namelist():
-            print(".", end="")
+        for i, file in enumerate(zip_handler.namelist()):
+            if first_n and not i < first_n:
+                break
             match = re.match(r"(.+)_(\d+)_(.+?)(_groupwise)?\.tsv$", file)
             if not match:
                 continue
@@ -374,6 +380,7 @@ def load_distance_matrices(filepath):
             feature_name, vocab_size, delta_name, groupwise = match.groups()
             position = int(bool(groupwise))
             distance_matrices[feature_name][delta_name][int(vocab_size)][position] = dm
+            print(".", end="")
     result = {}
     for feature_name, feature_data in distance_matrices.items():
         feature_results = {}
@@ -391,6 +398,7 @@ def get_distance_matrices(
     vocab_sizes: int | Iterable[int] = 5,
     name: Optional[str] = "chord_tone_profile_deltas",
     basepath: Optional[str] = None,
+    first_n: Optional[int] = None,
 ) -> Dict[str, Dict[str, List[DataTuple]]]:
     filepath = None
     if name:
@@ -404,7 +412,7 @@ def get_distance_matrices(
             zip_file = f"{name}_{'-'.join(map(str, vocab_sizes))}.zip"
         filepath = os.path.join(basepath, zip_file)
         if os.path.isfile(filepath):
-            return load_distance_matrices(filepath)
+            return load_distance_matrices(filepath, first_n=first_n)
     assert data is not None, "data is None"
     distance_matrices = compute_deltas(data, vocab_sizes)
     if filepath:
@@ -417,21 +425,20 @@ distance_matrices = get_distance_matrices(data=data, vocab_sizes=[4, 100, 2 / 3,
 
 
 # %%
-
-
 def compute_discriminant_metrics(
     distance_matrices, cache_name: str = "chord_tone_profiles_evaluation"
 ) -> pd.DataFrame:
+    print("Computing discriminant metrics")
     distance_metrics_rows = []
     try:
         for feature_name, feature_data in distance_matrices.items():
             print(feature_name, end=": ")
             for delta_name, delta_data in feature_data.items():
+                print(delta_name, end="")
                 for delta_results in delta_data:
                     for norm, distance_matrix in delta_results._asdict().items():
                         if distance_matrix is None:
                             continue
-                        print(".", end="")
                         row = dict(
                             distance_matrix.metadata,
                             feature_name=feature_name,
@@ -444,10 +451,12 @@ def compute_discriminant_metrics(
                                 dict(row, metric=metric, value=value)
                             )
                         clustering = delta.Clustering(distance_matrix)
-                        for metric, value in clustering.evaluate().items():
+                        fclustering = clustering.fclustering()
+                        for metric, value in fclustering.evaluate().items():
                             distance_metrics_rows.append(
                                 dict(row, metric=metric, value=value)
                             )
+                        print(".", end="")
             print()
     except KeyboardInterrupt:
         return pd.DataFrame(distance_metrics_rows)
@@ -478,7 +487,7 @@ def get_discriminant_metrics(
     return result
 
 
-distance_evaluations = load_discriminant_metrics()
+distance_evaluations = get_discriminant_metrics(distance_matrices)
 distance_evaluations
 
 # %%
