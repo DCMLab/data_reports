@@ -32,6 +32,7 @@ import dimcat as dc
 import ms3
 import pandas as pd
 from dimcat import resources
+from dimcat.data.resources.utils import join_df_on_index
 from dimcat.plotting import make_scatter_plot, write_image
 from git import Repo
 from joblib import Parallel, delayed
@@ -52,7 +53,7 @@ plt.rcParams["figure.dpi"] = 300
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
-EVALUATIONS_ONLY = False
+EVALUATIONS_ONLY = True
 
 # %%
 RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
@@ -461,6 +462,7 @@ def compute_discriminant_metrics(
     except KeyboardInterrupt:
         return pd.DataFrame(distance_metrics_rows)
     distance_evaluations = pd.DataFrame(distance_metrics_rows)
+    distance_evaluations.index.rename("i", inplace=True)
     distance_evaluations.to_csv(
         make_output_path(cache_name, "tsv"), sep="\t", index=False
     )
@@ -484,6 +486,7 @@ def get_discriminant_metrics(
     result.loc[:, "features"] = result.features.where(
         ~result.features.str.contains("groupwise"), result.features.str[10:]
     )
+    result.index.rename("i", inplace=True)
     return result
 
 
@@ -516,16 +519,49 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
 save_figure_as(fig, "chord_tone_profiles_evaluation", height=2500, width=1300)
 fig
 
-# %%
-for feature_name, feature_data in distance_matrices.items():
-    for delta_name, delta_data in feature_data.items():
-        corpus = delta_data[0].corpus
-        name = corpus.metadata.features
-        print(f"{feature_name:<22}{name}")
-        break
 
 # %%
-distance_matrices["root_per_globalkey"].keys()
+def get_n_best(distance_evaluations, n=10):
+    smaller_is_better = ["Entropy", "Cluster Errors"]  # noqa: F841
+    nlargest = distance_evaluations.groupby("metric").value.nlargest(n)
+    best_largest = join_df_on_index(distance_evaluations, nlargest.index).query(
+        "metric not in @smaller_is_better"
+    )
+    nsmallest = distance_evaluations.groupby("metric").value.nsmallest(n)
+    best_smallest = join_df_on_index(distance_evaluations, nsmallest.index).query(
+        "metric in @smaller_is_better"
+    )
+    return pd.concat([best_largest, best_smallest])
+
+
+n_best = get_n_best(distance_evaluations)
+n_best
+
+# %%
+n_best[["feature_name", "norm", "features"]].value_counts()
+
+# %%
+close_inspection_feature_names = [  # both corpus- and groupwise-normalized
+    "local_root_ct",
+    "tonicization_root_ct",
+    "root_per_localkey",
+    "root_per_globalkey",
+]
+
+# %%
+n_best[n_best.feature_name.isin(close_inspection_feature_names)].groupby(
+    "feature_name"
+).delta.value_counts()
+
+# %%
+close_inspection_deltas = [
+    "manhattan",
+    "manhattan-z_score",
+    "cosine-z_score",
+    "sqeuclidean-z_score",
+]
+
+# %%
 
 # %%
 dm = distance_matrices["root_per_globalkey"]["sqeuclidean-z_score"][-1].corpus
