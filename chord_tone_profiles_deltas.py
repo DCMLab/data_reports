@@ -15,16 +15,18 @@
 
 # %% [markdown]
 # # Chord Profiles
+#
+#
+#
+#
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-import math
 
-# %load_ext autoreload
-# %autoreload 2
+import math
 import os
 import re
 from collections import defaultdict
-from typing import Dict, Iterable, NamedTuple, Optional
+from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 from zipfile import ZipFile
 
 import delta
@@ -36,13 +38,23 @@ from dimcat.plotting import make_scatter_plot, write_image
 from git import Repo
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
+from sklearn.metrics import confusion_matrix
 
 import utils
+
+
+class DataTuple(NamedTuple):
+    corpus: delta.Corpus
+    groupwise: delta.Corpus = None
+    prevalence_matrix: Optional[resources.PrevalenceMatrix] = None
+
 
 plt.rcParams["figure.dpi"] = 300
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
+
+EVALUATIONS_ONLY = False
 
 # %%
 RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
@@ -77,8 +89,9 @@ D = dc.Dataset.from_package(package_path)
 D
 
 # %%
-chord_slices = utils.get_sliced_notes(D)
-chord_slices.head(5)
+if not EVALUATIONS_ONLY:
+    chord_slices = utils.get_sliced_notes(D)
+    chord_slices.head(5)
 
 # %% [markdown]
 # ## pydelta Corpus objects
@@ -88,9 +101,7 @@ describer = delta.TsvDocumentDescriber(D.get_metadata().reset_index())
 
 
 def make_pydelta_corpus(
-    matrix: pd.DataFrame,
-    info: str = "chords",
-    absolute: bool = True,
+    matrix: pd.DataFrame, info: str = "chords", absolute: bool = True, **kwargs
 ) -> delta.Corpus:
     metadata = delta.Metadata(
         features=info,
@@ -99,6 +110,7 @@ def make_pydelta_corpus(
         corpus="Distant Listening Corpus",
         complete=True,
         frequencies=not absolute,
+        **kwargs,
     )
     corpus = delta.Corpus(matrix, document_describer=describer, metadata=metadata)
     corpus.index = utils.merge_index_levels(corpus.index)
@@ -107,54 +119,46 @@ def make_pydelta_corpus(
 
 # %%
 features = {
-    "global_root": (  # baseline globalkey-roots without any note information
+    "root_per_globalkey": (  # baseline globalkey-roots without any note information
         ["root_per_globalkey", "intervals_over_root"],
         "chord symbols (root per globalkey + intervals)",
     ),
-    "local_root": (  # baseline localkey-roots without any note information
+    "root_per_localkey": (  # baseline localkey-roots without any note information
         ["root", "intervals_over_root"],
         "chord symbols (root per localkey + intervals)",
     ),
-    "localized_root": (  # baseline root over tonicized key without any note information
+    "root_per_tonicization": (  # baseline root over tonicized key without any note information
         ["root_per_tonicization", "intervals_over_root"],
         "chord symbols (root per tonicization + intervals)",
     ),
     "globalkey_profiles": (  # baseline notes - globalkey
         ["fifths_over_global_tonic"],
-        "Tone profiles transposed to C (major or minor)",
+        "tone profiles as per global key",
     ),
     "localkey_profiles": (  # baseline notes - localkey
         ["fifths_over_local_tonic"],
-        "Localkey tone profiles transposed to C (major or minor)",
+        "tone profiles as per local key",
     ),
-    "localized_profiles": (  # baseline notes - tonicized key
+    "tonicization_profiles": (  # baseline notes - tonicized key
         ["fifths_over_tonicization"],
-        "Tonicization tone profiles transposed to C (major or minor)",
+        "tone profiles as per tonicized key",
     ),
     "global_root_ct": (
         ["root_per_globalkey", "fifths_over_root"],
-        "Chord-tone profiles over root-per-globalkey",
+        "chord-tone profiles over root-per-globalkey",
     ),
     "local_root_ct": (
         ["root", "fifths_over_root"],
-        "Chord-tone profiles over root-per-localkey",
+        "chord-tone profiles over root-per-localkey",
     ),
     "tonicization_root_ct": (
         [
             "root_per_tonicization",
             "fifths_over_root",
         ],
-        "Chord-tone profiles over root-per-tonicization",
+        "chord-tone profiles over root-per-tonicization",
     ),
 }
-
-data = {}
-
-
-class DataTuple(NamedTuple):
-    corpus: delta.Corpus
-    groupwise: delta.Corpus = None
-    prevalence_matrix: Optional[resources.PrevalenceMatrix] = None
 
 
 analyzer_config = dc.DimcatConfig(
@@ -162,26 +166,67 @@ analyzer_config = dc.DimcatConfig(
     index=["corpus", "piece"],
 )
 
-for feature_name, (feature_columns, info) in features.items():
-    print(f"Computing prevalence matrix and pydelta corpus for {info}")
-    analyzer_config.update(columns=feature_columns)
-    prevalence_matrix = chord_slices.apply_step(analyzer_config)
-    corpus = make_pydelta_corpus(prevalence_matrix.relative, info=info, absolute=False)
-    if prevalence_matrix.columns.nlevels > 1:
-        groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
-            column_levels=feature_columns[:-1]
+
+def make_features(
+    chord_slices: resources.DimcatResource,
+    features: Dict[str, Tuple[str | List[str], str]],
+) -> Dict[str, DataTuple]:
+    data = {}
+    for feature_name, (feature_columns, info) in features.items():
+        print(f"Computing prevalence matrix and pydelta corpus for {info}")
+        analyzer_config.update(columns=feature_columns)
+        prevalence_matrix = chord_slices.apply_step(analyzer_config)
+        corpus = make_pydelta_corpus(
+            prevalence_matrix.relative, info=info, absolute=False, norm="piecewise"
         )
-        groupwise = make_pydelta_corpus(
-            groupwise_prevalence.relative, info=f"groupwise {info}", absolute=False
-        )
-    else:
-        groupwise = None
-    data[feature_name] = DataTuple(corpus, groupwise, prevalence_matrix)
+        if prevalence_matrix.columns.nlevels > 1:
+            groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
+                column_levels=feature_columns[:-1]
+            )
+            groupwise = make_pydelta_corpus(
+                groupwise_prevalence.relative,
+                info=info,
+                absolute=False,
+                norm="groupwise",
+            )
+        else:
+            groupwise = None
+        data[feature_name] = DataTuple(corpus, groupwise, prevalence_matrix)
+    return data
+
+
+if not EVALUATIONS_ONLY:
+    data = make_features(chord_slices, features)
+
 
 # %%
-for feature_name, (corpus, groupwise, prevalence_matrix) in data.items():
-    print(f"{feature_name}: {prevalence_matrix.n_types}")
-    print(prevalence_matrix.type_prevalence.iloc[:15])
+def make_rankings(
+    data: Dict[str, DataTuple],
+    long_names: bool = False,
+) -> Dict[str, pd.DataFrame]:
+    rankings = {}
+    for feature_name, data_tuple in data.items():
+        type_prevalence = data_tuple.prevalence_matrix.type_prevalence()
+        document_frequency = data_tuple.prevalence_matrix.document_frequencies()
+        ranking = (
+            pd.concat([type_prevalence, document_frequency], axis=1)
+            .sort_values(["document_frequency", "type_prevalence"], ascending=False)
+            .reset_index()
+        )
+        name = data_tuple.corpus.metadata.features if long_names else feature_name
+        rankings[name] = ranking
+    result = pd.concat(rankings, axis=1)
+    result.index = (result.index + 1).rename("rank")
+    return result
+
+
+def show_rankings(data: Dict[str, DataTuple], top_n: int = 30):
+    rankings = make_rankings(data)
+    return rankings.iloc[:top_n]
+
+
+if not EVALUATIONS_ONLY:
+    show_rankings(data)
 
 # %% [markdown]
 # ## Compute deltas
@@ -221,7 +266,7 @@ def compute_deltas(
     data: Dict[str, DataTuple],
     vocab_sizes: int | Iterable[Optional[int | float]] = 5,
     test: bool = False,
-) -> Dict[str, Dict[int, Dict[str, DataTuple]]]:
+) -> Dict[str, Dict[str, List[DataTuple]]]:
     distance_matrices = defaultdict(
         lambda: defaultdict(list)
     )  # feature -> delta_name -> [DataTuple]
@@ -254,6 +299,10 @@ def compute_deltas(
                 corpus_top_n = corpus.top_n(top_n)
                 if groupwise_normalization:
                     groupwise_top_n = groupwise.top_n(top_n)
+            else:
+                corpus_top_n = corpus
+                if groupwise_normalization:
+                    groupwise_top_n = groupwise
             if test:
                 corpus_top_n = delta.Corpus(
                     corpus=corpus_top_n.sample(10),
@@ -285,10 +334,12 @@ def compute_deltas(
             for delta_name, delta_results in results.items():
                 distance_matrices[feature_name][delta_name].append(delta_results)
         print()
-    return distance_matrices
+    return {k: {kk: vv for kk, vv in v.items()} for k, v in distance_matrices.items()}
 
 
-def store_distance_matrices(distance_matrices, filepath):
+def store_distance_matrices(
+    distance_matrices: Dict[str, Dict[str, List[DataTuple]]], filepath: str
+):
     for feature_name, feature_data in distance_matrices.items():
         for delta_name, delta_results in feature_data.items():
             for data_tuple in delta_results:  # one per vocab_size
@@ -308,7 +359,7 @@ def load_distance_matrices(filepath):
     with ZipFile(filepath, "r") as zip_handler:
         for file in zip_handler.namelist():
             print(".", end="")
-            match = re.match(r"(.+)_(\d+)_(.+?)(_groupwise)?\.tsv", file)
+            match = re.match(r"(.+)_(\d+)_(.+?)(_groupwise)?\.tsv$", file)
             if not match:
                 continue
             with zip_handler.open(file) as f:
@@ -336,11 +387,11 @@ def load_distance_matrices(filepath):
 
 
 def get_distance_matrices(
-    data: Dict[str, DataTuple],
+    data: Optional[Dict[str, DataTuple]] = None,
     vocab_sizes: int | Iterable[int] = 5,
     name: Optional[str] = "chord_tone_profile_deltas",
     basepath: Optional[str] = None,
-):
+) -> Dict[str, Dict[str, List[DataTuple]]]:
     filepath = None
     if name:
         if basepath is None:
@@ -354,6 +405,7 @@ def get_distance_matrices(
         filepath = os.path.join(basepath, zip_file)
         if os.path.isfile(filepath):
             return load_distance_matrices(filepath)
+    assert data is not None, "data is None"
     distance_matrices = compute_deltas(data, vocab_sizes)
     if filepath:
         print(f"Storing distance matrices to {filepath}", end="")
@@ -361,29 +413,31 @@ def get_distance_matrices(
     return distance_matrices
 
 
-distance_matrices = get_distance_matrices(data, vocab_sizes=[4, 100, 2 / 3, None])
-
-# %%
-distance_matrices["roots_local"]["cosine"][0].corpus.metadata
+distance_matrices = get_distance_matrices(data=data, vocab_sizes=[4, 100, 2 / 3, None])
 
 
 # %%
-def get_distance_evaluations(distance_matrices):
+
+
+def compute_discriminant_metrics(
+    distance_matrices, cache_name: str = "chord_tone_profiles_evaluation"
+) -> pd.DataFrame:
     distance_metrics_rows = []
     try:
         for feature_name, feature_data in distance_matrices.items():
-            for vocab_size, delta_data in feature_data.items():
-                for delta_name, delta_results in delta_data.items():
+            print(feature_name, end=": ")
+            for delta_name, delta_data in feature_data.items():
+                for delta_results in delta_data:
                     for norm, distance_matrix in delta_results._asdict().items():
                         if distance_matrix is None:
                             continue
                         print(".", end="")
-                        row = {
-                            "feature_name": feature_name,
-                            "vocab_size": vocab_size,
-                            "delta": delta_name,
-                            "norm": norm,
-                        }
+                        row = dict(
+                            distance_matrix.metadata,
+                            feature_name=feature_name,
+                            delta=delta_name,
+                            norm=norm,
+                        )
                         # row.update(distance_matrix.metadata)
                         for metric, value in distance_matrix.evaluate().items():
                             distance_metrics_rows.append(
@@ -394,33 +448,128 @@ def get_distance_evaluations(distance_matrices):
                             distance_metrics_rows.append(
                                 dict(row, metric=metric, value=value)
                             )
+            print()
     except KeyboardInterrupt:
         return pd.DataFrame(distance_metrics_rows)
     distance_evaluations = pd.DataFrame(distance_metrics_rows)
+    distance_evaluations.to_csv(
+        make_output_path(cache_name, "tsv"), sep="\t", index=False
+    )
     return distance_evaluations
 
 
-distance_evaluations = get_distance_evaluations(distance_matrices)
-distance_evaluations
+def load_discriminant_metrics(
+    cache_name: str = "chord_tone_profiles_evaluation",
+) -> pd.DataFrame:
+    return pd.read_csv(make_output_path(cache_name, "tsv"), sep="\t")
 
-# %%
-# vocab_size = distance_evaluations.vocab_size.vocab_size(distance_evaluations.vocab_size <= 100, 1000)
-# distance_evaluations.feature_name += "<br>" + vocab_size.astype(str)
-# distance_evaluations
+
+def get_discriminant_metrics(
+    distance_matrices: Dict[str, Dict[str, List[DataTuple]]],
+    cache_name: str = "chord_tone_profiles_evaluation",
+):
+    try:
+        result = load_discriminant_metrics(cache_name)
+    except FileNotFoundError:
+        result = compute_discriminant_metrics(distance_matrices, cache_name=cache_name)
+    result.loc[:, "features"] = result.features.where(
+        ~result.features.str.contains("groupwise"), result.features.str[10:]
+    )
+    return result
+
+
+distance_evaluations = load_discriminant_metrics()
+distance_evaluations
 
 # %%
 fig = make_scatter_plot(
     distance_evaluations,
-    x_col="vocab_size",
+    x_col="top_n",
     y_col="value",
     symbol="norm",
-    color="feature_name",
-    facet_col="delta",
+    color="features",
+    facet_col="delta_title",
     facet_row="metric",
     y_axis=dict(matches=None),
     traces_settings=dict(marker_size=10),
+    layout=dict(legend=dict(y=-0.05, orientation="h")),
     height=2000,
 )
-fig.for_each_xaxis(lambda xaxis: xaxis.update(showticklabels=True))
-save_figure_as(fig, "chord_tone_profiles_evaluation", height=2300, width=1200)
+# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+# fig.update_yaxes(matches="y")
+for row_idx, row_figs in enumerate(fig._grid_ref):
+    for col_idx, col_fig in enumerate(row_figs):
+        fig.update_yaxes(
+            row=row_idx + 1,
+            col=col_idx + 1,
+            matches="y" + str(len(row_figs) * row_idx + 1),
+        )
+save_figure_as(fig, "chord_tone_profiles_evaluation", height=2500, width=1300)
 fig
+
+# %%
+for feature_name, feature_data in distance_matrices.items():
+    for delta_name, delta_data in feature_data.items():
+        corpus = delta_data[0].corpus
+        name = corpus.metadata.features
+        print(f"{feature_name:<22}{name}")
+        break
+
+# %%
+distance_matrices["root_per_globalkey"].keys()
+
+# %%
+dm = distance_matrices["root_per_globalkey"]["sqeuclidean-z_score"][-1].corpus
+clustering = delta.Clustering(dm)
+
+print(clustering.describe())
+
+# %%
+clustering.evaluate()
+
+# %%
+plt.figure(figsize=(10, 60))
+delta.Dendrogram(clustering)
+# store matplotlib as PDF
+plt.savefig(
+    make_output_path("global_root_sqeuclidean-z_score_dendrogram", "pdf"),
+    bbox_inches="tight",
+)
+
+# %%
+clustering_df = clustering.fclustering().data
+clustering_df.head()
+
+# %%
+clustering_df.GroupID.ne(clustering_df.Cluster).sum()
+
+# %%
+id2group = set(clustering_df[["GroupID", "Group"]].itertuples(index=False, name=None))
+assert (
+    len(id2group) == 39
+), "Distant Listening Corpus has 39 groups, each should have a unique GroupID"
+id2group = dict(sorted(id2group))
+id2group
+
+# %%
+clustering_df.value_counts()
+
+
+# %%
+def make_confusion_matrix(
+    clustering_df, y_true="GroupID", y_pred="Cluster", labels="Group"
+):
+    id2label = set(clustering_df[[y_true, labels]].itertuples(index=False, name=None))
+    id2label = dict(sorted(id2label))
+    matrix = confusion_matrix(
+        y_true=clustering_df[y_true], y_pred=clustering_df[y_pred]
+    )
+    df = pd.DataFrame(matrix)
+    df.index = df.index.map(id2label)
+    df.columns = df.columns.map(id2label)
+    return df
+
+
+make_confusion_matrix(clustering_df)
+
+# %%

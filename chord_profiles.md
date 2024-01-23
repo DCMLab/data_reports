@@ -283,7 +283,7 @@ chord_reduced.iloc[:10, :10]
 ```
 
 ```{code-cell}
-chord_reduced.type_prevalence
+chord_reduced.type_prevalence()
 ```
 
 ```{code-cell}

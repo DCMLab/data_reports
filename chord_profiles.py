@@ -265,7 +265,7 @@ chord_reduced: resources.PrevalenceMatrix = harmony_labels.apply_step(
 chord_reduced.iloc[:10, :10]
 
 # %%
-chord_reduced.type_prevalence
+chord_reduced.type_prevalence()
 
 # %%
 utils.plot_pca(
