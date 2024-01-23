@@ -24,7 +24,7 @@ tags: [hide-cell]
 %load_ext autoreload
 %autoreload 2
 import os
-from typing import Tuple, Union
+from typing import Tuple
 
 import dimcat as dc
 import ms3
@@ -147,26 +147,6 @@ root_per_globalkey = chord_slices.apply_step(
     )
 )
 print(f"Shape: {root_per_globalkey.shape}")
-```
-
-```{code-cell} ipython3
-def get_lower_triangle_values(data: Union[pd.DataFrame, np.array], offset: int = 0):
-    is_dataframe = isinstance(data, pd.DataFrame)
-    if is_dataframe:
-        matrix = data.values
-    else:
-        matrix = data
-    i, j = np.tril_indices_from(matrix, offset)
-    values = matrix[i, j]
-    if not is_dataframe:
-        return values
-    try:
-        level_0 = utils.merge_index_levels(data.index[i])
-        level_1 = utils.merge_index_levels(data.columns[j])
-        index = pd.MultiIndex.from_arrays([level_0, level_1])
-    except Exception:
-        print(data.index[i], data.columns[j])
-    return pd.Series(values, index=index)
 ```
 
 ```{code-cell} ipython3
