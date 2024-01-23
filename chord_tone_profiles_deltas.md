@@ -460,12 +460,16 @@ def compute_discriminant_metrics(
                             distance_metrics_rows.append(
                                 dict(row, metric=metric, value=value)
                             )
-                        clustering = delta.Clustering(distance_matrix)
-                        fclustering = clustering.fclustering()
-                        for metric, value in fclustering.evaluate().items():
+                        clustering_ward = delta.Clustering(distance_matrix)
+                        for metric, value in clustering_ward.evaluate().items():
                             distance_metrics_rows.append(
                                 dict(row, metric=metric, value=value)
                             )
+                        # ToDo: include if original data is given to initialize with corpus medoids
+                        # clustering_kmedoids = delta.KMedoidsClustering_distances(
+                        #     distance_matrix,
+                        #
+                        # )
                         print(".", end="")
             print()
     except KeyboardInterrupt:
@@ -549,6 +553,11 @@ n_best
 ```
 
 ```{code-cell}
+winners = get_n_best(distance_evaluations, n=1)
+winners[["feature_name", "norm", "n_types", "delta"]].value_counts()
+```
+
+```{code-cell}
 n_best[["feature_name", "norm", "features"]].value_counts()
 ```
 
@@ -577,50 +586,67 @@ close_inspection_deltas = [
 ```
 
 ```{code-cell}
+def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
+    norm_index = 1 if norm == "groupwise" else 0
+    results = distance_matrices[feature_name][delta_name]
+    for data_tuple in results:
+        dm = data_tuple[norm_index]
+        if dm.metadata.n_types == n_types:
+            break
+    else:
+        raise ValueError(f"No {norm} with {n_types} types found")
+    return dm
 
+
+def individual_evaluation(
+    distance_matrices,
+    feature_name,
+    delta_name,
+    norm,
+    n_types,
+):
+    dm = get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types)
+    clustering = delta.Clustering(dm)
+    print(clustering.describe())
+    print(clustering.evaluate())
+    plt.figure(figsize=(10, 60))
+    delta.Dendrogram(clustering)
+    # store matplotlib as PDF
+    name = f"{feature_name}_{norm}-{n_types}-{delta_name}-{norm}"
+    plt.savefig(
+        make_output_path(name, "pdf"),
+        bbox_inches="tight",
+    )
 ```
 
 ```{code-cell}
-dm = distance_matrices["root_per_globalkey"]["sqeuclidean-z_score"][-1].corpus
-clustering = delta.Clustering(dm)
-
-print(clustering.describe())
-```
-
-```{code-cell}
-clustering.evaluate()
-```
-
-```{code-cell}
-plt.figure(figsize=(10, 60))
-delta.Dendrogram(clustering)
-# store matplotlib as PDF
-plt.savefig(
-    make_output_path("global_root_sqeuclidean-z_score_dendrogram", "pdf"),
-    bbox_inches="tight",
+individual_evaluation(  # winner of Homogeneity, Purity, V-Measure, Entropy
+    distance_matrices,
+    feature_name="tonicization_root_ct",
+    delta_name="manhattan",
+    norm="corpus",
+    n_types=535,
 )
 ```
 
 ```{code-cell}
-clustering_df = clustering.fclustering().data
-clustering_df.head()
+individual_evaluation(  # winner of Fisher's LD
+    distance_matrices,
+    feature_name="local_root_ct",
+    delta_name="cosine-z_score",
+    norm="corpus",
+    n_types=679,
+)
 ```
 
 ```{code-cell}
-clustering_df.GroupID.ne(clustering_df.Cluster).sum()
-```
-
-```{code-cell}
-id2group = set(clustering_df[["GroupID", "Group"]].itertuples(index=False, name=None))
-assert (
-    len(id2group) == 39
-), "Distant Listening Corpus has 39 groups, each should have a unique GroupID"
-id2group = dict(sorted(id2group))
-id2group
-```
-
-```{code-cell}
-clustering_df.value_counts()
+individual_evaluation(  # winner of F-Ratio
+    distance_matrices,
+    feature_name="root_per_globalkey",
+    delta_name="cosine-z_score",
+    norm="groupwise",
+    n_types=1359,
+)
 ```
 
 ```{code-cell}
@@ -636,9 +662,6 @@ def make_confusion_matrix(
     df.index = df.index.map(id2label)
     df.columns = df.columns.map(id2label)
     return df
-
-
-make_confusion_matrix(clustering_df)
 ```
 
 ```{code-cell}
