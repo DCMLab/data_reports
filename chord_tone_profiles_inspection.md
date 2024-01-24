@@ -15,12 +15,6 @@ kernelspec:
 # Chord Profiles
 
 ```{code-cell} ipython3
----
-mystnb:
-  code_prompt_hide: Hide imports
-  code_prompt_show: Show imports
-tags: [hide-cell]
----
 %load_ext autoreload
 %autoreload 2
 import os
@@ -158,16 +152,10 @@ ranking_table.index = ranking_table.index.rename("rank") + 1
 ranking_table.iloc[:30]
 ```
 
-+++ {"jupyter": {"outputs_hidden": false}}
-
 ## Principal Component Analyses
 ### Chord profiles
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 metadata = D.get_metadata()
 PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
 PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "major"})
@@ -220,20 +208,12 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 ## Create chord-tone profiles for multiple chord features
 
 Tokens are `(feature, ..., chord_tone)` tuples.
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 chord_reduced: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -246,10 +226,6 @@ utils.replace_boolean_column_level_with_mode(chord_reduced)
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -262,10 +238,6 @@ utils.replace_boolean_column_level_with_mode(numerals)
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 roots: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -277,10 +249,6 @@ print(f"Shape: {roots.shape}")
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 root_per_globalkey = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -292,62 +260,34 @@ print(f"Shape: {root_per_globalkey.shape}")
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 fig = utils.plot_document_frequency(chord_reduced)
 save_figure_as(fig, "document_frequency_of_chord_tones")
 fig
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_document_frequency(numerals, info="numerals")
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_document_frequency(roots, info="roots")
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_document_frequency(
     root_per_globalkey, info="root relative to global tonic"
 )
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 ## Principal Component Analyses
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 # chord_reduced.query("piece in ['op03n12a', 'op03n12b']").dropna(axis=1, how='all')
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 metadata = D.get_metadata()
 CORPUS_YEARS = utils.corpus_mean_composition_years(metadata)
 PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
@@ -359,10 +299,6 @@ utils.plot_pca(
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_pca(
     chord_reduced.combine_results("corpus").relative,
     info="chord-tone profiles of reduced chords",
@@ -372,20 +308,12 @@ utils.plot_pca(
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_pca(
     numerals.relative, info="numeral profiles of numerals", color=PIECE_YEARS
 )
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_pca(
     numerals.combine_results("corpus").relative,
     info="chord-tone profiles of numerals",
@@ -395,20 +323,12 @@ utils.plot_pca(
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_pca(
     roots.relative, info="root profiles of chord roots (local)", color=PIECE_YEARS
 )
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_pca(
     roots.combine_results("corpus").relative,
     info="chord-tone profiles of chord roots (local)",
@@ -418,10 +338,6 @@ utils.plot_pca(
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_pca(
     root_per_globalkey.relative,
     info="root profiles of chord roots (global)",
@@ -430,10 +346,6 @@ utils.plot_pca(
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.plot_pca(
     root_per_globalkey.combine_results("corpus").relative,
     info="chord-tone profiles of chord roots (global)",

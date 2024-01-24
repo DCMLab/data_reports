@@ -16,7 +16,7 @@
 # %% [markdown]
 # # Chord Profiles
 
-# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
+# %%
 # %load_ext autoreload
 # %autoreload 2
 import os
@@ -148,11 +148,11 @@ ranking_table.columns.rename("feature", level=0, inplace=True)
 ranking_table.index = ranking_table.index.rename("rank") + 1
 ranking_table.iloc[:30]
 
-# %% [markdown] jupyter={"outputs_hidden": false}
+# %% [markdown]
 # ## Principal Component Analyses
 # ### Chord profiles
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 metadata = D.get_metadata()
 PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
 PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "major"})
@@ -197,12 +197,12 @@ show_pca("local_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 # %%
 show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # ## Create chord-tone profiles for multiple chord features
 #
 # Tokens are `(feature, ..., chord_tone)` tuples.
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # chord_reduced: resources.PrevalenceMatrix = chord_slices.apply_step(
 #     dc.DimcatConfig(
 #         "PrevalenceAnalyzer",
@@ -213,7 +213,7 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 # print(f"Shape: {chord_reduced.shape}")
 # utils.replace_boolean_column_level_with_mode(chord_reduced)
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
 #     dc.DimcatConfig(
 #         "PrevalenceAnalyzer",
@@ -224,7 +224,7 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 # print(f"Shape: {numerals.shape}")
 # utils.replace_boolean_column_level_with_mode(numerals)
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # roots: resources.PrevalenceMatrix = chord_slices.apply_step(
 #     dc.DimcatConfig(
 #         "PrevalenceAnalyzer",
@@ -234,7 +234,7 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 # )
 # print(f"Shape: {roots.shape}")
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # root_per_globalkey = chord_slices.apply_step(
 #     dc.DimcatConfig(
 #         "PrevalenceAnalyzer",
@@ -244,29 +244,29 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 # )
 # print(f"Shape: {root_per_globalkey.shape}")
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # fig = utils.plot_document_frequency(chord_reduced)
 # save_figure_as(fig, "document_frequency_of_chord_tones")
 # fig
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_document_frequency(numerals, info="numerals")
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_document_frequency(roots, info="roots")
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_document_frequency(
 #     root_per_globalkey, info="root relative to global tonic"
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # ## Principal Component Analyses
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # # chord_reduced.query("piece in ['op03n12a', 'op03n12b']").dropna(axis=1, how='all')
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # metadata = D.get_metadata()
 # CORPUS_YEARS = utils.corpus_mean_composition_years(metadata)
 # PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
@@ -276,7 +276,7 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 #     color=PIECE_YEARS,
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_pca(
 #     chord_reduced.combine_results("corpus").relative,
 #     info="chord-tone profiles of reduced chords",
@@ -284,12 +284,12 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 #     size=5,
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_pca(
 #     numerals.relative, info="numeral profiles of numerals", color=PIECE_YEARS
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_pca(
 #     numerals.combine_results("corpus").relative,
 #     info="chord-tone profiles of numerals",
@@ -297,12 +297,12 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 #     size=5,
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_pca(
 #     roots.relative, info="root profiles of chord roots (local)", color=PIECE_YEARS
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_pca(
 #     roots.combine_results("corpus").relative,
 #     info="chord-tone profiles of chord roots (local)",
@@ -310,14 +310,14 @@ show_pca("tonicization_root_ct", color=PIECE_YEARS, symbol=PIECE_MODE)
 #     size=5,
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_pca(
 #     root_per_globalkey.relative,
 #     info="root profiles of chord roots (global)",
 #     color=PIECE_YEARS,
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.plot_pca(
 #     root_per_globalkey.combine_results("corpus").relative,
 #     info="chord-tone profiles of chord roots (global)",
