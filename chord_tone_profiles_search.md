@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: pydelta
   language: python
@@ -14,7 +14,7 @@ kernelspec:
 
 # Chord Profiles
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -61,7 +61,7 @@ pd.set_option("display.max_columns", 500)
 EVALUATIONS_ONLY = False
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -81,7 +81,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = utils.resolve_dir(
@@ -97,7 +97,7 @@ describer = delta.TsvDocumentDescriber(D.get_metadata().reset_index())
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 if not EVALUATIONS_ONLY:
     chord_slices = utils.get_sliced_notes(D)
     chord_slices.head(5)
@@ -105,8 +105,7 @@ if not EVALUATIONS_ONLY:
 
 ## pydelta Corpus objects
 
-
-```{code-cell}
+```{code-cell} ipython3
 features = {
     "root_per_globalkey": (  # baseline globalkey-roots without any note information
         ["root_per_globalkey", "intervals_over_root"],
@@ -164,6 +163,7 @@ def make_pydelta_corpus(
     )
     corpus = delta.Corpus(matrix, document_describer=describer, metadata=metadata)
     corpus.index = utils.merge_index_levels(corpus.index)
+    corpus.columns = utils.merge_index_levels(corpus.columns)
     return corpus
 
 
@@ -204,7 +204,11 @@ def make_features(
 data = None if EVALUATIONS_ONLY else make_features(chord_slices, features)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 def store_data(data: Dict[str, DataTuple], filepath: str, overwrite: bool = True):
     if os.path.isfile(filepath):
         if overwrite:
@@ -224,7 +228,7 @@ metadata_subset.to_csv("/home/laser/git/chord_profile_search/metadata.tsv", sep=
 store_data(data, "/home/laser/git/chord_profile_search/data.zip")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_rankings(
     data: Dict[str, DataTuple],
     long_names: bool = False,
@@ -256,11 +260,11 @@ def show_rankings(data: Dict[str, DataTuple], top_n: int = 30):
 
 ## Compute deltas
 
-```{code-cell}
+```{code-cell} ipython3
 delta.functions.deltas.keys()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def batched(iterable, n):
     # from https://docs.python.org/3/library/itertools.html#itertools.batched introduced only with Python 3.12
     if n < 1:
@@ -552,7 +556,7 @@ def make_filepath(
     return filepath
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # distance_matrices = get_distance_matrices(data=data, vocab_sizes=vocab_sizes=[4, 100, 2 / 3, None])
 for feature in features.keys():
     distance_matrices = compute_deltas(
@@ -563,7 +567,7 @@ for feature in features.keys():
     )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :is_executing: true
 
 def evaluate(distance_matrix: delta.DistanceMatrix, **metadata):
@@ -679,11 +683,11 @@ distance_evaluations = evaluate_on_the_fly("root_per_globalkey")
 distance_evaluations
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = make_scatter_plot(
     distance_evaluations,
     x_col="top_n",
@@ -710,7 +714,7 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def get_n_best(distance_evaluations, n=10):
     smaller_is_better = ["Entropy", "Cluster Errors"]  # noqa: F841
     nlargest = distance_evaluations.groupby("metric").value.nlargest(n)
@@ -728,16 +732,16 @@ n_best = get_n_best(distance_evaluations)
 n_best
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 winners = get_n_best(distance_evaluations, n=1)
 winners[["feature_name", "norm", "n_types", "delta"]].value_counts()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 n_best[["feature_name", "norm", "features"]].value_counts()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 close_inspection_feature_names = [  # both corpus- and groupwise-normalized
     "local_root_ct",
     "tonicization_root_ct",
@@ -746,13 +750,13 @@ close_inspection_feature_names = [  # both corpus- and groupwise-normalized
 ]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 n_best[n_best.feature_name.isin(close_inspection_feature_names)].groupby(
     "feature_name"
 ).delta.value_counts()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 close_inspection_deltas = [
     "manhattan",
     "manhattan-z_score",
@@ -761,7 +765,7 @@ close_inspection_deltas = [
 ]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
     norm_index = 1 if norm == "groupwise" else 0
     results = distance_matrices[feature_name][delta_name]
@@ -840,6 +844,6 @@ def make_confusion_matrix(
     return df
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 ```

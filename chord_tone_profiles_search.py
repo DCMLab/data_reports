@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: pydelta
 #     language: python
@@ -96,8 +96,6 @@ if not EVALUATIONS_ONLY:
 
 # %% [markdown]
 # ## pydelta Corpus objects
-#
-#
 
 # %%
 features = {
@@ -157,6 +155,7 @@ def make_pydelta_corpus(
     )
     corpus = delta.Corpus(matrix, document_describer=describer, metadata=metadata)
     corpus.index = utils.merge_index_levels(corpus.index)
+    corpus.columns = utils.merge_index_levels(corpus.columns)
     return corpus
 
 
@@ -197,7 +196,7 @@ def make_features(
 data = None if EVALUATIONS_ONLY else make_features(chord_slices, features)
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def store_data(data: Dict[str, DataTuple], filepath: str, overwrite: bool = True):
     if os.path.isfile(filepath):
         if overwrite:

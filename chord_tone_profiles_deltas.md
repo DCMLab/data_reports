@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: pydelta
   language: python
@@ -14,7 +14,7 @@ kernelspec:
 
 # Chord Profiles
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -30,6 +30,7 @@ import re
 from collections import defaultdict
 from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 from zipfile import ZipFile
+import joblib
 
 import delta
 import dimcat as dc
@@ -60,7 +61,7 @@ pd.set_option("display.max_columns", 500)
 EVALUATIONS_ONLY = True
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -80,7 +81,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = utils.resolve_dir(
@@ -95,7 +96,7 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 if not EVALUATIONS_ONLY:
     chord_slices = utils.get_sliced_notes(D)
     chord_slices.head(5)
@@ -103,7 +104,7 @@ if not EVALUATIONS_ONLY:
 
 ## pydelta Corpus objects
 
-```{code-cell}
+```{code-cell} ipython3
 describer = delta.TsvDocumentDescriber(D.get_metadata().reset_index())
 
 
@@ -121,10 +122,11 @@ def make_pydelta_corpus(
     )
     corpus = delta.Corpus(matrix, document_describer=describer, metadata=metadata)
     corpus.index = utils.merge_index_levels(corpus.index)
+    corpus.columns = utils.merge_index_levels(corpus.columns)
     return corpus
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 features = {
     "root_per_globalkey": (  # baseline globalkey-roots without any note information
         ["root_per_globalkey", "intervals_over_root"],
@@ -184,7 +186,7 @@ def make_features(
         analyzer_config.update(columns=feature_columns)
         prevalence_matrix = chord_slices.apply_step(analyzer_config)
         corpus = make_pydelta_corpus(
-            prevalence_matrix.relative, info=info, absolute=False, norm="piecewise"
+            prevalence_matrix.relative, info=info, absolute=False, norm="piecenorm"
         )
         if prevalence_matrix.columns.nlevels > 1:
             groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
@@ -194,7 +196,7 @@ def make_features(
                 groupwise_prevalence.relative,
                 info=info,
                 absolute=False,
-                norm="groupwise",
+                norm="rootnorm",
             )
         else:
             groupwise = None
@@ -205,7 +207,7 @@ def make_features(
 data = None if EVALUATIONS_ONLY else make_features(chord_slices, features)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_rankings(
     data: Dict[str, DataTuple],
     long_names: bool = False,
@@ -237,11 +239,11 @@ if not EVALUATIONS_ONLY:
 
 ## Compute deltas
 
-```{code-cell}
+```{code-cell} ipython3
 delta.functions.deltas.keys()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 selected_deltas = {
     name: func
     for name, func in delta.functions.deltas.items()
@@ -251,7 +253,8 @@ selected_deltas = {
         "cosine-z_score",  # Cosine Delta
         "manhattan",
         "manhattan-z_score",  # Burrow's Delta
-        "manhattan-z_score-eder_std" "sqeuclidean",  # Eder's Delta
+        "manhattan-z_score-eder_std",  # Eder's Delta
+        "sqeuclidean",
         "sqeuclidean-z_score",  # Quadratic Delta
     ]
 }
@@ -362,6 +365,22 @@ def store_distance_matrices(
                     data_tuple.groupwise.save_to_zip(name + "_groupwise.tsv", filepath)
                 print(".", end="")
 
+def pickle_distance_matrices(
+    distance_matrices: Dict[str, Dict[str, List[DataTuple]]],
+    directory: str
+):
+    for feature_name, feature_data in distance_matrices.items():
+        for delta_name, delta_results in feature_data.items():
+            for data_tuple in delta_results:  # one per vocab_size
+                size = data_tuple.corpus.metadata.n_types
+                name = f"{feature_name}_piecenorm"
+                filename = f"{name}-{delta_name}-{size:04d}"
+                joblib.dump(data_tuple.corpus, os.path.join(directory, filename))
+                if data_tuple.groupwise is not None:
+                    name = f"{feature_name}_rootnorm"
+                    filename = f"{name}-{delta_name}-{size:04d}"
+                    joblib.dump(data_tuple.groupwise, os.path.join(directory, filename))
+                print(".", end="")
 
 def load_distance_matrices(
     filepath,
@@ -409,13 +428,23 @@ def get_distance_matrices(
     name: Optional[str] = "chord_tone_profile_deltas",
     basepath: Optional[str] = None,
     first_n: Optional[int] = None,
+    pickle: bool = True
 ) -> Dict[str, Dict[str, List[DataTuple]]]:
+    """
+
+    Args:
+        pickle:
+            If True (default), the distance matrices are pickled to individual files in basepath/name.
+            Otherwise, they will be stored as TSV files in a ZIP archive (slow). To disable storing,
+            pass an empty string or None as ``name``. Please note that loading existing data instead
+            of re-computing is currently implemented for ZIP files only. The purpose of the pickle
+            files is to be evaluated using the `chord_profile_search` repository.
+    """
     filepath = None
     if name:
         if basepath is None:
             basepath = dc.get_setting("default_basepath")
         basepath = utils.resolve_dir(basepath)
-        name = "chord_tone_profile_deltas"
         if isinstance(vocab_sizes, int):
             zip_file = f"{name}_{vocab_sizes}.zip"
         else:
@@ -425,16 +454,36 @@ def get_distance_matrices(
             return load_distance_matrices(filepath, first_n=first_n)
     assert data is not None, "data is None"
     distance_matrices = compute_deltas(data, vocab_sizes)
-    if filepath:
-        print(f"Storing distance matrices to {filepath}", end="")
-        store_distance_matrices(distance_matrices, filepath)
+    if name:
+        if pickle:
+            directory = os.path.join(basepath, name)
+            os.makedires(directory, exists_ok=True)
+            print(f"Pickeling distance matrices to {directory}", end="")
+            pickle_distance_matrices(distance_matrices, directory)
+        else:
+            print(f"Storing distance matrices to {filepath}", end="")
+            store_distance_matrices(distance_matrices, filepath)
     return distance_matrices
 
-
-distance_matrices = get_distance_matrices(data=data, vocab_sizes=[4, 100, 2 / 3, None])
+if not EVALUATIONS_ONLY:
+    distance_matrices = get_distance_matrices(data=data, vocab_sizes=[4, 100, 2 / 3, None])
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+def evaluate(distance_matrix: delta.DistanceMatrix, **metadata):
+    row = dict(distance_matrix.metadata, **metadata)
+    # row.update(distance_matrix.metadata)
+    for metric, value in distance_matrix.evaluate().items():
+        yield dict(row, metric=metric, value=value)
+    clustering_ward = delta.Clustering(distance_matrix)
+    for metric, value in clustering_ward.evaluate().items():
+        yield dict(row, metric=f"{metric} (Ward)", value=value)
+    # ToDo: include if original data is given to initialize with corpus medoids
+    clustering_kmedoids = delta.KMedoidsClustering_distances(distance_matrix)
+    for metric, value in clustering_kmedoids.evaluate().items():
+        yield dict(row, metric=f"{metric} (k-medoids)", value=value)
+
+
 def compute_discriminant_metrics(
     distance_matrices, cache_name: str = "chord_tone_profiles_evaluation"
 ) -> pd.DataFrame:
@@ -449,27 +498,13 @@ def compute_discriminant_metrics(
                     for norm, distance_matrix in delta_results._asdict().items():
                         if distance_matrix is None:
                             continue
-                        row = dict(
-                            distance_matrix.metadata,
+                        rows = evaluate(
+                            distance_matrix,
                             feature_name=feature_name,
                             delta=delta_name,
                             norm=norm,
                         )
-                        # row.update(distance_matrix.metadata)
-                        for metric, value in distance_matrix.evaluate().items():
-                            distance_metrics_rows.append(
-                                dict(row, metric=metric, value=value)
-                            )
-                        clustering_ward = delta.Clustering(distance_matrix)
-                        for metric, value in clustering_ward.evaluate().items():
-                            distance_metrics_rows.append(
-                                dict(row, metric=metric, value=value)
-                            )
-                        # ToDo: include if original data is given to initialize with corpus medoids
-                        # clustering_kmedoids = delta.KMedoidsClustering_distances(
-                        #     distance_matrix,
-                        #
-                        # )
+                        distance_metrics_rows.extend(rows)
                         print(".", end="")
             print()
     except KeyboardInterrupt:
@@ -481,11 +516,30 @@ def compute_discriminant_metrics(
     )
     return distance_evaluations
 
+def melt_evaluation_metrics(df):
+    variable_names = {
+        "adjusted rand",
+        "cluster errors",
+        "completeness",
+        "entropy",
+        "f-ratio",
+        "fisher",
+        "homogeneity",
+        "purity",
+        "simple score",
+        "v-measure",
+    }
+    id_vars = [col for col in df.columns if not any(col.lower().startswith(v) for v in variable_names)]
+    return df.melt(id_vars=id_vars, var_name="metric")
+
 
 def load_discriminant_metrics(
-    cache_name: str = "chord_tone_profiles_evaluation",
+    filepath: str
 ) -> pd.DataFrame:
-    return pd.read_csv(make_output_path(cache_name, "tsv"), sep="\t")
+    df = pd.read_csv(filepath, sep="\t")
+    if "metric" not in df.columns:
+        df = melt_evaluation_metrics(df)
+    return df
 
 
 def get_discriminant_metrics(
@@ -493,7 +547,8 @@ def get_discriminant_metrics(
     cache_name: str = "chord_tone_profiles_evaluation",
 ):
     try:
-        result = load_discriminant_metrics(cache_name)
+        filepath = make_output_path(cache_name, "tsv")
+        result = load_discriminant_metrics(filepath)
     except FileNotFoundError:
         result = compute_discriminant_metrics(distance_matrices, cache_name=cache_name)
     result.loc[:, "features"] = result.features.where(
@@ -503,23 +558,45 @@ def get_discriminant_metrics(
     return result
 
 
-distance_evaluations = get_discriminant_metrics(distance_matrices)
+#distance_evaluations = get_discriminant_metrics(distance_matrices)
+distance_evaluations = load_discriminant_metrics("/home/laser/git/chord_profile_search/results.tsv")
 distance_evaluations
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+features
+```
+
+```{code-cell} ipython3
+color_palette = dict(
+    globalkey_profiles="AMBER_800",
+    localkey_profiles="AMBER_500",
+    tonicization_profiles="ORANGE_300",
+    root_per_globalkey="GREEN_800",
+    root_per_localkey="GREEN_500",
+    root_per_tonicization="LIME_300",
+    global_root_ct="INDIGO_800",
+    local_root_ct="VIOLET_600",
+    tonicization_root_ct="PURPLE_400",
+)
+feature_names = {f: name for f, (_, name) in features.items()}
+color_palette = {feature_names[k]: utils.TailwindColorsHex.get_color(v) for k, v in color_palette.items()}
+```
+
+```{code-cell} ipython3
 fig = make_scatter_plot(
     distance_evaluations,
     x_col="top_n",
     y_col="value",
     symbol="norm",
     color="features",
+    color_discrete_map=color_palette,
     facet_col="delta_title",
     facet_row="metric",
     y_axis=dict(matches=None),
     traces_settings=dict(marker_size=10),
     layout=dict(legend=dict(y=-0.05, orientation="h")),
-    height=2000,
+    height=4000,
 )
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
@@ -530,13 +607,18 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
             col=col_idx + 1,
             matches="y" + str(len(row_figs) * row_idx + 1),
         )
-save_figure_as(fig, "chord_tone_profiles_evaluation", height=2500, width=1300)
+#save_figure_as(fig, "chord_tone_profiles_evaluation", height=2500, width=1300)
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+delta.functions
+```
+
+```{code-cell} ipython3
 def get_n_best(distance_evaluations, n=10):
-    smaller_is_better = ["Entropy", "Cluster Errors"]  # noqa: F841
+    distance_evaluations.index.rename("i", inplace=True)
+    smaller_is_better = ["Entropy", "Cluster Errors", "F-Ratio"]  # noqa: F841
     nlargest = distance_evaluations.groupby("metric").value.nlargest(n)
     best_largest = join_df_on_index(distance_evaluations, nlargest.index).query(
         "metric not in @smaller_is_better"
@@ -552,40 +634,65 @@ n_best = get_n_best(distance_evaluations)
 n_best
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 winners = get_n_best(distance_evaluations, n=1)
-winners[["feature_name", "norm", "n_types", "delta"]].value_counts()
+winners[["features", "norm", "delta_descriptor"]].value_counts()
 ```
 
-```{code-cell}
-n_best[["feature_name", "norm", "features"]].value_counts()
+```{code-cell} ipython3
+winners
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+n_best["delta_descriptor"].value_counts()
+```
+
+```{code-cell} ipython3
+n_best[["features", "norm"]].value_counts()
+```
+
+```{code-cell} ipython3
+winners[["features", "norm"]].value_counts()
+```
+
+```{code-cell} ipython3
+winners.delta_descriptor.value_counts()
+```
+
+```{code-cell} ipython3
+n_best[["features", "norm", "delta_descriptor"]].value_counts()
+```
+
+```{code-cell} ipython3
 close_inspection_feature_names = [  # both corpus- and groupwise-normalized
+    feature_names[f] for f in
+    (
+    "global_root_ct",
     "local_root_ct",
     "tonicization_root_ct",
-    "root_per_localkey",
     "root_per_globalkey",
+    "root_per_localkey",
+    "root_per_tonicization"
+    )
 ]
 ```
 
-```{code-cell}
-n_best[n_best.feature_name.isin(close_inspection_feature_names)].groupby(
-    "feature_name"
-).delta.value_counts()
+```{code-cell} ipython3
+n_best[n_best.features.isin(close_inspection_feature_names)].groupby(
+    ["features", "norm"]
+).delta_descriptor.value_counts()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 close_inspection_deltas = [
+    "sqeuclidean-z_score", # especially for all 3 types of chord profiles
     "manhattan",
-    "manhattan-z_score",
+    "manhattan-z_score-eder_std",
     "cosine-z_score",
-    "sqeuclidean-z_score",
 ]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
     norm_index = 1 if norm == "groupwise" else 0
     results = distance_matrices[feature_name][delta_name]
@@ -619,7 +726,7 @@ def individual_evaluation(
     )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 individual_evaluation(  # winner of Homogeneity, Purity, V-Measure, Entropy
     distance_matrices,
     feature_name="tonicization_root_ct",
@@ -629,7 +736,7 @@ individual_evaluation(  # winner of Homogeneity, Purity, V-Measure, Entropy
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 individual_evaluation(  # winner of Fisher's LD
     distance_matrices,
     feature_name="local_root_ct",
@@ -639,7 +746,7 @@ individual_evaluation(  # winner of Fisher's LD
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 individual_evaluation(  # winner of F-Ratio
     distance_matrices,
     feature_name="root_per_globalkey",
@@ -649,7 +756,7 @@ individual_evaluation(  # winner of F-Ratio
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_confusion_matrix(
     clustering_df, y_true="GroupID", y_pred="Cluster", labels="Group"
 ):
@@ -664,6 +771,6 @@ def make_confusion_matrix(
     return df
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 
 ```
