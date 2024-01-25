@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.0
 #   kernelspec:
 #     display_name: pydelta
 #     language: python
@@ -195,6 +195,26 @@ def make_features(
 
 
 data = None if EVALUATIONS_ONLY else make_features(chord_slices, features)
+
+
+# %%
+def store_data(data: Dict[str, DataTuple], filepath: str, overwrite: bool = True):
+    if os.path.isfile(filepath):
+        if overwrite:
+            os.remove(filepath)
+        else:
+            raise FileExistsError(f"{filepath} already exists.")
+    for feature_name, (corpus, groupwise, _) in data.items():
+        corpus.save_to_zip(feature_name + "_piecenorm.tsv", filepath)
+        if groupwise is not None:
+            groupwise.save_to_zip(feature_name + "_rootnorm.tsv", filepath)
+        print(".", end="")
+
+
+used_pieces = data["root_per_globalkey"].prevalence_matrix.relative.index
+metadata_subset = D.get_metadata().join_on_index(used_pieces)
+metadata_subset.to_csv("/home/laser/git/chord_profile_search/metadata.tsv", sep="\t")
+store_data(data, "/home/laser/git/chord_profile_search/data.zip")
 
 
 # %%
