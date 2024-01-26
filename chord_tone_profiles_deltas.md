@@ -30,10 +30,10 @@ import re
 from collections import defaultdict
 from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 from zipfile import ZipFile
-import joblib
 
 import delta
 import dimcat as dc
+import joblib
 import ms3
 import pandas as pd
 from dimcat import resources
@@ -42,7 +42,6 @@ from dimcat.plotting import make_scatter_plot, write_image
 from git import Repo
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
-from sklearn.metrics import confusion_matrix
 
 import utils
 
@@ -365,9 +364,9 @@ def store_distance_matrices(
                     data_tuple.groupwise.save_to_zip(name + "_groupwise.tsv", filepath)
                 print(".", end="")
 
+
 def pickle_distance_matrices(
-    distance_matrices: Dict[str, Dict[str, List[DataTuple]]],
-    directory: str
+    distance_matrices: Dict[str, Dict[str, List[DataTuple]]], directory: str
 ):
     for feature_name, feature_data in distance_matrices.items():
         for delta_name, delta_results in feature_data.items():
@@ -381,6 +380,7 @@ def pickle_distance_matrices(
                     filename = f"{name}-{delta_name}-{size:04d}"
                     joblib.dump(data_tuple.groupwise, os.path.join(directory, filename))
                 print(".", end="")
+
 
 def load_distance_matrices(
     filepath,
@@ -428,7 +428,7 @@ def get_distance_matrices(
     name: Optional[str] = "chord_tone_profile_deltas",
     basepath: Optional[str] = None,
     first_n: Optional[int] = None,
-    pickle: bool = True
+    pickle: bool = True,
 ) -> Dict[str, Dict[str, List[DataTuple]]]:
     """
 
@@ -465,8 +465,11 @@ def get_distance_matrices(
             store_distance_matrices(distance_matrices, filepath)
     return distance_matrices
 
+
 if not EVALUATIONS_ONLY:
-    distance_matrices = get_distance_matrices(data=data, vocab_sizes=[4, 100, 2 / 3, None])
+    distance_matrices = get_distance_matrices(
+        data=data, vocab_sizes=[4, 100, 2 / 3, None]
+    )
 ```
 
 ```{code-cell} ipython3
@@ -516,6 +519,7 @@ def compute_discriminant_metrics(
     )
     return distance_evaluations
 
+
 def melt_evaluation_metrics(df):
     variable_names = {
         "adjusted rand",
@@ -529,13 +533,15 @@ def melt_evaluation_metrics(df):
         "simple score",
         "v-measure",
     }
-    id_vars = [col for col in df.columns if not any(col.lower().startswith(v) for v in variable_names)]
+    id_vars = [
+        col
+        for col in df.columns
+        if not any(col.lower().startswith(v) for v in variable_names)
+    ]
     return df.melt(id_vars=id_vars, var_name="metric")
 
 
-def load_discriminant_metrics(
-    filepath: str
-) -> pd.DataFrame:
+def load_discriminant_metrics(filepath: str) -> pd.DataFrame:
     df = pd.read_csv(filepath, sep="\t")
     if "metric" not in df.columns:
         df = melt_evaluation_metrics(df)
@@ -558,8 +564,10 @@ def get_discriminant_metrics(
     return result
 
 
-#distance_evaluations = get_discriminant_metrics(distance_matrices)
-distance_evaluations = load_discriminant_metrics("/home/laser/git/chord_profile_search/results.tsv")
+# distance_evaluations = get_discriminant_metrics(distance_matrices)
+distance_evaluations = load_discriminant_metrics(
+    "/home/laser/git/chord_profile_search/results.tsv"
+)
 distance_evaluations
 ```
 
@@ -580,7 +588,10 @@ color_palette = dict(
     tonicization_root_ct="PURPLE_400",
 )
 feature_names = {f: name for f, (_, name) in features.items()}
-color_palette = {feature_names[k]: utils.TailwindColorsHex.get_color(v) for k, v in color_palette.items()}
+color_palette = {
+    feature_names[k]: utils.TailwindColorsHex.get_color(v)
+    for k, v in color_palette.items()
+}
 ```
 
 ```{code-cell} ipython3
@@ -607,7 +618,7 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
             col=col_idx + 1,
             matches="y" + str(len(row_figs) * row_idx + 1),
         )
-#save_figure_as(fig, "chord_tone_profiles_evaluation", height=2500, width=1300)
+save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
 fig
 ```
 
@@ -665,14 +676,14 @@ n_best[["features", "norm", "delta_descriptor"]].value_counts()
 
 ```{code-cell} ipython3
 close_inspection_feature_names = [  # both corpus- and groupwise-normalized
-    feature_names[f] for f in
-    (
-    "global_root_ct",
-    "local_root_ct",
-    "tonicization_root_ct",
-    "root_per_globalkey",
-    "root_per_localkey",
-    "root_per_tonicization"
+    feature_names[f]
+    for f in (
+        "global_root_ct",
+        "local_root_ct",
+        "tonicization_root_ct",
+        "root_per_globalkey",
+        "root_per_localkey",
+        "root_per_tonicization",
     )
 ]
 ```
@@ -685,14 +696,14 @@ n_best[n_best.features.isin(close_inspection_feature_names)].groupby(
 
 ```{code-cell} ipython3
 close_inspection_deltas = [
-    "sqeuclidean-z_score", # especially for all 3 types of chord profiles
-    "manhattan",
+    "sqeuclidean-z_score",  # especially for all 3 types of chord profiles
+    "manhattan",  # especially for all 3 types of chord-tone profiles
     "manhattan-z_score-eder_std",
     "cosine-z_score",
 ]
 ```
 
-```{code-cell} ipython3
+```{raw-cell}
 def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
     norm_index = 1 if norm == "groupwise" else 0
     results = distance_matrices[feature_name][delta_name]
@@ -724,39 +735,7 @@ def individual_evaluation(
         make_output_path(name, "pdf"),
         bbox_inches="tight",
     )
-```
 
-```{code-cell} ipython3
-individual_evaluation(  # winner of Homogeneity, Purity, V-Measure, Entropy
-    distance_matrices,
-    feature_name="tonicization_root_ct",
-    delta_name="manhattan",
-    norm="corpus",
-    n_types=535,
-)
-```
-
-```{code-cell} ipython3
-individual_evaluation(  # winner of Fisher's LD
-    distance_matrices,
-    feature_name="local_root_ct",
-    delta_name="cosine-z_score",
-    norm="corpus",
-    n_types=679,
-)
-```
-
-```{code-cell} ipython3
-individual_evaluation(  # winner of F-Ratio
-    distance_matrices,
-    feature_name="root_per_globalkey",
-    delta_name="cosine-z_score",
-    norm="groupwise",
-    n_types=1359,
-)
-```
-
-```{code-cell} ipython3
 def make_confusion_matrix(
     clustering_df, y_true="GroupID", y_pred="Cluster", labels="Group"
 ):
@@ -769,6 +748,78 @@ def make_confusion_matrix(
     df.index = df.index.map(id2label)
     df.columns = df.columns.map(id2label)
     return df
+```
+
+## Chord Profiles
+### Globalkey
+
+```{code-cell} ipython3
+METRICS_PATH = os.path.abspath(os.path.join(RESULTS_PATH, "..", "data"))
+
+
+def load_feature_metrics(
+    feature_name: str,
+    directory: str = METRICS_PATH,
+) -> pd.DataFrame:
+    candidates = [f for f in os.listdir(directory) if feature_name in f]
+    if not candidates:
+        raise FileNotFoundError(
+            f"No files containing {feature_name} found in {directory}"
+        )
+    if len(candidates) > 1:
+        raise ValueError(
+            f"Multiple files containing {feature_name} found in {directory}: {candidates}"
+        )
+    filepath = os.path.join(directory, candidates[0])
+    df = pd.read_csv(filepath, sep="\t")
+    if "metric" not in df.columns:
+        df = melt_evaluation_metrics(df)
+    if "top_n" not in df.columns:
+        df["top_n"] = df.filepath.str[-4:].astype(int)
+    return df
+```
+
+```{code-cell} ipython3
+def show_gridsearch(df, save_as: Optional[str], height=4000, width=1300, **kwargs):
+    fig = make_scatter_plot(
+        df,
+        x_col="top_n",
+        y_col="value",
+        symbol="norm",
+        color="norm",
+        facet_col="delta_title",
+        facet_row="metric",
+        y_axis=dict(matches=None),
+        traces_settings=dict(marker_size=2),
+        layout=dict(legend=dict(y=-0.05, orientation="h")),
+        height=height,
+        width=width,
+    )
+    # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+    # fig.update_yaxes(matches="y")
+    for row_idx, row_figs in enumerate(fig._grid_ref):
+        for col_idx, col_fig in enumerate(row_figs):
+            fig.update_yaxes(
+                row=row_idx + 1,
+                col=col_idx + 1,
+                matches="y" + str(len(row_figs) * row_idx + 1),
+            )
+
+    if save_as:
+        save_figure_as(fig, save_as, height=height, width=width)
+    fig
+```
+
+```{code-cell} ipython3
+root_per_globalkey = load_feature_metrics("root_per_globalkey")
+show_gridsearch(root_per_globalkey, "root_per_globalkey_gridsearch")
+```
+
+### Localkey
+
+```{code-cell} ipython3
+root_per_globalkey = load_feature_metrics("root_per_localkey")
+show_gridsearch(root_per_globalkey, "root_per_localkey_gridsearch")
 ```
 
 ```{code-cell} ipython3

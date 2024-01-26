@@ -38,7 +38,6 @@ from dimcat.plotting import make_scatter_plot, write_image
 from git import Repo
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
-from sklearn.metrics import confusion_matrix
 
 import utils
 
@@ -607,7 +606,7 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
             col=col_idx + 1,
             matches="y" + str(len(row_figs) * row_idx + 1),
         )
-# save_figure_as(fig, "chord_tone_profiles_evaluation", height=2500, width=1300)
+save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
 fig
 
 # %%
@@ -675,87 +674,127 @@ n_best[n_best.features.isin(close_inspection_feature_names)].groupby(
 # %%
 close_inspection_deltas = [
     "sqeuclidean-z_score",  # especially for all 3 types of chord profiles
-    "manhattan",
+    "manhattan",  # especially for all 3 types of chord-tone profiles
     "manhattan-z_score-eder_std",
     "cosine-z_score",
 ]
 
+# %% [raw]
+# def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
+#     norm_index = 1 if norm == "groupwise" else 0
+#     results = distance_matrices[feature_name][delta_name]
+#     for data_tuple in results:
+#         dm = data_tuple[norm_index]
+#         if dm.metadata.n_types == n_types:
+#             break
+#     else:
+#         raise ValueError(f"No {norm} with {n_types} types found")
+#     return dm
+#
+#
+# def individual_evaluation(
+#     distance_matrices,
+#     feature_name,
+#     delta_name,
+#     norm,
+#     n_types,
+# ):
+#     dm = get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types)
+#     clustering = delta.Clustering(dm)
+#     print(clustering.describe())
+#     print(clustering.evaluate())
+#     plt.figure(figsize=(10, 60))
+#     delta.Dendrogram(clustering)
+#     # store matplotlib as PDF
+#     name = f"{feature_name}_{norm}-{n_types}-{delta_name}-{norm}"
+#     plt.savefig(
+#         make_output_path(name, "pdf"),
+#         bbox_inches="tight",
+#     )
+#
+# def make_confusion_matrix(
+#     clustering_df, y_true="GroupID", y_pred="Cluster", labels="Group"
+# ):
+#     id2label = set(clustering_df[[y_true, labels]].itertuples(index=False, name=None))
+#     id2label = dict(sorted(id2label))
+#     matrix = confusion_matrix(
+#         y_true=clustering_df[y_true], y_pred=clustering_df[y_pred]
+#     )
+#     df = pd.DataFrame(matrix)
+#     df.index = df.index.map(id2label)
+#     df.columns = df.columns.map(id2label)
+#     return df
+
+# %% [markdown]
+# ## Chord Profiles
+# ### Globalkey
 
 # %%
-def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
-    norm_index = 1 if norm == "groupwise" else 0
-    results = distance_matrices[feature_name][delta_name]
-    for data_tuple in results:
-        dm = data_tuple[norm_index]
-        if dm.metadata.n_types == n_types:
-            break
-    else:
-        raise ValueError(f"No {norm} with {n_types} types found")
-    return dm
+METRICS_PATH = os.path.abspath(os.path.join(RESULTS_PATH, "..", "data"))
 
 
-def individual_evaluation(
-    distance_matrices,
-    feature_name,
-    delta_name,
-    norm,
-    n_types,
-):
-    dm = get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types)
-    clustering = delta.Clustering(dm)
-    print(clustering.describe())
-    print(clustering.evaluate())
-    plt.figure(figsize=(10, 60))
-    delta.Dendrogram(clustering)
-    # store matplotlib as PDF
-    name = f"{feature_name}_{norm}-{n_types}-{delta_name}-{norm}"
-    plt.savefig(
-        make_output_path(name, "pdf"),
-        bbox_inches="tight",
-    )
-
-
-# %%
-individual_evaluation(  # winner of Homogeneity, Purity, V-Measure, Entropy
-    distance_matrices,
-    feature_name="tonicization_root_ct",
-    delta_name="manhattan",
-    norm="corpus",
-    n_types=535,
-)
-
-# %%
-individual_evaluation(  # winner of Fisher's LD
-    distance_matrices,
-    feature_name="local_root_ct",
-    delta_name="cosine-z_score",
-    norm="corpus",
-    n_types=679,
-)
-
-# %%
-individual_evaluation(  # winner of F-Ratio
-    distance_matrices,
-    feature_name="root_per_globalkey",
-    delta_name="cosine-z_score",
-    norm="groupwise",
-    n_types=1359,
-)
-
-
-# %%
-def make_confusion_matrix(
-    clustering_df, y_true="GroupID", y_pred="Cluster", labels="Group"
-):
-    id2label = set(clustering_df[[y_true, labels]].itertuples(index=False, name=None))
-    id2label = dict(sorted(id2label))
-    matrix = confusion_matrix(
-        y_true=clustering_df[y_true], y_pred=clustering_df[y_pred]
-    )
-    df = pd.DataFrame(matrix)
-    df.index = df.index.map(id2label)
-    df.columns = df.columns.map(id2label)
+def load_feature_metrics(
+    feature_name: str,
+    directory: str = METRICS_PATH,
+) -> pd.DataFrame:
+    candidates = [f for f in os.listdir(directory) if feature_name in f]
+    if not candidates:
+        raise FileNotFoundError(
+            f"No files containing {feature_name} found in {directory}"
+        )
+    if len(candidates) > 1:
+        raise ValueError(
+            f"Multiple files containing {feature_name} found in {directory}: {candidates}"
+        )
+    filepath = os.path.join(directory, candidates[0])
+    df = pd.read_csv(filepath, sep="\t")
+    if "metric" not in df.columns:
+        df = melt_evaluation_metrics(df)
+    if "top_n" not in df.columns:
+        df["top_n"] = df.filepath.str[-4:].astype(int)
     return df
 
+
+# %%
+def show_gridsearch(df, save_as: Optional[str], height=4000, width=1300, **kwargs):
+    fig = make_scatter_plot(
+        df,
+        x_col="top_n",
+        y_col="value",
+        symbol="norm",
+        color="norm",
+        facet_col="delta_title",
+        facet_row="metric",
+        y_axis=dict(matches=None),
+        traces_settings=dict(marker_size=2),
+        layout=dict(legend=dict(y=-0.05, orientation="h")),
+        height=height,
+        width=width,
+    )
+    # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+    # fig.update_yaxes(matches="y")
+    for row_idx, row_figs in enumerate(fig._grid_ref):
+        for col_idx, col_fig in enumerate(row_figs):
+            fig.update_yaxes(
+                row=row_idx + 1,
+                col=col_idx + 1,
+                matches="y" + str(len(row_figs) * row_idx + 1),
+            )
+
+    if save_as:
+        save_figure_as(fig, save_as, height=height, width=width)
+    fig
+
+
+# %%
+root_per_globalkey = load_feature_metrics("root_per_globalkey")
+show_gridsearch(root_per_globalkey, "root_per_globalkey_gridsearch")
+
+# %% [markdown]
+# ### Localkey
+
+# %%
+root_per_globalkey = load_feature_metrics("root_per_localkey")
+show_gridsearch(root_per_globalkey, "root_per_localkey_gridsearch")
 
 # %%
