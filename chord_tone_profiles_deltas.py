@@ -24,6 +24,7 @@ import math
 import os
 import re
 from collections import defaultdict
+from itertools import count
 from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 from zipfile import ZipFile
 
@@ -87,7 +88,7 @@ print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 if not EVALUATIONS_ONLY:
     chord_slices = utils.get_sliced_notes(D)
     chord_slices.head(5)
@@ -117,7 +118,7 @@ def make_pydelta_corpus(
     return corpus
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 features = {
     "root_per_globalkey": (  # baseline globalkey-roots without any note information
         ["root_per_globalkey", "intervals_over_root"],
@@ -227,13 +228,13 @@ def show_rankings(data: Dict[str, DataTuple], top_n: int = 30):
 if not EVALUATIONS_ONLY:
     show_rankings(data)
 
-# %% [markdown]
+# %% [markdown] jupyter={"outputs_hidden": false}
 # ## Compute deltas
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 delta.functions.deltas.keys()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 selected_deltas = {
     name: func
     for name, func in delta.functions.deltas.items()
@@ -463,7 +464,7 @@ if not EVALUATIONS_ONLY:
     )
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def evaluate(distance_matrix: delta.DistanceMatrix, **metadata):
     row = dict(distance_matrix.metadata, **metadata)
     # row.update(distance_matrix.metadata)
@@ -524,6 +525,7 @@ def melt_evaluation_metrics(df):
         "simple score",
         "v-measure",
     }
+    df
     id_vars = [
         col
         for col in df.columns
@@ -561,7 +563,7 @@ distance_evaluations = load_discriminant_metrics(
 )
 distance_evaluations
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 features
 
 # %%
@@ -582,7 +584,7 @@ color_palette = {
     for k, v in color_palette.items()
 }
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 fig = make_scatter_plot(
     distance_evaluations,
     x_col="top_n",
@@ -609,11 +611,11 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
 save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
 fig
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 delta.functions
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def get_n_best(distance_evaluations, n=10):
     distance_evaluations.index.rename("i", inplace=True)
     smaller_is_better = ["Entropy", "Cluster Errors", "F-Ratio"]  # noqa: F841
@@ -631,29 +633,29 @@ def get_n_best(distance_evaluations, n=10):
 n_best = get_n_best(distance_evaluations)
 n_best
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 winners = get_n_best(distance_evaluations, n=1)
 winners[["features", "norm", "delta_descriptor"]].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 winners
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_best["delta_descriptor"].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_best[["features", "norm"]].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 winners[["features", "norm"]].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 winners.delta_descriptor.value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_best[["features", "norm", "delta_descriptor"]].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 close_inspection_feature_names = [  # both corpus- and groupwise-normalized
     feature_names[f]
     for f in (
@@ -666,12 +668,12 @@ close_inspection_feature_names = [  # both corpus- and groupwise-normalized
     )
 ]
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_best[n_best.features.isin(close_inspection_feature_names)].groupby(
     ["features", "norm"]
 ).delta_descriptor.value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 close_inspection_deltas = [
     "sqeuclidean-z_score",  # especially for all 3 types of chord profiles
     "manhattan",  # especially for all 3 types of chord-tone profiles
@@ -679,7 +681,7 @@ close_inspection_deltas = [
     "cosine-z_score",
 ]
 
-# %% [raw]
+# %% [raw] jupyter={"outputs_hidden": false}
 # def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
 #     norm_index = 1 if norm == "groupwise" else 0
 #     results = distance_matrices[feature_name][delta_name]
@@ -725,17 +727,66 @@ close_inspection_deltas = [
 #     df.columns = df.columns.map(id2label)
 #     return df
 
-# %% [markdown]
+# %% [markdown] jupyter={"outputs_hidden": false}
 # ## Chord Profiles
 # ### Globalkey
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 METRICS_PATH = os.path.abspath(os.path.join(RESULTS_PATH, "..", "data"))
+
+
+def reorder_data(
+    df,
+    index_groups: Optional[str | Iterable[str]] = (
+        "feature_name",
+        "norm",
+        "delta_descriptor",
+        "top_n",
+    ),
+    iterative_approach: bool = False,
+):
+    if isinstance(index_groups, str):
+        index_groups = [index_groups]
+    else:
+        index_groups = list(index_groups)
+    df = df.set_index(index_groups).sort_index()
+    group_ids = (
+        df.groupby(level=index_groups)
+        .ngroup()
+        .reset_index(drop=True)
+        .rename("group_id")
+    )
+    if iterative_approach:
+        if len(index_groups) == 1:
+            tuples_generator = (
+                (group_id, idx, i)
+                for group_id, idx, i in zip(group_ids, df.index, count(start=0, step=1))
+            )
+        else:
+            tuples_generator = (
+                (group_id,) + tup + (i,)
+                for group_id, tup, i in zip(group_ids, df.index, count(start=0, step=1))
+            )
+        names = ["id"] + df.index.names + ["i"]
+        new_ix = pd.MultiIndex.from_tuples(tuples_generator, names=names)
+    else:
+        idx = df.index.to_frame(index=False)
+        i_level = pd.RangeIndex(len(df)).to_series().rename("i")
+        new_ix = pd.concat([group_ids, idx, i_level], axis=1)
+        new_ix = pd.MultiIndex.from_frame(new_ix)
+    df.index = new_ix
+    return df
 
 
 def load_feature_metrics(
     feature_name: str,
     directory: str = METRICS_PATH,
+    index_groups: Optional[str | Iterable[str]] = (
+        "feature_name",
+        "norm",
+        "delta_descriptor",
+        "top_n",
+    ),
 ) -> pd.DataFrame:
     candidates = [f for f in os.listdir(directory) if feature_name in f]
     if not candidates:
@@ -752,10 +803,116 @@ def load_feature_metrics(
         df = melt_evaluation_metrics(df)
     if "top_n" not in df.columns:
         df["top_n"] = df.filepath.str[-4:].astype(int)
+    if index_groups:
+        df = reorder_data(df, index_groups=index_groups)
     return df
 
 
+def concatenate_feature_metrics(
+    features=(
+        "root_per_globalkey",
+        "root_per_localkey",
+        "root_per_tonicization",
+        "global_root_ct",
+        "local_root_ct",
+        "tonicization_root_ct",
+    ),
+    directory: str = METRICS_PATH,
+    index_groups: Optional[str | Iterable[str]] = (
+        "feature_name",
+        "norm",
+        "delta_descriptor",
+        "top_n",
+    ),
+):
+    df = pd.concat(
+        [load_feature_metrics(f, directory, index_groups=None) for f in features],
+        keys=list(features),
+        names=["feature_name"],
+    ).reset_index(0)
+    if index_groups:
+        df = reorder_data(df, index_groups=index_groups)
+    return df
+
+
+metrics_complete = concatenate_feature_metrics()
+metrics_complete
+
 # %%
+fig = make_scatter_plot(
+    metrics_complete.reset_index(),
+    x_col="top_n",
+    y_col="value",
+    symbol="norm",
+    color="features",
+    color_discrete_map=color_palette,
+    facet_col="delta_title",
+    facet_row="metric",
+    y_axis=dict(matches=None),
+    traces_settings=dict(marker_size=2, opacity=0.5),
+    layout=dict(legend=dict(y=-0.05, orientation="h")),
+    height=4000,
+)
+# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+# fig.update_yaxes(matches="y")
+for row_idx, row_figs in enumerate(fig._grid_ref):
+    for col_idx, col_fig in enumerate(row_figs):
+        fig.update_yaxes(
+            row=row_idx + 1,
+            col=col_idx + 1,
+            matches="y" + str(len(row_figs) * row_idx + 1),
+        )
+# save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
+fig
+
+# %%
+metrics_complete.head(1)
+
+# %%
+fishers_only = metrics_complete.query('metric == "Fisher\'s LD"')
+fishers_only = pd.concat(
+    [fishers_only, fishers_only.value.rank(ascending=False).rename("rank")], axis=1
+)
+
+# %%
+fishers_only.value.quantile([0.1, 0.99])
+
+# %%
+metrics_complete.loc[749]
+
+# %%
+fishers_only[fishers_only.value > 28]
+
+# %%
+fig = make_scatter_plot(
+    fishers_only,
+    x_col="top_n",
+    y_col="value",
+    symbol="norm",
+    color="features",
+    color_discrete_map=color_palette,
+    facet_col="norm",
+    facet_row="delta_descriptor",
+    y_axis=dict(matches=None),
+    traces_settings=dict(marker_size=3, opacity=0.5),
+    layout=dict(legend=dict(y=-0.05, orientation="h")),
+    height=1500,
+    log_y=True,
+)
+# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+fig.update_yaxes(matches="y")
+# for row_idx, row_figs in enumerate(fig._grid_ref):
+#     for col_idx, col_fig in enumerate(row_figs):
+#         fig.update_yaxes(
+#             row=row_idx + 1,
+#             col=col_idx + 1,
+#             matches="y" + str(len(row_figs) * row_idx + 1),
+#         )
+# save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
+fig
+
+
+# %% jupyter={"outputs_hidden": false}
 def show_gridsearch(df, save_as: Optional[str], height=4000, width=1300, **kwargs):
     fig = make_scatter_plot(
         df,
@@ -783,18 +940,22 @@ def show_gridsearch(df, save_as: Optional[str], height=4000, width=1300, **kwarg
 
     if save_as:
         save_figure_as(fig, save_as, height=height, width=width)
-    fig
+    return fig
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 root_per_globalkey = load_feature_metrics("root_per_globalkey")
 show_gridsearch(root_per_globalkey, "root_per_globalkey_gridsearch")
 
-# %% [markdown]
+# %% [markdown] jupyter={"outputs_hidden": false}
 # ### Localkey
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 root_per_globalkey = load_feature_metrics("root_per_localkey")
 show_gridsearch(root_per_globalkey, "root_per_localkey_gridsearch")
+
+# %% jupyter={"outputs_hidden": false}
+root_per_tonicization = load_feature_metrics("root_per_tonicization")
+show_gridsearch(root_per_tonicization, "root_per_tonicization_gridsearch")
 
 # %%
