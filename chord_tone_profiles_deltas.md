@@ -505,7 +505,9 @@ Or load them from a TSV file.
 
 A few hand-picked values only.
 
-This was originally computed on a laptop based on distance matrices that had been saved as a ZIP archive of TSV files (`store_distance_matrices()`). Once the gridsearch had been implemented for running on a HPC, the distance matrices were instead pickled individually (`pickle_distance_matrices()`).
+This was originally computed on a laptop based on distance matrices that had been saved as a ZIP archive of TSV files
+(`store_distance_matrices()`). Once the gridsearch had been implemented for running on a HPC, the distance matrices
+were instead pickled individually (`pickle_distance_matrices()`).
 
 ```{code-cell} ipython3
 ---
@@ -693,6 +695,7 @@ def get_n_best(distance_evaluations, n=10):
         "metric in @smaller_is_better"
     )
     return pd.concat([best_largest, best_smallest])
+
 
 n = 10
 n_best = get_n_best(distance_evaluations, n=n)
@@ -1008,16 +1011,17 @@ fishers_only = pd.concat(
 :is_executing: true
 
 
+
 def make_outliers_mask(
-        mask_support,
-        iqr_coefficient: float = 1.5,
-        reverse: bool = False,
-        verbose: bool = False,
+    mask_support,
+    iqr_coefficient: float = 1.5,
+    reverse: bool = False,
+    verbose: bool = False,
 ):
     is_dataframe = isinstance(mask_support, pd.DataFrame)
     if is_dataframe and len(mask_support.columns) == 1:
-            mask_support = mask_support.iloc(axis=1)[0]
-            is_dataframe = False
+        mask_support = mask_support.iloc(axis=1)[0]
+        is_dataframe = False
     Q1 = mask_support.quantile(0.25)
     Q3 = mask_support.quantile(0.75)
     distance = iqr_coefficient * (Q3 - Q1)
@@ -1034,18 +1038,21 @@ def make_outliers_mask(
         within_mask = ~within_mask
     return within_mask
 
+
 def remove_outliers(
-        df_or_s: pd.DataFrame | pd.Series,
-        columns: Optional[str | Iterable[str]] = "value",
-        groups: Optional[str | Iterable[str]] = None,
-        iqr_coefficient: float = 1.5,
-        reverse: bool = False,
-        verbose: bool = False
+    df_or_s: pd.DataFrame | pd.Series,
+    columns: Optional[str | Iterable[str]] = "value",
+    groups: Optional[str | Iterable[str]] = None,
+    iqr_coefficient: float = 1.5,
+    reverse: bool = False,
+    verbose: bool = False,
 ) -> pd.DataFrame | pd.Series:
     is_dataframe = isinstance(df_or_s, pd.DataFrame)
     on_subset = bool(columns)
     if on_subset:
-        assert is_dataframe, f"Input is not a dataframe so I don't accept the columns argument {columns!r}."
+        assert (
+            is_dataframe
+        ), f"Input is not a dataframe so I don't accept the columns argument {columns!r}."
         if isinstance(columns, str):
             columns = [columns]
         else:
@@ -1053,25 +1060,29 @@ def remove_outliers(
     if groups:
         if on_subset:
             within_mask = df_or_s.groupby(groups, group_keys=False)[columns].apply(
-                make_outliers_mask, iqr_coefficient=iqr_coefficient, reverse=not reverse, verbose=verbose
+                make_outliers_mask,
+                iqr_coefficient=iqr_coefficient,
+                reverse=not reverse,
+                verbose=verbose,
             )
         else:
             within_mask = df_or_s.groupby(groups, group_keys=False).apply(
-                make_outliers_mask, iqr_coefficient=iqr_coefficient, reverse=not reverse, verbose=verbose
+                make_outliers_mask,
+                iqr_coefficient=iqr_coefficient,
+                reverse=not reverse,
+                verbose=verbose,
             )
         within_mask = within_mask.reindex(df_or_s.index)
     else:
         mask_support = df_or_s[columns] if on_subset else df_or_s
-        within_mask = make_outliers_mask(mask_support, iqr_coefficient, not reverse, verbose)
+        within_mask = make_outliers_mask(
+            mask_support, iqr_coefficient, not reverse, verbose
+        )
     return df_or_s[within_mask]
 ```
 
 ```{code-cell} ipython3
-def compare_single_metric(
-    metrics_complete,
-    metric,
-    iqr_coefficient=10
-):
+def compare_single_metric(metrics_complete, metric, iqr_coefficient=10):
     """Displays faceted plot with all values for a single metric, removing extreme outliers from each subplot.
     All y-axes range up to the global maximum value for better comparability.
     """
@@ -1080,7 +1091,9 @@ def compare_single_metric(
     #     [filtered, filtered.value.rank(ascending=False).rename("rank")], axis=1
     # )
     n_before = len(filtered)
-    filtered = remove_outliers(filtered, iqr_coefficient=iqr_coefficient, groups=["norm", "delta_title"])
+    filtered = remove_outliers(
+        filtered, iqr_coefficient=iqr_coefficient, groups=["norm", "delta_title"]
+    )
     n_after = len(filtered)
     print(f"Dropped {n_before - n_after} outliers.")
     fig = make_scatter_plot(
@@ -1110,6 +1123,7 @@ def compare_single_metric(
     #         )
     # save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
     return fig
+
 
 compare_single_metric(metrics_complete, "Fisher's LD")
 ```

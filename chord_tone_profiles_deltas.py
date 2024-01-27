@@ -903,7 +903,6 @@ fishers_only = pd.concat(
     [fishers_only, fishers_only.value.rank(ascending=False).rename("rank")], axis=1
 )
 
-
 # %% is_executing=true
 
 

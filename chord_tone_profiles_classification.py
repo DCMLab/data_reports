@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.1
 #   kernelspec:
-#     display_name: revamp
+#     display_name: pydelta
 #     language: python
-#     name: revamp
+#     name: pydelta
 # ---
 
 # %% [markdown]
@@ -19,22 +19,23 @@
 #
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# %load_ext autoreload
-# %autoreload 2
 
 import os
-from typing import Dict, List, Tuple
+import re
+from typing import Dict, Tuple
+from zipfile import ZipFile
 
-import dimcat as dc
-import ms3
+import delta
 import numpy as np
 import pandas as pd
 from dimcat import resources
 from dimcat.plotting import write_image
-from git import Repo
 from matplotlib import pyplot as plt
 from sklearn.decomposition import PCA
-from sklearn.discriminant_analysis import QuadraticDiscriminantAnalysis
+from sklearn.discriminant_analysis import (
+    LinearDiscriminantAnalysis,
+    QuadraticDiscriminantAnalysis,
+)
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.gaussian_process import GaussianProcessClassifier
 from sklearn.gaussian_process.kernels import RBF
@@ -44,10 +45,16 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 from sklearn.model_selection import train_test_split
-from sklearn.neighbors import KNeighborsClassifier
+from sklearn.neighbors import KNeighborsClassifier, NeighborhoodComponentsAnalysis
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
 from sklearn.svm import SVC, LinearSVC
 
 import utils
+
+# %load_ext autoreload
+# %autoreload 2
+
 
 plt.rcParams["figure.dpi"] = 300
 
@@ -74,104 +81,129 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 
 
-# %% tags=["hide-input"]
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+# %%
+def iter_zipped_matrices(
+    filepath: str = "data.zip",
+    document_describer: delta.util.DocumentDescriber = None,
+):
+    with ZipFile(filepath, "r") as zip_handler:
+        for i, file in enumerate(zip_handler.namelist()):
+            match = re.match(r"^(.+)_(rootnorm|piecenorm)\.tsv$", file)
+            if not match:
+                continue
+            feature_name, norm = match.groups()
+            print(f"Extracting {file}")
+            with zip_handler.open(file) as f:
+                matrix = pd.read_csv(f, sep="\t", index_col=0)
+            try:
+                metadata = delta.Metadata.from_zip_file(file, zip_handler)
+            except KeyError:
+                metadata = None
+            corpus = delta.Corpus(
+                matrix, metadata=metadata, document_describer=document_describer
+            )
+            corpus.index.rename("corpus, piece", inplace=True)
+            yield feature_name, norm, corpus
+
+
+def load_original_data(
+    directory: str,
+    zip_name: str = "data.zip",
+    metadata_name: str = "metadata.tsv",
+) -> Tuple[Dict[Tuple[str, str], delta.Corpus], resources.Metadata]:
+    directory = utils.resolve_dir(directory)
+    zip_path = os.path.join(directory, zip_name)
+    metadata_path = os.path.join(directory, metadata_name)
+    dd = delta.TsvDocumentDescriber(metadata_path)
+    metadata = resources.Metadata.from_resource_path(metadata_path)
+    data = {
+        (feature_name, norm): corpus
+        for feature_name, norm, corpus in iter_zipped_matrices(zip_path, dd)
+    }
+    return data, metadata
+
+
+data, metadata = load_original_data("~/git/chord_profile_search/")
+
+# %%
+corpus = data[("local_root_ct", "rootnorm")]
+corpus.shape
+
+# %%
+PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
+PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "major"})
+
+
+def show_pca(corpus, **kwargs):
+    info = f"{corpus.metadata.features}, {corpus.metadata.norm}"
+    return utils.plot_pca(corpus, info=info, **kwargs)
+
+
+show_pca(corpus, color=corpus.group_index_level, n_components=3)
+
+
+# %%
+
+random_state = np.random.RandomState(42)
+pca = PCA(n_components=2, random_state=random_state)
+scaled_pca = make_pipeline(StandardScaler(), pca)
+lda = LinearDiscriminantAnalysis(n_components=2)
+scaled_lda = make_pipeline(StandardScaler(), lda)
+nca = NeighborhoodComponentsAnalysis(n_components=2, random_state=random_state)
+scaled_nca = make_pipeline(
+    StandardScaler(),
+    nca,
 )
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
-D
 
 
 # %%
-chord_slices = utils.get_sliced_notes(D)
-chord_slices.head(5)
+def make_info(corpus, name) -> str:
+    info = f"{corpus.metadata.features}, {corpus.metadata.norm}"
+    if name:
+        info = f"{name} of the {info}"
+    return info
+
+
+transformations = {
+    "PCA": pca,
+    "PCA (standardized)": scaled_pca,
+    "LDA": lda,
+    "LDA (standardized)": scaled_lda,
+    "NCA": nca,
+    "NCA (standardized)": scaled_nca,
+}
+for name, transformation in transformations.items():
+    info = make_info(corpus, name)
+    coordinates = transformation.fit_transform(corpus, corpus.group_index_level)
+    x, y = coordinates.columns
+    fig = utils.plot_component_analysis(
+        coordinates, color=corpus.group_index_level, info=info
+    )
+    fig.show()
+
 
 # %%
-
-features = {
-    "root_per_globalkey": (  # baseline globalkey-roots without any note information
-        ["root_per_globalkey", "intervals_over_root"],
-        "chord symbols (root per globalkey + intervals)",
-    ),
-    "root_per_localkey": (  # baseline localkey-roots without any note information
-        ["root", "intervals_over_root"],
-        "chord symbols (root per localkey + intervals)",
-    ),
-    "root_per_tonicization": (  # baseline root over tonicized key without any note information
-        ["root_per_tonicization", "intervals_over_root"],
-        "chord symbols (root per tonicization + intervals)",
-    ),
-    "globalkey_profiles": (  # baseline notes - globalkey
-        ["fifths_over_global_tonic"],
-        "tone profiles as per global key",
-    ),
-    "localkey_profiles": (  # baseline notes - localkey
-        ["fifths_over_local_tonic"],
-        "tone profiles as per local key",
-    ),
-    "tonicization_profiles": (  # baseline notes - tonicized key
-        ["fifths_over_tonicization"],
-        "tone profiles as per tonicized key",
-    ),
-    "global_root_ct": (
-        ["root_per_globalkey", "fifths_over_root"],
-        "chord-tone profiles over root-per-globalkey",
-    ),
-    "local_root_ct": (
-        ["root", "fifths_over_root"],
-        "chord-tone profiles over root-per-localkey",
-    ),
-    "tonicization_root_ct": (
-        [
-            "root_per_tonicization",
-            "fifths_over_root",
-        ],
-        "chord-tone profiles over root-per-tonicization",
-    ),
-}
+def show_lda(corpus, standardize=False, **kwargs):
+    name = "LDA (standardized)" if standardize else "LDA"
+    info = make_info(corpus, name)
+    y = corpus.group_index_level
+    data = StandardScaler().fit_transform(corpus) if standardize else corpus
+    return utils.plot_lda(data, y=y, info=info, **kwargs)
 
 
-analyzer_config = dc.DimcatConfig(
-    "PrevalenceAnalyzer",
-    index=["corpus", "piece"],
-)
+def show_nca(corpus, standardize=False, **kwargs):
+    name = "NCA (standardized)" if standardize else "NCA"
+    info = make_info(corpus, name)
+    y = corpus.group_index_level
+    data = StandardScaler().fit_transform(corpus) if standardize else corpus
+    return utils.plot_nca(data, y=y, info=info, **kwargs)
 
 
-def make_data(
-    chord_slices: resources.DimcatResource,
-    features: Dict[str, Tuple[str | List[str], str]],
-) -> Dict[str, resources.PrevalenceMatrix]:
-    data = {}
-    for feature_name, (feature_columns, info) in features.items():
-        print(f"Computing prevalence matrix for {info}")
-        analyzer_config.update(columns=feature_columns)
-        prevalence_matrix = chord_slices.apply_step(analyzer_config)
-        data[feature_name] = prevalence_matrix
-    return data
+show_nca(corpus, color=corpus.group_index_level)
 
-
-data = make_data(chord_slices, features)
-groupwise_data = {
-    feature: matrix.get_groupwise_prevalence()
-    for feature, matrix in data.items()
-    if matrix.columns.nlevels > 1
-}
 
 # %%
-pca = PCA()
-pca.set_output(transform="pandas")
-data_pca = {
-    feature: pca.fit_transform(matrix.relative) for feature, matrix in data.items()
-}
-groupwise_data_pca = {
-    feature: pca.fit_transform(matrix.relative)
-    for feature, matrix in groupwise_data.items()
-}
+show_lda(corpus.top_n(280), color=corpus.group_index_level)
 
 
 # %%
@@ -326,6 +358,8 @@ def doubly_compare_feature_performance(
         "weighted_avg_f1", ascending=False
     )
 
+
+groupwise_data = data
 
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=RandomForestClassifier()
