@@ -1,25 +1,26 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: md:myst,ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.16.1
-#   kernelspec:
-#     display_name: pydelta
-#     language: python
-#     name: pydelta
-# ---
+---
+jupytext:
+  formats: md:myst,ipynb,py:percent
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.16.1
+kernelspec:
+  display_name: pydelta
+  language: python
+  name: pydelta
+---
 
-# %% [markdown]
-# # Chord Profiles
-#
-#
+# Chord Profiles
 
-# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide imports
+  code_prompt_show: Show imports
+tags: [hide-cell]
+---
 import os
 import re
 from typing import Dict, Tuple
@@ -52,16 +53,17 @@ from sklearn.svm import SVC, LinearSVC
 
 import utils
 
-# %load_ext autoreload
-# %autoreload 2
+%load_ext autoreload
+%autoreload 2
 
 
 plt.rcParams["figure.dpi"] = 300
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
+```
 
-# %%
+```{code-cell}
 RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -79,9 +81,9 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
         kwargs["width"] = 1280
         kwargs["height"] = 720
     write_image(fig, filename, directory, **kwargs)
+```
 
-
-# %%
+```{code-cell}
 def iter_zipped_matrices(
     filepath: str = "data.zip",
     document_describer: delta.util.DocumentDescriber = None,
@@ -124,12 +126,14 @@ def load_original_data(
 
 
 data, metadata = load_original_data("~/git/chord_profile_search/")
+```
 
-# %%
+```{code-cell}
 corpus = data[("local_root_ct", "rootnorm")]
 corpus.shape
+```
 
-# %%
+```{code-cell}
 PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
 PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "major"})
 
@@ -140,10 +144,9 @@ def show_pca(corpus, **kwargs):
 
 
 show_pca(corpus, color=corpus.group_index_level, n_components=3)
+```
 
-
-# %%
-
+```{code-cell}
 random_state = np.random.RandomState(42)
 pca = PCA(n_components=2, random_state=random_state)
 scaled_pca = make_pipeline(StandardScaler(), pca)
@@ -154,9 +157,9 @@ scaled_nca = make_pipeline(
     StandardScaler(),
     nca,
 )
+```
 
-
-# %%
+```{code-cell}
 def make_info(corpus, name) -> str:
     info = f"{corpus.metadata.features}, {corpus.metadata.norm}"
     if name:
@@ -180,9 +183,9 @@ for name, transformation in transformations.items():
         coordinates, color=corpus.group_index_level, info=info
     )
     fig.show()
+```
 
-
-# %%
+```{code-cell}
 def show_lda(corpus, standardize=False, **kwargs):
     name = "LDA (standardized)" if standardize else "LDA"
     info = make_info(corpus, name)
@@ -200,13 +203,13 @@ def show_nca(corpus, standardize=False, **kwargs):
 
 
 show_nca(corpus, color=corpus.group_index_level)
+```
 
-
-# %%
+```{code-cell}
 show_lda(corpus.top_n(280), color=corpus.group_index_level)
+```
 
-
-# %%
+```{code-cell}
 def make_split(matrix: resources.PrevalenceMatrix | pd.DataFrame, test_size=0.2):
     if isinstance(matrix, pd.DataFrame):
         X = matrix
@@ -312,19 +315,20 @@ class Classification:
 #         self.best_score = self.scores.max()
 #         self.best_params = self.best_estimator.get_params()
 #         return self.cv_results
+```
 
-
-# %%
+```{code-cell}
 svc = Classification(
     matrix=data["local_root_ct"],
     clf=LinearSVC(dual="auto"),
 )
+```
 
-# %%
+```{code-cell}
 svc.show_confusion_matrix(fontsize=10)
+```
 
-
-# %%
+```{code-cell}
 def compare_feature_performance(
     data: Dict[str, resources.PrevalenceMatrix],
     classifier=RandomForestClassifier(),
@@ -364,38 +368,45 @@ groupwise_data = data
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=RandomForestClassifier()
 )
+```
 
-# %%
+```{code-cell}
 # performs worse
 # doubly_compare_feature_performance(data_pca, groupwise_data_pca, classifier=RandomForestClassifier())
+```
 
-# %%
+```{code-cell}
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=LinearSVC(dual="auto")
 )
+```
 
-# %%
+```{code-cell}
 # performs the same
 # doubly_compare_feature_performance(data_pca, groupwise_data_pca, classifier=LinearSVC(dual="auto"))
+```
 
-# %%
+```{code-cell}
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=SVC(gamma=2, C=1, random_state=42)
 )
+```
 
-# %%
+```{code-cell}
 doubly_compare_feature_performance(
     data,
     groupwise_data,
     classifier=GaussianProcessClassifier(1.0 * RBF(1.0), random_state=42),
 )
+```
 
-# %%
+```{code-cell}
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=KNeighborsClassifier(39)
 )
+```
 
-# %%
+```{code-cell}
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=QuadraticDiscriminantAnalysis()
 )
@@ -427,3 +438,4 @@ doubly_compare_feature_performance(
 #
 # # %%
 # best_index
+```
