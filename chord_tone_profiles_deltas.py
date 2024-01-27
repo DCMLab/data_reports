@@ -94,7 +94,9 @@ if not EVALUATIONS_ONLY:
     chord_slices.head(5)
 
 # %% [markdown]
-# ## pydelta Corpus objects
+# ## pydelta Corpus objects for selected features
+#
+# Skipped if EVALUATIONS_ONLY
 
 # %%
 describer = delta.TsvDocumentDescriber(D.get_metadata().reset_index())
@@ -199,6 +201,10 @@ def make_features(
 data = None if EVALUATIONS_ONLY else make_features(chord_slices, features)
 
 
+# %% [markdown]
+# ### Show type rankings for selected features
+
+
 # %%
 def make_rankings(
     data: Dict[str, DataTuple],
@@ -229,7 +235,9 @@ if not EVALUATIONS_ONLY:
     show_rankings(data)
 
 # %% [markdown] jupyter={"outputs_hidden": false}
-# ## Compute deltas
+# ## Compute distance matrices for selected deltas
+#
+# Skipped if EVALUATIONS_ONLY
 
 # %% jupyter={"outputs_hidden": false}
 delta.functions.deltas.keys()
@@ -464,6 +472,20 @@ if not EVALUATIONS_ONLY:
     )
 
 
+# %% [markdown]
+# ## Compute discriminant metrics for distance matrices
+#
+# Or load them from a TSV file.
+#
+# ### Pre-study
+#
+# A few hand-picked values only.
+#
+# This was originally computed on a laptop based on distance matrices that had been saved as a ZIP archive of TSV files
+# (`store_distance_matrices()`). Once the gridsearch had been implemented for running on a HPC, the distance matrices
+# were instead pickled individually (`pickle_distance_matrices()`).
+
+
 # %% jupyter={"outputs_hidden": false}
 def evaluate(distance_matrix: delta.DistanceMatrix, **metadata):
     row = dict(distance_matrix.metadata, **metadata)
@@ -563,8 +585,10 @@ distance_evaluations = load_discriminant_metrics(
 )
 distance_evaluations
 
-# %% jupyter={"outputs_hidden": false}
-features
+# %% [markdown]
+# **Define colors**
+#
+# Assign a Tailwind color to each feature. To see the full palette, check `tailwindcss_v3.3.3.(png|svg)`
 
 # %%
 color_palette = dict(
@@ -615,6 +639,10 @@ fig
 delta.functions
 
 
+# %% [markdown]
+# #### Inspection
+
+
 # %% jupyter={"outputs_hidden": false}
 def get_n_best(distance_evaluations, n=10):
     distance_evaluations.index.rename("i", inplace=True)
@@ -630,8 +658,10 @@ def get_n_best(distance_evaluations, n=10):
     return pd.concat([best_largest, best_smallest])
 
 
-n_best = get_n_best(distance_evaluations)
-n_best
+n = 10
+n_best = get_n_best(distance_evaluations, n=n)
+print(f"Selected {len(n_best)} best-performing values, {n} per metric.")
+n_best.head()
 
 # %% jupyter={"outputs_hidden": false}
 winners = get_n_best(distance_evaluations, n=1)
@@ -782,7 +812,6 @@ def load_feature_metrics(
     feature_name: str,
     directory: str = METRICS_PATH,
     index_groups: Optional[str | Iterable[str]] = (
-        "feature_name",
         "norm",
         "delta_descriptor",
         "top_n",
@@ -862,7 +891,7 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
             col=col_idx + 1,
             matches="y" + str(len(row_figs) * row_idx + 1),
         )
-# save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
+save_figure_as(fig, "discriminant_metrics_gridsearch", height=4000, width=1300)
 fig
 
 # %%
@@ -874,42 +903,124 @@ fishers_only = pd.concat(
     [fishers_only, fishers_only.value.rank(ascending=False).rename("rank")], axis=1
 )
 
-# %%
-fishers_only.value.quantile([0.1, 0.99])
+
+# %% is_executing=true
+
+
+def make_outliers_mask(
+    mask_support,
+    iqr_coefficient: float = 1.5,
+    reverse: bool = False,
+    verbose: bool = False,
+):
+    is_dataframe = isinstance(mask_support, pd.DataFrame)
+    if is_dataframe and len(mask_support.columns) == 1:
+        mask_support = mask_support.iloc(axis=1)[0]
+        is_dataframe = False
+    Q1 = mask_support.quantile(0.25)
+    Q3 = mask_support.quantile(0.75)
+    distance = iqr_coefficient * (Q3 - Q1)
+    lower_fence, upper_fence = Q1 - distance, Q3 + distance
+    if verbose:
+        print(f"Q1={Q1}")
+        print(f"l={lower_fence}")
+        print(f"Q3={Q3}")
+        print(f"u={upper_fence}")
+    within_mask = mask_support.ge(lower_fence) & mask_support.le(upper_fence)
+    if is_dataframe:
+        within_mask = within_mask.all(axis=1)
+    if not reverse:
+        within_mask = ~within_mask
+    return within_mask
+
+
+def remove_outliers(
+    df_or_s: pd.DataFrame | pd.Series,
+    columns: Optional[str | Iterable[str]] = "value",
+    groups: Optional[str | Iterable[str]] = None,
+    iqr_coefficient: float = 1.5,
+    reverse: bool = False,
+    verbose: bool = False,
+) -> pd.DataFrame | pd.Series:
+    is_dataframe = isinstance(df_or_s, pd.DataFrame)
+    on_subset = bool(columns)
+    if on_subset:
+        assert (
+            is_dataframe
+        ), f"Input is not a dataframe so I don't accept the columns argument {columns!r}."
+        if isinstance(columns, str):
+            columns = [columns]
+        else:
+            columns = list(columns)
+    if groups:
+        if on_subset:
+            within_mask = df_or_s.groupby(groups, group_keys=False)[columns].apply(
+                make_outliers_mask,
+                iqr_coefficient=iqr_coefficient,
+                reverse=not reverse,
+                verbose=verbose,
+            )
+        else:
+            within_mask = df_or_s.groupby(groups, group_keys=False).apply(
+                make_outliers_mask,
+                iqr_coefficient=iqr_coefficient,
+                reverse=not reverse,
+                verbose=verbose,
+            )
+        within_mask = within_mask.reindex(df_or_s.index)
+    else:
+        mask_support = df_or_s[columns] if on_subset else df_or_s
+        within_mask = make_outliers_mask(
+            mask_support, iqr_coefficient, not reverse, verbose
+        )
+    return df_or_s[within_mask]
+
 
 # %%
-metrics_complete.loc[749]
+def compare_single_metric(metrics_complete, metric, iqr_coefficient=10):
+    """Displays faceted plot with all values for a single metric, removing extreme outliers from each subplot.
+    All y-axes range up to the global maximum value for better comparability.
+    """
+    filtered = metrics_complete.query(f'metric == "{metric}"')
+    # filtered = pd.concat(
+    #     [filtered, filtered.value.rank(ascending=False).rename("rank")], axis=1
+    # )
+    n_before = len(filtered)
+    filtered = remove_outliers(
+        filtered, iqr_coefficient=iqr_coefficient, groups=["norm", "delta_title"]
+    )
+    n_after = len(filtered)
+    print(f"Dropped {n_before - n_after} outliers.")
+    fig = make_scatter_plot(
+        filtered,
+        x_col="top_n",
+        y_col="value",
+        symbol="norm",
+        color="features",
+        color_discrete_map=color_palette,
+        facet_col="norm",
+        facet_row="delta_title",
+        y_axis=dict(matches=None),
+        traces_settings=dict(marker_size=3, opacity=0.5),
+        layout=dict(legend=dict(y=-0.05, orientation="h")),
+        title=f"{metric} without extreme outliers ({iqr_coefficient}*IQR)",
+        height=1500,
+        log_y=False,
+    )
+    # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+    fig.update_yaxes(matches="y")
+    # for row_idx, row_figs in enumerate(fig._grid_ref):
+    #     for col_idx, col_fig in enumerate(row_figs):
+    #         fig.update_yaxes(
+    #             row=row_idx + 1,
+    #             col=col_idx + 1,
+    #             matches="y" + str(len(row_figs) * row_idx + 1),
+    #         )
+    # save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
+    return fig
 
-# %%
-fishers_only[fishers_only.value > 28]
 
-# %%
-fig = make_scatter_plot(
-    fishers_only,
-    x_col="top_n",
-    y_col="value",
-    symbol="norm",
-    color="features",
-    color_discrete_map=color_palette,
-    facet_col="norm",
-    facet_row="delta_descriptor",
-    y_axis=dict(matches=None),
-    traces_settings=dict(marker_size=3, opacity=0.5),
-    layout=dict(legend=dict(y=-0.05, orientation="h")),
-    height=1500,
-    log_y=True,
-)
-# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
-fig.update_yaxes(matches="y")
-# for row_idx, row_figs in enumerate(fig._grid_ref):
-#     for col_idx, col_fig in enumerate(row_figs):
-#         fig.update_yaxes(
-#             row=row_idx + 1,
-#             col=col_idx + 1,
-#             matches="y" + str(len(row_figs) * row_idx + 1),
-#         )
-# save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
-fig
+compare_single_metric(metrics_complete, "Fisher's LD")
 
 
 # %% jupyter={"outputs_hidden": false}
