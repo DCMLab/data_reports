@@ -5,14 +5,17 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
   name: revamp
 ---
 
-# Chord Profiles
+# Chord Profiles (Early-stage exploration and development)
+
+This was before the decision to reduce the vocabulary to different kinds of roots (global, local tonicization)
++ something on top.
 
 ```{code-cell} ipython3
 ---

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -21,11 +21,8 @@
 
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# %load_ext autoreload
-# %autoreload 2
 
 import os
-from typing import Dict
 
 import dimcat as dc
 import ms3
@@ -37,11 +34,18 @@ from dimcat import analyzers, resources
 from dimcat.plotting import write_image
 from dimcat.utils import get_middle_composition_year
 from git import Repo
-from scipy.spatial import ConvexHull
+from sklearn import set_config
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.preprocessing import RobustScaler
 
 import utils
+
+# %load_ext autoreload
+# %autoreload 2
+
+
+set_config(transform_output="pandas")
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
@@ -130,16 +134,13 @@ utils.plot_pca(
     data=chord_and_mode.relative, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS
 )
 
-
 # %%
 scaler = RobustScaler()
-scaler.set_output(transform="pandas")
 robust = scaler.fit_transform(chord_and_mode.relative)
 utils.plot_pca(data=robust, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 
 # %%
 scaler = RobustScaler(quantile_range=(5, 95))
-scaler.set_output(transform="pandas")
 robust = scaler.fit_transform(chord_and_mode.relative)
 utils.plot_pca(data=robust, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 
@@ -151,22 +152,8 @@ utils.plot_pca(data=z, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 
 
 # %%
-def get_hull_coordinates(
-    pca_coordinates: pd.DataFrame,
-    cluster_labels,
-) -> Dict[int | str, pd.DataFrame]:
-    cluster_hulls = {}
-    for cluster, coordinates in pca_coordinates.groupby(cluster_labels):
-        if len(coordinates) < 4:
-            cluster_hulls[cluster] = coordinates
-            continue
-        hull = ConvexHull(points=coordinates)
-        cluster_hulls[cluster] = coordinates.take(hull.vertices)
-    return cluster_hulls
-
-
 def plot_kmeans(data, n_clusters, cluster_data_itself: bool = False, **kwargs):
-    pca_coordinates, pca = utils.get_pca_coordinates(data, n_components=3)
+    pca_coordinates, pca = utils.get_component_analysis_coordinates(PCA(3), data)
     kmeans = KMeans(n_clusters=n_clusters, n_init="auto", random_state=42)
     if cluster_data_itself:
         kmeans.fit(data)
@@ -176,7 +163,7 @@ def plot_kmeans(data, n_clusters, cluster_data_itself: bool = False, **kwargs):
     cluster_labels = "cluster" + pd.Series(
         kmeans.labels_, index=data.index, name="cluster"
     ).astype(str)
-    cluster_hulls = get_hull_coordinates(pca_coordinates, cluster_labels)
+    cluster_hulls = utils.get_hull_coordinates(pca_coordinates, cluster_labels)
     for clust, coordinates in cluster_hulls.items():
         fig.add_trace(
             go.Mesh3d(
