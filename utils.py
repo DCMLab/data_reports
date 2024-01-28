@@ -1227,6 +1227,8 @@ def make_split(
     else:
         y = X.group_index_level
         X.index = X.item_index_level
+    if not test_size:
+        return X, None, y, None
     X_train, X_test, y_train, y_test = train_test_split(
         X, y, test_size=test_size, stratify=y, random_state=RANDOM_STATE
     )

@@ -23,8 +23,23 @@ PCA, LDA etc.
 import os
 
 import pandas as pd
-from dimcat.plotting import write_image
+from dimcat.plotting import make_scatter_plot, write_image
 from matplotlib import pyplot as plt
+from sklearn import set_config
+from sklearn.decomposition import TruncatedSVD
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.ensemble import RandomTreesEmbedding
+from sklearn.manifold import (
+    MDS,
+    TSNE,
+    Isomap,
+    LocallyLinearEmbedding,
+    SpectralEmbedding,
+)
+from sklearn.neighbors import NeighborhoodComponentsAnalysis
+from sklearn.pipeline import make_pipeline
+from sklearn.preprocessing import StandardScaler
+from sklearn.random_projection import SparseRandomProjection
 
 import utils
 
@@ -63,6 +78,119 @@ def make_info(corpus, name) -> str:
 data, metadata = utils.load_profiles()
 PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
 PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "major"})
+```
+
+Adapted from https://scikit-learn.org/stable/auto_examples/manifold/plot_lle_digits.html
+
+```{code-cell} ipython3
+set_config(transform_output="default")
+
+
+def get_embedding_objects(n_components=2, n_neighbors=30):
+    return {
+        "Random projection embedding": SparseRandomProjection(
+            n_components=n_components, random_state=42
+        ),
+        "Truncated SVD embedding": TruncatedSVD(n_components=n_components),
+        "Linear Discriminant Analysis embedding": LinearDiscriminantAnalysis(
+            n_components=n_components
+        ),
+        "Isomap embedding": Isomap(n_neighbors=n_neighbors, n_components=n_components),
+        "Standard LLE embedding": LocallyLinearEmbedding(
+            n_neighbors=n_neighbors, n_components=n_components, method="standard"
+        ),
+        "Modified LLE embedding": LocallyLinearEmbedding(
+            n_neighbors=n_neighbors, n_components=n_components, method="modified"
+        ),
+        "Hessian LLE embedding": LocallyLinearEmbedding(
+            n_neighbors=n_neighbors,
+            n_components=n_components,
+            method="hessian",
+            eigen_solver="dense",
+        ),
+        # "LTSA LLE embedding": LocallyLinearEmbedding(
+        #     n_neighbors=n_neighbors, n_components=n_components, method="ltsa"
+        # ),
+        "MDS embedding": MDS(
+            n_components=n_components, n_init=1, max_iter=120, n_jobs=2
+        ),
+        "Random Trees embedding": make_pipeline(
+            RandomTreesEmbedding(n_estimators=200, max_depth=5, random_state=0),
+            TruncatedSVD(n_components=n_components),
+        ),
+        "Spectral embedding": SpectralEmbedding(
+            n_components=n_components, random_state=0, eigen_solver="arpack"
+        ),
+        "t-SNE embedding": TSNE(
+            n_components=n_components,
+            n_iter=500,
+            n_iter_without_progress=150,
+            n_jobs=2,
+            random_state=0,
+        ),
+        "NCA embedding": NeighborhoodComponentsAnalysis(
+            n_components=n_components, init="pca", random_state=0
+        ),
+    }
+
+
+def make_embeddings(X, y, n_components=2, n_neighbors=30) -> pd.DataFrame:
+    projections = {}
+    embeddings = get_embedding_objects(n_components, n_neighbors)
+    for name, transformer in embeddings.items():
+        # if name.startswith("Linear Discriminant Analysis"):
+        #     data = X.copy()
+        #     data.flat[:: X.shape[1] + 1] += 0.01  # Make X invertible
+        # else:
+        #     data = X
+
+        print(f"Computing {name}...")
+        projections[name] = transformer.fit_transform(X, y)
+    concatenate_this = {}
+    marker_info = y.reset_index()  # columns "corpus, piece" and "group"
+    for name, coordinates in projections.items():
+        columns = ["x", "y"] if n_components == 2 else ["x", "y", "z"]
+        df = pd.DataFrame(coordinates, columns=columns)
+        concatenate_this[name] = pd.concat([df, marker_info], axis=1)
+    scatter_data = pd.concat(concatenate_this, names=["embedding", "i"]).reset_index(0)
+    return scatter_data
+
+
+def show_projections(scatter_data, **kwargs):
+    plot_settings = dict(
+        df=scatter_data,
+        x_col="x",
+        y_col="y",
+        color="group",
+        hover_data=["corpus, piece", "group"],
+        facet_col="embedding",
+        facet_col_wrap=3,
+        y_axis=dict(matches=None),
+        x_axis=dict(matches=None),
+        height=2000,
+        **kwargs,
+    )
+    return make_scatter_plot(
+        **plot_settings,
+    )
+```
+
+```{code-cell} ipython3
+corpus = data[("local_root_ct", "rootnorm")]
+X, _, y, _ = utils.make_split(corpus, test_size=0)
+scatter_data = make_embeddings(X, y, n_neighbors=18)
+show_projections(
+    scatter_data, title="Embeddings of local-root chord-tone profiles, rootnorm"
+)
+```
+
+```{code-cell} ipython3
+scaled_corpus = StandardScaler().fit_transform(corpus)
+scatter_data = make_embeddings(scaled_corpus, y, n_neighbors=10)
+show_projections(
+    scatter_data,
+    title="Embeddings of standardized local-root chord-tone profiles, rootnorm",
+)
 ```
 
 ## Principal Component Analyses
