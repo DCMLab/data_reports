@@ -97,10 +97,6 @@ D
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 if not EVALUATIONS_ONLY:
     chord_slices = utils.get_sliced_notes(D)
     chord_slices.head(5)
@@ -133,10 +129,6 @@ def make_pydelta_corpus(
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 features = {
     "root_per_globalkey": (  # baseline globalkey-roots without any note information
         ["root_per_globalkey", "intervals_over_root"],
@@ -214,7 +206,19 @@ def make_features(
     return data
 
 
-data = None if EVALUATIONS_ONLY else make_features(chord_slices, features)
+if EVALUATIONS_ONLY:
+    data = None
+else:
+    data = utils.make_profiles(
+        chord_slices,
+        describer=describer,
+        save_as="/home/laser/git/chord_profile_search/data.zip",
+    )
+    used_pieces = data["root_per_globalkey"].prevalence_matrix.relative.index
+    metadata_subset = D.get_metadata().join_on_index(used_pieces)
+    metadata_subset.to_csv(
+        "/home/laser/git/chord_profile_search/metadata.tsv", sep="\t"
+    )
 ```
 
 ### Show type rankings for selected features
@@ -249,25 +253,15 @@ if not EVALUATIONS_ONLY:
     show_rankings(data)
 ```
 
-+++ {"jupyter": {"outputs_hidden": false}}
-
 ## Compute distance matrices for selected deltas
 
 Skipped if EVALUATIONS_ONLY
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 delta.functions.deltas.keys()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 selected_deltas = {
     name: func
     for name, func in delta.functions.deltas.items()
@@ -510,10 +504,6 @@ This was originally computed on a laptop based on distance matrices that had bee
 were instead pickled individually (`pickle_distance_matrices()`).
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 def evaluate(distance_matrix: delta.DistanceMatrix, **metadata):
     row = dict(distance_matrix.metadata, **metadata)
     # row.update(distance_matrix.metadata)
@@ -637,10 +627,6 @@ color_palette = {
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 fig = make_scatter_plot(
     distance_evaluations,
     x_col="top_n",
@@ -669,28 +655,26 @@ fig
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 delta.functions
 ```
 
 #### Inspection
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 def get_n_best(distance_evaluations, n=10):
-    distance_evaluations.index.rename("i", inplace=True)
+    if distance_evaluations.index.nlevels == 1:
+        distance_evaluations.index.rename("i", inplace=True)
     smaller_is_better = ["Entropy", "Cluster Errors", "F-Ratio"]  # noqa: F841
-    nlargest = distance_evaluations.groupby("metric").value.nlargest(n)
+    prefer_smaller_mask = distance_evaluations.metric.isin(smaller_is_better)
+    nlargest = (
+        distance_evaluations[~prefer_smaller_mask].groupby("metric").value.nlargest(n)
+    )
     best_largest = join_df_on_index(distance_evaluations, nlargest.index).query(
         "metric not in @smaller_is_better"
     )
-    nsmallest = distance_evaluations.groupby("metric").value.nsmallest(n)
+    nsmallest = (
+        distance_evaluations[prefer_smaller_mask].groupby("metric").value.nsmallest(n)
+    )
     best_smallest = join_df_on_index(distance_evaluations, nsmallest.index).query(
         "metric in @smaller_is_better"
     )
@@ -704,67 +688,35 @@ n_best.head()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 winners = get_n_best(distance_evaluations, n=1)
 winners[["features", "norm", "delta_descriptor"]].value_counts()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 winners
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 n_best["delta_descriptor"].value_counts()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 n_best[["features", "norm"]].value_counts()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 winners[["features", "norm"]].value_counts()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 winners.delta_descriptor.value_counts()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 n_best[["features", "norm", "delta_descriptor"]].value_counts()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 close_inspection_feature_names = [  # both corpus- and groupwise-normalized
     feature_names[f]
     for f in (
@@ -779,20 +731,12 @@ close_inspection_feature_names = [  # both corpus- and groupwise-normalized
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 n_best[n_best.features.isin(close_inspection_feature_names)].groupby(
     ["features", "norm"]
 ).delta_descriptor.value_counts()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 close_inspection_deltas = [
     "sqeuclidean-z_score",  # especially for all 3 types of chord profiles
     "manhattan",  # especially for all 3 types of chord-tone profiles
@@ -802,10 +746,6 @@ close_inspection_deltas = [
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
     norm_index = 1 if norm == "groupwise" else 0
     results = distance_matrices[feature_name][delta_name]
@@ -852,16 +792,10 @@ def make_confusion_matrix(
     return df
 ```
 
-+++ {"jupyter": {"outputs_hidden": false}}
-
 ## Chord Profiles
 ### Globalkey
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 METRICS_PATH = os.path.abspath(os.path.join(RESULTS_PATH, "..", "data"))
 
 
@@ -997,6 +931,19 @@ fig
 ```
 
 ```{code-cell} ipython3
+winners = get_n_best(metrics_complete, n=1)
+winners
+```
+
+```{code-cell} ipython3
+len(winners)
+```
+
+```{code-cell} ipython3
+winners.groupby(["feature_name", "norm", "top_n"]).size()
+```
+
+```{code-cell} ipython3
 metrics_complete.head(1)
 ```
 
@@ -1129,10 +1076,6 @@ compare_single_metric(metrics_complete, "Fisher's LD")
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 def show_gridsearch(df, save_as: Optional[str], height=4000, width=1300, **kwargs):
     fig = make_scatter_plot(
         df,
@@ -1164,32 +1107,18 @@ def show_gridsearch(df, save_as: Optional[str], height=4000, width=1300, **kwarg
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 root_per_globalkey = load_feature_metrics("root_per_globalkey")
 show_gridsearch(root_per_globalkey, "root_per_globalkey_gridsearch")
 ```
 
-+++ {"jupyter": {"outputs_hidden": false}}
-
 ### Localkey
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 root_per_globalkey = load_feature_metrics("root_per_localkey")
 show_gridsearch(root_per_globalkey, "root_per_localkey_gridsearch")
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 root_per_tonicization = load_feature_metrics("root_per_tonicization")
 show_gridsearch(root_per_tonicization, "root_per_tonicization_gridsearch")
 ```

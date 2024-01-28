@@ -16,12 +16,9 @@
 # %%
 import contextlib
 import os
-import re
 from collections import defaultdict
-from typing import Dict, Literal, Optional, Tuple
-from zipfile import ZipFile
+from typing import Dict, Literal, Optional
 
-import delta
 import joblib
 import numpy as np
 import pandas as pd
@@ -61,16 +58,14 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
+RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
 def make_output_path(filename, extension=None):
-    if extension:
-        extension = "." + extension.lstrip(".")
-    else:
-        extension = utils.DEFAULT_OUTPUT_FORMAT
-    return os.path.join(RESULTS_PATH, f"{filename}{extension}")
+    return utils.make_output_path(
+        filename, extension, RESULTS_PATH, use_subfolders=True
+    )
 
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -80,7 +75,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def make_info(corpus, name) -> str:
     info = f"{corpus.metadata.features}, {corpus.metadata.norm}"
     if name:
@@ -88,67 +83,15 @@ def make_info(corpus, name) -> str:
     return info
 
 
-def iter_zipped_matrices(
-    filepath: str = "data.zip",
-    document_describer: delta.util.DocumentDescriber = None,
-):
-    with ZipFile(filepath, "r") as zip_handler:
-        for i, file in enumerate(zip_handler.namelist()):
-            match = re.match(r"^(.+)_(rootnorm|piecenorm)\.tsv$", file)
-            if not match:
-                continue
-            feature_name, norm = match.groups()
-            print(f"Extracting {file}")
-            with zip_handler.open(file) as f:
-                matrix = pd.read_csv(f, sep="\t", index_col=0)
-            try:
-                metadata = delta.Metadata.from_zip_file(file, zip_handler)
-            except KeyError:
-                metadata = None
-            corpus = delta.Corpus(
-                matrix, metadata=metadata, document_describer=document_describer
-            )
-            corpus.index.rename("corpus, piece", inplace=True)
-            yield feature_name, norm, corpus
-
-
-def load_original_data(
-    directory: str,
-    zip_name: str = "data.zip",
-    metadata_name: str = "metadata.tsv",
-    drop_with_less_than: Optional[int] = 3,
-) -> Tuple[Dict[Tuple[str, str], delta.Corpus], resources.Metadata]:
-    directory = utils.resolve_dir(directory)
-    zip_path = os.path.join(directory, zip_name)
-    metadata_path = os.path.join(directory, metadata_name)
-    dd = delta.TsvDocumentDescriber(metadata_path)
-    metadata = resources.Metadata.from_resource_path(metadata_path)
-    data = {
-        (feature_name, norm): corpus
-        for feature_name, norm, corpus in iter_zipped_matrices(zip_path, dd)
-    }
-    if drop_with_less_than:
-        print("DROPPING...")
-        data = {
-            k: utils.drop_groups_with_less_than(v, drop_with_less_than)
-            for k, v in data.items()
-        }
-        metadata = utils.drop_groups_with_less_than(metadata, drop_with_less_than)
-    return data, metadata
-
-
-data, metadata = load_original_data("~/git/chord_profile_search/")
+data, metadata = utils.load_profiles()
 PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
 PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "major"})
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 corpus = data[("local_root_ct", "rootnorm")]
 corpus.shape
 
-# %% jupyter={"outputs_hidden": false}
-X_train, X_test, y_train, y_test = utils.make_split(corpus)
-
-# %% jupyter={"outputs_hidden": false}
+# %%
 
 
 @contextlib.contextmanager
@@ -171,7 +114,7 @@ def tqdm_joblib(tqdm_object):
         tqdm_object.close()
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 
 
 def get_scores(name, clf, x_train, y_train, x_test, y_test):
@@ -184,57 +127,73 @@ def get_scores(name, clf, x_train, y_train, x_test, y_test):
     }
 
 
-oracle = OAS(store_precision=False, assume_centered=False)
+def compare_lda_classifiers(corpus):
+    X_train, X_test, y_train, y_test = utils.make_split(corpus)
+    oracle = OAS(store_precision=False, assume_centered=False)
 
-classifiers = dict(
-    lda=LinearDiscriminantAnalysis(solver="lsqr", shrinkage=None),
-    lda_shrink=LinearDiscriminantAnalysis(solver="lsqr", shrinkage="auto"),
-    lda_oas=LinearDiscriminantAnalysis(solver="lsqr", covariance_estimator=oracle),
-)
-classifiers.update(
-    dict(
-        lda_scaled=make_pipeline(StandardScaler(), classifiers["lda"]),
-        lda_scaled_shrink=make_pipeline(StandardScaler(), classifiers["lda_shrink"]),
-        lda_scaled_oas=make_pipeline(StandardScaler(), classifiers["lda_oas"]),
+    classifiers = dict(
+        lda=LinearDiscriminantAnalysis(solver="lsqr", shrinkage=None),
+        lda_shrink=LinearDiscriminantAnalysis(solver="lsqr", shrinkage="auto"),
+        lda_oas=LinearDiscriminantAnalysis(solver="lsqr", covariance_estimator=oracle),
     )
-)
+    classifiers.update(
+        dict(
+            lda_scaled=make_pipeline(StandardScaler(), classifiers["lda"]),
+            lda_scaled_shrink=make_pipeline(
+                StandardScaler(), classifiers["lda_shrink"]
+            ),
+            lda_scaled_oas=make_pipeline(StandardScaler(), classifiers["lda_oas"]),
+        )
+    )
 
-n_classifiers = len(classifiers)
-search_range = range(1, X_train.shape[1] + 1)
-total_rows = len(search_range) * n_classifiers
-with tqdm_joblib(tqdm(desc="Computing scores", total=total_rows)) as _:
-    with joblib.Parallel(n_jobs=-1, return_as="generator") as parallel:
-        rows = defaultdict(dict)
-        try:
-            reduced_data_iterator = (
-                (X_train.iloc[:, :n_features], X_test.iloc[:, :n_features])
-                for n_features in search_range
-            )
-            for i, scores in enumerate(
-                parallel(
-                    joblib.delayed(get_scores)(
-                        name, clf, x_train, y_train, x_test, y_test
-                    )
-                    for x_train, x_test in reduced_data_iterator
-                    for name, clf in classifiers.items()
+    n_classifiers = len(classifiers)
+    search_range = range(1, X_train.shape[1] + 1)
+    total_rows = len(search_range) * n_classifiers
+    with tqdm_joblib(tqdm(desc="Computing scores", total=total_rows)) as _:
+        with joblib.Parallel(n_jobs=-1, return_as="generator") as parallel:
+            rows = defaultdict(dict)
+            try:
+                reduced_data_iterator = (
+                    (X_train.iloc[:, :n_features], X_test.iloc[:, :n_features])
+                    for n_features in search_range
                 )
-            ):
-                rows[i // n_classifiers + 1].update(scores)
-        finally:
-            results = pd.DataFrame.from_dict(rows, orient="index")
-            results.index.rename("n_features", inplace=True)
-            results.columns.set_names(["classifier", "score"], inplace=True)
-            results = results.stack(-1).reset_index().melt(["n_features", "score"])
-results.head()
+                for i, scores in enumerate(
+                    parallel(
+                        joblib.delayed(get_scores)(
+                            name, clf, x_train, y_train, x_test, y_test
+                        )
+                        for x_train, x_test in reduced_data_iterator
+                        for name, clf in classifiers.items()
+                    )
+                ):
+                    rows[i // n_classifiers + 1].update(scores)
+            finally:
+                results = pd.DataFrame.from_dict(rows, orient="index")
+                results.index.rename("n_features", inplace=True)
+                results.columns.set_names(["classifier", "score"], inplace=True)
+                results = results.stack(-1).reset_index().melt(["n_features", "score"])
+                return results
+
 
 # %%
-results = results.stack(-1).reset_index().melt(["n_features", "score"])
-results.head()
+def get_lda_comparison(corpus, feature_acronym: Optional[str] = None) -> pd.DataFrame:
+    if feature_acronym:
+        output_path = make_output_path(f"lda_comparison_{feature_acronym}", "tsv")
+    if os.path.isfile(output_path):
+        print(f"Loading {output_path}")
+        return pd.read_csv(output_path, sep="\t")
+    results = compare_lda_classifiers(corpus)
+    results.to_csv(output_path, sep="\t", index=False)
+    print(f"Saved {output_path}")
+    return results
+
+
+lctr_results = get_lda_comparison(data[("local_root_ct", "rootnorm")], "lctr")
+lctr_results.head()
 
 # %%
-
 make_scatter_plot(
-    results,
+    lctr_results,
     x_col="n_features",
     y_col="value",
     facet_col="score",
@@ -245,19 +204,27 @@ make_scatter_plot(
 )
 
 # %%
-df = pd.DataFrame(
-    {
-        ("AA", "A"): {0: "a", 1: "b", 2: "c"},
-        ("AA", "B"): {0: "d", 1: "e", 2: "f"},
-        ("AA", "C"): {0: "g", 1: "h", 2: "i"},
-        ("BB", "D"): {0: 1, 1: 2, 2: 3},
-        ("BB", "E"): {0: 4, 1: 5, 2: 6},
-    }
+rpgr_results = compare_lda_classifiers(data[("root_per_globalkey", "rootnorm")])
+rpgr_results.head()
+
+# %%
+
+make_scatter_plot(
+    rpgr_results,
+    x_col="n_features",
+    y_col="value",
+    facet_col="score",
+    color="classifier",
+    opacity=0.4,
+    title="LDA classification scores for local_root_ct, rootnorm",
+    color_discrete_sequence=px.colors.qualitative.G10,
 )
-df
+
+# %%
+rpgr_results.groupby(["classifier", "score"]).value.mean().sort_values(ascending=False)
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def show_pca(corpus, **kwargs):
     info = f"{corpus.metadata.features}, {corpus.metadata.norm}"
     return utils.plot_pca(corpus, info=info, **kwargs)
@@ -265,7 +232,7 @@ def show_pca(corpus, **kwargs):
 
 show_pca(corpus, color=corpus.group_index_level, n_components=3)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 random_state = np.random.RandomState(42)
 pca = PCA(n_components=2, random_state=random_state)
 scaled_pca = make_pipeline(StandardScaler(), pca)
@@ -277,7 +244,7 @@ scaled_nca = make_pipeline(
     nca,
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 transformations = {
     "PCA": pca,
     "PCA (standardized)": scaled_pca,
@@ -296,7 +263,7 @@ for name, transformation in transformations.items():
     fig.show()
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def show_lda(
     corpus,
     standardize=False,
@@ -323,10 +290,10 @@ def show_nca(corpus, standardize=False, **kwargs):
 
 show_lda(corpus, color=corpus.group_index_level)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 show_lda(corpus, standardize=True, color=corpus.group_index_level)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 show_lda(corpus.top_n(280), color=corpus.group_index_level)
 
 # %%
@@ -370,17 +337,17 @@ show_lda(corpus.top_n(280), color=corpus.group_index_level)
 #         self.best_params = self.best_estimator.get_params()
 #         return self.cv_results
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 svc = utils.Classification(
     matrix=data["local_root_ct"],
     clf=LinearSVC(dual="auto"),
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 svc.show_confusion_matrix(fontsize=10)
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def compare_feature_performance(
     data: Dict[str, resources.PrevalenceMatrix],
     classifier=RandomForestClassifier(),
@@ -421,37 +388,37 @@ doubly_compare_feature_performance(
     data, groupwise_data, classifier=RandomForestClassifier()
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 # performs worse
 # doubly_compare_feature_performance(data_pca, groupwise_data_pca, classifier=RandomForestClassifier())
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=LinearSVC(dual="auto")
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 # performs the same
 # doubly_compare_feature_performance(data_pca, groupwise_data_pca, classifier=LinearSVC(dual="auto"))
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=SVC(gamma=2, C=1, random_state=42)
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 doubly_compare_feature_performance(
     data,
     groupwise_data,
     classifier=GaussianProcessClassifier(1.0 * RBF(1.0), random_state=42),
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=KNeighborsClassifier(39)
 )
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 doubly_compare_feature_performance(
     data, groupwise_data, classifier=QuadraticDiscriminantAnalysis()
 )

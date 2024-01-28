@@ -15,13 +15,16 @@ from typing import (
     Iterator,
     List,
     Literal,
+    NamedTuple,
     Optional,
     Tuple,
     Union,
 )
+from zipfile import ZipFile
 
 import colorlover
 import delta
+import dimcat as dc
 import frictionless as fl
 import ms3
 import numpy as np
@@ -3280,3 +3283,180 @@ def plot_cosine_distances(tf: pd.DataFrame, standardize=True):
 
 
 # endregion chord-tone profile helpers
+class DataTuple(NamedTuple):
+    corpus: delta.Corpus
+    groupwise: delta.Corpus = None
+    prevalence_matrix: Optional[resources.PrevalenceMatrix] = None
+
+
+def make_pydelta_corpus(
+    matrix: pd.DataFrame,
+    describer: Optional[delta.DocumentDescriber] = None,
+    info: str = "chords",
+    absolute: bool = True,
+    **kwargs,
+) -> delta.Corpus:
+    metadata = delta.Metadata(
+        features=info,
+        ordered=False,
+        words=None,
+        corpus="Distant Listening Corpus",
+        complete=True,
+        frequencies=not absolute,
+        **kwargs,
+    )
+    corpus = delta.Corpus(matrix, document_describer=describer, metadata=metadata)
+    corpus.index = merge_index_levels(corpus.index)
+    corpus.columns = merge_index_levels(corpus.columns)
+    return corpus
+
+
+CHORD_PROFILES = {
+    "root_per_globalkey": (  # baseline globalkey-roots without any note information
+        ["root_per_globalkey", "intervals_over_root"],
+        "chord symbols (root per globalkey + intervals)",
+    ),
+    "root_per_localkey": (  # baseline localkey-roots without any note information
+        ["root", "intervals_over_root"],
+        "chord symbols (root per localkey + intervals)",
+    ),
+    "root_per_tonicization": (  # baseline root over tonicized key without any note information
+        ["root_per_tonicization", "intervals_over_root"],
+        "chord symbols (root per tonicization + intervals)",
+    ),
+    # "globalkey_profiles": (  # baseline notes - globalkey
+    #     ["fifths_over_global_tonic"],
+    #     "tone profiles as per global key",
+    # ),
+    # "localkey_profiles": (  # baseline notes - localkey
+    #     ["fifths_over_local_tonic"],
+    #     "tone profiles as per local key",
+    # ),
+    # "tonicization_profiles": (  # baseline notes - tonicized key
+    #     ["fifths_over_tonicization"],
+    #     "tone profiles as per tonicized key",
+    # ),
+    "global_root_ct": (
+        ["root_per_globalkey", "fifths_over_root"],
+        "chord-tone profiles over root-per-globalkey",
+    ),
+    "local_root_ct": (
+        ["root", "fifths_over_root"],
+        "chord-tone profiles over root-per-localkey",
+    ),
+    "tonicization_root_ct": (
+        [
+            "root_per_tonicization",
+            "fifths_over_root",
+        ],
+        "chord-tone profiles over root-per-tonicization",
+    ),
+}
+
+
+def make_profiles(
+    chord_slices: resources.DimcatResource,
+    describer: Optional[delta.DocumentDescriber] = None,
+    profiles: Optional[Dict[str, Tuple[str | List[str], str]]] = None,
+    save_as: Optional[str] = None,
+) -> Dict[str, DataTuple]:
+    data = {}
+    analyzer_config = dc.DimcatConfig(
+        "PrevalenceAnalyzer",
+        index=["corpus", "piece"],
+    )
+    if not profiles:
+        profiles = CHORD_PROFILES
+    for feature_name, (feature_columns, info) in profiles.items():
+        print(f"Computing prevalence matrix and pydelta corpus for {info}")
+        analyzer_config.update(columns=feature_columns)
+        prevalence_matrix = chord_slices.apply_step(analyzer_config)
+        corpus = make_pydelta_corpus(
+            prevalence_matrix.relative,
+            describer=describer,
+            info=info,
+            absolute=False,
+            norm="piecenorm",
+            feature_name=feature_name,
+        )
+        if prevalence_matrix.columns.nlevels > 1:
+            groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
+                column_levels=feature_columns[:-1]
+            )
+            groupwise = make_pydelta_corpus(
+                groupwise_prevalence.relative,
+                info=info,
+                absolute=False,
+                norm="rootnorm",
+                feature_name=feature_name,
+            )
+        else:
+            groupwise = None
+        data[feature_name] = DataTuple(corpus, groupwise, prevalence_matrix)
+    if save_as:
+        store_profiles_as_zip(data, save_as)
+    return data
+
+
+def store_profiles_as_zip(
+    data: Dict[str, DataTuple], filepath: str, overwrite: bool = True
+):
+    if os.path.isfile(filepath):
+        if overwrite:
+            os.remove(filepath)
+        else:
+            raise FileExistsError(f"{filepath} already exists.")
+    for feature_name, (corpus, groupwise, _) in data.items():
+        corpus.save_to_zip(feature_name + "_piecenorm.tsv", filepath)
+        if groupwise is not None:
+            groupwise.save_to_zip(feature_name + "_rootnorm.tsv", filepath)
+        print(".", end="")
+
+
+def iter_zipped_matrices(
+    filepath: str = "data.zip",
+    document_describer: delta.util.DocumentDescriber = None,
+):
+    with ZipFile(filepath, "r") as zip_handler:
+        for i, file in enumerate(zip_handler.namelist()):
+            match = re.match(r"^(.+)_(rootnorm|piecenorm)\.tsv$", file)
+            if not match:
+                continue
+            feature_name, norm = match.groups()
+            print(f"Extracting {file}")
+            with zip_handler.open(file) as f:
+                matrix = pd.read_csv(f, sep="\t", index_col=0)
+            try:
+                metadata = delta.Metadata.from_zip_file(file, zip_handler)
+            except KeyError:
+                metadata = None
+            corpus = delta.Corpus(
+                matrix, metadata=metadata, document_describer=document_describer
+            )
+            corpus.index.rename("corpus, piece", inplace=True)
+            yield feature_name, norm, corpus
+
+
+def load_profiles(
+    directory: str = "~/git/chord_profile_search/",
+    zip_name: str = "data.zip",
+    metadata_name: str = "metadata.tsv",
+    drop_with_less_than: Optional[int] = 3,
+) -> Tuple[Dict[Tuple[str, str], delta.Corpus], resources.Metadata]:
+    directory = resolve_dir(directory)
+    zip_path = os.path.join(directory, zip_name)
+    metadata_path = os.path.join(directory, metadata_name)
+    dd = delta.TsvDocumentDescriber(metadata_path)
+    metadata = resources.Metadata.from_resource_path(metadata_path)
+    data = {
+        (feature_name, norm): corpus
+        for feature_name, norm, corpus in iter_zipped_matrices(zip_path, dd)
+    }
+    if drop_with_less_than:
+        print("DROPPING...")
+        data = {
+            k: drop_groups_with_less_than(v, drop_with_less_than)
+            for k, v in data.items()
+        }
+        metadata = drop_groups_with_less_than(metadata, drop_with_less_than)
+    return data, metadata

@@ -8,26 +8,24 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.16.1
 #   kernelspec:
-#     display_name: revamp
+#     display_name: pydelta
 #     language: python
-#     name: revamp
+#     name: pydelta
 # ---
 
 # %% [markdown]
-# # Chord Profiles
+# # Inspection of Chord-Tone Profiles
+#
+# PCA, LDA etc.
 
 # %%
 # %load_ext autoreload
 # %autoreload 2
-import os
-from typing import Dict, List, Tuple
 
-import dimcat as dc
-import ms3
+import os
+
 import pandas as pd
-from dimcat import resources
 from dimcat.plotting import write_image
-from git import Repo
 from matplotlib import pyplot as plt
 
 import utils
@@ -38,16 +36,14 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
+RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
 def make_output_path(filename, extension=None):
-    if extension:
-        extension = "." + extension.lstrip(".")
-    else:
-        extension = utils.DEFAULT_OUTPUT_FORMAT
-    return os.path.join(RESULTS_PATH, f"{filename}{extension}")
+    return utils.make_output_path(
+        filename, extension, RESULTS_PATH, use_subfolders=True
+    )
 
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -57,112 +53,33 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 
 
-# %% tags=["hide-input"]
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
-D
-
 # %%
-chord_slices = utils.get_sliced_notes(D)
-chord_slices.head(5)
-
-# %%
-features = {
-    "root_per_globalkey": (  # baseline globalkey-roots without any note information
-        ["root_per_globalkey", "intervals_over_root"],
-        "chord symbols (root per globalkey + intervals)",
-    ),
-    "root_per_localkey": (  # baseline localkey-roots without any note information
-        ["root", "intervals_over_root"],
-        "chord symbols (root per localkey + intervals)",
-    ),
-    "root_per_tonicization": (  # baseline root over tonicized key without any note information
-        ["root_per_tonicization", "intervals_over_root"],
-        "chord symbols (root per tonicization + intervals)",
-    ),
-    "globalkey_profiles": (  # baseline notes - globalkey
-        ["fifths_over_global_tonic"],
-        "tone profiles as per global key",
-    ),
-    "localkey_profiles": (  # baseline notes - localkey
-        ["fifths_over_local_tonic"],
-        "tone profiles as per local key",
-    ),
-    "tonicization_profiles": (  # baseline notes - tonicized key
-        ["fifths_over_tonicization"],
-        "tone profiles as per tonicized key",
-    ),
-    "global_root_ct": (
-        ["root_per_globalkey", "fifths_over_root"],
-        "chord-tone profiles over root-per-globalkey",
-    ),
-    "local_root_ct": (
-        ["root", "fifths_over_root"],
-        "chord-tone profiles over root-per-localkey",
-    ),
-    "tonicization_root_ct": (
-        [
-            "root_per_tonicization",
-            "fifths_over_root",
-        ],
-        "chord-tone profiles over root-per-tonicization",
-    ),
-}
+def make_info(corpus, name) -> str:
+    info = f"{corpus.metadata.features}, {corpus.metadata.norm}"
+    if name:
+        info = f"{name} of the {info}"
+    return info
 
 
-analyzer_config = dc.DimcatConfig(
-    "PrevalenceAnalyzer",
-    index=["corpus", "piece"],
-)
-
-
-def make_data(
-    chord_slices: resources.DimcatResource,
-    features: Dict[str, Tuple[str | List[str], str]],
-) -> Dict[str, resources.PrevalenceMatrix]:
-    data = {}
-    for feature_name, (feature_columns, info) in features.items():
-        print(f"Computing prevalence matrix for {info}")
-        analyzer_config.update(columns=feature_columns)
-        prevalence_matrix = chord_slices.apply_step(analyzer_config)
-        data[feature_name] = prevalence_matrix
-    return data
-
-
-data = make_data(chord_slices, features)
-
-# %% [markdown]
-# ## Document frequencies of chord features
-
-# %%
-info2features = {key: feature_columns for feature_columns, key in features.values()}
-ranking_table = utils.compare_corpus_frequencies(chord_slices, info2features)
-ranking_table.columns.rename("feature", level=0, inplace=True)
-ranking_table.index = ranking_table.index.rename("rank") + 1
-ranking_table.iloc[:30]
+data, metadata = utils.load_profiles()
+PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
+PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "major"})
 
 # %% [markdown]
 # ## Principal Component Analyses
 # ### Chord profiles
+#
 
 # %%
-metadata = D.get_metadata()
-PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
-PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "major"})
+data.keys()
 
 
-def show_pca(feature, **kwargs):
-    global data, features
-    prevalence_matrix = data[feature]
-    info = features[feature][1]
-    return utils.plot_pca(prevalence_matrix.relative, info=info, **kwargs)
+# %%
+def show_pca(feature, norm="piecenorm", **kwargs):
+    global data
+    corpus = data[(feature, norm)]
+    info = make_info(corpus, "PCA")
+    return utils.plot_pca(corpus, info=info, **kwargs)
 
 
 show_pca("root_per_globalkey", color=PIECE_YEARS, symbol=PIECE_MODE)
@@ -173,17 +90,17 @@ show_pca("root_per_localkey", color=PIECE_YEARS, symbol=PIECE_MODE)
 # %%
 show_pca("root_per_tonicization", color=PIECE_YEARS, symbol=PIECE_MODE)
 
-# %% [markdown]
+# %% [raw]
 # ## Pitch-class profiles
 
-# %%
-show_pca("globalkey_profiles", color=PIECE_YEARS, symbol=PIECE_MODE)
+# %% [raw]
+# show_pca("globalkey_profiles", color=PIECE_YEARS, symbol=PIECE_MODE)
 
-# %%
-show_pca("localkey_profiles", color=PIECE_YEARS, symbol=PIECE_MODE)
+# %% [raw]
+# show_pca("localkey_profiles", color=PIECE_YEARS, symbol=PIECE_MODE)
 
-# %%
-show_pca("tonicization_profiles", color=PIECE_YEARS, symbol=PIECE_MODE)
+# %% [raw]
+# show_pca("tonicization_profiles", color=PIECE_YEARS, symbol=PIECE_MODE)
 
 # %% [markdown]
 # ### Chord-tone profiles

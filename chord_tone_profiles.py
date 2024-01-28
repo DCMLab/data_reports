@@ -17,7 +17,7 @@
 # # Chord Profiles (Early-stage exploration and development)
 #
 # This was before the decision to reduce the vocabulary to different kinds of roots (global, local tonicization)
-# + something on top.
+# plus something on top.
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 # %load_ext autoreload

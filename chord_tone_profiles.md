@@ -15,7 +15,7 @@ kernelspec:
 # Chord Profiles (Early-stage exploration and development)
 
 This was before the decision to reduce the vocabulary to different kinds of roots (global, local tonicization)
-+ something on top.
+plus something on top.
 
 ```{code-cell} ipython3
 ---
