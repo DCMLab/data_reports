@@ -7,6 +7,7 @@ from collections import Counter, defaultdict
 from fractions import Fraction
 from functools import cache
 from numbers import Number
+from pprint import pprint
 from typing import (
     Dict,
     Hashable,
@@ -20,6 +21,7 @@ from typing import (
 )
 
 import colorlover
+import delta
 import frictionless as fl
 import ms3
 import numpy as np
@@ -64,7 +66,13 @@ from scipy.stats import entropy
 from sklearn import set_config
 from sklearn.decomposition import PCA
 from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
+from sklearn.metrics import (
+    ConfusionMatrixDisplay,
+    classification_report,
+    confusion_matrix,
+)
 from sklearn.metrics.pairwise import cosine_distances
+from sklearn.model_selection import train_test_split
 from sklearn.neighbors import NeighborhoodComponentsAnalysis
 from sklearn.preprocessing import Normalizer, StandardScaler
 
@@ -821,6 +829,55 @@ class TailwindColorsRgb(TailwindColors):
     ROSE_950: tuple[Literal[76], Literal[5], Literal[25]] = (76, 5, 25)
 
 
+class Classification:
+    def __init__(
+        self, matrix: resources.PrevalenceMatrix | pd.DataFrame, clf, test_size=0.2
+    ):
+        self.matrix = matrix
+        self.clf = clf
+        self.X_train, self.X_test, self.y_train, self.y_test = make_split(
+            self.matrix, test_size=test_size
+        )
+        self.score = None
+        self.confusion_matrix = None
+        self.classification_report = None
+        self.fit()
+
+    def fit(
+        self,
+    ):
+        self.clf.fit(self.X_train, self.y_train)
+        self.y_pred = self.clf.predict(self.X_test)
+        self.score = self.clf.score(self.X_test, self.y_test)
+        self.classification_report = classification_report(
+            self.y_test, self.y_pred, output_dict=True, zero_division=0.0
+        )
+        self.confusion_matrix = confusion_matrix(
+            self.y_test, self.y_pred, labels=self.clf.classes_
+        )
+        return self.score
+
+    def show_confusion_matrix(self, fontsize=22):
+        SMALL_SIZE = 8
+        MEDIUM_SIZE = 10
+        BIGGER_SIZE = 12
+
+        plt.rc("font", size=SMALL_SIZE)  # controls default text sizes
+        plt.rc("axes", titlesize=SMALL_SIZE)  # fontsize of the axes title
+        plt.rc("axes", labelsize=MEDIUM_SIZE)  # fontsize of the x and y labels
+        plt.rc("xtick", labelsize=SMALL_SIZE)  # fontsize of the tick labels
+        plt.rc("ytick", labelsize=SMALL_SIZE)  # fontsize of the tick labels
+        plt.rc("legend", fontsize=SMALL_SIZE)  # legend fontsize
+        plt.rc("figure", titlesize=BIGGER_SIZE)  # fontsize of the figure title
+        # sns.heatmap(pd.DataFrame(clf_report).iloc[:-1, :].T, annot=True, cmap="RdBu")
+        disp = ConfusionMatrixDisplay(
+            confusion_matrix=self.confusion_matrix, display_labels=self.clf.classes_
+        )
+        disp.plot()
+        plt.xticks(rotation=90)
+        plt.show()
+
+
 def add_mode_column(df: pd.DataFrame) -> pd.DataFrame:
     """Returns a copy of a DataFrame (which needs to have 'localkey_is_minor' boolean col) and adds a 'mode' column
     containing 'major' and 'minor'.
@@ -1123,6 +1180,54 @@ def make_output_path(
         else:
             directory = os.path.join(directory, "figs")
     return os.path.join(directory, file)
+
+
+def drop_groups_with_less_than(
+    corpus: delta.Corpus | resources.DimcatResource, n: int = 3
+) -> delta.Corpus | resources.DimcatResource:
+    if not n:
+        return corpus
+    if "corpus" in corpus.index.names:
+        is_corpus_object = False
+        group_index = corpus.index.get_level_values("corpus")
+    else:
+        is_corpus_object = True
+        group_index = corpus.group_index_level
+    counts = group_index.value_counts()
+    drop_counts = counts[counts < n]
+    drop_groups = drop_counts.index
+    if len(drop_groups) == 0:
+        return corpus
+    pprint(drop_counts.to_dict())
+    if is_corpus_object:
+        keep_mask = ~group_index.isin(drop_groups)
+        reduced_corpus = corpus[keep_mask]
+        return corpus.new_data(reduced_corpus)
+    else:
+        return corpus.filter_index_level(level="corpus", drop_values=drop_groups)
+
+
+def make_split(
+    matrix: resources.PrevalenceMatrix | pd.DataFrame, test_size=0.2
+) -> Tuple[pd.DataFrame, pd.DataFrame, pd.Series, pd.Series]:
+    """Wrapper around sklearn.model_selection.train_test_split."""
+    if isinstance(matrix, pd.DataFrame):
+        X = matrix
+    else:
+        X = matrix.relative
+    # first, drop corpora containing only one piece
+    X = drop_groups_with_less_than(X, n=2)
+    # get the labels from the index level, then drop the level
+    if "corpus" in X.index.names:
+        y = X.index.get_level_values("corpus")
+        X.index = X.index.droplevel("corpus")
+    else:
+        y = X.group_index_level
+        X.index = X.item_index_level
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, stratify=y, random_state=RANDOM_STATE
+    )
+    return X_train, X_test, y_train, y_test
 
 
 def make_sunburst(
