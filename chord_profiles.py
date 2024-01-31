@@ -15,6 +15,10 @@
 
 # %% [markdown]
 # # Chord profiles for pieces in the DLC
+#
+# Initial exploration and experiments with chord profiles, PCA, RobustSclaer, and KMeans clustering.
+#
+
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 # %load_ext autoreload

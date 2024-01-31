@@ -14,6 +14,8 @@ kernelspec:
 
 # Chord profiles for pieces in the DLC
 
+Initial exploration and experiments with chord profiles, PCA, RobustSclaer, and KMeans clustering.
+
 ```{code-cell}
 ---
 mystnb:
