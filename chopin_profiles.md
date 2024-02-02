@@ -12,10 +12,9 @@ kernelspec:
   name: revamp
 ---
 
-# Chord Profiles (Early-stage exploration and development)
+# Chopin Profiles
 
-This was before the decision to reduce the vocabulary to different kinds of roots (global, local tonicization)
-plus something on top.
+Motivation: Chopin's dominant is often attributed a special characteristic due to the characteristic 13
 
 ```{code-cell}
 ---
@@ -26,22 +25,18 @@ tags: [hide-cell]
 ---
 %load_ext autoreload
 %autoreload 2
+
 import os
-from typing import Tuple
 
 import dimcat as dc
 import ms3
-import numpy as np
 import pandas as pd
 from dimcat import resources
 from dimcat.plotting import make_bar_plot, write_image
 from git import Repo
 from matplotlib import pyplot as plt
-from scipy.cluster.hierarchy import dendrogram  # , linkage
-from sklearn.cluster import AgglomerativeClustering
 
 import utils
-from dendrograms import Dendrogram, TableDocumentDescriber
 
 plt.rcParams["figure.dpi"] = 300
 
@@ -84,226 +79,143 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
+```{raw-cell}
+harmony_labels = D.get_feature("harmonylabels")
+harmony_labels.head()
+raw_labels = harmony_labels.numeral.str.upper() + harmony_labels.figbass.fillna('')
+ll = raw_labels.to_list()
+from suffix_tree import Tree
+sfx_tree = Tree({"dlc": ll})
+# query = ["I", "I6", "VII6", "II6", "I", "V7"]
+query = ["VII6", "II6", "I"]
+sfx_tree.find_all(query)
+```
+
 ```{code-cell}
 chord_slices = utils.get_sliced_notes(D)
 chord_slices.head(5)
 ```
 
-## Document frequencies of chord features
+**First intuition: Compare `V7` chord profiles**
 
 ```{code-cell}
-utils.compare_corpus_frequencies(
-    chord_slices,
-    [
-        "chord_reduced_and_mode",
-        ["effective_localkey_is_minor", "numeral"],
-        "root",
-        "root_per_globalkey",
-    ],
+chord_tone_profiles = utils.make_chord_tone_profile(chord_slices)
+chord_tone_profiles.head()
+```
+
+```{code-cell}
+utils.plot_chord_profiles(chord_tone_profiles, "V7, major")
+```
+
+**It turns out that the scale degree in question (3) is more frequent in `V7` chords in `bach_solo` and
+`peri_euridice` than in Chopin's Mazurkas. We might suspect that the Chopin chord is not included because it is
+highlighted as a different label, 7e.g. `V7(13)`.**
+
+```{code-cell}
+utils.plot_chord_profiles(chord_tone_profiles, "V7(13), major")
+```
+
+**From here, it is interesting to ask, either, if these special labels show up more frequently in Chopin's corpus
+than in others, and if 3 shows up prominently in Chopin's dominants if we combine all dominant chord profiles with
+each other.**
+
+```{code-cell}
+harmony_labels = D.get_feature("harmonylabels")
+all_V7 = harmony_labels.query("numeral == 'V' & figbass == '7'")
+all_V7.head()
+```
+
+```{code-cell}
+all_V7["tonicization_chord"] = all_V7.chord.str.split("/").str[0]
+```
+
+```{code-cell}
+all_V7_absolute = all_V7.groupby(["corpus", "tonicization_chord"]).duration_qb.agg(
+    ["sum", "size"]
+)
+all_V7_absolute.columns = ["duration_qb", "count"]
+all_V7_absolute
+```
+
+```{code-cell}
+all_V7_relative = all_V7_absolute / all_V7_absolute.groupby("corpus").sum()
+make_bar_plot(
+    all_V7_relative.reset_index(),
+    x_col="tonicization_chord",
+    y_col="duration_qb",
+    color="corpus",
+    log_y=True,
 )
 ```
+
+```{code-cell}
+all_V7_relative.loc["chopin_mazurkas"].sort_values("count", ascending=False) * 100
+```
+
+**This is not a good way of comparing dominant chords. We could now start summing up all the different chords we
+consider to be part of the "Chopin chord" category. Chord-tone-profiles are probably the better way to see.**
+
++++
 
 ## Create chord-tone profiles for multiple chord features
 
 Tokens are `(feature, ..., chord_tone)` tuples.
 
 ```{code-cell}
-chord_reduced: resources.PrevalenceMatrix = chord_slices.apply_step(
+tonicization_profiles: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
-        columns=["chord_reduced_and_mode", "fifths_over_local_tonic"],
-        index=["corpus", "piece"],
-    )
-)
-print(f"Shape: {chord_reduced.shape}")
-```
-
-```{code-cell}
-numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["effective_localkey_is_minor", "numeral", "fifths_over_local_tonic"],
-        index=["corpus", "piece"],
-    )
-)
-print(f"Shape: {numerals.shape}")
-utils.replace_boolean_column_level_with_mode(numerals)
-```
-
-```{code-cell}
-roots: resources.PrevalenceMatrix = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["root", "fifths_over_local_tonic"],
-        index=["corpus", "piece"],
-    )
-)
-print(f"Shape: {roots.shape}")
-```
-
-```{code-cell}
-root_per_globalkey = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["root_per_globalkey", "fifths_over_local_tonic"],
-        index=["corpus", "piece"],
-    )
-)
-print(f"Shape: {root_per_globalkey.shape}")
-```
-
-```{code-cell}
-cos_dist_chord_tones = utils.make_cosine_distances(
-    chord_reduced.relative, standardize=False, flat_index=False
-)
-# np.fill_diagonal(cos_dist_chord_tones.values, np.nan)
-cos_dist_chord_tones.iloc[:10, :10]
-```
-
-```{code-cell}
-ABC = cos_dist_chord_tones.loc(axis=1)[["ABC"]]
-ABC.shape
-```
-
-```{code-cell}
-def cross_corpus_distances(
-    group_of_columns: pd.DataFrame, group_name: str, group_level: int | str = 0
-):
-    rows = []
-    for group, group_distances in group_of_columns.groupby(level=group_level):
-        if group == group_name:
-            i, j = np.tril_indices_from(group_distances, -1)
-            distances = group_distances.values[i, j]
-        else:
-            distances = group_distances.values.flatten()
-        mean_distance = np.mean(distances)
-        sem = np.std(distances) / np.sqrt(distances.shape[0] - 1)
-        row = pd.Series(
-            {
-                "corpus": utils.get_corpus_display_name(group),
-                "mean_distance": mean_distance,
-                "sem": sem,
-            }
-        )
-        rows.append(row)
-    return pd.DataFrame(rows)
-
-
-ABC_corpus_distances = cross_corpus_distances(ABC, "ABC")
-make_bar_plot(
-    ABC_corpus_distances.sort_values("mean_distance"),
-    x_col="corpus",
-    y_col="mean_distance",
-    error_y="sem",
-    title="Mean cosine distances between pieces of all corpora and ABC",
-)
-```
-
-```{code-cell}
-corpus_numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
-    dc.DimcatConfig(
-        "PrevalenceAnalyzer",
-        columns=["effective_localkey_is_minor", "numeral"],
+        columns=["root_per_tonicization", "fifths_over_tonicization"],
         index="corpus",
     )
 )
-utils.replace_boolean_column_level_with_mode(corpus_numerals)
-corpus_numerals.document_frequencies()
+tonicization_profiles._df.columns = ms3.map2elements(
+    tonicization_profiles.columns, int
+).set_names(["root_per_tonicization", "fifths_over_tonicization"])
 ```
 
 ```{code-cell}
-culled_chord_tones = chord_reduced.get_culled_matrix(1 / 3)
-culled_chord_tones.shape
+tonicization_profiles.head()
+dominant_ct = tonicization_profiles.loc(axis=1)[[1]].stack()
+dominant_ct.columns = ["duration_qb"]
+dominant_ct["proportion"] = dominant_ct["duration_qb"] / dominant_ct.groupby(
+    "corpus"
+).duration_qb.agg("sum")
+dominant_ct.head()
 ```
 
 ```{code-cell}
-utils.plot_cosine_distances(culled_chord_tones.relative, standardize=True)
-```
-
-```{code-cell}
-def linkage_matrix(model):
-    # Create linkage matrix and then plot the dendrogram
-
-    # create the counts of samples under each node
-    counts = np.zeros(model.children_.shape[0])
-    n_samples = len(model.labels_)
-    for i, merge in enumerate(model.children_):
-        current_count = 0
-        for child_idx in merge:
-            if child_idx < n_samples:
-                current_count += 1  # leaf node
-            else:
-                current_count += counts[child_idx - n_samples]
-        counts[i] = current_count
-
-    linkage_matrix = np.column_stack(
-        [model.children_, model.distances_, counts]
-    ).astype(float)
-    return linkage_matrix
-
-
-def plot_dendrogram(model, **kwargs):
-    lm = linkage_matrix(model)
-    dendrogram(lm, **kwargs)
-
-
-cos_distance_matrix = utils.make_cosine_distances(culled_chord_tones.relative)
-cos_distance_matrix
-```
-
-```{code-cell}
-labels = cos_distance_matrix.index.to_list()
-ac = AgglomerativeClustering(
-    metric="precomputed", linkage="complete", distance_threshold=0, n_clusters=None
+fig = make_bar_plot(
+    dominant_ct.reset_index(),
+    x_col="fifths_over_tonicization",
+    y_col="proportion",
+    facet_row="corpus",
+    facet_row_spacing=0.001,
+    height=10000,
+    y_axis=dict(matches=None),
 )
-ac.fit_predict(cos_distance_matrix)
-plot_dendrogram(ac, truncate_mode="level", p=0)
-plt.title("Hierarchical Clustering using maximum cosine distances")
-# plt.savefig('aggl_mvt_max_cos.png', bbox_inches='tight')
+fig
 ```
 
-```{raw-cell}
-sliced_notes.store_resource(
-    basepath="~/dimcat_data",
-    name="sliced_notes"
+**Chopin does not show a specifically high bar for 4 (the major third of the scale), Mozart's is higher, for example.
+This could have many reasons, e.g. that the pieces are mostly in minor, or that the importance of scale degree 3 as
+lower neighbor to the dominant seventh is statistically more important, or that the "characteristic 13" is not
+actually important duration-wise.**
+
+```{code-cell}
+tonic_thirds_in_dominants = (
+    dominant_ct.loc[(slice(None), [4, -3]), "proportion"].groupby("corpus").sum()
 )
 ```
 
-```{raw-cell}
-restored = dc.deserialize_json_file("/home/laser/dimcat_data/sliced_notes.resource.json")
-restored.df
-```
-
 ```{code-cell}
-ac.fit_predict(cos_distance_matrix)
-lm = linkage_matrix(ac)  # probably want to use this to have better control
-# lm = linkage(cos_distance_matrix)
-describer = TableDocumentDescriber(D.get_metadata().reset_index())
-plt.figure(figsize=(10, 60))
-ddg = Dendrogram(lm, describer, labels)
+make_bar_plot(
+    tonic_thirds_in_dominants,
+    x_col="corpus",
+    y_col="proportion",
+    category_orders=dict(corpus=D.get_metadata().get_corpus_names(func=None)),
+    title="Proportion of scale degree 3 in dominant chords, chronological order",
+)
 ```
 
-```{code-cell}
-def find_index_of_r1_r2(C: pd.Series) -> Tuple[int, int]:
-    """Takes a Series representing C = 1 / (frequency(rank) - rank) and returns the indices of r1 and r2, left and
-    right of the discontinuity."""
-    r1_i = C.idxmax()
-    r2_i = C.lt(0).idxmax()
-    assert (
-        r2_i == r1_i + 1
-    ), f"Expected r1 and r2 to be one apart, but got r1_i = {r1_i}, r2_i = {r2_i}"
-    return r1_i, r2_i
-
-
-def compute_h(df) -> int | float:
-    """Computes the h-point of a DataFrame with columns "rank" and "frequency" and returns the rank of the h-point.
-    Returns a rank integer if a value with r = f(r) exists, otherwise rank float.
-    """
-    if (mask := df.frequency.eq(df["rank"])).any():
-        h_ix = df.index[mask][0]
-        return df.at[h_ix, "rank"]
-    C = 1 / (df.frequency - df["rank"])
-    r1_i, r2_i = find_index_of_r1_r2(C)
-    (r1, f_r1), (r2, f_r2) = df.loc[[r1_i, r2_i], ["rank", "frequency"]].values
-    return (f_r1 * r2 - f_r2 * r1) / (r2 - r1 + f_r1 - f_r2)
-```
+**No chronological trend visible.**

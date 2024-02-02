@@ -2868,7 +2868,9 @@ def get_sliced_notes(
     return chord_slices
 
 
-def make_chord_tone_profile(chord_slices: pd.DataFrame) -> pd.DataFrame:
+def make_chord_tone_profile(
+    chord_slices: pd.DataFrame,
+) -> pd.DataFrame:
     """Chord tone profiles in long format. Come with the absolute column 'duration_qb' and the
     relative column 'proportion', normalized per chord per corpus.
     """
@@ -2882,6 +2884,9 @@ def make_chord_tone_profile(chord_slices: pd.DataFrame) -> pd.DataFrame:
             chord_tone_profiles.div(normalization).rename("proportion"),
         ],
         axis=1,
+    )
+    chord_tone_profiles.index = chord_tone_profiles.index.set_levels(
+        chord_tone_profiles.index.levels[2].map(int), level=2
     )
     return chord_tone_profiles
 
