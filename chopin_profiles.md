@@ -79,6 +79,37 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
+```{code-cell}
+harmony_labels = D.get_feature("harmonylabels")
+harmony_labels.query(
+    "changes.str.contains('13') & corpus != 'bartok_bagatelles'"
+).chord.value_counts().sort_values()
+```
+
+```{code-cell}
+harmony_labels[harmony_labels.chord == "VI43(13)"]
+```
+
+```{code-cell}
+harmony_labels.loc(axis=0)["medtner_tales", "op35n02", 325:332]
+```
+
+```{code-cell}
+VI7_chords = harmony_labels[
+    (harmony_labels.intervals_over_root == ("M3", "P5", "m7"))
+    & harmony_labels.root.eq(-4)
+]
+VI7_chords
+```
+
+```{code-cell}
+harmony_labels.chord_and_mode.nunique()
+```
+
+```{code-cell}
+VI7_chords.index.droplevel(-1).nunique()
+```
+
 ```{raw-cell}
 harmony_labels = D.get_feature("harmonylabels")
 harmony_labels.head()
@@ -120,7 +151,6 @@ than in others, and if 3 shows up prominently in Chopin's dominants if we combin
 each other.**
 
 ```{code-cell}
-harmony_labels = D.get_feature("harmonylabels")
 all_V7 = harmony_labels.query("numeral == 'V' & figbass == '7'")
 all_V7.head()
 ```

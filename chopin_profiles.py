@@ -71,6 +71,31 @@ print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
 
+# %%
+harmony_labels = D.get_feature("harmonylabels")
+harmony_labels.query(
+    "changes.str.contains('13') & corpus != 'bartok_bagatelles'"
+).chord.value_counts().sort_values()
+
+# %%
+harmony_labels[harmony_labels.chord == "VI43(13)"]
+
+# %%
+harmony_labels.loc(axis=0)["medtner_tales", "op35n02", 325:332]
+
+# %%
+VI7_chords = harmony_labels[
+    (harmony_labels.intervals_over_root == ("M3", "P5", "m7"))
+    & harmony_labels.root.eq(-4)
+]
+VI7_chords
+
+# %%
+harmony_labels.chord_and_mode.nunique()
+
+# %%
+VI7_chords.index.droplevel(-1).nunique()
+
 # %% [raw]
 # harmony_labels = D.get_feature("harmonylabels")
 # harmony_labels.head()
@@ -110,7 +135,6 @@ utils.plot_chord_profiles(chord_tone_profiles, "V7(13), major")
 # each other.**
 
 # %%
-harmony_labels = D.get_feature("harmonylabels")
 all_V7 = harmony_labels.query("numeral == 'V' & figbass == '7'")
 all_V7.head()
 
