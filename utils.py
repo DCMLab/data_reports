@@ -7,7 +7,17 @@ from collections import Counter, defaultdict
 from fractions import Fraction
 from functools import cache
 from numbers import Number
-from typing import Dict, Hashable, Iterable, Iterator, List, Literal, Optional, Tuple
+from typing import (
+    Dict,
+    Hashable,
+    Iterable,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    Tuple,
+    Union,
+)
 
 import colorlover
 import frictionless as fl
@@ -32,7 +42,12 @@ from dimcat.data.resources.utils import (
     transpose_notes_to_c,
 )
 from dimcat.enums import BassNotesFormat
-from dimcat.plotting import make_bar_plot, make_scatter_plot, update_figure_layout
+from dimcat.plotting import (
+    make_bar_plot,
+    make_scatter_3d_plot,
+    make_scatter_plot,
+    update_figure_layout,
+)
 from dimcat.steps import slicers
 from dimcat.steps.analyzers import prevalence
 from dimcat.utils import get_middle_composition_year, grams, make_transition_matrix
@@ -44,12 +59,20 @@ from matplotlib.figure import Figure as MatplotlibFigure
 from plotly import graph_objects as go
 from plotly.colors import sample_colorscale
 from plotly.subplots import make_subplots
+from scipy.spatial import ConvexHull
 from scipy.stats import entropy
+from sklearn import set_config
 from sklearn.decomposition import PCA
+from sklearn.discriminant_analysis import LinearDiscriminantAnalysis
 from sklearn.metrics.pairwise import cosine_distances
+from sklearn.neighbors import NeighborhoodComponentsAnalysis
 from sklearn.preprocessing import Normalizer, StandardScaler
 
 from create_gantt import create_gantt, fill_yaxis_gaps
+
+set_config(transform_output="pandas")
+
+RANDOM_STATE = np.random.RandomState(42)
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUTPUT_FOLDER = os.path.abspath(os.path.join(HERE, "outputs"))
@@ -166,9 +189,7 @@ class TailwindColors:
     """Color palette: look for tailwindcss_v3.3.3(.png|.svg)"""
 
     @classmethod
-    def get_color(
-        cls, name: TailwindBaseColor | str, shade: Optional[shade_] = None
-    ) -> Tuple[int, int, int]:
+    def get_color(cls, name: TailwindBaseColor | str, shade: Optional[shade_] = None):
         if shade is None:
             name_upper = name.upper()
             if hasattr(cls, name_upper):
@@ -187,7 +208,7 @@ class TailwindColors:
         shades: Optional[shade_ | Iterable[shade_]] = None,
         as_hsv: bool = False,
         names=True,
-    ) -> Iterator[Tuple[str, Tuple[int, int, int]]] | Iterator[Tuple[int, int, int]]:
+    ):
         if name is None:
             name_iterator = (name.name for name in TailwindBaseColor)
         else:
@@ -223,6 +244,22 @@ class TailwindColorsHex(TailwindColors):
     # prints `#d97706`
     ```
     """
+
+    @classmethod
+    def get_color(
+        cls, name: TailwindBaseColor | str, shade: Optional[shade_] = None
+    ) -> str:
+        return super().get_color(name, shade)
+
+    @classmethod
+    def iter_colors(
+        cls,
+        name: Optional[TailwindBaseColor | Iterable[TailwindBaseColor]] = None,
+        shades: Optional[shade_ | Iterable[shade_]] = None,
+        as_hsv: bool = False,
+        names=True,
+    ) -> Iterator[Tuple[str, str]] | Iterator[str]:
+        return super().iter_colors(name, shades, as_hsv, names)
 
     SLATE_050: Literal["#f8fafc"] = "#f8fafc"
     SLATE_100: Literal["#f1f5f9"] = "#f1f5f9"
@@ -502,6 +539,22 @@ class TailwindColorsRgb(TailwindColors):
     # prints (217, 119, 6)
     ```
     """
+
+    @classmethod
+    def get_color(
+        cls, name: TailwindBaseColor | str, shade: Optional[shade_] = None
+    ) -> Tuple[int, int, int]:
+        return super().get_color(name, shade)
+
+    @classmethod
+    def iter_colors(
+        cls,
+        name: Optional[TailwindBaseColor | Iterable[TailwindBaseColor]] = None,
+        shades: Optional[shade_ | Iterable[shade_]] = None,
+        as_hsv: bool = False,
+        names=True,
+    ) -> Iterator[Tuple[str, Tuple[int, int, int]]] | Iterator[Tuple[int, int, int]]:
+        return super().iter_colors(name, shades, as_hsv, names)
 
     SLATE_050: tuple[Literal[248], Literal[250], Literal[252]] = (248, 250, 252)
     SLATE_100: tuple[Literal[241], Literal[245], Literal[249]] = (241, 245, 249)
@@ -955,6 +1008,42 @@ def get_corpus_display_name(repo_name: str) -> str:
     return name
 
 
+def get_hull_coordinates(
+    pca_coordinates: pd.DataFrame,
+    cluster_labels: pd.Series | List[int] | npt.NDArray[int],
+) -> Dict[int | str, pd.DataFrame]:
+    """Groups the coordinates by cluster and computes the convex hull for each. Returns a
+    {cluster_id -> hull_coordinates} dictionary.
+    """
+    cluster_hulls = {}
+    for cluster, coordinates in pca_coordinates.groupby(cluster_labels):
+        if len(coordinates) < 4:
+            cluster_hulls[cluster] = coordinates
+            continue
+        hull = ConvexHull(points=coordinates)
+        cluster_hulls[cluster] = coordinates.take(hull.vertices)
+    return cluster_hulls
+
+
+def get_lower_triangle_values(data: Union[pd.DataFrame, np.array], offset: int = 0):
+    is_dataframe = isinstance(data, pd.DataFrame)
+    if is_dataframe:
+        matrix = data.values
+    else:
+        matrix = data
+    i, j = np.tril_indices_from(matrix, offset)
+    values = matrix[i, j]
+    if not is_dataframe:
+        return values
+    try:
+        level_0 = merge_index_levels(data.index[i])
+        level_1 = merge_index_levels(data.columns[j])
+        index = pd.MultiIndex.from_arrays([level_0, level_1])
+    except Exception:
+        print(data.index[i], data.columns[j])
+    return pd.Series(values, index=index)
+
+
 def get_modin_dtypes(path):
     descriptor_path = os.path.join(path, "all_subcorpora.datapackage.json")
     fl_package = fl.Package(descriptor_path)
@@ -1015,6 +1104,7 @@ def make_output_path(
     filename: str,
     extension=None,
     path=None,
+    use_subfolders: bool = False,
 ) -> str:
     if extension:
         extension = "." + extension.lstrip(".")
@@ -1022,8 +1112,17 @@ def make_output_path(
         extension = DEFAULT_OUTPUT_FORMAT
     file = f"{filename}{extension}"
     if path:
-        return resolve_dir(os.path.join(path, file))
-    return file
+        if not use_subfolders:
+            return resolve_dir(os.path.join(path, file))
+        directory = path
+    else:
+        directory = os.getcwd()
+    if use_subfolders:
+        if extension in (".tsv", ".zip"):
+            directory = os.path.join(directory, "data")
+        else:
+            directory = os.path.join(directory, "figs")
+    return os.path.join(directory, file)
 
 
 def make_sunburst(
@@ -1190,73 +1289,58 @@ def plot_cum(
     return fig
 
 
-def make_pca(data, n_components=3) -> PCA:
-    pca = PCA(n_components)
-    pca.set_output(transform="pandas")
-    pca.fit(data)
-    return pca
-
-
-def get_pca_coordinates(
-    data,
-    n_components=3,
-    concat=False,
-) -> Tuple[pd.DataFrame, PCA]:
-    """Returns a DataFrame with the PCA coordinates for and index like the given data.
-
-    Args:
-        data: N x M DataFrame with N observations and M features.
-        n_components: Number of principal components to compute and return.
-        concat:
-            By default (False), only ``n_components`` columns are returned. Pass True to concatenate them
-            to the original data as additional columns.
-
-    Returns:
-        A DataFrame containing N x n_components columns representing a decomposition of the given data in terms of
-        the ``n_components`` first principal components.
-    """
-    pca = PCA(n_components)
-    pca.set_output(transform="pandas")
-    coordinates = pca.fit_transform(data)
-    coordinates.index = data.index
+def get_component_analysis_coordinates(
+    component_analysis: PCA
+    | LinearDiscriminantAnalysis
+    | NeighborhoodComponentsAnalysis,
+    data: pd.DataFrame,
+    y: pd.Series = None,
+    concat: bool = False,
+) -> Tuple[
+    pd.DataFrame, PCA | LinearDiscriminantAnalysis | NeighborhoodComponentsAnalysis
+]:
+    coordinates = component_analysis.fit_transform(data, y)
+    # coordinates.index = data.index
     if concat:
         coordinates = pd.concat([data, coordinates], axis=1)
-    return coordinates, pca
+    return coordinates, component_analysis
 
 
-def plot_pca(
-    data=None,
-    pca_coordinates=None,
+def plot_component_analysis(
+    coordinates,
     info="data",
-    show_features=20,
-    color="corpus",
+    color=None,
     symbol=None,
     size=None,
+    n_components: Optional[Literal[2, 3]] = None,
+    height=800,
     **kwargs,
 ) -> Optional[go.Figure]:
-    if data is None:
-        assert (
-            pca_coordinates is not None
-        ), "Either data or a fitted PCA object must be given"
-    else:
-        assert data is not None, "Either data or a fitted PCA object must be given"
-        pca_coordinates, pca = get_pca_coordinates(data, n_components=3)
-        print(
-            f"Explained variance ratio: {pca.explained_variance_ratio_} "
-            f"({pca.explained_variance_ratio_.sum():.1%})"
-        )
-    concatenate_this = [pca_coordinates]
-    coordinates_reset = pca_coordinates.reset_index()
+    if n_components is None:
+        n_components = min(3, len(coordinates.columns))
+    coordinates_reset = coordinates.reset_index()
+    concatenate_this = [coordinates_reset]
+    # approach: assemble plotting data by appending columns with additional information ('concatenate_this')
+    # all indices are reset but kept at first in case they contain additional information.
+    # After concatenation, importantly, duplicate columns are removed
     hover_data = coordinates_reset.columns.to_list()
     if color is not None:
         if isinstance(color, pd.Series):
-            concatenate_this.append(color)
+            concatenate_this.append(color.reset_index())
             color = color.name
+        else:
+            assert (
+                color in coordinates_reset.columns
+            ), f"{color!r} not a column: {coordinates_reset.columns}"
         hover_data.append(color)
     if symbol is not None:
         if isinstance(symbol, pd.Series):
-            concatenate_this.append(symbol)
+            concatenate_this.append(symbol.reset_index())
             symbol = symbol.name
+        else:
+            assert (
+                symbol in coordinates_reset.columns
+            ), f"{symbol!r} not a column: {coordinates_reset.columns}"
         hover_data.append(symbol)
 
     if size is None:
@@ -1266,50 +1350,209 @@ def plot_pca(
     else:
         constant_size = 0
         if isinstance(size, pd.Series):
-            concatenate_this.append(size)
+            concatenate_this.append(size.reset_index())
             size = size.name
+        else:
+            assert (
+                size in coordinates_reset.columns
+            ), f"{size!r} not a column: {coordinates_reset.columns}"
         hover_data.append(size)
     if len(concatenate_this) > 1:
-        scatter_data = pd.concat(concatenate_this, axis=1).reset_index()
+        scatter_data = pd.concat(concatenate_this, axis=1)
     else:
         scatter_data = coordinates_reset
-    fig = px.scatter_3d(
-        scatter_data,
-        x="pca0",
-        y="pca1",
-        z="pca2",
-        color=color,
+    # remove duplicate column names
+    scatter_data = scatter_data.loc[:, ~scatter_data.columns.duplicated()]
+    title = kwargs.pop("title", None)
+    if not title:
+        title = f"{n_components} principal components of the {info}"
+    plot_args = dict(
         symbol=symbol,
         hover_data=hover_data,
-        hover_name=hover_data[-1],
-        title=f"3 principal components of the {info}",
-        height=800,
+        title=title,
+        height=height,
+        group_cols=color,
         **kwargs,
     )
-    marker_settings = dict(opacity=0.3)
+    columns = coordinates.columns
+    for i, (arg, col) in enumerate(zip(("x_col", "y_col", "z_col"), columns)):
+        if i == n_components:
+            break
+        plot_args[arg] = col
     if constant_size:
-        marker_settings["size"] = constant_size
-    update_figure_layout(
-        fig,
-        scene_dragmode="orbit",
-        traces_settings=dict(marker=marker_settings),
-    )
-    if show_features < 1:
-        return fig
-    fig.show()
-    for i in range(3):
-        index = merge_index_levels(data.columns)
+        plot_args["traces_settings"] = dict(marker=dict(size=constant_size))
+    if n_components < 3:
+        return make_scatter_plot(scatter_data, **plot_args)
+    return make_scatter_3d_plot(scatter_data, **plot_args)
+
+
+def plot_components(
+    component_analysis: PCA
+    | LinearDiscriminantAnalysis
+    | NeighborhoodComponentsAnalysis,
+    show_features=20,
+):
+    if hasattr(component_analysis, "components_"):
+        components = component_analysis.components_
+    # elif hasattr(component_analysis, "scalings_"):
+    #     components = component_analysis.scalings_
+    else:
+        raise ValueError(
+            f"{component_analysis.__class__.__name__} has no components_ attribute"
+        )
+    for i, component_name in enumerate(component_analysis.get_feature_names_out()):
+        index = component_analysis.feature_names_in_
         component = pd.Series(
-            pca.components_[i],
+            components[i],
             index=index,
             name="coefficient",
         ).sort_values(ascending=False, key=abs)
         fig = px.bar(
             component.iloc[:show_features],
             labels=dict(index="feature", value="coefficient"),
-            title=f"{show_features} most weighted features of component {i+1}",
+            title=f"{show_features} most weighted features of {component_name}",
         )
         fig.show()
+
+
+def plot_lda(
+    data=None,
+    y=None,
+    shrinkage: Literal["auto"] | float = "auto",
+    solver: Literal["svd", "lsqr", "eigen"] = "eigen",
+    lda_coordinates=None,
+    info="data",
+    color=None,
+    symbol=None,
+    size=None,
+    n_components: Literal[2, 3] = 3,
+    height=800,
+    **kwargs,
+) -> Optional[go.Figure]:
+    if data is None:
+        assert lda_coordinates is not None, "Either data or coordinates must be given"
+        n_coord = len(lda_coordinates.columns)
+        assert (
+            n_coord >= n_components
+        ), f"{n_coord} coordinates insufficient for plotting {n_components} dimensions"
+        if n_coord > n_components:
+            lda_coordinates = lda_coordinates.iloc[:, :n_components]
+    else:
+        assert y is not None, "y must be given if an LDA is to be computed from data"
+        lda_coordinates, lda = get_component_analysis_coordinates(
+            LinearDiscriminantAnalysis(
+                n_components=n_components,
+                shrinkage=shrinkage,
+                solver=solver,
+            ),
+            data,
+            y=y,
+        )
+        print(
+            f"Explained variance ratio: {lda.explained_variance_ratio_} "
+            f"({lda.explained_variance_ratio_.sum():.1%})"
+        )
+    fig = plot_component_analysis(
+        coordinates=lda_coordinates,
+        info=info,
+        color=color,
+        symbol=symbol,
+        size=size,
+        n_components=n_components,
+        height=height,
+        **kwargs,
+    )
+    return fig
+    # if data is None or show_features < 1:
+    #     return fig
+    # fig.show()
+    # plot_components(lda, show_features=show_features)
+
+
+def plot_nca(
+    data=None,
+    y=None,
+    nca_coordinates=None,
+    info="data",
+    show_features=20,
+    color=None,
+    symbol=None,
+    size=None,
+    n_components: Literal[2, 3] = 3,
+    height=800,
+    **kwargs,
+) -> Optional[go.Figure]:
+    if data is None:
+        assert nca_coordinates is not None, "Either data or coordinates must be given"
+        n_coord = len(nca_coordinates.columns)
+        assert (
+            n_coord >= n_components
+        ), f"{n_coord} coordinates insufficient for plotting {n_components} dimensions"
+        if n_coord > n_components:
+            nca_coordinates = nca_coordinates.iloc[:, :n_components]
+    else:
+        assert y is not None, "y must be given if an NCA is to be computed from data"
+        nca_coordinates, nca = get_component_analysis_coordinates(
+            NeighborhoodComponentsAnalysis(n_components=n_components), data, y=y
+        )
+    fig = plot_component_analysis(
+        coordinates=nca_coordinates,
+        info=info,
+        color=color,
+        symbol=symbol,
+        size=size,
+        n_components=n_components,
+        height=height,
+        **kwargs,
+    )
+    if data is None or show_features < 1:
+        return fig
+    fig.show()
+    plot_components(nca, show_features=show_features)
+
+
+def plot_pca(
+    data=None,
+    pca_coordinates=None,
+    info="data",
+    show_features=20,
+    color=None,
+    symbol=None,
+    size=None,
+    n_components: Literal[2, 3] = 3,
+    height=800,
+    **kwargs,
+) -> Optional[go.Figure]:
+    if data is None:
+        assert pca_coordinates is not None, "Either data or coordinates must be given"
+        n_coord = len(pca_coordinates.columns)
+        assert (
+            n_coord >= n_components
+        ), f"{n_coord} coordinates insufficient for plotting {n_components} dimensions"
+        if n_coord > n_components:
+            pca_coordinates = pca_coordinates.iloc[:, :n_components]
+    else:
+        pca_coordinates, pca = get_component_analysis_coordinates(
+            PCA(n_components), data
+        )
+        print(
+            f"Explained variance ratio: {pca.explained_variance_ratio_} "
+            f"({pca.explained_variance_ratio_.sum():.1%})"
+        )
+    fig = plot_component_analysis(
+        coordinates=pca_coordinates,
+        info=info,
+        color=color,
+        symbol=symbol,
+        size=size,
+        n_components=n_components,
+        height=height,
+        **kwargs,
+    )
+    if data is None or show_features < 1:
+        return fig
+    fig.show()
+    plot_components(pca, show_features=show_features)
 
 
 def plot_transition_heatmaps(
@@ -2502,34 +2745,110 @@ def make_rectangle_shape(
 
 
 def compare_corpus_frequencies(
-    chord_slices: resources.DimcatResource, features: str | Iterable[str]
+    chord_slices: resources.DimcatResource,
+    features: str | Iterable[str] | Dict[str, str | Iterable[str]],
+    concatenation_axis=1,
 ):
-    if isinstance(features, str):
-        features = [features]
-    doc_freqs = []
+    make_dict = isinstance(features, dict)
+    if make_dict:
+        doc_freqs = {}
+    else:
+        doc_freqs = []
+        if isinstance(features, str):
+            features = [features]
     for feature in features:
+        if make_dict:
+            key = feature
+            feature = features[key]
         analyzer = prevalence.PrevalenceAnalyzer(index="corpus", columns=feature)
         matrix = analyzer.process(chord_slices)
-        doc_freqs.append(
+        document_frequencies = (
             matrix.document_frequencies(name="corpus_frequency")
             .sort_values(ascending=False)
             .astype("Int64")
+            .reset_index()
         )
-    if len(doc_freqs) == 1:
-        return doc_freqs[0]
-    return pd.concat([series.reset_index() for series in doc_freqs], axis=1)
+        if make_dict:
+            doc_freqs[key] = document_frequencies
+        else:
+            doc_freqs.append(document_frequencies)
+    return pd.concat(doc_freqs, axis=concatenation_axis)
+
+
+def make_chord_slices(
+    sliced_notes: resources.Notes,
+    slice_info: resources.HarmonyLabels,
+):
+    """Merge the harmony labels on the note events such that each note can be related to the respective label."""
+    slice_info = slice_info.droplevel(-1)
+    localkey_tpc = ms3.transform(
+        slice_info[["localkey", "globalkey_is_minor"]], ms3.roman_numeral2fifths
+    )
+    concatenate_this = [
+        # adds columns to harmony labels before joining on the notes
+        slice_info,
+        (
+            ms3.transform(
+                slice_info.globalkey,
+                ms3.name2fifths,
+            )
+        ).rename("globalkey_tpc"),
+        (
+            relativeroot_tpc := ms3.transform(
+                slice_info[["relativeroot_resolved", "localkey_is_minor"]],
+                ms3.roman_numeral2fifths,
+            ).fillna(0)
+        ).rename("relativeroot_tpc"),
+        (slice_info.root + localkey_tpc).rename("root_per_globalkey"),
+        (slice_info.root - relativeroot_tpc).rename("root_per_tonicization"),
+    ]
+    slice_info = pd.concat(concatenate_this, axis=1)
+    # do the join
+    added_columns = [
+        col for col in slice_info.columns if col not in sliced_notes.columns
+    ]
+    slice_info = join_df_on_index(
+        slice_info[added_columns], sliced_notes.index, how="right"
+    )
+    # merge harmony labels and notes allowing for notes to be transposed to C
+    chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
+    transposed_notes = transpose_notes_to_c(chord_slices)
+    # add more columns expressing notes as varies types of fifths profiles
+    concatenate_this = [
+        chord_slices,
+        transposed_notes,
+        (chord_slices.tpc - chord_slices.globalkey_tpc).rename(
+            "fifths_over_global_tonic"
+        ),
+        (
+            transposed_notes.fifths_over_local_tonic - chord_slices.relativeroot_tpc
+        ).rename("fifths_over_tonicization"),
+        (transposed_notes.fifths_over_local_tonic - chord_slices.root).rename(
+            "fifths_over_root"
+        ),
+    ]
+    # return concatenate_this
+    chord_slices = pd.concat(concatenate_this, axis=1)
+    return chord_slices
 
 
 def get_sliced_notes(
-    D: Dataset,
+    D: Optional[Dataset] = None,
     basepath: Optional[str] = None,
     cache_name: Optional[str] = "chord_slices",
+    recompute: bool = False,
 ):
+    if D is None:
+        package_path = resolve_dir(
+            "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+        )
+        D = Dataset.from_package(package_path)
     if basepath is None:
         basepath = resolve_dir(get_setting("default_basepath"))
-    if cache_name:
+    if cache_name and not recompute:
         cache_path = os.path.join(basepath, f"{cache_name}.resource.json")
         if os.path.isfile(cache_path):
+            print(f"Loading {cache_path}")
             chord_slices = deserialize_json_file(cache_path)
             chord_slices.load()
             # work around for correct IntervalIndex deserialization
@@ -2538,27 +2857,14 @@ def get_sliced_notes(
                 converted, level=2
             )
             return chord_slices
+    print("Computing chord slices...")
     label_slicer = slicers.HarmonyLabelSlicer()
     sliced_D = label_slicer.process(D)
     sliced_notes = sliced_D.get_feature(resources.Notes)
-    slice_info = label_slicer.slice_metadata.droplevel(-1)
-    slice_info["root_fifths_over_global_tonic"] = (
-        ms3.transform(
-            slice_info[["effective_localkey_resolved", "globalkey_is_minor"]],
-            ms3.roman_numeral2fifths,
-        ).rename("root_fifths_over_global_tonic")
-        + slice_info.root
-    )
-    merge_columns = [
-        col for col in slice_info.columns if col not in sliced_notes.columns
-    ]
-    slice_info = join_df_on_index(
-        slice_info[merge_columns], sliced_notes.index, how="right"
-    )
-    chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
-    chord_slices = pd.concat([chord_slices, transpose_notes_to_c(chord_slices)], axis=1)
+    chord_slices = make_chord_slices(sliced_notes, label_slicer.slice_metadata)
     chord_slices = resources.DimcatResource.from_dataframe(chord_slices, "chord_slices")
-    chord_slices.store_resource(basepath=basepath, name="chord_slices")
+    if cache_name:
+        chord_slices.store_resource(basepath=basepath, name=cache_name)
     return chord_slices
 
 
@@ -2664,9 +2970,14 @@ def plot_chord_profiles(
 
 
 def plot_document_frequency(
-    chord_tones: resources.PrevalenceMatrix, info: str = "chord tones", **kwargs
+    chord_tones: resources.PrevalenceMatrix | pd.DataFrame,
+    info: str = "vocabularies",
+    **kwargs,
 ):
-    df = chord_tones.document_frequencies()
+    if isinstance(chord_tones, pd.DataFrame):
+        df = chord_tones
+    else:
+        df = chord_tones.document_frequencies()
     vocabulary = merge_columns_into_one(df.index.to_frame(index=False), join_str=True)
     doc_freq_data = pd.DataFrame(
         dict(
@@ -2675,14 +2986,14 @@ def plot_document_frequency(
             rank=range(1, len(vocabulary) + 1),
         )
     )
-    D, V = chord_tones.shape
+    D, V = df.shape
     settings = dict(
         x_col="rank",
         y_col="document_frequency",
         hover_data="chord_tones",
         log_x=True,
         log_y=True,
-        title=f"Document frequency of {info} (D = {D}, V = {V})",
+        title=f"Document frequencies of {info} (D = {D}, V = {V})",
     )
     if kwargs:
         settings.update(kwargs)
