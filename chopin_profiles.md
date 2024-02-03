@@ -26,14 +26,19 @@ tags: [hide-cell]
 %load_ext autoreload
 %autoreload 2
 
+import math
 import os
+import re
 
 import dimcat as dc
 import ms3
+import numpy as np
 import pandas as pd
 from dimcat import resources
+from dimcat.data.resources.results import compute_entropy_of_occurrences
 from dimcat.plotting import make_bar_plot, write_image
 from git import Repo
+from IPython.display import display
 from matplotlib import pyplot as plt
 
 import utils
@@ -81,18 +86,27 @@ D
 
 ```{code-cell}
 harmony_labels = D.get_feature("harmonylabels")
+print(f"{harmony_labels.index.droplevel(-1).nunique()} annotated pieces")
 harmony_labels.query(
     "changes.str.contains('13') & corpus != 'bartok_bagatelles'"
 ).chord.value_counts().sort_values()
 ```
 
-```{code-cell}
-harmony_labels[harmony_labels.chord == "VI43(13)"]
-```
+## VI43(13) example
+
+The only occurrence in its context:
 
 ```{code-cell}
 harmony_labels.loc(axis=0)["medtner_tales", "op35n02", 325:332]
 ```
+
+### Without the 13: 3 pieces
+
+```{code-cell}
+harmony_labels[harmony_labels.chord == "VI43"]
+```
+
+### Without inversion: 96 pieces
 
 ```{code-cell}
 VI7_chords = harmony_labels[
@@ -103,11 +117,186 @@ VI7_chords
 ```
 
 ```{code-cell}
-harmony_labels.chord_and_mode.nunique()
+print(
+    f"-4, (M3, M5, m7) occurs in {VI7_chords.index.droplevel(-1).nunique()} difference pieces, "
+    f"often as dominant of neapolitan"
+)
+```
+
+## Reduction of vocabulary size
+
+```{code-cell}
+def normalized_entropy_of_prevalence(value_counts):
+    return compute_entropy_of_occurrences(value_counts) / math.log2(len(value_counts))
+
+
+chord_and_mode_prevalence = harmony_labels.groupby("chord_and_mode").duration_qb.agg(
+    ["sum", "count"]
+)
+print(
+    f"Chord + mode: n = {len(chord_and_mode_prevalence)}, h = \n"
+    f"{compute_entropy_of_occurrences(chord_and_mode_prevalence)}"
+)
 ```
 
 ```{code-cell}
-VI7_chords.index.droplevel(-1).nunique()
+type_inversion_change = harmony_labels.groupby(
+    ["chord_type", "figbass", "changes"], dropna=False
+).duration_qb.agg(["sum", "count"])
+print(
+    f"Chord type + inversion + change: n = {len(type_inversion_change)}, h = \n"
+    f"{compute_entropy_of_occurrences(type_inversion_change)}"
+)
+```
+
+Negligible difference between the two different ways of calculating, probably due to an inconsistent indication of
+changes. But the second one is the one that also allows filtering out the changes >= 8
+
+```{code-cell}
+def show_stats(groupby, info, k=5):
+    prevalence = groupby.duration_qb.agg(["sum", "count"])
+    entropies = compute_entropy_of_occurrences(prevalence).rename("entropy")
+    entropies_norm = normalized_entropy_of_prevalence(prevalence).rename(
+        "normalized entropy"
+    )
+    ent = pd.concat([entropies, entropies_norm], axis=1)
+    print(f"{info}: n = {len(prevalence)}, h = \n{ent}")
+    n_pieces_per_token = groupby.apply(
+        lambda df: len(df.groupby(["corpus", "piece"])), include_groups=False
+    )
+    print("Token that appears in the highest number of pieces:")
+    display(n_pieces_per_token.iloc[[n_pieces_per_token.argmax()]])
+    n_pieces_per_token_vc = n_pieces_per_token.value_counts().sort_index()
+    n_pieces_per_token_vc.index.rename("occuring in # pieces", inplace=True)
+    n_pieces_per_token_vc = pd.concat(
+        [
+            n_pieces_per_token_vc.rename("tokens"),
+            n_pieces_per_token_vc.rename("proportion") / n_pieces_per_token_vc.sum(),
+        ],
+        axis=1,
+    )
+    selection = n_pieces_per_token_vc.iloc[np.r_[0:k, -k:0]]
+    print(
+        f"\nTokens occurring in only {k} or fewer pieces: {selection.tokens.sum()} ({selection.proportion.sum():.1%})"
+    )
+    display(selection)
+    print(
+        "Quantiles indicating fractions of all tokens which occur in # or less pieces"
+    )
+    display(
+        n_pieces_per_token.quantile([0.5, 0.6, 0.7, 0.75, 0.8, 0.85, 0.9, 0.95, 0.99])
+    )
+
+
+type_inversion_change = pd.concat(
+    [
+        harmony_labels[["duration_qb", "chord_type", "figbass"]],
+        harmony_labels.changes.map(
+            lambda ch: tuple(
+                sorted(
+                    (ch_tup[0] for ch_tup in ms3.changes2list(ch)),
+                    key=lambda s: int(re.search(r"\d+$", s).group()),
+                )
+            ),
+            na_action="ignore",
+        ),
+    ],
+    axis=1,
+)
+
+show_stats(
+    type_inversion_change.groupby(["chord_type", "figbass", "changes"], dropna=False),
+    "Chord type + inversion + change",
+)
+```
+
+```{code-cell}
+change_max_7 = harmony_labels.changes.map(
+    lambda ch: tuple(
+        sorted(
+            (ch_tup[0] for ch_tup in ms3.changes2list(ch) if int(ch_tup[-1]) < 8),
+            key=lambda s: int(re.search(r"\d+$", s).group()),
+        )
+    ),
+    na_action="ignore",
+)
+typ_inv_change_max_7 = pd.concat(
+    [harmony_labels[["duration_qb", "chord_type", "figbass"]], change_max_7], axis=1
+)
+show_stats(
+    typ_inv_change_max_7.groupby(["chord_type", "figbass", "changes"], dropna=False),
+    "Chord type + inversion + changes < 8",
+)
+```
+
+```{code-cell}
+typ_change_max_7 = pd.concat(
+    [harmony_labels[["duration_qb", "chord_type"]], change_max_7], axis=1
+)
+show_stats(
+    typ_change_max_7.groupby(["chord_type", "changes"], dropna=False),
+    "Chord type + changes < 8",
+)
+```
+
+```{code-cell}
+show_stats(
+    harmony_labels.groupby(["intervals_over_root", "figbass"], dropna=False),
+    "intervals over root + inversion",
+)
+```
+
+```{code-cell}
+ior_inversion_doc_freqs = harmony_labels.groupby(
+    ["intervals_over_root", "figbass"], dropna=False
+).apply(lambda df: len(df.groupby(["corpus", "piece"])), include_groups=False)
+ior_inversion_doc_freqs.sort_values(ascending=False).iloc[:10]
+```
+
+```{code-cell}
+show_stats(harmony_labels.groupby("intervals_over_root"), "intervals over root")
+```
+
+```{code-cell}
+root_per_localkey: resources.PrevalenceMatrix = harmony_labels.apply_step(
+    dict(
+        dtype="prevalenceanalyzer",
+        index=["corpus", "piece"],
+        columns=["root", "intervals_over_root"],
+    )
+)
+root_per_localkey.document_frequencies()
+```
+
+```{code-cell}
+ior_doc_freqs = harmony_labels.groupby(["intervals_over_root"], dropna=False).apply(
+    lambda df: len(df.groupby(["corpus", "piece"])), include_groups=False
+)
+ior_doc_freqs.sort_values(ascending=False).iloc[:10]
+```
+
+### counter-comparison: chord-type + inversion
+
+```{code-cell}
+show_stats(
+    harmony_labels.groupby(["chord_type", "figbass"], dropna=False),
+    "Chord type + inversion",
+)
+```
+
+```{code-cell}
+typ_inv_doc_freqs = harmony_labels.groupby(
+    ["chord_type", "figbass"], dropna=False
+).apply(lambda df: len(df.groupby(["corpus", "piece"])), include_groups=False)
+typ_inv_doc_freqs.sort_values(ascending=False).iloc[:10]
+```
+
+### Difference between `intervals_over_root` and `chord_type + changes <8`
+
+```{code-cell}
+pd.concat([typ_change_max_7, harmony_labels.intervals_over_root], axis=1).groupby(
+    "intervals_over_root"
+)[["chord_type", "changes"]].value_counts()
 ```
 
 ```{raw-cell}
@@ -125,6 +314,28 @@ sfx_tree.find_all(query)
 ```{code-cell}
 chord_slices = utils.get_sliced_notes(D)
 chord_slices.head(5)
+```
+
+## 3 root entropies
+
+```{code-cell}
+analyzer_config = dc.DimcatConfig(
+    "PrevalenceAnalyzer",
+    index=["corpus", "piece"],
+)
+roots_only = {}
+for root_type in ("root_per_globalkey", "root", "root_per_tonicization"):
+    analyzer_config.update(columns=root_type)
+    roots_only[root_type] = chord_slices.apply_step(analyzer_config)
+```
+
+```{code-cell}
+for root_type, prevalence_matrix in roots_only.items():
+    print(root_type)
+    occurring_roots = sorted(prevalence_matrix.columns.map(int))
+    print(occurring_roots)
+    ent = normalized_entropy_of_prevalence(prevalence_matrix.absolute.sum())
+    print(ent)
 ```
 
 **First intuition: Compare `V7` chord profiles**
