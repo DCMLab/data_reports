@@ -36,7 +36,7 @@ import numpy as np
 import pandas as pd
 from dimcat import resources
 from dimcat.data.resources.results import compute_entropy_of_occurrences
-from dimcat.plotting import make_bar_plot, write_image
+from dimcat.plotting import make_bar_plot, make_line_plot, write_image
 from git import Repo
 from IPython.display import display
 from matplotlib import pyplot as plt
@@ -269,6 +269,20 @@ root_per_localkey.document_frequencies()
 ```
 
 ```{code-cell}
+def show_which_pieces_dont_include(harmony_labels, columns, value):
+    for gr, df in harmony_labels.groupby(["corpus", "piece"]):
+        tokens = set(df[columns].itertuples(index=False, name=None))
+        if value in tokens:
+            continue
+        print(gr)
+
+
+show_which_pieces_dont_include(
+    harmony_labels, ["root", "intervals_over_root"], (1, ("M3", "P5"))
+)
+```
+
+```{code-cell}
 ior_doc_freqs = harmony_labels.groupby(["intervals_over_root"], dropna=False).apply(
     lambda df: len(df.groupby(["corpus", "piece"])), include_groups=False
 )
@@ -330,12 +344,97 @@ for root_type in ("root_per_globalkey", "root", "root_per_tonicization"):
 ```
 
 ```{code-cell}
+root_prevalences = {}
 for root_type, prevalence_matrix in roots_only.items():
     print(root_type)
     occurring_roots = sorted(prevalence_matrix.columns.map(int))
     print(occurring_roots)
     ent = normalized_entropy_of_prevalence(prevalence_matrix.absolute.sum())
     print(ent)
+    length_of_range = max(occurring_roots) - min(occurring_roots) + 1
+    n_values = len(occurring_roots)
+    prevalence = prevalence_matrix.type_prevalence().rename("duration in ♩")
+    if length_of_range != n_values:
+        missing = set(range(min(occurring_roots), max(occurring_roots) + 1)) - set(
+            occurring_roots
+        )
+        prevalence = pd.concat([prevalence, pd.Series(pd.NA, index=missing)]).rename(
+            "duration in ♩"
+        )
+    prevalence = pd.concat(
+        [prevalence, prevalence.rename("proportion") / prevalence.sum()], axis=1
+    )
+    if root_type == "root_per_globalkey":
+        key = "R<sup>G</sup>"
+    elif root_type == "root":
+        key = "R<sup>L</sup>"
+    else:
+        key = "R<sup>T</sup>"
+    root_prevalences[key] = prevalence
+```
+
+```{code-cell}
+root_prev_data = pd.concat(
+    root_prevalences, names=["type of root", "root"]
+).reset_index()
+root_prev_data.root = root_prev_data.root.astype(int)
+root_prev_data = root_prev_data.sort_values("root")
+fig = make_line_plot(
+    root_prev_data,
+    x_col="root",
+    y_col="duration in ♩",
+    hover_data=["proportion"],
+    color="type of root",
+    markers=True,
+    category_orders={
+        "type of root": ["R<sup>G</sup>", "R<sup>L</sup>", "R<sup>T</sup>"]
+    },
+    x_axis=dict(dtick=1, zerolinecolor="lightgrey"),
+    log_y=True,
+)
+save_figure_as(fig, "root_prevalences.pdf", width=1280, height=600)
+fig
+```
+
+```{code-cell}
+root_prev_data
+```
+
+```{code-cell}
+prevalence_matrix.type_prevalence()
+```
+
+```{code-cell}
+ctp = {}
+for root_type in ("root_per_globalkey", "root", "root_per_tonicization"):
+    analyzer_config.update(columns=[root_type, "fifths_over_root"])
+    prevalence_matrix: resources.PrevalenceMatrix = chord_slices.apply_step(
+        analyzer_config
+    )
+    ctp[root_type] = prevalence_matrix
+    print(root_type)
+    display(prevalence_matrix.document_frequencies().iloc[:5])
+```
+
+```{code-cell}
+chord_slices.iloc[0].to_dict()
+```
+
+```{code-cell}
+show_which_pieces_dont_include(
+    chord_slices, ["root_per_tonicization", "fifths_over_root"], ("0", "1")
+)
+```
+
+```{code-cell}
+strange = chord_slices.loc(axis=0)[
+    "kleine_geistliche_konzerte", "op09n05swv310_Ich_liege_und_schlafe"
+]
+strange.query("root_per_globalkey == '0' & fifths_over_root == '1'")
+```
+
+```{code-cell}
+strange.query("numeral in ('I', 'i')")
 ```
 
 **First intuition: Compare `V7` chord profiles**
