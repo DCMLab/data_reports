@@ -2942,63 +2942,6 @@ def make_chord_slices(
     return chord_slices
 
 
-def make_chord_slices(
-    sliced_notes: resources.Notes,
-    slice_info: resources.HarmonyLabels,
-):
-    """Merge the harmony labels on the note events such that each note can be related to the respective label."""
-    slice_info = slice_info.droplevel(-1)
-    localkey_tpc = ms3.transform(
-        slice_info[["localkey", "globalkey_is_minor"]], ms3.roman_numeral2fifths
-    )
-    concatenate_this = [
-        # adds columns to harmony labels before joining on the notes
-        slice_info,
-        (
-            ms3.transform(
-                slice_info.globalkey,
-                ms3.name2fifths,
-            )
-        ).rename("globalkey_tpc"),
-        (
-            relativeroot_tpc := ms3.transform(
-                slice_info[["relativeroot_resolved", "localkey_is_minor"]],
-                ms3.roman_numeral2fifths,
-            ).fillna(0)
-        ).rename("relativeroot_tpc"),
-        (slice_info.root + localkey_tpc).rename("root_per_globalkey"),
-        (slice_info.root - relativeroot_tpc).rename("root_per_tonicization"),
-    ]
-    slice_info = pd.concat(concatenate_this, axis=1)
-    # do the join
-    added_columns = [
-        col for col in slice_info.columns if col not in sliced_notes.columns
-    ]
-    slice_info = join_df_on_index(
-        slice_info[added_columns], sliced_notes.index, how="right"
-    )
-    # merge harmony labels and notes allowing for notes to be transposed to C
-    chord_slices = pd.concat([sliced_notes, slice_info], axis=1)
-    transposed_notes = transpose_notes_to_c(chord_slices)
-    # add more columns expressing notes as varies types of fifths profiles
-    concatenate_this = [
-        chord_slices,
-        transposed_notes,
-        (chord_slices.tpc - chord_slices.globalkey_tpc).rename(
-            "fifths_over_global_tonic"
-        ),
-        (
-            transposed_notes.fifths_over_local_tonic - chord_slices.relativeroot_tpc
-        ).rename("fifths_over_tonicization"),
-        (transposed_notes.fifths_over_local_tonic - chord_slices.root).rename(
-            "fifths_over_root"
-        ),
-    ]
-    # return concatenate_this
-    chord_slices = pd.concat(concatenate_this, axis=1)
-    return chord_slices
-
-
 def get_sliced_notes(
     D: Optional[Dataset] = None,
     basepath: Optional[str] = None,
@@ -3313,46 +3256,80 @@ def make_pydelta_corpus(
     return corpus
 
 
-CHORD_PROFILES = {
+chord_profile_names = dict(
+    globalkey_profiles="tone profiles as per global key",
+    localkey_profiles="tone profiles as per local key",
+    tonicization_profiles="tone profiles as per tonicization",
+    root_per_globalkey="chord symbols (root per globalkey + intervals)",
+    root_per_localkey="chord symbols (root per localkey + intervals)",
+    root_per_tonicization="chord symbols (root per tonicization + intervals)",
+    global_root_ct="chord-tone profiles over root-per-globalkey",
+    local_root_ct="chord-tone profiles over root-per-localkey",
+    tonicization_root_ct="chord-tone profiles over root-per-tonicization",
+)
+
+
+chord_profile_color_definition = dict(
+    globalkey_profiles="AMBER_800",
+    localkey_profiles="AMBER_500",
+    tonicization_profiles="ORANGE_300",
+    root_per_globalkey="GREEN_800",
+    root_per_localkey="GREEN_500",
+    root_per_tonicization="LIME_300",
+    global_root_ct="INDIGO_800",
+    local_root_ct="VIOLET_600",
+    tonicization_root_ct="PURPLE_400",
+)
+
+CHORD_PROFILE_COLORS = {
+    chord_profile_names[k]: TailwindColorsHex.get_color(v)
+    for k, v in chord_profile_color_definition.items()
+}
+
+CHORD_PROFILES_WITH_BASELINE = {
     "root_per_globalkey": (  # baseline globalkey-roots without any note information
         ["root_per_globalkey", "intervals_over_root"],
-        "chord symbols (root per globalkey + intervals)",
+        chord_profile_names["root_per_globalkey"],
     ),
     "root_per_localkey": (  # baseline localkey-roots without any note information
         ["root", "intervals_over_root"],
-        "chord symbols (root per localkey + intervals)",
+        chord_profile_names["root_per_localkey"],
     ),
     "root_per_tonicization": (  # baseline root over tonicized key without any note information
         ["root_per_tonicization", "intervals_over_root"],
-        "chord symbols (root per tonicization + intervals)",
+        chord_profile_names["root_per_tonicization"],
     ),
-    # "globalkey_profiles": (  # baseline notes - globalkey
-    #     ["fifths_over_global_tonic"],
-    #     "tone profiles as per global key",
-    # ),
-    # "localkey_profiles": (  # baseline notes - localkey
-    #     ["fifths_over_local_tonic"],
-    #     "tone profiles as per local key",
-    # ),
-    # "tonicization_profiles": (  # baseline notes - tonicized key
-    #     ["fifths_over_tonicization"],
-    #     "tone profiles as per tonicized key",
-    # ),
+    "globalkey_profiles": (  # baseline notes - globalkey
+        ["fifths_over_global_tonic"],
+        chord_profile_names["globalkey_profiles"],
+    ),
+    "localkey_profiles": (  # baseline notes - localkey
+        ["fifths_over_local_tonic"],
+        chord_profile_names["localkey_profiles"],
+    ),
+    "tonicization_profiles": (  # baseline notes - tonicized key
+        ["fifths_over_tonicization"],
+        chord_profile_names["tonicization_profiles"],
+    ),
     "global_root_ct": (
         ["root_per_globalkey", "fifths_over_root"],
-        "chord-tone profiles over root-per-globalkey",
+        chord_profile_names["global_root_ct"],
     ),
     "local_root_ct": (
         ["root", "fifths_over_root"],
-        "chord-tone profiles over root-per-localkey",
+        chord_profile_names["local_root_ct"],
     ),
     "tonicization_root_ct": (
         [
             "root_per_tonicization",
             "fifths_over_root",
         ],
-        "chord-tone profiles over root-per-tonicization",
+        chord_profile_names["tonicization_root_ct"],
     ),
+}
+
+CHORD_PROFILES = {
+    k: v for k, v in CHORD_PROFILES_WITH_BASELINE.items() if not k.endswith("profiles")
 }
 
 

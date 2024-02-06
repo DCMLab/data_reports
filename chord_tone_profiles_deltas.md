@@ -58,7 +58,7 @@ plt.rcParams["figure.dpi"] = 300
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
-EVALUATIONS_ONLY = False
+EVALUATIONS_ONLY = True
 ONLY_PAPER_METRICS = True  # to plot only the metrics reported in Everts et al. (2017)
 ```
 
@@ -619,25 +619,6 @@ distance_evaluations
 Assign a Tailwind color to each feature. To see the full palette, check `tailwindcss_v3.3.3.(png|svg)`
 
 ```{code-cell} ipython3
-color_palette = dict(
-    globalkey_profiles="AMBER_800",
-    localkey_profiles="AMBER_500",
-    tonicization_profiles="ORANGE_300",
-    root_per_globalkey="GREEN_800",
-    root_per_localkey="GREEN_500",
-    root_per_tonicization="LIME_300",
-    global_root_ct="INDIGO_800",
-    local_root_ct="VIOLET_600",
-    tonicization_root_ct="PURPLE_400",
-)
-feature_names = {f: name for f, (_, name) in features.items()}
-color_palette = {
-    feature_names[k]: utils.TailwindColorsHex.get_color(v)
-    for k, v in color_palette.items()
-}
-```
-
-```{code-cell} ipython3
 height = 1946 if ONLY_PAPER_METRICS else 4000
 
 fig = make_scatter_plot(
@@ -646,7 +627,7 @@ fig = make_scatter_plot(
     y_col="value",
     symbol="norm",
     color="features",
-    color_discrete_map=color_palette,
+    color_discrete_map=utils.CHORD_PROFILE_COLORS,
     facet_col="delta_title",
     facet_row="metric",
     y_axis=dict(matches=None),
@@ -663,7 +644,6 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
             col=col_idx + 1,
             matches="y" + str(len(row_figs) * row_idx + 1),
         )
-save_figure_as(fig, "chord_tone_profiles_evaluation", height=height, width=1300)
 fig
 ```
 
@@ -680,7 +660,7 @@ fig = make_scatter_plot(
     y_col="value",
     symbol="norm",
     color="features",
-    color_discrete_map=color_palette,
+    color_discrete_map=utils.CHORD_PROFILE_COLORS,
     facet_col="delta_title",
     facet_row="metric",
     y_axis=dict(matches=None),
@@ -771,15 +751,7 @@ n_best[["features", "norm", "delta_descriptor"]].value_counts()
 
 ```{code-cell} ipython3
 close_inspection_feature_names = [  # both corpus- and groupwise-normalized
-    feature_names[f]
-    for f in (
-        "global_root_ct",
-        "local_root_ct",
-        "tonicization_root_ct",
-        "root_per_globalkey",
-        "root_per_localkey",
-        "root_per_tonicization",
-    )
+    feature_name for _, feature_name in utils.CHORD_PROFILES.values()
 ]
 ```
 
@@ -798,58 +770,13 @@ close_inspection_deltas = [
 ]
 ```
 
-```{raw-cell}
-def get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types):
-    norm_index = 1 if norm == "groupwise" else 0
-    results = distance_matrices[feature_name][delta_name]
-    for data_tuple in results:
-        dm = data_tuple[norm_index]
-        if dm.metadata.n_types == n_types:
-            break
-    else:
-        raise ValueError(f"No {norm} with {n_types} types found")
-    return dm
-
-
-def individual_evaluation(
-    distance_matrices,
-    feature_name,
-    delta_name,
-    norm,
-    n_types,
-):
-    dm = get_distance_matrix(distance_matrices, feature_name, delta_name, norm, n_types)
-    clustering = delta.Clustering(dm)
-    print(clustering.describe())
-    print(clustering.evaluate())
-    plt.figure(figsize=(10, 60))
-    delta.Dendrogram(clustering)
-    # store matplotlib as PDF
-    name = f"{feature_name}_{norm}-{n_types}-{delta_name}-{norm}"
-    plt.savefig(
-        make_output_path(name, "pdf"),
-        bbox_inches="tight",
-    )
-
-def make_confusion_matrix(
-    clustering_df, y_true="GroupID", y_pred="Cluster", labels="Group"
-):
-    id2label = set(clustering_df[[y_true, labels]].itertuples(index=False, name=None))
-    id2label = dict(sorted(id2label))
-    matrix = confusion_matrix(
-        y_true=clustering_df[y_true], y_pred=clustering_df[y_pred]
-    )
-    df = pd.DataFrame(matrix)
-    df.index = df.index.map(id2label)
-    df.columns = df.columns.map(id2label)
-    return df
-```
-
 ## Chord Profiles
 ### Globalkey
 
 ```{code-cell} ipython3
-METRICS_PATH = os.path.abspath(os.path.join(RESULTS_PATH, "..", "data"))
+METRICS_PATH = os.path.abspath(
+    os.path.join(RESULTS_PATH, "..", "data", "delta_gridsearch_norm")
+)
 
 
 def reorder_data(
@@ -945,26 +872,63 @@ def concatenate_feature_metrics(
         [load_feature_metrics(f, directory, index_groups=None) for f in features],
         keys=list(features),
         names=["feature_name"],
-    ).reset_index(0)
+    )
+    try:
+        df = df.reset_index(0)
+    except Exception:
+        df = df.reset_index(0, drop=True)
     if index_groups:
         df = reorder_data(df, index_groups=index_groups)
     return df
-
-
-metrics_complete = concatenate_feature_metrics()
-if ONLY_PAPER_METRICS:
-    metrics_complete = keep_only_paper_metrics(metrics_complete)
-metrics_complete
 ```
 
-```{code-cell} ipython3
+```{raw-cell}
+metrics_complete = concatenate_feature_metrics(os.path.abspath(os.path.join(RESULTS_PATH, "..", "data",
+"delta_gridsearch_norm")))
+metrics_complete = keep_only_paper_metrics(metrics_complete)
+excluded = metrics_complete.index.get_level_values("delta_descriptor").str.startswith(('sqeuc', 'euc'))
+metrics_complete = metrics_complete[~excluded]
+metrics_complete
 fig = make_scatter_plot(
     metrics_complete.reset_index(),
     x_col="top_n",
     y_col="value",
     symbol="norm",
     color="features",
-    color_discrete_map=color_palette,
+    color_discrete_map=utils.CHORD_PROFILE_COLORS,
+    facet_col="delta_title",
+    facet_row="metric",
+    y_axis=dict(matches=None),
+    traces_settings=dict(marker_size=2, opacity=0.5),
+    layout=dict(legend=dict(y=-0.05, orientation="h")),
+    height=height,
+)
+# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+# fig.update_yaxes(matches="y")
+for row_idx, row_figs in enumerate(fig._grid_ref):
+    for col_idx, col_fig in enumerate(row_figs):
+        fig.update_yaxes(
+            row=row_idx + 1,
+            col=col_idx + 1,
+            matches="y" + str(len(row_figs) * row_idx + 1),
+        )
+#save_figure_as(fig, "discriminant_metrics_gridsearch", height=height, width=1300)
+fig
+```
+
+```{code-cell} ipython3
+metrics_complete = concatenate_feature_metrics(
+    features=list(utils.CHORD_PROFILES_WITH_BASELINE.keys()),
+)
+if ONLY_PAPER_METRICS:
+    metrics_complete = keep_only_paper_metrics(metrics_complete)
+fig = make_scatter_plot(
+    metrics_complete,
+    x_col="top_n",
+    y_col="value",
+    symbol="norm",
+    color="features",
+    color_discrete_map=utils.CHORD_PROFILE_COLORS,
     facet_col="delta_title",
     facet_row="metric",
     y_axis=dict(matches=None),
@@ -1102,7 +1066,7 @@ def compare_single_metric(metrics_complete, metric, iqr_coefficient=10):
         y_col="value",
         symbol="norm",
         color="features",
-        color_discrete_map=color_palette,
+        color_discrete_map=utils.CHORD_PROFILE_COLORS,
         facet_col="norm",
         facet_row="delta_title",
         y_axis=dict(matches=None),
