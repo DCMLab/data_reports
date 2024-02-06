@@ -419,7 +419,10 @@ for root_type in ("root_per_globalkey", "root", "root_per_tonicization"):
         analyzer_config
     )
     ctp[root_type] = prevalence_matrix
-    print(root_type)
+    print(
+        f"{root_type}: n = {prevalence_matrix.n_types}, "
+        f"normalized entropy = {normalized_entropy_of_prevalence(prevalence_matrix.type_prevalence())}"
+    )
     display(prevalence_matrix.document_frequencies().iloc[:5])
 
 # %%
@@ -545,7 +548,7 @@ make_line_plot(
     cps_frequencies,
     x_col="cumulative proportion",
     y_col="piece frequency",
-    color="type of root",
+    color="type of chord profile",
     hover_data=["root", "sonority", "duration in ♩"],
     category_orders={
         "type of chord profile": [
@@ -620,14 +623,38 @@ for_types.index.rename("interval over root", inplace=True)
 for_types = for_types.reset_index().sort_values(
     "piece frequency (n = 1219)", ascending=False
 )
+for_types.loc(axis=1)["interval over root"] = (
+    for_types["interval over root"]
+    + " ("
+    + ms3.transform(for_types["interval over root"], ms3.fifths2iv)
+    + ")"
+)
 for_types.iloc[:20].to_clipboard()
-for_types.head(20)
+for_types.head(20).style.format(
+    {
+        "duration in ♩": "{:.1f}",
+        "proportion": "{:.1%}",
+    }
+)
+
+# %%
+for_prevalence.n_types
+
+# %%
+for_doc_freq = for_prevalence.document_frequencies()
+five_or_less = len(for_doc_freq[for_doc_freq < 6])
+print(
+    f"{five_or_less} ({five_or_less/for_prevalence.n_types:.1%}) occur in 5 or less pieces."
+)
+only_one = len(for_doc_freq[for_doc_freq == 1])
+print(
+    f"{only_one} ({only_one/for_prevalence.n_types:.1%}) occur only in a single piece."
+)
 
 # %%
 fig = plot_piece_frequency(ctp, "ct")
-# save_figure_as(fig, "chord_profile_tokens.pdf", width=1280, height=500)
+save_figure_as(fig, "chord_tone_profile_tokens.pdf", width=1280, height=500)
 fig
-
 
 # %% [markdown]
 # ## Chopin's dominant
