@@ -58,7 +58,8 @@ plt.rcParams["figure.dpi"] = 300
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
-EVALUATIONS_ONLY = True
+EVALUATIONS_ONLY = False
+ONLY_PAPER_METRICS = True  # to plot only the metrics reported in Everts et al. (2017)
 ```
 
 ```{code-cell} ipython3
@@ -107,25 +108,7 @@ if not EVALUATIONS_ONLY:
 Skipped if EVALUATIONS_ONLY
 
 ```{code-cell} ipython3
-describer = delta.TsvDocumentDescriber(D.get_metadata().reset_index())
-
-
-def make_pydelta_corpus(
-    matrix: pd.DataFrame, info: str = "chords", absolute: bool = True, **kwargs
-) -> delta.Corpus:
-    metadata = delta.Metadata(
-        features=info,
-        ordered=False,
-        words=None,
-        corpus="Distant Listening Corpus",
-        complete=True,
-        frequencies=not absolute,
-        **kwargs,
-    )
-    corpus = delta.Corpus(matrix, document_describer=describer, metadata=metadata)
-    corpus.index = utils.merge_index_levels(corpus.index)
-    corpus.columns = utils.merge_index_levels(corpus.columns)
-    return corpus
+describer = delta.ComposerDescriber(D.get_metadata().reset_index())
 ```
 
 ```{code-cell} ipython3
@@ -187,14 +170,14 @@ def make_features(
         print(f"Computing prevalence matrix and pydelta corpus for {info}")
         analyzer_config.update(columns=feature_columns)
         prevalence_matrix = chord_slices.apply_step(analyzer_config)
-        corpus = make_pydelta_corpus(
+        corpus = utils.make_pydelta_corpus(
             prevalence_matrix.relative, info=info, absolute=False, norm="piecenorm"
         )
         if prevalence_matrix.columns.nlevels > 1:
             groupwise_prevalence = prevalence_matrix.get_groupwise_prevalence(
                 column_levels=feature_columns[:-1]
             )
-            groupwise = make_pydelta_corpus(
+            groupwise = utils.make_pydelta_corpus(
                 groupwise_prevalence.relative,
                 info=info,
                 absolute=False,
@@ -212,6 +195,7 @@ else:
     data = utils.make_profiles(
         chord_slices,
         describer=describer,
+        profiles=features,
         save_as="/home/laser/git/chord_profile_search/data.zip",
     )
     used_pieces = data["root_per_globalkey"].prevalence_matrix.relative.index
@@ -290,6 +274,35 @@ def apply_deltas(*corpus):
     return dict(zip(selected_deltas.keys(), results))
 
 
+def resolve_vocab_sizes(
+    vocab_sizes: Optional[int | Iterable[Optional[int | float]]],
+    vocabulary_size: int,
+) -> Dict[Optional[int | float], int]:
+    """Resolves decimal fractions < 1 to the corresponding number of types based on the vocabulary size."""
+    if vocab_sizes is None:
+        return {None: vocabulary_size}
+    if isinstance(vocab_sizes, int):
+        stride = math.ceil(vocabulary_size / vocab_sizes)
+        category2top_n = {i: i * stride for i in range(1, vocabulary_size + 1)}
+    else:
+        category2top_n = {}
+        filter_too_large = (
+            None in vocab_sizes
+        )  # since max-vocab is requested, skip other values that are larger
+        for size_category in vocab_sizes:
+            if size_category is None:
+                category2top_n[None] = vocabulary_size
+            elif size_category < 1:
+                category2top_n[size_category] = math.ceil(
+                    vocabulary_size * size_category
+                )
+            elif filter_too_large and size_category > vocabulary_size:
+                continue
+            else:
+                category2top_n[size_category] = math.ceil(size_category)
+    return category2top_n
+
+
 def compute_deltas(
     data: Dict[str, DataTuple],
     vocab_sizes: int | Iterable[Optional[int | float]] = 5,
@@ -306,25 +319,7 @@ def compute_deltas(
             break
         print(f"Computing deltas for {feature_name}", end=": ")
         vocabulary_size = prevalence_matrix.n_types
-        if isinstance(vocab_sizes, int):
-            stride = math.ceil(vocabulary_size / vocab_sizes)
-            category2top_n = {i: i * stride for i in range(1, vocabulary_size + 1)}
-        else:
-            category2top_n = {}
-            filter_too_large = (
-                None in vocab_sizes
-            )  # since max-vocab is requested, skip other values that are larger
-            for size_category in vocab_sizes:
-                if size_category is None:
-                    category2top_n[None] = vocabulary_size
-                elif size_category < 1:
-                    category2top_n[size_category] = math.ceil(
-                        vocabulary_size * size_category
-                    )
-                elif filter_too_large and size_category > vocabulary_size:
-                    continue
-                else:
-                    category2top_n[size_category] = math.ceil(size_category)
+        category2top_n = resolve_vocab_sizes(vocab_sizes, vocabulary_size)
         groupwise_normalization = groupwise is not None
         for size_category, top_n in category2top_n.items():
             print(f"({size_category}, {top_n})", end=" ")
@@ -444,6 +439,7 @@ def load_distance_matrices(
 def get_distance_matrices(
     data: Optional[Dict[str, DataTuple]] = None,
     vocab_sizes: int | Iterable[int] = 5,
+    normalize: bool = False,
     name: Optional[str] = "chord_tone_profile_deltas",
     basepath: Optional[str] = None,
     first_n: Optional[int] = None,
@@ -452,6 +448,7 @@ def get_distance_matrices(
     """
 
     Args:
+        first_n: Only for the first n pieces (e.g. for testing).
         pickle:
             If True (default), the distance matrices are pickled to individual files in basepath/name.
             Otherwise, they will be stored as TSV files in a ZIP archive (slow). To disable storing,
@@ -470,9 +467,13 @@ def get_distance_matrices(
             zip_file = f"{name}_{'-'.join(map(str, vocab_sizes))}.zip"
         filepath = os.path.join(basepath, zip_file)
         if os.path.isfile(filepath):
+            if normalize:
+                raise NotImplementedError(
+                    "Loading distance matrices after normalization not yet implemented."
+                )
             return load_distance_matrices(filepath, first_n=first_n)
     assert data is not None, "data is None"
-    distance_matrices = compute_deltas(data, vocab_sizes)
+    distance_matrices = compute_deltas(data, vocab_sizes, first_n=first_n)
     if name:
         if pickle:
             directory = os.path.join(basepath, name)
@@ -596,10 +597,20 @@ def get_discriminant_metrics(
     return result
 
 
+def keep_only_paper_metrics(df):
+    """Keep only those evaluation metrics that were actually reported in Evert et al. (2017)."""
+    starts_with = ("Adjusted Rand", "Simple Score", "Cluster Errors")
+    mask = df.metric.str.startswith(starts_with)
+    return df[mask].sort_values(["delta", "metric"])
+
+
 # distance_evaluations = get_discriminant_metrics(distance_matrices)
 distance_evaluations = load_discriminant_metrics(
     "/home/laser/git/chord_profile_search/results.tsv"
-)
+)  # these were created by having the chord_profile_search/gridsearch.py script process the folder containing
+# pickled distance matrices created via this notebook
+if ONLY_PAPER_METRICS:
+    distance_evaluations = keep_only_paper_metrics(distance_evaluations)
 distance_evaluations
 ```
 
@@ -627,6 +638,8 @@ color_palette = {
 ```
 
 ```{code-cell} ipython3
+height = 1946 if ONLY_PAPER_METRICS else 4000
+
 fig = make_scatter_plot(
     distance_evaluations,
     x_col="top_n",
@@ -639,7 +652,7 @@ fig = make_scatter_plot(
     y_axis=dict(matches=None),
     traces_settings=dict(marker_size=10),
     layout=dict(legend=dict(y=-0.05, orientation="h")),
-    height=4000,
+    height=height,
 )
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
@@ -650,12 +663,46 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
             col=col_idx + 1,
             matches="y" + str(len(row_figs) * row_idx + 1),
         )
-save_figure_as(fig, "chord_tone_profiles_evaluation", height=4000, width=1300)
+save_figure_as(fig, "chord_tone_profiles_evaluation", height=height, width=1300)
 fig
 ```
 
 ```{code-cell} ipython3
-delta.functions
+distance_evaluations_norm = load_discriminant_metrics(
+    "/home/laser/dimcat_data/1-0.333/results.tsv"
+)  # these were created by having the chord_profile_search/gridsearch.py script process the folder containing
+# pickled distance matrices created via this notebook
+if ONLY_PAPER_METRICS:
+    distance_evaluations_norm = keep_only_paper_metrics(distance_evaluations_norm)
+fig = make_scatter_plot(
+    distance_evaluations_norm,
+    x_col="words",
+    y_col="value",
+    symbol="norm",
+    color="features",
+    color_discrete_map=color_palette,
+    facet_col="delta_title",
+    facet_row="metric",
+    y_axis=dict(matches=None),
+    traces_settings=dict(marker_size=10),
+    layout=dict(legend=dict(y=-0.05, orientation="h")),
+    title="After L2-normalization",
+    height=height,
+)
+# fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
+# fig.update_yaxes(matches="y")
+for row_idx, row_figs in enumerate(fig._grid_ref):
+    for col_idx, col_fig in enumerate(row_figs):
+        fig.update_yaxes(
+            row=row_idx + 1,
+            col=col_idx + 1,
+            matches="y" + str(len(row_figs) * row_idx + 1),
+        )
+fig
+```
+
+```{code-cell} ipython3
+delta.functions  # Best-performing: Burrow's, Cosine Delta, Eder's Delta, Eder's Simple, Manhattan
 ```
 
 #### Inspection
@@ -664,19 +711,20 @@ delta.functions
 def get_n_best(distance_evaluations, n=10):
     if distance_evaluations.index.nlevels == 1:
         distance_evaluations.index.rename("i", inplace=True)
-    smaller_is_better = ["Entropy", "Cluster Errors", "F-Ratio"]  # noqa: F841
-    prefer_smaller_mask = distance_evaluations.metric.isin(smaller_is_better)
+    smaller_is_better = ("Entropy", "Cluster Errors", "F-Ratio")  # noqa: F841
+    metric_str = distance_evaluations.metric.str
+    prefer_smaller_mask = metric_str.startswith(smaller_is_better)
     nlargest = (
         distance_evaluations[~prefer_smaller_mask].groupby("metric").value.nlargest(n)
     )
     best_largest = join_df_on_index(distance_evaluations, nlargest.index).query(
-        "metric not in @smaller_is_better"
+        "not metric.str.startswith(@smaller_is_better)"
     )
     nsmallest = (
         distance_evaluations[prefer_smaller_mask].groupby("metric").value.nsmallest(n)
     )
     best_smallest = join_df_on_index(distance_evaluations, nsmallest.index).query(
-        "metric in @smaller_is_better"
+        "metric.str.startswith(@smaller_is_better)"
     )
     return pd.concat([best_largest, best_smallest])
 
@@ -691,6 +739,11 @@ n_best.head()
 winners = get_n_best(distance_evaluations, n=1)
 winners[["features", "norm", "delta_descriptor"]].value_counts()
 ```
+
+**Selected for further exploration:**
+
+* local_root_ct_rootnorm-cosine-0679 (winner simple score)
+* root per globalkey (piecenorm), Quadratic (sqeuclidean z-score), full (1359) (winner
 
 ```{code-cell} ipython3
 winners
@@ -899,6 +952,8 @@ def concatenate_feature_metrics(
 
 
 metrics_complete = concatenate_feature_metrics()
+if ONLY_PAPER_METRICS:
+    metrics_complete = keep_only_paper_metrics(metrics_complete)
 metrics_complete
 ```
 
@@ -915,7 +970,7 @@ fig = make_scatter_plot(
     y_axis=dict(matches=None),
     traces_settings=dict(marker_size=2, opacity=0.5),
     layout=dict(legend=dict(y=-0.05, orientation="h")),
-    height=4000,
+    height=height,
 )
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
@@ -926,7 +981,7 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
             col=col_idx + 1,
             matches="y" + str(len(row_figs) * row_idx + 1),
         )
-save_figure_as(fig, "discriminant_metrics_gridsearch", height=4000, width=1300)
+save_figure_as(fig, "discriminant_metrics_gridsearch", height=height, width=1300)
 fig
 ```
 
@@ -955,8 +1010,6 @@ fishers_only = pd.concat(
 ```
 
 ```{code-cell} ipython3
-:is_executing: true
-
 
 
 def make_outliers_mask(
@@ -1072,11 +1125,12 @@ def compare_single_metric(metrics_complete, metric, iqr_coefficient=10):
     return fig
 
 
-compare_single_metric(metrics_complete, "Fisher's LD")
+if not ONLY_PAPER_METRICS:
+    compare_single_metric(metrics_complete, "Fisher's LD")
 ```
 
 ```{code-cell} ipython3
-def show_gridsearch(df, save_as: Optional[str], height=4000, width=1300, **kwargs):
+def show_gridsearch(df, save_as: Optional[str], height=height, width=1300, **kwargs):
     fig = make_scatter_plot(
         df,
         x_col="top_n",
@@ -1108,21 +1162,46 @@ def show_gridsearch(df, save_as: Optional[str], height=4000, width=1300, **kwarg
 
 ```{code-cell} ipython3
 root_per_globalkey = load_feature_metrics("root_per_globalkey")
+if ONLY_PAPER_METRICS:
+    root_per_globalkey = keep_only_paper_metrics(root_per_globalkey)
 show_gridsearch(root_per_globalkey, "root_per_globalkey_gridsearch")
 ```
 
 ### Localkey
 
 ```{code-cell} ipython3
-root_per_globalkey = load_feature_metrics("root_per_localkey")
+root_per_local = load_feature_metrics("root_per_localkey")
+if ONLY_PAPER_METRICS:
+    root_per_local = keep_only_paper_metrics(root_per_local)
 show_gridsearch(root_per_globalkey, "root_per_localkey_gridsearch")
 ```
 
 ```{code-cell} ipython3
 root_per_tonicization = load_feature_metrics("root_per_tonicization")
+if ONLY_PAPER_METRICS:
+    root_per_tonicization = keep_only_paper_metrics(root_per_tonicization)
 show_gridsearch(root_per_tonicization, "root_per_tonicization_gridsearch")
 ```
 
 ```{code-cell} ipython3
-
+global_root_ct = load_feature_metrics("global_root_ct")
+if ONLY_PAPER_METRICS:
+    global_root_ct = keep_only_paper_metrics(global_root_ct)
+show_gridsearch(global_root_ct, "global_root_ct_gridsearch")
 ```
+
+```{code-cell} ipython3
+local_root_ct = load_feature_metrics("local_root_ct")
+if ONLY_PAPER_METRICS:
+    local_root_ct = keep_only_paper_metrics(local_root_ct)
+show_gridsearch(local_root_ct, "local_root_ct_gridsearch")
+```
+
+```{code-cell} ipython3
+tonicization_root_ct = load_feature_metrics("tonicization_root_ct")
+if ONLY_PAPER_METRICS:
+    tonicization_root_ct = keep_only_paper_metrics(tonicization_root_ct)
+show_gridsearch(tonicization_root_ct, "tonicization_root_ct_gridsearch")
+```
+
+Best-performing: Burrow's, Cosine Delta, Eder's Delta, Eder's Simple, Manhattan
