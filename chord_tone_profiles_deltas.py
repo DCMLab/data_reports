@@ -39,6 +39,7 @@ from dimcat.plotting import make_scatter_plot, write_image
 from git import Repo
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
+from plotly.graph_objs import Annotation
 
 import utils
 
@@ -612,7 +613,6 @@ distance_evaluations
 #
 # Assign a Tailwind color to each feature. To see the full palette, check `tailwindcss_v3.3.3.(png|svg)`
 
-
 # %%
 height = 1946 if ONLY_PAPER_METRICS else 4000
 
@@ -641,7 +641,7 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
         )
 fig
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 distance_evaluations_norm = load_discriminant_metrics(
     "/home/laser/dimcat_data/1-0.333/results.tsv"
 )  # these were created by having the chord_profile_search/gridsearch.py script process the folder containing
@@ -674,7 +674,7 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
         )
 fig
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 delta.functions  # Best-performing: Burrow's, Cosine Delta, Eder's Delta, Eder's Simple, Manhattan
 
 
@@ -682,7 +682,7 @@ delta.functions  # Best-performing: Burrow's, Cosine Delta, Eder's Delta, Eder's
 # #### Inspection
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def get_n_best(distance_evaluations, n=10):
     if distance_evaluations.index.nlevels == 1:
         distance_evaluations.index.rename("i", inplace=True)
@@ -709,45 +709,45 @@ n_best = get_n_best(distance_evaluations, n=n)
 print(f"Selected {len(n_best)} best-performing values, {n} per metric.")
 n_best.head()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 winners = get_n_best(distance_evaluations, n=1)
 winners[["features", "norm", "delta_descriptor"]].value_counts()
 
-# %% [markdown]
+# %% [markdown] jupyter={"outputs_hidden": false}
 # **Selected for further exploration:**
 #
 # * local_root_ct_rootnorm-cosine-0679 (winner simple score)
 # * root per globalkey (piecenorm), Quadratic (sqeuclidean z-score), full (1359) (winner
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 winners
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_best["delta_descriptor"].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_best[["features", "norm"]].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 winners[["features", "norm"]].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 winners.delta_descriptor.value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_best[["features", "norm", "delta_descriptor"]].value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 close_inspection_feature_names = [  # both corpus- and groupwise-normalized
     feature_name for _, feature_name in utils.CHORD_PROFILES.values()
 ]
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n_best[n_best.features.isin(close_inspection_feature_names)].groupby(
     ["features", "norm"]
 ).delta_descriptor.value_counts()
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 close_inspection_deltas = [
     "sqeuclidean-z_score",  # especially for all 3 types of chord profiles
     "manhattan",  # especially for all 3 types of chord-tone profiles
@@ -755,11 +755,11 @@ close_inspection_deltas = [
     "cosine-z_score",
 ]
 
-# %% [markdown]
+# %% [markdown] jupyter={"outputs_hidden": false}
 # ## Chord Profiles
 # ### Globalkey
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 METRICS_PATH = os.path.abspath(
     os.path.join(RESULTS_PATH, "..", "data", "delta_gridsearch_norm")
 )
@@ -907,19 +907,109 @@ metrics_complete = concatenate_feature_metrics(
 )
 if ONLY_PAPER_METRICS:
     metrics_complete = keep_only_paper_metrics(metrics_complete)
+profile_names = {
+    ("globalkey_profiles", "piecenorm"): "<i>P<sup>tpcG, ||piece||</sup></i>",
+    ("localkey_profiles", "piecenorm"): "<i>P<sup>tpcL, ||piece||</sup></i>",
+    ("tonicization_profiles", "piecenorm"): "<i>P<sup>tpcT, ||piece||</sup></i>",
+    ("root_per_globalkey", "piecenorm"): "<i>P<sup>G, son, ||piece||</sup></i>",
+    ("root_per_globalkey", "rootnorm"): "<i>P<sup>G, son, ||root||</sup></i>",
+    ("root_per_localkey", "piecenorm"): "<i>P<sup>L, son, ||piece||</sup></i>",
+    ("root_per_localkey", "rootnorm"): "<i>P<sup>L, son, ||root||</sup></i>",
+    ("root_per_tonicization", "piecenorm"): "<i>P<sup>T, son, ||piece||</sup></i>",
+    ("root_per_tonicization", "rootnorm"): "<i>P<sup>T, son, ||root||</sup></i>",
+    ("global_root_ct", "piecenorm"): "<i>P<sup>G, ct, ||piece||</sup></i>",
+    ("global_root_ct", "rootnorm"): "<i>P<sup>G, ct, ||root||</sup></i>",
+    ("local_root_ct", "piecenorm"): "<i>P<sup>L, ct, ||piece||</sup></i>",
+    ("local_root_ct", "rootnorm"): "<i>P<sup>L, ct, ||root||</sup></i>",
+    ("tonicization_root_ct", "piecenorm"): "<i>P<sup>T, ct, ||piece||</sup></i>",
+    ("tonicization_root_ct", "rootnorm"): "<i>P<sup>T, ct, ||root||</sup></i>",
+}
+color_map = {
+    "<i>P<sup>G, ct, ||piece||</sup></i>": "FUCHSIA_700",
+    "<i>P<sup>G, ct, ||root||</sup></i>": "FUCHSIA_400",
+    "<i>P<sup>L, ct, ||piece||</sup></i>": "INDIGO_700",
+    "<i>P<sup>L, ct, ||root||</sup></i>": "INDIGO_400",
+    "<i>P<sup>T, ct, ||piece||</sup></i>": "PURPLE_700",
+    "<i>P<sup>T, ct, ||root||</sup></i>": "PURPLE_400",
+    "<i>P<sup>G, son, ||piece||</sup></i>": "LIME_600",
+    "<i>P<sup>G, son, ||root||</sup></i>": "LIME_400",
+    "<i>P<sup>L, son, ||piece||</sup></i>": "EMERALD_600",
+    "<i>P<sup>L, son, ||root||</sup></i>": "EMERALD_400",
+    "<i>P<sup>T, son, ||piece||</sup></i>": "CYAN_600",
+    "<i>P<sup>T, son, ||root||</sup></i>": "CYAN_400",
+    "<i>P<sup>tpcG, ||piece||</sup></i>": "RED_700",
+    "<i>P<sup>tpcL, ||piece||</sup></i>": "RED_600",
+    "<i>P<sup>tpcT, ||piece||</sup></i>": "ROSE_500",
+}
+color_map = {
+    trace: utils.TailwindColorsHex.get_color(c) for trace, c in color_map.items()
+}
+trace_heading = "profiles"
+trace_names = pd.Series(
+    metrics_complete.index.droplevel((0, 3, 4, 5)).map(profile_names),
+    index=metrics_complete.index,
+    name=trace_heading,
+)
+metrics_complete = pd.concat([metrics_complete, trace_names], axis=1)
+trace_order = list(color_map.keys())
+metrics_complete.delta_title = metrics_complete.delta_title.replace(
+    {
+        "Cosine Distance": "Cosine",
+        "Manhattan Distance": "Manhattan",
+        "Burrows' Delta": "Burrows's Delta",
+    }
+)
+delta_order = [
+    "Cosine",
+    "Cosine Delta",
+    "Manhattan",
+    "Burrows's Delta",
+    "Eder's Delta",
+    "Eder's Simple",
+]
+
+
+def subplot_order(S):
+    category_order = trace_order if S.name == trace_heading else delta_order
+    return S.map({val: i for i, val in enumerate(category_order)})
+
+
+metrics_complete.sort_values(
+    [trace_heading, "delta_title"], key=subplot_order, inplace=True
+)
 fig = make_scatter_plot(
     metrics_complete,
     x_col="top_n",
     y_col="value",
-    symbol="norm",
-    color="features",
-    color_discrete_map=utils.CHORD_PROFILE_COLORS,
+    color=trace_heading,
+    color_discrete_map=color_map,
     facet_col="delta_title",
     facet_row="metric",
+    x_axis=dict(tickangle=45),
     y_axis=dict(matches=None),
-    traces_settings=dict(marker_size=2, opacity=0.5),
-    layout=dict(legend=dict(y=-0.05, orientation="h")),
+    traces_settings=dict(marker_size=2, opacity=0.7),
+    layout=dict(legend=dict(y=1.1, orientation="h", itemsizing="constant")),
     height=height,
+    log_x=True,
+)
+# replace repeated y-axis labels by a single one. Solution by MichaG via
+# https://stackoverflow.com/questions/58167028/single-axis-caption-in-plotly-express-facet-plot
+fig.for_each_xaxis(lambda y: y.update(title=""))
+fig.update_layout(
+    # keep the original annotations and add a list of new annotations:
+    annotations=list(fig.layout.annotations)
+    + [
+        Annotation(
+            x=0.5,
+            y=-0.06,
+            font=dict(size=20),
+            showarrow=False,
+            text="Top n tokens",
+            # textangle=-90,
+            xref="paper",
+            yref="paper",
+        )
+    ]
 )
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
@@ -930,8 +1020,41 @@ for row_idx, row_figs in enumerate(fig._grid_ref):
             col=col_idx + 1,
             matches="y" + str(len(row_figs) * row_idx + 1),
         )
-save_figure_as(fig, "discriminant_metrics_gridsearch", height=height, width=1300)
+save_figure_as(fig, "clustering_quality_gridsearch.pdf", height=1479, width=1000)
 fig
+
+# %%
+len(metrics_complete)
+
+# %%
+metrics_complete.reset_index().columns
+
+
+# %%
+def sort_delta_level(idx):
+    if not idx.name == "delta_title":
+        return idx
+    return idx.map({name: i for i, name in enumerate(delta_order)})
+
+
+ranks = (
+    metrics_complete.query("~metric.str.startswith('Cluster')")
+    .groupby(["metric", "delta_title"])
+    .apply(
+        lambda df: df.groupby("profiles")
+        .value.max()
+        .rank(method="max", ascending=False)
+    )
+    .astype(int)
+)
+ranks.iloc(axis=1)[ranks.sum().argsort()].sort_index(key=sort_delta_level)
+
+# %%
+group_max = metrics_complete.loc[
+    metrics_complete.groupby(["metric", "delta_title", "profiles"]).value.idxmax()
+]
+group_max
+
 
 # %%
 winners = get_n_best(metrics_complete, n=1)
@@ -954,8 +1077,6 @@ fishers_only = pd.concat(
 
 
 # %%
-
-
 def make_outliers_mask(
     mask_support,
     iqr_coefficient: float = 1.5,
@@ -1073,7 +1194,7 @@ if not ONLY_PAPER_METRICS:
     compare_single_metric(metrics_complete, "Fisher's LD")
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def show_gridsearch(df, save_as: Optional[str], height=height, width=1300, **kwargs):
     fig = make_scatter_plot(
         df,
@@ -1104,22 +1225,22 @@ def show_gridsearch(df, save_as: Optional[str], height=height, width=1300, **kwa
     return fig
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 root_per_globalkey = load_feature_metrics("root_per_globalkey")
 if ONLY_PAPER_METRICS:
     root_per_globalkey = keep_only_paper_metrics(root_per_globalkey)
 show_gridsearch(root_per_globalkey, "root_per_globalkey_gridsearch")
 
-# %% [markdown]
+# %% [markdown] jupyter={"outputs_hidden": false}
 # ### Localkey
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 root_per_local = load_feature_metrics("root_per_localkey")
 if ONLY_PAPER_METRICS:
     root_per_local = keep_only_paper_metrics(root_per_local)
 show_gridsearch(root_per_globalkey, "root_per_localkey_gridsearch")
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 root_per_tonicization = load_feature_metrics("root_per_tonicization")
 if ONLY_PAPER_METRICS:
     root_per_tonicization = keep_only_paper_metrics(root_per_tonicization)
