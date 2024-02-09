@@ -892,6 +892,19 @@ def add_mode_column(df: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([df, mode_col], axis=1)
 
 
+def align_y_axes_of_facet_rows(fig: go.Figure):
+    """Applying this function to a plotly figure with facet rows will align the y-axes of each row
+    such that they share the same range optimized to fit all traces in the row; as opposed to
+    all rows sharing the same range, which is the default behavior."""
+    for row_idx, row_figs in enumerate(fig._grid_ref):
+        for col_idx, col_fig in enumerate(row_figs):
+            fig.update_yaxes(
+                row=row_idx + 1,
+                col=col_idx + 1,
+                matches="y" + str(len(row_figs) * row_idx + 1),
+            )
+
+
 def count_subsequent_occurrences(
     S: pd.Series,
     interval: int | List[int],

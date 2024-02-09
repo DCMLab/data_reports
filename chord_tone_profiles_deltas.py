@@ -25,7 +25,7 @@ import os
 import re
 from collections import defaultdict
 from itertools import count
-from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
+from typing import Dict, Iterable, List, Literal, NamedTuple, Optional, Tuple
 from zipfile import ZipFile
 
 import delta
@@ -33,13 +33,18 @@ import dimcat as dc
 import joblib
 import ms3
 import pandas as pd
+import plotly.graph_objs as go
 from dimcat import resources
 from dimcat.data.resources.utils import join_df_on_index
-from dimcat.plotting import make_scatter_plot, write_image
+from dimcat.plotting import (
+    make_box_plot,
+    make_line_plot,
+    make_scatter_plot,
+    write_image,
+)
 from git import Repo
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
-from plotly.graph_objs import Annotation
 
 import utils
 
@@ -601,7 +606,7 @@ def keep_only_paper_metrics(df):
 
 # distance_evaluations = get_discriminant_metrics(distance_matrices)
 distance_evaluations = load_discriminant_metrics(
-    "/home/laser/git/chord_profile_search/results.tsv"
+    "/home/laser/git/chord_profile_search/probe_measurements.tsv"
 )  # these were created by having the chord_profile_search/gridsearch.py script process the folder containing
 # pickled distance matrices created via this notebook
 if ONLY_PAPER_METRICS:
@@ -632,13 +637,7 @@ fig = make_scatter_plot(
 )
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
-for row_idx, row_figs in enumerate(fig._grid_ref):
-    for col_idx, col_fig in enumerate(row_figs):
-        fig.update_yaxes(
-            row=row_idx + 1,
-            col=col_idx + 1,
-            matches="y" + str(len(row_figs) * row_idx + 1),
-        )
+utils.align_y_axes_of_facet_rows(fig)
 fig
 
 # %% jupyter={"outputs_hidden": false}
@@ -665,13 +664,7 @@ fig = make_scatter_plot(
 )
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
-for row_idx, row_figs in enumerate(fig._grid_ref):
-    for col_idx, col_fig in enumerate(row_figs):
-        fig.update_yaxes(
-            row=row_idx + 1,
-            col=col_idx + 1,
-            matches="y" + str(len(row_figs) * row_idx + 1),
-        )
+utils.align_y_axes_of_facet_rows(fig)
 fig
 
 # %% jupyter={"outputs_hidden": false}
@@ -905,6 +898,21 @@ def concatenate_feature_metrics(
 metrics_complete = concatenate_feature_metrics(
     features=list(utils.CHORD_PROFILES_WITH_BASELINE.keys()),
 )
+# metrics_complete = concatenate_feature_metrics(
+#     features=list(utils.CHORD_PROFILES_WITH_BASELINE.keys()),
+#     directory = os.path.abspath(
+#         os.path.join(RESULTS_PATH, "..", "data", "delta_gridsearch_epoch")
+#     )
+# )
+vocab_proportion = pd.Series(
+    metrics_complete.index.get_level_values("top_n"),
+    index=metrics_complete.index,
+    name="vocab_proportion",
+)
+vocab_proportion = vocab_proportion.groupby("feature_name").transform(
+    lambda S: S / S.max()
+)
+metrics_complete = pd.concat([metrics_complete, vocab_proportion], axis=1)
 if ONLY_PAPER_METRICS:
     metrics_complete = keep_only_paper_metrics(metrics_complete)
 profile_names = {
@@ -999,7 +1007,7 @@ fig.update_layout(
     # keep the original annotations and add a list of new annotations:
     annotations=list(fig.layout.annotations)
     + [
-        Annotation(
+        go.layout.Annotation(
             x=0.5,
             y=-0.06,
             font=dict(size=20),
@@ -1011,23 +1019,22 @@ fig.update_layout(
         )
     ]
 )
+
+
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
-for row_idx, row_figs in enumerate(fig._grid_ref):
-    for col_idx, col_fig in enumerate(row_figs):
-        fig.update_yaxes(
-            row=row_idx + 1,
-            col=col_idx + 1,
-            matches="y" + str(len(row_figs) * row_idx + 1),
-        )
-save_figure_as(fig, "clustering_quality_gridsearch.pdf", height=1479, width=1000)
+utils.align_y_axes_of_facet_rows(fig)
+# save_figure_as(fig, "clustering_quality_gridsearch.pdf", height=1479, width=1000)
 fig
+
+# %%
+color_map
 
 # %%
 len(metrics_complete)
 
 # %%
-metrics_complete.reset_index().columns
+metrics_complete.reset_index().groupby("profiles").top_n.max()
 
 
 # %%
@@ -1037,9 +1044,9 @@ def sort_delta_level(idx):
     return idx.map({name: i for i, name in enumerate(delta_order)})
 
 
+three_metrics = metrics_complete.query("~metric.str.startswith('Cluster')")
 ranks = (
-    metrics_complete.query("~metric.str.startswith('Cluster')")
-    .groupby(["metric", "delta_title"])
+    three_metrics.groupby(["metric", "delta_title"])
     .apply(
         lambda df: df.groupby("profiles")
         .value.max()
@@ -1050,11 +1057,385 @@ ranks = (
 ranks.iloc(axis=1)[ranks.sum().argsort()].sort_index(key=sort_delta_level)
 
 # %%
+best_performing_top_n = (
+    three_metrics.reset_index("top_n")
+    .groupby(["metric", "delta_title"])
+    .apply(
+        lambda df: df.loc[
+            df.groupby("profiles").value.idxmax(),
+            ["profiles", "top_n", "vocab_proportion", "value"],
+        ]
+    )
+)
+best_performing_top_n
+
+
+# %% [raw]
+# make_bar_plot(
+#     best_performing_top_n.reset_index(),
+#     x_col="delta_title",
+#     y_col="vocab_proportion",
+#     facet_row="metric",
+#     color="profiles",
+#     color_discrete_map=color_map,
+#     #facet_col="delta_title",
+#     category_orders=dict(profiles=best_performing_top_n.groupby("profiles").vocab_proportion.median().sort_values().index.to_list()),
+#     hover_data=["metric", "delta_title"],
+#     height=1000,
+#     barmode="group"
+#     #title="For each delta, the best performing vocab proportions for ARI + Simple Score"
+# )
+
+# %% [raw]
+# make_box_plot(
+#     best_performing_top_n.reset_index(),
+#     x_col="profiles",
+#     y_col="vocab_proportion",
+#     color="profiles",
+#     color_discrete_map=color_map,
+#     #facet_col="delta_title",
+#     facet_row="metric",
+#     category_orders=dict(profiles=best_performing_top_n.query("metric.str.startswith('Adjust')").groupby("profiles").value.mean().sort_values(ascending=False).index.to_list()),
+#     hover_data=["metric", "delta_title", "top_n"],
+#     height=1000,
+#     title="For each metric, the best performing vocab proportions for all deltas"
+# )
+
+# %% [markdown]
+# From this plot comes the idea to show vocabulary-size boxes of the best performing values.
+
+
+# %%
+def get_upper_quantile_values(metrics, quantile=0.05):
+    result = (
+        metrics.reset_index("top_n")
+        .groupby(["profiles", "metric", "delta_title"])
+        .apply(
+            lambda df: df.loc[
+                df.value >= df.value.quantile(1.0 - quantile),
+                ["value", "top_n", "vocab_proportion"],
+            ],
+            include_groups=False,
+        )
+    )
+    metric_wise_ranking = result.groupby(["metric"]).apply(
+        lambda df: df.groupby(["profiles", "delta_title"])
+        .value.mean()
+        .rank(ascending=False)
+    )
+    result = result.join(
+        metric_wise_ranking.T.stack().rename("overall_rank").astype(int)
+    )
+    return result
+
+
+best_ari_rankings = {}
+for upper_quantile in (0.05, 0.03, 0.01):
+    best_values = get_upper_quantile_values(three_metrics, upper_quantile)
+    best_ari_rankings[f"top {upper_quantile:.0%}"] = (
+        best_values.query("metric.str.startswith('Adjust')")
+        .groupby("profiles")
+        .value.mean()
+        .rank(ascending=False)
+        .astype(int)
+        .rename("rank")
+    )
+best_ari_rankings = pd.concat(best_ari_rankings, names=["quantile"]).to_frame()
+make_line_plot(
+    best_ari_rankings.reset_index(),
+    x_col="quantile",
+    y_col="rank",
+    color="profiles",
+    color_discrete_map=color_map,
+    category_orders=dict(
+        profiles=best_ari_rankings.groupby("profiles")["rank"]
+        .mean()
+        .sort_values()
+        .index.to_list()
+    ),
+    markers=True,
+    width=400,
+    height=800,
+    y_axis=dict(autorange="reversed"),
+)
+
+# %%
+y_axis = "vocab_proportion"  # choose between "vocab_proportion" and "top_n"
+upper_quantile = 0.01
+top_n_for_upper_quantile = get_upper_quantile_values(three_metrics, upper_quantile)
+
+
+def format_percent(perc: float, precision=1) -> str:
+    """Converts a decimal fraction to a percentage, rounding to the indicated precision,
+    with trailing zeros removed. E.g., whatever precision is indicated, format_percent(0.5)
+    always returns "50%".
+    """
+    return re.sub(r"\.?0+%$", "%", f"{perc:.{precision}%}")
+
+
+make_box_plot(
+    top_n_for_upper_quantile.reset_index(),
+    x_col="profiles",
+    y_col=y_axis,
+    color="profiles",
+    color_discrete_map=color_map,
+    # facet_col="delta_title",
+    facet_row="metric",
+    category_orders=dict(
+        delta_title=delta_order,
+        profiles=top_n_for_upper_quantile.query("metric.str.startswith('Adjust')")
+        .groupby("profiles")
+        .value.mean()
+        .sort_values(ascending=False)
+        .index.to_list(),
+    ),
+    hover_data=["metric", "delta_title", "top_n", "vocab_proportion", "value"],
+    height=1000,
+    title=f"Vocabulary-size ranges of the peak {format_percent(upper_quantile)} values",
+)
+
+# %%
+fig = make_box_plot(
+    top_n_for_upper_quantile.reset_index(),
+    x_col="profiles",
+    y_col="value",
+    color="profiles",
+    color_discrete_map=color_map,
+    facet_col="delta_title",
+    facet_row="metric",
+    category_orders=dict(
+        delta_title=delta_order,
+        profiles=top_n_for_upper_quantile.query("metric.str.startswith('Adjust')")
+        .groupby("profiles")
+        .value.mean()
+        .sort_values(ascending=False)
+        .index.to_list(),
+    ),
+    hover_data=["metric", "delta_title", "top_n", "vocab_proportion", "value"],
+    height=1000,
+    title=f"Evaluation metrics for the peak {format_percent(upper_quantile)} values",
+)
+utils.align_y_axes_of_facet_rows(fig)
+fig
+
+# %%
+fig = make_box_plot(
+    top_n_for_upper_quantile.reset_index(),
+    x_col="overall_rank",
+    y_col="value",
+    color="profiles",
+    color_discrete_map=color_map,
+    # facet_col="delta_title",
+    facet_row="metric",
+    category_orders=dict(
+        delta_title=delta_order,
+        profiles=top_n_for_upper_quantile.query("metric.str.startswith('Adjust')")
+        .groupby("profiles")
+        .value.mean()
+        .sort_values(ascending=False)
+        .index.to_list(),
+    ),
+    hover_data=["metric", "delta_title", "top_n", "vocab_proportion", "value"],
+    height=1000,
+    title=f"Peak {format_percent(upper_quantile)} values ordered by their mean",
+)
+utils.align_y_axes_of_facet_rows(fig)
+fig
+
+# %%
+top_n_ward = (
+    top_n_for_upper_quantile.loc(axis=0)[:, "Adjusted Rand Index (Ward)"]
+    .query("overall_rank in [1,2,3,4,5]")
+    .sort_values(["overall_rank", "value"])
+)
+top_n_ward
+
+# %%
+top_n_for_upper_quantile.loc(axis=0)[:, "Adjusted Rand Index (PAM)"].query(
+    "overall_rank in [1,2,3,4,5]"
+).sort_values(["overall_rank", "value"])
+
+# %%
+f"{0.5:.1%}".replace(".0", "")
+
+# %%
+test = (
+    get_upper_quantile_values(three_metrics, 0.005)
+    .loc(axis=0)[:, "Adjusted Rand Index (Ward)"]
+    .query("overall_rank in [1]")
+    .groupby(["overall_rank", "profiles", "metric", "delta_title"])
+    .describe(percentiles=[0, 0.5, 1])
+)
+test
+
+
+# %%
+def show_top_ranks_scatter(
+    three_metrics,
+    metric="Adjusted Rand Index (Ward)",
+    upper_quantile=0.01,
+    top_k=10,
+    x_axis: Literal["top_n", "vocab_proportion"] = "vocab_proportion",
+    percentiles=(0.25, 0.5, 0.75),
+    **kwargs,
+):
+    assert (
+        len(percentiles) == 3
+    ), f"Percentiles must be three decimals that designate (lower_error, value, upper_error). Got: {percentiles}"
+    lower, middle, upper = (format_percent(perc) for perc in percentiles)
+    top_n_for_upper_quantile = get_upper_quantile_values(three_metrics, upper_quantile)
+    show_ranks = list(range(top_k))  # noqa: F841
+    scatter_data = (
+        top_n_for_upper_quantile.loc(axis=0)[:, metric]
+        .query("overall_rank in @show_ranks")
+        .groupby(["overall_rank", "profiles", "metric", "delta_title"])
+        .describe(percentiles=percentiles)
+    )
+    scatter_data.columns = utils.merge_index_levels(scatter_data.columns)
+    scatter_data.rename(
+        columns=lambda col: re.sub(f", {middle}", "", col), inplace=True
+    )
+    error_bar_columns = []
+    for col_name in ("value", "top_n", "vocab_proportion"):
+        medians = scatter_data[col_name]
+        error_bar_columns.extend(
+            (
+                (scatter_data[col_name + f", {upper}"] - medians).rename(
+                    col_name + "_err"
+                ),
+                (medians - scatter_data[col_name + f", {lower}"]).rename(
+                    col_name + "_err_minus"
+                ),
+            )
+        )
+    scatter_data = pd.concat([scatter_data] + error_bar_columns, axis=1)
+    plot_args = dict(
+        df=scatter_data.reset_index(),
+        x_col=x_axis,
+        error_x=f"{x_axis}_err",
+        error_x_minus=f"{x_axis}_err_minus",
+        y_col="value",
+        error_y="value_err",
+        error_y_minus="value_err_minus",
+        color="profiles",
+        color_discrete_map=color_map,
+        category_orders=dict(
+            profiles=scatter_data.sort_values("value", ascending=False)
+            .index.get_level_values("profiles")
+            .unique()
+            .to_list()
+        ),
+        hover_data=[
+            "overall_rank",
+            "delta_title",
+            "metric",
+            "top_n",
+            "vocab_proportion",
+            "value, max",
+            "value, min",
+        ],
+        title=f"{metric} values vs. vocabulary sizes<br><sup>of the peak {format_percent(upper_quantile)} measurements "
+        f"for each of the {top_k} top-performing configurations</sup>",
+    )
+    plot_args.update(kwargs)
+    return make_scatter_plot(**plot_args)
+
+
+fig = show_top_ranks_scatter(
+    three_metrics,
+    top_k=20,
+    upper_quantile=0.005,
+    percentiles=(0, 0.5, 1),
+    height=800,
+    width=1000,
+    # x_axis="top_n"
+)
+fig
+
+# %%
+show_top_ranks_scatter(
+    three_metrics,
+    top_k=20,
+    upper_quantile=0.005,
+    percentiles=(0, 0.5, 1),
+    height=800,
+    width=1000,
+    x_axis="top_n",
+)
+
+# %%
+show_top_ranks_scatter(
+    three_metrics,
+    metric="Adjusted Rand Index (PAM)",
+    top_k=20,
+    upper_quantile=0.005,
+    percentiles=(0, 0.5, 1),
+    height=800,
+    width=1000,
+    # x_axis="top_n"
+)
+
+# %%
+show_top_ranks_scatter(
+    three_metrics,
+    metric="Simple Score",
+    top_k=20,
+    upper_quantile=0.005,
+    percentiles=(0, 0.5, 1),
+    height=800,
+    width=1000,
+    # x_axis="top_n"
+)
+
+# %%
+make_scatter_plot(
+    top_n_ward.reset_index(),
+    x_col="vocab_proportion",
+    y_col="value",
+    color="profiles",
+    color_discrete_map=color_map,
+)
+
+# %%
+fig = make_box_plot(
+    top_n_for_upper_quantile.reset_index(),
+    x_col="profiles",
+    y_col="value",
+    color="profiles",
+    color_discrete_map=color_map,
+    # facet_col="delta_title",
+    facet_row="metric",
+    category_orders=dict(
+        delta_title=delta_order,
+        profiles=top_n_for_upper_quantile.query("metric.str.startswith('Adjust')")
+        .groupby("profiles")
+        .value.mean()
+        .sort_values(ascending=False)
+        .index.to_list(),
+    ),
+    hover_data=["metric", "delta_title", "top_n", "vocab_proportion", "value"],
+    height=1000,
+    title=f"Evaluation metrics for the peak {upper_quantile:.0%} values",
+)
+fig
+
+# %%
+ranks = (
+    metrics_complete.query("~metric.str.startswith('Cluster')")
+    .groupby(["metric", "delta_title"])
+    .apply(
+        lambda df: df.groupby("profiles")
+        .value.max()
+        .rank(method="max", ascending=False)
+    )
+    .astype(int)
+)
+
+# %%
 group_max = metrics_complete.loc[
     metrics_complete.groupby(["metric", "delta_title", "profiles"]).value.idxmax()
 ]
 group_max
-
 
 # %%
 winners = get_n_best(metrics_complete, n=1)
