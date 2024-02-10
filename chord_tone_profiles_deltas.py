@@ -45,6 +45,7 @@ from dimcat.plotting import (
 from git import Repo
 from joblib import Parallel, delayed
 from matplotlib import pyplot as plt
+from scipy.stats import pearsonr, spearmanr
 
 import utils
 
@@ -1057,6 +1058,94 @@ ranks = (
 ranks.iloc(axis=1)[ranks.sum().argsort()].sort_index(key=sort_delta_level)
 
 # %%
+correlated_values = (
+    metrics_complete.droplevel(-1)
+    .set_index("metric", append=True)
+    .value.unstack()
+    .dropna(axis=0)
+)
+correlated_values
+
+
+# %%
+def make_correlation_matrix(correlated_values):
+    print(f"{len(correlated_values)=}")
+    spearman_correlations, p_values = spearmanr(correlated_values)
+    return pd.DataFrame(
+        spearman_correlations,
+        index=correlated_values.columns,
+        columns=correlated_values.columns,
+    )
+
+
+correlation_matrix = make_correlation_matrix(correlated_values)
+correlation_matrix
+
+# %%
+
+correlation_table = (
+    delta.get_triangle_values(correlation_matrix, offset=1, lower=True)
+    .to_frame()
+    .reset_index(allow_duplicates=True)
+)
+correlation_table.columns = ["", "", "Spearman correlation"]
+correlation_table
+
+# %%
+delta_correlated_values = pd.concat(
+    {
+        delta: df.droplevel("delta_descriptor")
+        for delta, df in correlated_values.reset_index("group_id", drop=True).groupby(
+            "delta_descriptor"
+        )
+    },
+    axis=1,
+)
+make_correlation_matrix((delta_correlated_values.swaplevel(axis=1).sort_index(axis=1)))
+
+# %%
+
+# %%
+
+pam, ward, simple = correlated_values.values.T
+pearsonr(pam, simple)
+
+
+# %%
+def get_correlations(three_metrics, spearman=False, sort=False):
+    """Correlates Simple Score against both ARI values for all deltas"""
+    correlated_values = (
+        three_metrics.droplevel(-1)
+        .set_index("metric", append=True)
+        .value.unstack()
+        .dropna(axis=0)
+    )
+    correlations = {}
+    if spearman:
+        corr_func = spearmanr
+        corr_name = "Spearman"
+    else:
+        corr_func = pearsonr
+        corr_name = "Pearson"
+    for delta_name, values in correlated_values.groupby("delta_descriptor"):
+        pam, ward, simple = values.values.T
+        pam_s, pam_p = corr_func(pam, simple)
+        ward_s, ward_p = corr_func(ward, simple)
+        correlations[(delta_name, "ward")] = {corr_name: ward_s, "p_value": ward_p}
+        correlations[(delta_name, "pam")] = {corr_name: pam_s, "p_value": pam_p}
+    result = pd.DataFrame.from_dict(correlations, orient="index")
+    result.index.names = ["delta", "clustering"]
+    if sort:
+        return result.sort_values(corr_name, ascending=False)
+    return result
+
+
+get_correlations(three_metrics, spearman=True)
+
+# %%
+get_correlations(three_metrics)
+
+# %%
 best_performing_top_n = (
     three_metrics.reset_index("top_n")
     .groupby(["metric", "delta_title"])
@@ -1256,9 +1345,6 @@ top_n_for_upper_quantile.loc(axis=0)[:, "Adjusted Rand Index (PAM)"].query(
 ).sort_values(["overall_rank", "value"])
 
 # %%
-f"{0.5:.1%}".replace(".0", "")
-
-# %%
 test = (
     get_upper_quantile_values(three_metrics, 0.005)
     .loc(axis=0)[:, "Adjusted Rand Index (Ward)"]
@@ -1277,6 +1363,7 @@ def show_top_ranks_scatter(
     top_k=10,
     x_axis: Literal["top_n", "vocab_proportion"] = "vocab_proportion",
     percentiles=(0.25, 0.5, 0.75),
+    delta_symbols=True,
     **kwargs,
 ):
     assert (
@@ -1284,7 +1371,7 @@ def show_top_ranks_scatter(
     ), f"Percentiles must be three decimals that designate (lower_error, value, upper_error). Got: {percentiles}"
     lower, middle, upper = (format_percent(perc) for perc in percentiles)
     top_n_for_upper_quantile = get_upper_quantile_values(three_metrics, upper_quantile)
-    show_ranks = list(range(top_k))  # noqa: F841
+    show_ranks = list(range(1, top_k + 1))  # noqa: F841
     scatter_data = (
         top_n_for_upper_quantile.loc(axis=0)[:, metric]
         .query("overall_rank in @show_ranks")
@@ -1295,6 +1382,7 @@ def show_top_ranks_scatter(
     scatter_data.rename(
         columns=lambda col: re.sub(f", {middle}", "", col), inplace=True
     )
+    # turn percentiles into error bar values via subtraction
     error_bar_columns = []
     for col_name in ("value", "top_n", "vocab_proportion"):
         medians = scatter_data[col_name]
@@ -1309,6 +1397,7 @@ def show_top_ranks_scatter(
             )
         )
     scatter_data = pd.concat([scatter_data] + error_bar_columns, axis=1)
+    print(f"{len(scatter_data)=}")
     plot_args = dict(
         df=scatter_data.reset_index(),
         x_col=x_axis,
@@ -1337,6 +1426,11 @@ def show_top_ranks_scatter(
         title=f"{metric} values vs. vocabulary sizes<br><sup>of the peak {format_percent(upper_quantile)} measurements "
         f"for each of the {top_k} top-performing configurations</sup>",
     )
+    if delta_symbols:
+        plot_args.update(
+            symbol="delta_title",
+            traces_settings=dict(marker_size=12),
+        )
     plot_args.update(kwargs)
     return make_scatter_plot(**plot_args)
 
@@ -1351,6 +1445,10 @@ fig = show_top_ranks_scatter(
     # x_axis="top_n"
 )
 fig
+
+# %%
+top_n_for_upper_quantile = get_upper_quantile_values(three_metrics, 0.05)
+top_n_for_upper_quantile
 
 # %%
 show_top_ranks_scatter(
