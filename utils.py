@@ -892,17 +892,43 @@ def add_mode_column(df: pd.DataFrame) -> pd.DataFrame:
     return pd.concat([df, mode_col], axis=1)
 
 
-def align_y_axes_of_facet_rows(fig: go.Figure):
-    """Applying this function to a plotly figure with facet rows will align the y-axes of each row
-    such that they share the same range optimized to fit all traces in the row; as opposed to
-    all rows sharing the same range, which is the default behavior."""
-    for row_idx, row_figs in enumerate(fig._grid_ref):
-        for col_idx, col_fig in enumerate(row_figs):
-            fig.update_yaxes(
-                row=row_idx + 1,
-                col=col_idx + 1,
-                matches="y" + str(len(row_figs) * row_idx + 1),
-            )
+def realign_subplot_axes(
+    fig: go.Figure, x_axes: bool | dict = False, y_axes: bool | dict = True
+) -> None:
+    """For a given plotly figure, allow all x-axes (column-wise) and/or y-axes (row-wise) to have
+    their own ranges. The function operates in-place, modifying the figure without returning it.
+    y-axis defaults to True for backwards compatibility
+
+    Args:
+        fig: The plotly figure to be modified.
+        x_axes, y_axes:
+            If True, the respective axes will be realigned.
+            If a dictionary, they will additionally be updated with the specified settings.
+
+    Examples:
+
+        realign_subplot_axes(fig, y_axes=True)
+        realign_subplot_axes(fig, x_axes=dict(showticklabels=True))
+    """
+    if not (x_axes or y_axes):
+        return
+    subplot_rows = fig._grid_ref  # a list of lists, indicative of the grid dimensions
+    n_cols: int = len(subplot_rows[0])  # needed in either case
+    if x_axes:
+        x_settings = x_axes if isinstance(x_axes, dict) else {}
+        for col in range(1, n_cols + 1):
+            # set the layout.xaxis.matches property of all subplots in the same column to the
+            # x-axis name of the first subplot in that column. 'x1' is accepted for 'x' (the very first).
+            fig.update_xaxes(x_settings, col=col, matches=f"x{col}")
+    if y_axes:
+        y_settings = y_axes if isinstance(y_axes, dict) else None
+        n_rows = len(subplot_rows)
+        for row in range(1, n_rows + 1):
+            # set the layout.yaxis.matches property of all subplots in the same row to the
+            # y-axis name of the first subplot in that row. Y-axis names are numbered row-wise,
+            # such that the first y-axis in the second row is 'y3' (if there are 2 columns).
+            first_y = (row - 1) * n_cols + 1
+            fig.update_yaxes(y_settings, row=row, matches=f"y{first_y}")
 
 
 def count_subsequent_occurrences(

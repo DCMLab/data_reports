@@ -644,7 +644,7 @@ fig = make_scatter_plot(
 )
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
-utils.align_y_axes_of_facet_rows(fig)
+utils.realign_subplot_axes(fig)
 fig
 ```
 
@@ -676,7 +676,7 @@ fig = make_scatter_plot(
 )
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
-utils.align_y_axes_of_facet_rows(fig)
+utils.realign_subplot_axes(fig)
 fig
 ```
 
@@ -1100,7 +1100,7 @@ fig.update_layout(
 
 # fig.for_each_yaxis(lambda yaxis: yaxis.update(showticklabels=True))
 # fig.update_yaxes(matches="y")
-utils.align_y_axes_of_facet_rows(fig)
+utils.realign_subplot_axes(fig)
 # save_figure_as(fig, "clustering_quality_gridsearch.pdf", height=1479, width=1000)
 fig
 ```
@@ -1163,7 +1163,6 @@ correlation_matrix
 ```
 
 ```{code-cell} ipython3
-
 correlation_table = (
     delta.get_triangle_values(correlation_matrix, offset=1, lower=True)
     .to_frame()
@@ -1184,16 +1183,6 @@ delta_correlated_values = pd.concat(
     axis=1,
 )
 make_correlation_matrix((delta_correlated_values.swaplevel(axis=1).sort_index(axis=1)))
-```
-
-```{code-cell} ipython3
-
-```
-
-```{code-cell} ipython3
-
-pam, ward, simple = correlated_values.values.T
-pearsonr(pam, simple)
 ```
 
 ```{code-cell} ipython3
@@ -1244,6 +1233,14 @@ best_performing_top_n = (
     )
 )
 best_performing_top_n
+```
+
+```{code-cell} ipython3
+best_performing_top_n.loc[best_performing_top_n.groupby(level=[0]).value.idxmax()]
+```
+
+```{code-cell} ipython3
+
 ```
 
 ```{raw-cell}
@@ -1393,7 +1390,7 @@ fig = make_box_plot(
     height=1000,
     title=f"Evaluation metrics for the peak {format_percent(upper_quantile)} values",
 )
-utils.align_y_axes_of_facet_rows(fig)
+utils.realign_subplot_axes(fig)
 fig
 ```
 
@@ -1418,7 +1415,7 @@ fig = make_box_plot(
     height=1000,
     title=f"Peak {format_percent(upper_quantile)} values ordered by their mean",
 )
-utils.align_y_axes_of_facet_rows(fig)
+utils.realign_subplot_axes(fig)
 fig
 ```
 
@@ -1449,25 +1446,20 @@ test
 ```
 
 ```{code-cell} ipython3
-def show_top_ranks_scatter(
-    three_metrics,
-    metric="Adjusted Rand Index (Ward)",
-    upper_quantile=0.01,
-    top_k=10,
-    x_axis: Literal["top_n", "vocab_proportion"] = "vocab_proportion",
-    percentiles=(0.25, 0.5, 0.75),
-    delta_symbols=True,
-    **kwargs,
+def make_top_ranks_scatter_data(
+    measurements,
+    upper_quantile: float = 0.01,
+    top_k: int = 10,
+    percentiles: Tuple[float, float, float] = (0.25, 0.5, 0.75),
 ):
     assert (
         len(percentiles) == 3
     ), f"Percentiles must be three decimals that designate (lower_error, value, upper_error). Got: {percentiles}"
     lower, middle, upper = (format_percent(perc) for perc in percentiles)
-    top_n_for_upper_quantile = get_upper_quantile_values(three_metrics, upper_quantile)
+    top_n_for_upper_quantile = get_upper_quantile_values(measurements, upper_quantile)
     show_ranks = list(range(1, top_k + 1))  # noqa: F841
     scatter_data = (
-        top_n_for_upper_quantile.loc(axis=0)[:, metric]
-        .query("overall_rank in @show_ranks")
+        top_n_for_upper_quantile.query("overall_rank in @show_ranks")
         .groupby(["overall_rank", "profiles", "metric", "delta_title"])
         .describe(percentiles=percentiles)
     )
@@ -1490,7 +1482,23 @@ def show_top_ranks_scatter(
             )
         )
     scatter_data = pd.concat([scatter_data] + error_bar_columns, axis=1)
-    print(f"{len(scatter_data)=}")
+    return scatter_data
+
+
+def show_single_top_ranks_scatter(
+    measurements,
+    metric="Adjusted Rand Index (Ward)",
+    upper_quantile: float = 0.01,
+    top_k: int = 10,
+    x_axis: Literal["top_n", "vocab_proportion"] = "vocab_proportion",
+    percentiles: Tuple[float, float, float] = (0.25, 0.5, 0.75),
+    delta_symbols=True,
+    **kwargs,
+):
+    scatter_data = make_top_ranks_scatter_data(
+        measurements, upper_quantile, top_k, percentiles
+    )
+    scatter_data = scatter_data.loc(axis=0)[:, :, metric]
     plot_args = dict(
         df=scatter_data.reset_index(),
         x_col=x_axis,
@@ -1528,7 +1536,7 @@ def show_top_ranks_scatter(
     return make_scatter_plot(**plot_args)
 
 
-fig = show_top_ranks_scatter(
+fig = show_single_top_ranks_scatter(
     three_metrics,
     top_k=20,
     upper_quantile=0.005,
@@ -1541,12 +1549,198 @@ fig
 ```
 
 ```{code-cell} ipython3
-top_n_for_upper_quantile = get_upper_quantile_values(three_metrics, 0.05)
-top_n_for_upper_quantile
+height = 1479
+width = 1000
+
+
+def subselect_scatter(scatter_data, col_start):
+    result = scatter_data.filter(regex=f"^(value|{col_start})")
+    result = result.rename(
+        columns=lambda col: "x" + col[len(col_start) :]
+        if col.startswith(col_start)
+        else col
+    )
+    return result
+
+
+scatter_data = make_top_ranks_scatter_data(
+    three_metrics, upper_quantile=0.005, top_k=15, percentiles=(0, 0.5, 1)
+)
+top_n_scatter_data = subselect_scatter(scatter_data, "top_n")
+vocab_proportion_scatter_data = subselect_scatter(scatter_data, "vocab_proportion")
+double_scatter_data = pd.concat(
+    [top_n_scatter_data, vocab_proportion_scatter_data],
+    keys=["Absolute vocabulary size", "Relative Vocabulary Size"],
+    names=["vocabulary size"],
+).reset_index()
+plot_args = dict(
+    df=double_scatter_data,
+    x_col="x",
+    error_x="x_err",
+    error_x_minus="x_err_minus",
+    y_col="value",
+    error_y="value_err",
+    error_y_minus="value_err_minus",
+    color="profiles",
+    color_discrete_map=color_map,
+    symbol="delta_title",
+    symbol_sequence=[
+        # 'hexagram',
+        "star",
+        "asterisk",
+        "y-up",
+        "y-down",
+        "x-thin",
+        "hash",
+        # 'circle',
+        "y-left",
+        "y-right",
+        # 'x',
+        # 'triangle-up',
+        # 'octagon',
+        # 'circle-x',
+        # 'hourglass',
+        # 'square',
+        # 'diamond',
+        "line-ne",
+        "line-nw",
+        "cross",
+        "triangle-down",
+        "triangle-left",
+        "triangle-right",
+        "triangle-ne",
+        "triangle-se",
+        "triangle-sw",
+        "triangle-nw",
+        "pentagon",
+        "hexagon",
+        "hexagon2",
+        "star-triangle-up",
+        "star-triangle-down",
+        "star-square",
+        "star-diamond",
+        "diamond-tall",
+        "diamond-wide",
+        "bowtie",
+        "circle-cross",
+        "square-cross",
+        "square-x",
+        "diamond-cross",
+        "diamond-x",
+        "cross-thin",
+        "line-ew",
+        "line-ns",
+        "arrow-up",
+        "arrow-down",
+        "arrow-left",
+        "arrow-right",
+        "arrow-bar-up",
+        "arrow-bar-down",
+        "arrow-bar-left",
+        "arrow-bar-right",
+    ],
+    traces_settings=dict(marker_size=12, marker_line_width=2),
+    facet_col="vocabulary size",
+    facet_row="metric",
+    category_orders=dict(
+        metric=sorted(double_scatter_data.metric.unique()),
+        delta_title=double_scatter_data.groupby("delta_title")
+        .size()
+        .sort_values(ascending=False)  # sort by occurrence under the top n
+        .index.unique()
+        .to_list(),
+        profiles=double_scatter_data.groupby("profiles")
+        .size()
+        .sort_values(ascending=False)  # sort by occurrence under the top n
+        .index.unique()
+        .to_list(),
+    ),
+    hover_data=[
+        "overall_rank",
+        "delta_title",
+        "metric",
+        "value, max",
+        "value, min",
+    ],
+    labels=dict(x=""),
+    layout=dict(
+        legend=dict(
+            x=-0.05,
+            y=1.13,
+            orientation="h",
+            itemsizing="constant",
+            title_text=None,
+            font_size=13,
+        )
+    ),
+    height=height,
+    width=width,
+)
+fig = make_scatter_plot(**plot_args)
+for trace in fig.data:
+    trace.marker.line.color = trace.marker.color
+utils.realign_subplot_axes(fig, True, True)
+save_figure_as(fig, "clustering_quality_best_profiles.pdf", height=height, width=width)
+fig
 ```
 
 ```{code-cell} ipython3
-show_top_ranks_scatter(
+
+for trace in fig.data:
+    print(trace.line.color)
+```
+
+```{code-cell} ipython3
+(
+    double_scatter_data.groupby("profiles")
+    .overall_rank.apply(lambda S: S.sum() / len(S))
+    .sort_values()
+    .index.unique()
+    .to_list()
+)
+```
+
+```{code-cell} ipython3
+for thing in fig._grid_ref[0][0]:
+    print(type(thing))
+```
+
+```{code-cell} ipython3
+def realign_subplot_axes(
+    fig: go.Figure, x_axes: bool | dict = False, y_axes: bool | dict = False
+):
+    if not (x_axes or y_axes):
+        return
+    subplot_rows = fig._grid_ref
+    n_cols = len(subplot_rows[0])  # needed in both cases
+    if x_axes:
+        x_settings = x_axes if isinstance(x_axes, dict) else None
+        for col in range(1, n_cols + 1):
+            fig.update_xaxes(x_settings, col=col, matches=f"x{col}")
+    if y_axes:
+        y_settings = y_axes if isinstance(y_axes, dict) else None
+        n_rows = len(subplot_rows)
+        for row in range(1, n_rows + 1):
+            first_y = (row - 1) * n_cols + 1
+            fig.update_yaxes(y_settings, row=row, matches=f"y{first_y}")
+
+
+realign_subplot_axes(fig, x_axes=dict(showticklabels=True), y_axes=True)
+fig
+```
+
+```{code-cell} ipython3
+fig.update_xaxes(col=1, matches="x1")
+fig.update_xaxes(col=2, matches="x2")
+fig
+```
+
+```{code-cell} ipython3
+fig._grid_ref
+```
+
+```{code-cell} ipython3
+show_single_top_ranks_scatter(
     three_metrics,
     top_k=20,
     upper_quantile=0.005,
@@ -1558,7 +1752,7 @@ show_top_ranks_scatter(
 ```
 
 ```{code-cell} ipython3
-show_top_ranks_scatter(
+show_single_top_ranks_scatter(
     three_metrics,
     metric="Adjusted Rand Index (PAM)",
     top_k=20,
@@ -1571,7 +1765,11 @@ show_top_ranks_scatter(
 ```
 
 ```{code-cell} ipython3
-show_top_ranks_scatter(
+
+```
+
+```{code-cell} ipython3
+show_single_top_ranks_scatter(
     three_metrics,
     metric="Simple Score",
     top_k=20,
