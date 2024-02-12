@@ -29,7 +29,7 @@ import os
 import re
 from collections import defaultdict
 from itertools import count
-from typing import Dict, Iterable, List, Literal, NamedTuple, Optional, Tuple
+from typing import Dict, Iterable, List, NamedTuple, Optional, Tuple
 from zipfile import ZipFile
 
 import delta
@@ -611,7 +611,7 @@ def keep_only_paper_metrics(df):
     return df[mask].sort_values(["delta", "metric"])
 
 
-# distance_evaluations = get_discriminant_metrics(distance_matrices)
+distance_evaluations = get_discriminant_metrics(distance_matrices)
 distance_evaluations = load_discriminant_metrics(
     "/home/laser/git/chord_profile_search/probe_measurements.tsv"
 )  # these were created by having the chord_profile_search/gridsearch.py script process the folder containing
@@ -886,7 +886,9 @@ def load_feature_metrics(
         "top_n",
     ),
 ) -> pd.DataFrame:
-    candidates = [f for f in os.listdir(directory) if feature_name in f]
+    candidates = [
+        f for f in os.listdir(directory) if f.endswith(".tsv") and feature_name in f
+    ]
     if not candidates:
         raise FileNotFoundError(
             f"No files containing {feature_name} found in {directory}"
@@ -975,6 +977,10 @@ fig
 metrics_complete = concatenate_feature_metrics(
     features=list(utils.CHORD_PROFILES_WITH_BASELINE.keys()),
 )
+# metrics_complete = concatenate_feature_metrics(
+#     features="local_root_ct",
+#     directory="/home/laser/git/chord_profile_search/balanced_test/"
+# )
 # metrics_complete = concatenate_feature_metrics(
 #     features=list(utils.CHORD_PROFILES_WITH_BASELINE.keys()),
 #     directory = os.path.abspath(
@@ -1118,26 +1124,6 @@ metrics_complete.reset_index().groupby("profiles").top_n.max()
 ```
 
 ```{code-cell} ipython3
-def sort_delta_level(idx):
-    if not idx.name == "delta_title":
-        return idx
-    return idx.map({name: i for i, name in enumerate(delta_order)})
-
-
-three_metrics = metrics_complete.query("~metric.str.startswith('Cluster')")
-ranks = (
-    three_metrics.groupby(["metric", "delta_title"])
-    .apply(
-        lambda df: df.groupby("profiles")
-        .value.max()
-        .rank(method="max", ascending=False)
-    )
-    .astype(int)
-)
-ranks.iloc(axis=1)[ranks.sum().argsort()].sort_index(key=sort_delta_level)
-```
-
-```{code-cell} ipython3
 correlated_values = (
     metrics_complete.droplevel(-1)
     .set_index("metric", append=True)
@@ -1214,11 +1200,65 @@ def get_correlations(three_metrics, spearman=False, sort=False):
     return result
 
 
+three_metrics = metrics_complete.query("~metric.str.startswith('Cluster')")
 get_correlations(three_metrics, spearman=True)
 ```
 
 ```{code-cell} ipython3
 get_correlations(three_metrics)
+```
+
+Means of the upper xth percentile for each of the distance metrics, per evaluation measure:
+
+```{code-cell} ipython3
+upper_quantile = 0.005
+three_metrics.groupby("metric").apply(
+    lambda df: df.groupby("delta_title")
+    .value.apply(lambda S: S[S >= S.quantile(1 - upper_quantile)])
+    .agg(["median", "mean", "sem"])
+)
+```
+
+```{code-cell} ipython3
+def sort_delta_level(idx):
+    if not idx.name == "delta_title":
+        return idx
+    return idx.map({name: i for i, name in enumerate(delta_order)})
+
+
+# Die Rankstabelle habe ich dann doch rausgenommen, weil sie zu viel Platz für zu wenig Information braucht
+# ranks = (
+#     three_metrics.groupby(["metric", "delta_title"])
+#     .apply(
+#         lambda df: df.groupby("profiles")
+#         .value.max()
+#         .rank(method="max", ascending=False)
+#     )
+#     .astype(int)
+# )
+# ranks.iloc(axis=1)[ranks.sum().argsort()].sort_index(key=sort_delta_level)
+fig = make_box_plot(
+    three_metrics.reset_index(),
+    x_col="profiles",
+    y_col="value",
+    color="profiles",
+    color_discrete_map=color_map,
+    # facet_col="delta_title",
+    facet_row="metric",
+    category_orders=dict(
+        delta_title=delta_order,
+        profiles=three_metrics.query("metric.str.startswith('Adjust')")
+        .groupby("profiles")
+        .value.mean()
+        .sort_values(ascending=False)
+        .index.to_list(),
+    ),
+    hover_data=["metric", "delta_title", "top_n", "vocab_proportion", "value"],
+    height=1000,
+    title="Value ranges for all profiles",
+)
+utils.realign_subplot_axes(fig)
+fig
 ```
 
 ```{code-cell} ipython3
@@ -1232,15 +1272,13 @@ best_performing_top_n = (
         ]
     )
 )
-best_performing_top_n
-```
-
-```{code-cell} ipython3
 best_performing_top_n.loc[best_performing_top_n.groupby(level=[0]).value.idxmax()]
 ```
 
 ```{code-cell} ipython3
-
+best_performing_top_n.groupby(level=[0]).apply(
+    lambda df: df.groupby(level=1).max().describe()
+).unstack()
 ```
 
 ```{raw-cell}
@@ -1334,8 +1372,8 @@ make_line_plot(
 ```
 
 ```{code-cell} ipython3
-y_axis = "vocab_proportion"  # choose between "vocab_proportion" and "top_n"
-upper_quantile = 0.01
+y_axis = "value"  # choose between "vocab_proportion", "top_n", and "value"
+upper_quantile = 0.005
 top_n_for_upper_quantile = get_upper_quantile_values(three_metrics, upper_quantile)
 
 
@@ -1347,7 +1385,7 @@ def format_percent(perc: float, precision=1) -> str:
     return re.sub(r"\.?0+%$", "%", f"{perc:.{precision}%}")
 
 
-make_box_plot(
+fig = make_box_plot(
     top_n_for_upper_quantile.reset_index(),
     x_col="profiles",
     y_col=y_axis,
@@ -1365,8 +1403,10 @@ make_box_plot(
     ),
     hover_data=["metric", "delta_title", "top_n", "vocab_proportion", "value"],
     height=1000,
-    title=f"Vocabulary-size ranges of the peak {format_percent(upper_quantile)} values",
+    title=f"Value ranges summarized for the top-performing {format_percent(upper_quantile)} scores",
 )
+utils.realign_subplot_axes(fig)
+fig
 ```
 
 ```{code-cell} ipython3
@@ -1413,6 +1453,7 @@ fig = make_box_plot(
     ),
     hover_data=["metric", "delta_title", "top_n", "vocab_proportion", "value"],
     height=1000,
+    layout=dict(hovermode="x unified"),
     title=f"Peak {format_percent(upper_quantile)} values ordered by their mean",
 )
 utils.realign_subplot_axes(fig)
@@ -1446,6 +1487,10 @@ test
 ```
 
 ```{code-cell} ipython3
+height = 1479
+width = 1000
+
+
 def make_top_ranks_scatter_data(
     measurements,
     upper_quantile: float = 0.01,
@@ -1483,74 +1528,6 @@ def make_top_ranks_scatter_data(
         )
     scatter_data = pd.concat([scatter_data] + error_bar_columns, axis=1)
     return scatter_data
-
-
-def show_single_top_ranks_scatter(
-    measurements,
-    metric="Adjusted Rand Index (Ward)",
-    upper_quantile: float = 0.01,
-    top_k: int = 10,
-    x_axis: Literal["top_n", "vocab_proportion"] = "vocab_proportion",
-    percentiles: Tuple[float, float, float] = (0.25, 0.5, 0.75),
-    delta_symbols=True,
-    **kwargs,
-):
-    scatter_data = make_top_ranks_scatter_data(
-        measurements, upper_quantile, top_k, percentiles
-    )
-    scatter_data = scatter_data.loc(axis=0)[:, :, metric]
-    plot_args = dict(
-        df=scatter_data.reset_index(),
-        x_col=x_axis,
-        error_x=f"{x_axis}_err",
-        error_x_minus=f"{x_axis}_err_minus",
-        y_col="value",
-        error_y="value_err",
-        error_y_minus="value_err_minus",
-        color="profiles",
-        color_discrete_map=color_map,
-        category_orders=dict(
-            profiles=scatter_data.sort_values("value", ascending=False)
-            .index.get_level_values("profiles")
-            .unique()
-            .to_list()
-        ),
-        hover_data=[
-            "overall_rank",
-            "delta_title",
-            "metric",
-            "top_n",
-            "vocab_proportion",
-            "value, max",
-            "value, min",
-        ],
-        title=f"{metric} values vs. vocabulary sizes<br><sup>of the peak {format_percent(upper_quantile)} measurements "
-        f"for each of the {top_k} top-performing configurations</sup>",
-    )
-    if delta_symbols:
-        plot_args.update(
-            symbol="delta_title",
-            traces_settings=dict(marker_size=12),
-        )
-    plot_args.update(kwargs)
-    return make_scatter_plot(**plot_args)
-
-
-fig = show_single_top_ranks_scatter(
-    three_metrics,
-    top_k=20,
-    upper_quantile=0.005,
-    percentiles=(0, 0.5, 1),
-    height=800,
-    width=1000,
-    # x_axis="top_n"
-)
-fig
-```
-
-```{code-cell} ipython3
-height = 1479
-width = 1000
 
 
 def subselect_scatter(scatter_data, col_start):
@@ -1684,62 +1661,82 @@ save_figure_as(fig, "clustering_quality_best_profiles.pdf", height=height, width
 fig
 ```
 
-```{code-cell} ipython3
+```{raw-cell}
+def show_single_top_ranks_scatter(
+    measurements,
+    metric="Adjusted Rand Index (Ward)",
+    upper_quantile: float = 0.01,
+    top_k: int = 10,
+    x_axis: Literal["top_n", "vocab_proportion"] = "vocab_proportion",
+    percentiles: Tuple[float, float, float] = (0.25, 0.5, 0.75),
+    delta_symbols=True,
+    **kwargs,
+):
+    scatter_data = make_top_ranks_scatter_data(
+        measurements, upper_quantile, top_k, percentiles
+    )
+    scatter_data = scatter_data.loc(axis=0)[:, :, metric]
+    plot_args = dict(
+        df=scatter_data.reset_index(),
+        x_col=x_axis,
+        error_x=f"{x_axis}_err",
+        error_x_minus=f"{x_axis}_err_minus",
+        y_col="value",
+        error_y="value_err",
+        error_y_minus="value_err_minus",
+        color="profiles",
+        color_discrete_map=color_map,
+        category_orders=dict(
+            profiles=scatter_data.sort_values("value", ascending=False)
+            .index.get_level_values("profiles")
+            .unique()
+            .to_list()
+        ),
+        hover_data=[
+            "overall_rank",
+            "delta_title",
+            "metric",
+            "top_n",
+            "vocab_proportion",
+            "value, max",
+            "value, min",
+        ],
+        title=(f"{metric} values vs. vocabulary sizes<br><sup>of the peak {format_percent(upper_quantile)} "
+               f"measurements ")
+        f"for each of the {top_k} top-performing configurations</sup>",
+    )
+    if delta_symbols:
+        plot_args.update(
+            symbol="delta_title",
+            traces_settings=dict(marker_size=12),
+        )
+    plot_args.update(kwargs)
+    return make_scatter_plot(**plot_args)
 
-for trace in fig.data:
-    print(trace.line.color)
+
+fig = show_single_top_ranks_scatter(
+    three_metrics,
+    top_k=20,
+    upper_quantile=0.005,
+    percentiles=(0, 0.5, 1),
+    height=800,
+    width=1000,
+    # x_axis="top_n"
+)
+fig
 ```
 
 ```{code-cell} ipython3
-(
-    double_scatter_data.groupby("profiles")
-    .overall_rank.apply(lambda S: S.sum() / len(S))
-    .sort_values()
-    .index.unique()
-    .to_list()
+get_upper_quantile_values(three_metrics, 0.005).query(
+    "profiles.str.contains('root') & overall_rank < 16"
 )
 ```
 
 ```{code-cell} ipython3
-for thing in fig._grid_ref[0][0]:
-    print(type(thing))
+double_scatter_data.query("profiles == '<i>P<sup>G, ct, ||root||</sup></i>'")
 ```
 
-```{code-cell} ipython3
-def realign_subplot_axes(
-    fig: go.Figure, x_axes: bool | dict = False, y_axes: bool | dict = False
-):
-    if not (x_axes or y_axes):
-        return
-    subplot_rows = fig._grid_ref
-    n_cols = len(subplot_rows[0])  # needed in both cases
-    if x_axes:
-        x_settings = x_axes if isinstance(x_axes, dict) else None
-        for col in range(1, n_cols + 1):
-            fig.update_xaxes(x_settings, col=col, matches=f"x{col}")
-    if y_axes:
-        y_settings = y_axes if isinstance(y_axes, dict) else None
-        n_rows = len(subplot_rows)
-        for row in range(1, n_rows + 1):
-            first_y = (row - 1) * n_cols + 1
-            fig.update_yaxes(y_settings, row=row, matches=f"y{first_y}")
-
-
-realign_subplot_axes(fig, x_axes=dict(showticklabels=True), y_axes=True)
-fig
-```
-
-```{code-cell} ipython3
-fig.update_xaxes(col=1, matches="x1")
-fig.update_xaxes(col=2, matches="x2")
-fig
-```
-
-```{code-cell} ipython3
-fig._grid_ref
-```
-
-```{code-cell} ipython3
+```{raw-cell}
 show_single_top_ranks_scatter(
     three_metrics,
     top_k=20,
@@ -1751,7 +1748,7 @@ show_single_top_ranks_scatter(
 )
 ```
 
-```{code-cell} ipython3
+```{raw-cell}
 show_single_top_ranks_scatter(
     three_metrics,
     metric="Adjusted Rand Index (PAM)",
@@ -1764,11 +1761,7 @@ show_single_top_ranks_scatter(
 )
 ```
 
-```{code-cell} ipython3
-
-```
-
-```{code-cell} ipython3
+```{raw-cell}
 show_single_top_ranks_scatter(
     three_metrics,
     metric="Simple Score",
@@ -1779,60 +1772,6 @@ show_single_top_ranks_scatter(
     width=1000,
     # x_axis="top_n"
 )
-```
-
-```{code-cell} ipython3
-make_scatter_plot(
-    top_n_ward.reset_index(),
-    x_col="vocab_proportion",
-    y_col="value",
-    color="profiles",
-    color_discrete_map=color_map,
-)
-```
-
-```{code-cell} ipython3
-fig = make_box_plot(
-    top_n_for_upper_quantile.reset_index(),
-    x_col="profiles",
-    y_col="value",
-    color="profiles",
-    color_discrete_map=color_map,
-    # facet_col="delta_title",
-    facet_row="metric",
-    category_orders=dict(
-        delta_title=delta_order,
-        profiles=top_n_for_upper_quantile.query("metric.str.startswith('Adjust')")
-        .groupby("profiles")
-        .value.mean()
-        .sort_values(ascending=False)
-        .index.to_list(),
-    ),
-    hover_data=["metric", "delta_title", "top_n", "vocab_proportion", "value"],
-    height=1000,
-    title=f"Evaluation metrics for the peak {upper_quantile:.0%} values",
-)
-fig
-```
-
-```{code-cell} ipython3
-ranks = (
-    metrics_complete.query("~metric.str.startswith('Cluster')")
-    .groupby(["metric", "delta_title"])
-    .apply(
-        lambda df: df.groupby("profiles")
-        .value.max()
-        .rank(method="max", ascending=False)
-    )
-    .astype(int)
-)
-```
-
-```{code-cell} ipython3
-group_max = metrics_complete.loc[
-    metrics_complete.groupby(["metric", "delta_title", "profiles"]).value.idxmax()
-]
-group_max
 ```
 
 ```{code-cell} ipython3
@@ -2011,6 +1950,8 @@ def show_gridsearch(df, save_as: Optional[str], height=height, width=1300, **kwa
         save_figure_as(fig, save_as, height=height, width=width)
     return fig
 ```
+
+## Comapring piecenorm vs. rootnorm for single type of profile
 
 ```{code-cell} ipython3
 ---
