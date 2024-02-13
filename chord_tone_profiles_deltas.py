@@ -605,7 +605,7 @@ def keep_only_paper_metrics(df):
     return df[mask].sort_values(["delta", "metric"])
 
 
-distance_evaluations = get_discriminant_metrics(distance_matrices)
+# distance_evaluations = get_discriminant_metrics(distance_matrices)
 distance_evaluations = load_discriminant_metrics(
     "/home/laser/git/chord_profile_search/probe_measurements.tsv"
 )  # these were created by having the chord_profile_search/gridsearch.py script process the folder containing
@@ -1232,7 +1232,19 @@ best_performing_top_n.groupby(level=[0]).apply(
 
 
 # %%
+def format_percent(perc: float, precision=1) -> str:
+    """Converts a decimal fraction to a percentage, rounding to the indicated precision,
+    with trailing zeros removed. E.g., whatever precision is indicated, format_percent(0.5)
+    always returns "50%".
+    """
+    return re.sub(r"\.?0+%$", "%", f"{perc:.{precision}%}")
+
+
 def get_upper_quantile_values(metrics, quantile=0.05):
+    """Best-performing percentile for each trace.
+    Adds a column "overall_rank" that reflects the global ranking of
+    profile-delta combinations for each metric (1 being the highest value).
+    """
     result = (
         metrics.reset_index("top_n")
         .groupby(["profiles", "metric", "delta_title"])
@@ -1255,48 +1267,126 @@ def get_upper_quantile_values(metrics, quantile=0.05):
     return result
 
 
-best_ari_rankings = {}
-for upper_quantile in (0.05, 0.03, 0.01):
-    best_values = get_upper_quantile_values(three_metrics, upper_quantile)
-    best_ari_rankings[f"top {upper_quantile:.0%}"] = (
-        best_values.query("metric.str.startswith('Adjust')")
-        .groupby("profiles")
-        .value.mean()
-        .rank(ascending=False)
-        .astype(int)
-        .rename("rank")
+def get_best_ari_rankings(
+    three_metrics, percentiles=(0.05, 0.03, 0.01, 0.005), metric_query="Adjust"
+):
+    best_ari_rankings = {}
+    for upper_quantile in percentiles:
+        best_values = get_upper_quantile_values(three_metrics, upper_quantile)
+        best_ari_rankings[f"top {format_percent(upper_quantile)}"] = (
+            best_values.query(f"metric.str.contains('{metric_query}')")
+            .groupby("profiles")
+            .value.mean()
+            .rank(ascending=False)
+            .astype(int)
+            .rename("rank")
+        )
+    return pd.concat(best_ari_rankings, names=["quantile"]).to_frame()
+
+
+def plot_ranks(best_ari_rankings, **kwargs):
+    plot_args = dict(
+        df=best_ari_rankings.reset_index(),
+        x_col="quantile",
+        y_col="rank",
+        color="profiles",
+        color_discrete_map=color_map,
+        category_orders=dict(
+            profiles=best_ari_rankings.groupby("profiles")["rank"]
+            .mean()
+            .sort_values()
+            .index.to_list()
+        ),
+        title="Ranked averages across distance metrics",
+        markers=True,
+        width=400,
+        height=800,
+        labels=dict(rank="ranking of value means"),
+        y_axis=dict(autorange="reversed", dtick=1),
     )
-best_ari_rankings = pd.concat(best_ari_rankings, names=["quantile"]).to_frame()
-make_line_plot(
-    best_ari_rankings.reset_index(),
-    x_col="quantile",
-    y_col="rank",
+    plot_args.update(kwargs)
+    return make_line_plot(**plot_args)
+
+
+plot_ranks(get_best_ari_rankings(three_metrics))
+
+# %%
+width = 500
+height = 670
+ward_rankings = get_best_ari_rankings(
+    three_metrics,
+    percentiles=(0.05, 0.04, 0.03, 0.02, 0.01, 0.005),
+    metric_query="Ward",
+)
+fig = plot_ranks(
+    ward_rankings,
+    title=None,
+    height=height,
+    width=width,
+    x_axis=dict(tickangle=45),
+    category_orders=dict(
+        profiles=ward_rankings.loc["top 0.5%"].sort_values("rank").index
+    ),
+    layout=dict(
+        margin=dict(t=0),
+        # legend=dict(x=1.1, y=1.05)
+        legend=dict(font_size=25, title_text="", y=0.983),
+    ),
+)
+save_figure_as(
+    fig,
+    "profile_rankings.pdf",
+    height=height,
+    width=width,
+)
+fig
+
+# %%
+(ward_rankings.loc["top 0.5%"].sort_values("rank"))
+
+# %%
+all_ari_rankings = {}
+for query in ("Ward", "PAM", "Adjust"):
+    all_ari_rankings[query] = get_best_ari_rankings(three_metrics, metric_query=query)
+all_ari_rankings = pd.concat(all_ari_rankings, names=["metric"])
+fig = plot_ranks(
+    all_ari_rankings.reset_index().replace(dict(metric="Adjust"), "combined"),
+    facet_col="metric",
+    width=800,
+)
+fig
+
+# %%
+wards = three_metrics.query("metric.str.contains('Ward')")
+wards.head()
+
+# %%
+y_column = "rank per vocabulary size per metric"
+ranks_per_vocab_size = (
+    wards.set_index(["profiles", "metric"], append=True)
+    .groupby(["delta_title", "top_n"])
+    .value.rank(ascending=False)
+    .rename(y_column)
+)
+make_box_plot(
+    ranks_per_vocab_size.reset_index(),
+    x_col="profiles",
+    y_col=y_column,
     color="profiles",
     color_discrete_map=color_map,
     category_orders=dict(
-        profiles=best_ari_rankings.groupby("profiles")["rank"]
-        .mean()
-        .sort_values()
-        .index.to_list()
+        profiles=ranks_per_vocab_size.groupby("profiles").median().sort_values().index,
     ),
-    markers=True,
-    width=400,
-    height=800,
-    y_axis=dict(autorange="reversed"),
+    y_axis=dict(autorange="reversed", dtick=1),
+    hover_data=["delta_descriptor", "feature_name", "metric", "top_n"],
+    height=600,
+    # title=f"Value ranges summarized for the top-performing {format_percent(upper_quantile)} scores",
 )
 
 # %%
-y_axis = "value"  # choose between "vocab_proportion", "top_n", and "value"
+y_axis = "vocab_proportion"  # choose between "vocab_proportion", "top_n", and "value"
 upper_quantile = 0.005
 top_n_for_upper_quantile = get_upper_quantile_values(three_metrics, upper_quantile)
-
-
-def format_percent(perc: float, precision=1) -> str:
-    """Converts a decimal fraction to a percentage, rounding to the indicated precision,
-    with trailing zeros removed. E.g., whatever precision is indicated, format_percent(0.5)
-    always returns "50%".
-    """
-    return re.sub(r"\.?0+%$", "%", f"{perc:.{precision}%}")
 
 
 fig = make_box_plot(
@@ -1567,6 +1657,23 @@ for trace in fig.data:
 utils.realign_subplot_axes(fig, True, True)
 save_figure_as(fig, "clustering_quality_best_profiles.pdf", height=height, width=width)
 fig
+
+# %% [markdown]
+# Most frequent profiles among both ARI scores' top-15:
+
+# %%
+top_ari_only = double_scatter_data.query(
+    "metric.str.startswith('Adj') & `vocabulary size`.str.startswith('Abs')"
+)
+top_ari_only.profiles.value_counts()
+
+# %%
+top_ari_only.groupby("metric").profiles.value_counts()
+
+# %%
+top_ari_only.profiles.str.extract(r"\|\|(.+)\|\|").groupby(
+    top_ari_only.metric
+).value_counts()
 
 # %% [raw]
 # def show_single_top_ranks_scatter(
