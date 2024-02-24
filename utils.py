@@ -1072,6 +1072,25 @@ def get_repo_name(repo: Repo) -> str:
     return remote.url.split(".git")[0].split("/")[-1]
 
 
+def graph_data2sankey(
+    stage_nodes: Dict[str, Dict[str, int]],
+    edge_weights: Dict[Tuple[int, int], int],
+    **kwargs,
+):
+    """Create a Sankey diagram from the nodes of every stage and the edge weights between them."""
+    data = pd.DataFrame(
+        [(u, v, w) for (u, v), w in edge_weights.items()],
+        columns=["source", "target", "value"],
+    )
+    node2label = {
+        node: label
+        for stage, nodes in stage_nodes.items()
+        for label, node in nodes.items()
+    }
+    labels = [node2label[i] for i in range(len(node2label))]
+    return make_sankey(data, labels, **kwargs)
+
+
 def load_facets(
     path,
     suffix="",
@@ -1123,6 +1142,64 @@ def make_output_path(
         else:
             directory = os.path.join(directory, "figs")
     return os.path.join(directory, file)
+
+
+def make_sankey(
+    data: pd.DataFrame,
+    labels: List[str],
+    node_pos: Optional[List[Tuple[float, float]]] = None,
+    margin={"l": 10, "r": 10, "b": 10, "t": 10},
+    pad=20,
+    color="auto",
+    **kwargs,
+):
+    """Create a Sankey diagram with Plotly. Labels, node_pos and color have the same length, corresponding to the
+    number of nodes. Source and target are expressed as indices of the labels list.
+
+    Args:
+        data: Dataframe with the columns "source", "target" and "value".
+        labels: List of node labels.
+        node_pos: List of (x, y) coordinates for each node. If None, the nodes are placed automatically.
+        margin:
+        pad:
+        color:
+            A list of colors. If "auto", the colors are chosen automatically based on an equal division of the
+            hue circle.
+        **kwargs:
+
+    Returns:
+
+    """
+    if color == "auto":
+        unique_labels = set(labels)
+        color_step = 100 / len(unique_labels)
+        unique_colors = {
+            label: f"hsv({round(i*color_step)}%,100%,100%)"
+            for i, label in enumerate(unique_labels)
+        }
+        color = list(map(lambda lst: unique_colors[lst], labels))
+    fig = go.Figure(
+        go.Sankey(
+            arrangement="snap",
+            node=dict(
+                pad=pad,
+                # thickness = 20,
+                # line = dict(color = "black", width = 0.5),
+                label=labels,
+                x=[node_pos[i][0] if i in node_pos else 0 for i in range(len(labels))]
+                if node_pos is not None
+                else None,
+                y=[node_pos[i][1] if i in node_pos else 0 for i in range(len(labels))]
+                if node_pos is not None
+                else None,
+                color=color,
+            ),
+            link=dict(source=data.source, target=data.target, value=data.value),
+        ),
+    )
+
+    fig.update_layout(margin=margin, **kwargs)
+    return fig
 
 
 def make_sunburst(

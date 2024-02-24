@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -30,7 +30,6 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-import plotly.graph_objects as go
 from dimcat.plotting import CADENCE_COLORS, write_image
 from dimcat.steps import filters, groupers, slicers
 from git import Repo
@@ -45,6 +44,7 @@ from utils import (
     STD_LAYOUT,
     get_corpus_display_name,
     get_repo_name,
+    graph_data2sankey,
     print_heading,
     resolve_dir,
     value_count_df,
@@ -576,45 +576,6 @@ value_count_df(bass_prog_no_dups)
 ```
 
 ```{code-cell}
-def make_sankey(
-    data,
-    labels,
-    node_pos=None,
-    margin={"l": 10, "r": 10, "b": 10, "t": 10},
-    pad=20,
-    color="auto",
-    **kwargs,
-):
-    if color == "auto":
-        unique_labels = set(labels)
-        color_step = 100 / len(unique_labels)
-        unique_colors = {
-            label: f"hsv({round(i*color_step)}%,100%,100%)"
-            for i, label in enumerate(unique_labels)
-        }
-        color = list(map(lambda lst: unique_colors[lst], labels))
-    fig = go.Figure(
-        go.Sankey(
-            arrangement="snap",
-            node=dict(
-                pad=pad,
-                # thickness = 20,
-                # line = dict(color = "black", width = 0.5),
-                label=labels,
-                x=[node_pos[i][0] if i in node_pos else 0 for i in range(len(labels))]
-                if node_pos is not None
-                else None,
-                y=[node_pos[i][1] if i in node_pos else 0 for i in range(len(labels))]
-                if node_pos is not None
-                else None,
-                color=color,
-            ),
-            link=dict(source=data.source, target=data.target, value=data.value),
-        ),
-    )
-
-    fig.update_layout(margin=margin, **kwargs)
-    return fig
 
 
 def progressions2graph_data(progressions, cut_at_stage=None):
@@ -636,20 +597,6 @@ def progressions2graph_data(progressions, cut_at_stage=None):
                 edge_weights.update([(current_node, previous_node)])
             previous_node = current_node
     return stage_nodes, edge_weights
-
-
-def graph_data2sankey(stage_nodes, edge_weights, **kwargs):
-    data = pd.DataFrame(
-        [(u, v, w) for (u, v), w in edge_weights.items()],
-        columns=["source", "target", "value"],
-    )
-    node2label = {
-        node: label
-        for stage, nodes in stage_nodes.items()
-        for label, node in nodes.items()
-    }
-    labels = [node2label[i] for i in range(len(node2label))]
-    return make_sankey(data, labels, **kwargs)
 
 
 def plot_progressions(progressions, cut_at_stage=None, **kwargs):
