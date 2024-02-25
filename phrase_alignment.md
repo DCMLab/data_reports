@@ -57,7 +57,7 @@ pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell}
-RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "phrases"))
+RESULTS_PATH = os.path.expanduser("~/git/diss/33_phrases/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -118,10 +118,6 @@ utils.make_sankey(
 ```
 
 ```{code-cell}
-ms3.map_dict()
-```
-
-```{code-cell}
 stage_data = utils.make_stage_data(
     phrase_annotations,
     columns=["chord", "numeral_or_applied_to_numeral", "localkey", "duration_qb"],
@@ -130,6 +126,8 @@ stage_data = utils.make_stage_data(
 stage_data._df["numeral_fifths"] = stage_data.numeral_or_applied_to_numeral.map(
     ms3.roman_numeral2fifths
 )
+split = stage_data.numeral_or_applied_to_numeral.str.extract(r"(b*)(.+)")
+stage_data._df.numeral_or_applied_to_numeral = split[0] + split[1].str.upper()
 stage_data.head(50)
 ```
 
@@ -180,34 +178,15 @@ tonic_dominant = stage_data.regroup_phrases(
     tondom_criterion, level_names=("tondom_stage", "substage")
 )
 
-# df = tonic_dominant.iloc[:32]
-# inner_grouping = numeral_criterion.iloc[:32]
-# outer_grouping = tondom_criterion.iloc[:32]
-# phrase_start_mask = make_phrase_start_mask(df)
-# substage_start_mask = (
-#     (inner_grouping != inner_grouping.shift()).fillna(True).to_numpy(dtype=bool)
-# ) | phrase_start_mask
-# substage_level = make_range_index_from_boolean_mask(substage_start_mask)
-# # make new stage level that restarts at phrase starts and increments at substage starts
-# stage_start_mask = (
-#     (outer_grouping != outer_grouping.shift()).fillna(True).to_numpy(dtype=bool)
-# ) | phrase_start_mask
-# pd.DataFrame(dict(
-#     outer_grouping=outer_grouping,
-#     inner_grouping=inner_grouping,
-#     stage_start_mask=stage_start_mask,
-#     substage_start_mask=substage_start_mask,
-# ))
 substage_index_levels = make_regrouped_stage_index(
     tonic_dominant,
     numeral_criterion,
     tondom_criterion,
     ("numeral_stage", "chord_stage"),
 )
-complete_index = append_index_levels(
+tonic_dominant._df.index = append_index_levels(
     tonic_dominant.index, substage_index_levels, drop_levels=-1
 )
-tonic_dominant._df.index = complete_index
 tondom = (
     tonic_dominant.join(composition_years)
     .groupby("phrase_id")
@@ -221,6 +200,16 @@ tondom.head(50)
 ```
 
 ```{code-cell}
+phrase_ids = tondom.index.get_level_values("phrase_id").unique()
+remaining = phrase_ids.nunique()
+n_phrases = phrase_ids.max()
+removed = n_phrases - remaining
+print(
+    f"{removed} phrases have been removed ({removed / n_phrases:.1%}), {remaining} are remaining."
+)
+```
+
+```{code-cell}
 n = 15
 print(f"Pieces with more than {n} tonic-dominant segments:")
 tondom.query(f"tondom_stage > {n}").index.droplevel([2, 3, 4, 5]).unique().to_list()
@@ -229,36 +218,50 @@ tondom.query(f"tondom_stage > {n}").index.droplevel([2, 3, 4, 5]).unique().to_li
 ```{code-cell}
 
 
-def get_node_info(tondom_nodes, stage_nodes):
-    substages_per_stage = Counter(tondom_stage for (tondom_stage, _) in stage_nodes)
-    tondom_node_distances = [0] + [
-        substages_per_stage[tondom_stage - 1]
-        + 1  # distance = n_substages of previous + 1 (the previous itself)
-        for tondom_stage in range(1, len(tondom_nodes))
-    ]
-    tondom_node_ranks = list(accumulate(tondom_node_distances))
-    node2rank = {
-        node: tondom_node_ranks[tondom_stage]
-        for (tondom_stage, _), node in tondom_nodes.items()
-    }
-    node2rank.update(
-        {
-            node: tondom_node_ranks[tondom_stage] + numeral_stage
-            for (tondom_stage, numeral_stage), nodes in stage_nodes.items()
-            for node in nodes.values()
-        }
-    )
-    n_x_positions = max(node2rank.values())
-    x_distance = 1 / n_x_positions
-    x = [
-        (n_x_positions - node2rank[node]) * x_distance for node in range(len(node2rank))
-    ]
+def get_node_info(tondom_nodes, stage_nodes, offset=1e-09):
+    """Offset is a workaround for the bug in Plotly preventing coordinates from being zero."""
+    # labels
     node2label = {
         node: label for nodes in stage_nodes.values() for label, node in nodes.items()
     }
     node2label.update({node: label for (_, label), node in tondom_nodes.items()})
     labels = [node2label[node] for node in range(len(node2label))]
-    return labels, x
+
+    # y-coordinates (label-wise)
+    label2fifths = dict(zip(labels, map(ms3.roman_numeral2fifths, labels)))
+    smallest = min(label2fifths.values())
+    label2norm_fifths = {k: v - smallest for k, v in label2fifths.items()}
+    norm_fifths2y = pd.Series(
+        np.linspace(offset, 1, max(label2norm_fifths.values()) + 1)
+    )
+    label2y = {k: norm_fifths2y[v] for k, v in label2norm_fifths.items()}
+
+    # x-coordinates (substage-wise); the evenly spaced positions are called ranks and are counted from right to left
+    substages_per_stage = Counter(tondom_stage for (tondom_stage, _) in stage_nodes)
+    stage_distances = [0] + [
+        substages_per_stage[tondom_stage - 1]
+        + 1  # distance = n_substages of previous + 1 (the previous itself)
+        for tondom_stage in range(1, len(tondom_nodes))
+    ]
+    stage_ranks = list(accumulate(stage_distances))
+    node2rank_and_label = {
+        node: (stage_ranks[tondom_stage], label)
+        for (tondom_stage, label), node in tondom_nodes.items()
+    }
+    node2rank_and_label.update(
+        {
+            node: (stage_ranks[tondom_stage] + numeral_stage, label)
+            for (tondom_stage, numeral_stage), nodes in stage_nodes.items()
+            for label, node in nodes.items()
+        }
+    )
+    n_ranks = max((rank for rank, _ in node2rank_and_label.values())) + 1
+    rank2x = pd.Series(np.linspace(1, offset, n_ranks))
+    node_pos = {
+        node: (rank2x[rank], label2y[label])
+        for node, (rank, label) in node2rank_and_label.items()
+    }
+    return labels, node_pos
 
 
 def tondom_stages2graph_data(
@@ -319,15 +322,20 @@ def tondom_stages2graph_data(
             if previous_node is not None:
                 edge_weights.update([(current_node, previous_node)])
             previous_node = current_node
-    return tondom_nodes, stage_nodes
-    labels, x = get_node_info(tondom_nodes, stage_nodes)
-    return edge_weights, labels, x
+    labels, node_pos = get_node_info(tondom_nodes, stage_nodes)
+    return edge_weights, labels, node_pos
 
 
+edge_weights, labels, node_pos = tondom_stages2graph_data(
+    tondom, ending_on={"I"}, stop_at_modulation=True, cut_at_stage=2
+)
+```
+
+```{code-cell}
 def tondom_graph_data2sankey(
     edge_weights: Dict[Tuple[int, int], int],
     labels: List[str],
-    x: List[float],
+    node_pos,
     **kwargs,
 ):
     """Create a Sankey diagram from the nodes of every stage and the edge weights between them."""
@@ -335,50 +343,17 @@ def tondom_graph_data2sankey(
         [(u, v, w) for (u, v), w in edge_weights.items()],
         columns=["source", "target", "value"],
     )
-    return utils.make_sankey(data, labels, x=x, **kwargs)
+    return utils.make_sankey(data, labels, node_pos=node_pos, **kwargs)
 
 
-# edge_weights, labels, x = tondom_stages2graph_data(tondom, ending_on={"I"}, stop_at_modulation=True, cut_at_stage=3)
-tondom_nodes, stage_nodes = tondom_stages2graph_data(
-    tondom, ending_on={"I"}, stop_at_modulation=True, cut_at_stage=3
+fig = tondom_graph_data2sankey(
+    edge_weights, labels, node_pos, height=800, arrangement="fixed"
 )
+fig
 ```
 
 ```{code-cell}
-def get_node_info_debug(tondom_nodes, stage_nodes):
-    substages_per_stage = Counter(tondom_stage for (tondom_stage, _) in stage_nodes)
-    # offset = 1e-09
-    tondom_node_distances = [0] + [
-        substages_per_stage[tondom_stage - 1]
-        + 1  # distance = n_substages of previous + 1 (the previous itself)
-        for tondom_stage in range(1, len(tondom_nodes))
-    ]
-    tondom_node_ranks = list(accumulate(tondom_node_distances))
-    node2rank = {
-        node: tondom_node_ranks[tondom_stage]
-        for (tondom_stage, _), node in tondom_nodes.items()
-    }
-    node2rank.update(
-        {
-            node: tondom_node_ranks[tondom_stage] + numeral_stage
-            for (tondom_stage, numeral_stage), nodes in stage_nodes.items()
-            for node in nodes.values()
-        }
-    )
-    n_x_positions = max(node2rank.values())
-    x_distance = 1 / n_x_positions
-    x = [
-        (n_x_positions - node2rank[node]) * x_distance for node in range(len(node2rank))
-    ]
-    node2label = {
-        node: label for nodes in stage_nodes.values() for label, node in nodes.items()
-    }
-    node2label.update({node: label for (_, label), node in tondom_nodes.items()})
-    labels = [node2label[node] for node in range(len(node2label))]
-    return labels, x
-
-
-labels, x = get_node_info_debug(tondom_nodes, stage_nodes)
+save_figure_as(fig, "tondom_sankey_draft", width=5000)
 ```
 
 ```{raw-cell}
