@@ -25,11 +25,19 @@ from typing import Dict, Iterable, Tuple, TypeAlias
 import dimcat as dc
 import ms3
 import pandas as pd
+import plotly.io as pio
 from dimcat import resources
 from dimcat.plotting import make_bar_plot, write_image
 from git import Repo
 
 import utils
+
+# workaround to remove the "loading mathjax" box from the PDF figure
+# see https://github.com/plotly/plotly.py/issues/3469#issuecomment-994907721
+pio.kaleido.scope.mathjax = None
+# if mathjax was needed to render math, one could try
+# pio.full_figure_for_development(fig, warn=False)
+
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
@@ -154,6 +162,7 @@ ig_values = compute_information_gains(bigram_table, "chord", antecedents)
 ig_values
 
 # %%
+
 fig = make_bar_plot(
     ig_values,
     x_col="group",
