@@ -1083,9 +1083,7 @@ def graph_data2sankey(
         columns=["source", "target", "value"],
     )
     node2label = {
-        node: label
-        for stage, nodes in stage_nodes.items()
-        for label, node in nodes.items()
+        node: label for nodes in stage_nodes.values() for label, node in nodes.items()
     }
     labels = [node2label[i] for i in range(len(node2label))]
     return make_sankey(data, labels, **kwargs)
@@ -1147,25 +1145,34 @@ def make_output_path(
 def make_sankey(
     data: pd.DataFrame,
     labels: List[str],
-    node_pos: Optional[List[Tuple[float, float]]] = None,
+    x: Optional[List[float]] = None,
+    y: Optional[List[float]] = None,
+    node_pos: Optional[Dict[int, Tuple[float, float]]] = None,
     margin={"l": 10, "r": 10, "b": 10, "t": 10},
     pad=20,
     color="auto",
+    arrangement: Literal["snap", "perpendicular", "freeform", "fixed"] = "snap",
     **kwargs,
 ):
-    """Create a Sankey diagram with Plotly. Labels, node_pos and color have the same length, corresponding to the
-    number of nodes. Source and target are expressed as indices of the labels list.
+    """Create a Sankey diagram with Plotly. Labels, node_pos, x, y, and color have the same length, corresponding to the
+    number of nodes. Source and target are expressed as indices of these lists. Only labels is required.
+
+    As of March 2024, Plotly ignores coordinates entirely when only one of x or y is specified. Furthermore,
+    there is a bug that ignores positions where x or y equals 0.
 
     Args:
         data: Dataframe with the columns "source", "target" and "value".
         labels: List of node labels.
-        node_pos: List of (x, y) coordinates for each node. If None, the nodes are placed automatically.
+        x, y:
+            List of x and y coordinates for the nodes. Needs to be aligned with labels. If node_pos is defined in
+            addition, x and y override the respective coordinates in node_pos, if specified.
+        node_pos: {node_id -> (x, y)} dictionary of coordinates. If None, the nodes are placed automatically.
         margin:
         pad:
         color:
             A list of colors. If "auto", the colors are chosen automatically based on an equal division of the
             hue circle.
-        **kwargs:
+        **kwargs: Layout options.
 
     Returns:
 
@@ -1178,20 +1185,26 @@ def make_sankey(
             for i, label in enumerate(unique_labels)
         }
         color = list(map(lambda lst: unique_colors[lst], labels))
+    x_pos, y_pos = [], []
+    if node_pos is not None:
+        for node in range(len(node_pos)):
+            x_coord, y_coord = node_pos[node]
+            x_pos.append(x_coord)
+            y_pos.append(y_coord)
+    if x is not None:
+        x_pos = x
+    if y is not None:
+        y_pos = y
     fig = go.Figure(
         go.Sankey(
-            arrangement="snap",
+            arrangement=arrangement,
             node=dict(
                 pad=pad,
                 # thickness = 20,
                 # line = dict(color = "black", width = 0.5),
                 label=labels,
-                x=[node_pos[i][0] if i in node_pos else 0 for i in range(len(labels))]
-                if node_pos is not None
-                else None,
-                y=[node_pos[i][1] if i in node_pos else 0 for i in range(len(labels))]
-                if node_pos is not None
-                else None,
+                x=x_pos if x_pos else None,
+                y=y_pos if y_pos else None,
                 color=color,
             ),
             link=dict(source=data.source, target=data.target, value=data.value),
