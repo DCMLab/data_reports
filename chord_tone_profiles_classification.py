@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -46,7 +46,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
+RESULTS_PATH = os.path.expanduser("~/git/diss/32_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -78,7 +78,6 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
-
 
 # %%
 chord_slices = utils.get_sliced_notes(D)
@@ -143,6 +142,7 @@ root_fifths_over_global_tonic = chord_slices.apply_step(
     )
 )
 print(f"Shape: {root_fifths_over_global_tonic.shape}")
+
 
 # %% [markdown]
 # # Classification
@@ -260,7 +260,6 @@ RFC = Classification(matrix=chord_reduced, clf=clf, cv=cv)
 RFC.fit()
 CV = CrossValidated(matrix=chord_reduced, clf=clf, cv=cv)
 cv_results = CV.cross_validate()
-
 
 # %%
 RFC.show_confusion_matrix().plot()

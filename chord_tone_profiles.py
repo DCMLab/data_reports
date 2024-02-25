@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -42,7 +42,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
+RESULTS_PATH = os.path.expanduser("~/git/diss/32_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 

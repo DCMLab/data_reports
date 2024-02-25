@@ -53,7 +53,7 @@ pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell} ipython3
-RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
+RESULTS_PATH = os.path.expanduser("~/git/diss/32_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 

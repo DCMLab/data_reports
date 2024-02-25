@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -14,7 +14,7 @@ kernelspec:
 
 # Chord Profiles
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -41,8 +41,8 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
-```{code-cell}
-RESULTS_PATH = os.path.expanduser("~/git/diss/31_profiles/figs")
+```{code-cell} ipython3
+RESULTS_PATH = os.path.expanduser("~/git/diss/32_profiles/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -61,7 +61,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = utils.resolve_dir(
@@ -76,14 +76,14 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chord_slices = utils.get_sliced_notes(D)
 chord_slices.head(5)
 ```
 
 ## Document frequencies of chord features
 
-```{code-cell}
+```{code-cell} ipython3
 utils.compare_corpus_frequencies(
     chord_slices,
     [
@@ -99,7 +99,7 @@ utils.compare_corpus_frequencies(
 
 Tokens are `(feature, ..., chord_tone)` tuples.
 
-```{code-cell}
+```{code-cell} ipython3
 chord_reduced: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -110,7 +110,7 @@ chord_reduced: resources.PrevalenceMatrix = chord_slices.apply_step(
 print(f"Shape: {chord_reduced.shape}")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 numerals: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -122,7 +122,7 @@ print(f"Shape: {numerals.shape}")
 utils.replace_boolean_column_level_with_mode(numerals)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 roots: resources.PrevalenceMatrix = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -133,7 +133,7 @@ roots: resources.PrevalenceMatrix = chord_slices.apply_step(
 print(f"Shape: {roots.shape}")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 root_fifths_over_global_tonic = chord_slices.apply_step(
     dc.DimcatConfig(
         "PrevalenceAnalyzer",
@@ -146,21 +146,21 @@ print(f"Shape: {root_fifths_over_global_tonic.shape}")
 
 ### Document frequencies of the tokens
 
-```{code-cell}
+```{code-cell} ipython3
 fig = utils.plot_document_frequency(chord_reduced)
 save_figure_as(fig, "document_frequency_of_chord_tones")
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_document_frequency(numerals, info="numerals")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_document_frequency(roots, info="roots")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_document_frequency(
     root_fifths_over_global_tonic, info="root relative to global tonic"
 )
@@ -168,11 +168,11 @@ utils.plot_document_frequency(
 
 ## Principal Component Analyses
 
-```{code-cell}
+```{code-cell} ipython3
 # chord_reduced.query("piece in ['op03n12a', 'op03n12b']").dropna(axis=1, how='all')
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 metadata = D.get_metadata()
 CORPUS_YEARS = utils.corpus_mean_composition_years(metadata)
 PIECE_YEARS = metadata.get_composition_years().rename("mean_composition_year")
@@ -183,7 +183,7 @@ utils.plot_pca(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_pca(
     chord_reduced.combine_results("corpus").relative,
     info="chord-tone profiles of reduced chords",
@@ -192,13 +192,13 @@ utils.plot_pca(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_pca(
     numerals.relative, info="numeral profiles of numerals", color=PIECE_YEARS
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_pca(
     numerals.combine_results("corpus").relative,
     info="chord-tone profiles of numerals",
@@ -207,13 +207,13 @@ utils.plot_pca(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_pca(
     roots.relative, info="root profiles of chord roots (local)", color=PIECE_YEARS
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_pca(
     roots.combine_results("corpus").relative,
     info="chord-tone profiles of chord roots (local)",
@@ -222,7 +222,7 @@ utils.plot_pca(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_pca(
     root_fifths_over_global_tonic.relative,
     info="root profiles of chord roots (global)",
@@ -230,7 +230,7 @@ utils.plot_pca(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 utils.plot_pca(
     root_fifths_over_global_tonic.combine_results("corpus").relative,
     info="chord-tone profiles of chord roots (global)",
