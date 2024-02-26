@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
-  display_name: revamp
+  display_name: Python 3 (ipykernel)
   language: python
-  name: revamp
+  name: python3
 ---
 
 # Detecting diatonic bands
@@ -26,6 +26,8 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+%load_ext autoreload
+%autoreload 2
 import os
 from random import choice
 from typing import Hashable, Optional
@@ -42,16 +44,12 @@ from git import Repo
 
 import utils
 
-%load_ext autoreload
-%autoreload 2
-
-
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell} ipython3
-RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "phrases"))
+RESULTS_PATH = os.path.expanduser("~/git/diss/33_phrases/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -63,8 +61,14 @@ def make_output_path(filename, extension=None):
     return os.path.join(RESULTS_PATH, f"{filename}{extension}")
 
 
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell} ipython3
@@ -102,6 +106,10 @@ criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 
 
 def group_operation(group_df):
@@ -168,22 +176,38 @@ effective_numeral_or_its_dominant.head(100)
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 chord_tones = utils.get_phrase_chord_tones(phrase_annotations)
 chord_tones.head()
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 chord_tones.tpc_width.value_counts()
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 diatonics_criterion = make_diatonics_criterion(chord_tones)
 diatonics_stages = chord_tones.regroup_phrases(diatonics_criterion)
 criterion2stages["diatonics"] = diatonics_stages
 ```
 
 ```{code-cell} ipython3
-utils.compare_criteria_metrics(criterion2stages, height=1000)
+fig = utils.compare_criteria_metrics(
+    criterion2stages, layout=dict(margin=dict(r=20)), height=1000
+)
+save_figure_as(fig, "comparison_of_stage_merging_criteria", height=1000, width=700)
+fig
 ```
 
 ```{code-cell} ipython3
@@ -205,10 +229,18 @@ utils._compare_criteria_entropies(
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 diatonics_stages
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 LT_DISTANCE2SCALE_DEGREE = {
     0: "7 (#7)",
     1: "3 (#3)",
@@ -301,11 +333,19 @@ def make_timeline_data(chord_tones):
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 timeline_data = make_timeline_data(chord_tones)
 timeline_data.head()
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 def make_rectangle_shape(group_df, y_min):
     result = dict(
         type="rect",
@@ -368,33 +408,94 @@ def make_diatonics_rectangles(phrase_timeline_data):
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 n_phrases = max(timeline_data.index.levels[2])
 # {degree: utils.TailwindColorsHex.get_color(DEGREE2COLOR[degree]) for degree in phrase_timeline_data.Resource.unique()}
 colorscale = DEGREE2COLOR
 ```
 
 ```{code-cell} ipython3
-phrase_timeline_data = timeline_data.query(f"phrase_id == {choice(range(n_phrases))}")
+---
+jupyter:
+  outputs_hidden: false
+---
+PIN_PHRASE_ID = None
+# 827
+# 2358
+# 5932
+# 9649
+
+if PIN_PHRASE_ID is None:
+    current_id = choice(range(n_phrases))
+else:
+    current_id = PIN_PHRASE_ID
+phrase_timeline_data = timeline_data.query(f"phrase_id == {current_id}")
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 fig = utils.plot_phrase(
     phrase_timeline_data,
     colorscale=colorscale,
     shapes=make_diatonics_rectangles(phrase_timeline_data),
 )
-utils.plot_phrase(
-    phrase_timeline_data,
-    colorscale=colorscale,
-).show()
+# utils.plot_phrase(
+#     phrase_timeline_data,
+#     colorscale=colorscale,
+# ).show()
 fig
 ```
 
 ```{code-cell} ipython3
-write_image(fig, make_output_path("sample"))
+---
+jupyter:
+  outputs_hidden: false
+---
+plot_phrase_id = 4873  # 10403
+plot_phrase_data = timeline_data.query(f"phrase_id == {plot_phrase_id}")
+fig = utils.plot_phrase(
+    plot_phrase_data,
+    colorscale=colorscale,
+    shapes=make_diatonics_rectangles(plot_phrase_data),
+    title="",
+    x_axis=dict(
+        tickmode="array", tickvals=[-2, -6, -10, -14, -18], ticktext=[9, 8, 7, 6, 5]
+    ),
+)
+fig.update_shapes(label=dict(textposition="middle center", font_size=30))
+fig.update_layout(
+    dict(
+        legend=dict(
+            orientation="h",
+            # font_size=17
+        )
+    )
+)
+save_figure_as(
+    fig,
+    f"diatonic_hull_for_phrase_{plot_phrase_id}",
+    formats=["pdf"],
+    width=1280,
+    height=720,
+)
+fig
 ```
 
 ```{code-cell} ipython3
+
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 fig.add_shape(
     type="rect",
     line_width=2,
@@ -413,6 +514,10 @@ fig
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 fig = px.timeline(
     phrase_timeline_data,
     x_start="Start",
@@ -428,9 +533,15 @@ fig = px.timeline(
 fig
 ```
 
++++ {"jupyter": {"outputs_hidden": false}}
+
 ### Demo values
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 for criterion, stages in criterion2stages.items():
     utils.print_heading(criterion)
     values = stages.df.query("phrase_id == 9773").iloc[:, 0].to_list()

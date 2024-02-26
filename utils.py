@@ -2760,6 +2760,7 @@ def plot_phrase(
     y_axis: Optional[dict] = None,
     color_axis: Optional[dict] = None,
     traces_settings: Optional[dict] = None,
+    title=None,
 ) -> go.Figure:
     """Timeline (Gantt) data for a single phrase."""
     dummy_resource_value = phrase_timeline_data.Resource.iat[0]
@@ -2771,7 +2772,8 @@ def plot_phrase(
         phrase_timeline_data.Task.fillna(names, inplace=True)
     corpus, piece, phrase_id, *_ = phrase_timeline_data.index[0]
     globalkey = phrase_timeline_data.globalkey.iat[0]
-    title = f"Phrase {phrase_id} from {corpus}/{piece} ({globalkey})"
+    if title is None:
+        title = f"Phrase {phrase_id} from {corpus}/{piece} ({globalkey})"
     kwargs = dict(title=title, colors=colorscale)
     if shapes:
         kwargs["shapes"] = shapes

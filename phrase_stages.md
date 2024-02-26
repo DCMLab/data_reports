@@ -18,6 +18,7 @@ ToDo
 
 * n01op18-1_01, phrase_id 4, viio/vi => #viio/
 * 07-1, phrase_id 2415, vi/V in D would be f# but this is clearly in a. It is a minor key, so bVI should be VI
+* phrase806_n14op131_05_1-79 clearly too long, begins with sequenced segments ending on HCs
 
 ```{code-cell} ipython3
 ---
@@ -358,28 +359,48 @@ root_roman_or_its_dominants.head(100)
 ```
 
 ```{raw-cell}
+---
+jupyter:
+  outputs_hidden: false
+---
 utils.compare_criteria_metrics(criterion2stages, height=1000)
 ```
 
 ```{raw-cell}
+---
+jupyter:
+  outputs_hidden: false
+---
 utils._compare_criteria_stage_durations(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
 ```{raw-cell}
+---
+jupyter:
+  outputs_hidden: false
+---
 utils._compare_criteria_phrase_lengths(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
 ```{raw-cell}
+---
+jupyter:
+  outputs_hidden: false
+---
 utils._compare_criteria_entropies(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
@@ -490,6 +511,10 @@ def make_timeline_data(root_roman_or_its_dominants, detailed=True):
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 def make_function_colors(detailed=True):
     if detailed:
         colorscale = {
@@ -1065,6 +1090,10 @@ def get_extended_tonicization_shape_data(stage_inspection_data, y_min):
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 DETAILED_FUNCTIONS = True
 timeline_data = make_timeline_data(
     root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
@@ -1074,6 +1103,10 @@ colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 def plot_phrase_stages(
     phrase_annotations,
     phrase_id,
@@ -1081,6 +1114,7 @@ def plot_phrase_stages(
     stage_shapes: bool = True,
     tonicization_shapes: bool = True,
     detailed_functions=True,
+    **kwargs,
 ):
     stage_data = make_root_roman_or_its_dominants_criterion(
         phrase_annotations, query=f"phrase_id == {phrase_id}"
@@ -1102,26 +1136,63 @@ def plot_phrase_stages(
                 stage_data, y_min=phrase_timeline_data.chord_tone_tpc.min()
             )
         )
-    fig = utils.plot_phrase(phrase_timeline_data, colorscale=colorscale, shapes=shapes)
+    fig = utils.plot_phrase(
+        phrase_timeline_data, colorscale=colorscale, shapes=shapes, **kwargs
+    )
     return fig
 
 
-fig = plot_phrase_stages(phrase_annotations, phrase_id=5932)  # 4157)
-save_figure_as(fig, "modulation_structure_for_phrase_5932")
+fig = plot_phrase_stages(
+    phrase_annotations,
+    title="",
+    x_axis=dict(
+        tickmode="array", tickvals=[-2, -6, -10, -14, -18], ticktext=[9, 8, 7, 6, 5]
+    ),
+    phrase_id=4873,  # 5932
+)
+fig.update_shapes(
+    dict(label_text=""), selector=dict(line_dash="dot", legendgroup="stage")
+)
+fig.update_shapes(dict(x0=-18), dict(x0=-18.5, legendgroup="stage"))
+fig.update_shapes(dict(x0=-18), dict(x0=-18.5, type="line"))
+fig.update_shapes(dict(y0=-0.5), dict(y0=-1.5))
+fig.update_layout(dict(legend=dict(orientation="h", font_size=17)))
+save_figure_as(
+    fig, "modulation_structure_for_phrase_4873", formats=["pdf"], width=1280, height=720
+)
 fig
 ```
 
 ```{code-cell} ipython3
-PIN_PHRASE_ID = 2984
+fig.layout.shapes
+```
+
+```{code-cell} ipython3
+[shape for shape in fig.layout.shapes if shape.x0 == -18.0]
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+PIN_PHRASE_ID = 10403
 # 24 good Bach
+# 87 short and simple ABC example, e-a-G with pivot chord, pretty ideal
 # 638 exciting ABC
+# 806 from ABC is fantastic but I would actually see it as more than one phrase
 # 827
+# 2338 Beethoven Eb-f-c
 # 2358
 # 2983 cool Waldstein
 # 3339
 # 4739 Corelli
+# 5103 Corelli with visible encoding error (pops out)
+# 5122 super cool Couperin but the beginning is a bit verkorkst, modulation debatable
 # 5932
 # 9649
+# 141102 Liederkreis great but has modulation to IV for a single measure. Discuss?
+# 14031 Kinderszenen with pivot chord
 
 # bugfix: 4157
 
@@ -1134,6 +1205,10 @@ plot_phrase_stages(phrase_annotations, phrase_id=current_id)
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 modulating_phrases = phrase_annotations.groupby("phrase_id").filter(
     lambda df: df.localkey.nunique() > 1
 )
@@ -1141,15 +1216,27 @@ modulating_ids = modulating_phrases.index.get_level_values("phrase_id").unique()
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 selected_modulating_id = choice(modulating_ids)
 plot_phrase_stages(phrase_annotations, phrase_id=selected_modulating_id)
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 # plot_phrase_stages(phrase_annotations, phrase_id=2358)
 ```
 
 ```{raw-cell}
+---
+jupyter:
+  outputs_hidden: false
+---
 from pandas.core.indexers.objects import BaseIndexer
 import numpy.typing as npt
 
@@ -1173,5 +1260,9 @@ indexer = DominantsToEndIndexer()
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 criterion2stages["uncompressed"]
 ```
