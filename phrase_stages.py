@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -25,6 +25,7 @@
 # %load_ext autoreload
 # %autoreload 2
 import os
+import warnings
 from numbers import Number
 from random import choice
 from typing import List, Literal, Optional, Tuple
@@ -49,7 +50,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "phrases"))
+RESULTS_PATH = os.path.expanduser("~/git/diss/33_phrases/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -61,8 +62,14 @@ def make_output_path(
     return utils.make_output_path(filename=filename, extension=extension, path=path)
 
 
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        write_image(fig, filename, directory, **kwargs)
 
 
 # %% tags=["hide-input"]
@@ -339,26 +346,26 @@ criterion2stages["root_roman_or_its_dominants"] = root_roman_or_its_dominants
 root_roman_or_its_dominants.head(100)
 
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils.compare_criteria_metrics(criterion2stages, height=1000)
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils._compare_criteria_stage_durations(
 #     criterion2stages, chronological_corpus_names=chronological_corpus_names
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils._compare_criteria_phrase_lengths(
 #     criterion2stages, chronological_corpus_names=chronological_corpus_names
 # )
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %% [raw]
 # utils._compare_criteria_entropies(
 #     criterion2stages, chronological_corpus_names=chronological_corpus_names
 # )
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
@@ -468,7 +475,7 @@ def make_timeline_data(root_roman_or_its_dominants, detailed=True):
     return timeline_data
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def make_function_colors(detailed=True):
     if detailed:
         colorscale = {
@@ -1043,7 +1050,7 @@ def get_extended_tonicization_shape_data(stage_inspection_data, y_min):
     return shapes
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 DETAILED_FUNCTIONS = True
 timeline_data = make_timeline_data(
     root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
@@ -1052,7 +1059,7 @@ n_phrases = max(timeline_data.index.levels[2])
 colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def plot_phrase_stages(
     phrase_annotations,
     phrase_id,
@@ -1085,27 +1092,45 @@ def plot_phrase_stages(
     return fig
 
 
-plot_phrase_stages(phrase_annotations, phrase_id=5932)  # 4157)
+fig = plot_phrase_stages(phrase_annotations, phrase_id=5932)  # 4157)
+save_figure_as(fig, "modulation_structure_for_phrase_5932")
+fig
 
-# %% jupyter={"outputs_hidden": false}
-PIN_PHRASE_ID = None
+# %%
+PIN_PHRASE_ID = 2984
+# 24 good Bach
+# 638 exciting ABC
 # 827
 # 2358
+# 2983 cool Waldstein
+# 3339
+# 4739 Corelli
 # 5932
 # 9649
 
 # bugfix: 4157
 
+warnings.simplefilter(action="ignore", category=FutureWarning)
 if PIN_PHRASE_ID is None:
     current_id = choice(range(n_phrases))
 else:
     current_id = PIN_PHRASE_ID
 plot_phrase_stages(phrase_annotations, phrase_id=current_id)
 
-# %% jupyter={"outputs_hidden": false}
-plot_phrase_stages(phrase_annotations, phrase_id=2358)
+# %%
+modulating_phrases = phrase_annotations.groupby("phrase_id").filter(
+    lambda df: df.localkey.nunique() > 1
+)
+modulating_ids = modulating_phrases.index.get_level_values("phrase_id").unique()
 
-# %% [raw] jupyter={"outputs_hidden": false}
+# %%
+selected_modulating_id = choice(modulating_ids)
+plot_phrase_stages(phrase_annotations, phrase_id=selected_modulating_id)
+
+# %%
+# plot_phrase_stages(phrase_annotations, phrase_id=2358)
+
+# %% [raw]
 # from pandas.core.indexers.objects import BaseIndexer
 # import numpy.typing as npt
 #
@@ -1126,3 +1151,6 @@ plot_phrase_stages(phrase_annotations, phrase_id=2358)
 #         )
 #
 # indexer = DominantsToEndIndexer()
+
+# %%
+criterion2stages["uncompressed"]
