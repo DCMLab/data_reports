@@ -45,6 +45,7 @@ from dimcat.data.resources.utils import (
 )
 from dimcat.plotting import make_box_plot, write_image
 from git import Repo
+from sksequitur import Grammar, Parser, parse
 
 import utils
 
@@ -81,7 +82,7 @@ D = dc.Dataset.from_package(package_path)
 chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
 D
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 composition_years = D.get_metadata().get_composition_years()
 composition_years.head()
 
@@ -89,7 +90,59 @@ composition_years.head()
 phrase_annotations: resources.PhraseAnnotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 
-# %%
+# %% jupyter={"outputs_hidden": false}
+phrase_4873 = phrase_annotations.query("phrase_id == 4873").iloc[:-1].iloc[::-1].copy()
+renaming = dict(
+    label="label",
+    mn="m.",
+    mn_onset="onset",
+    duration_qb="duration",
+    localkey="local key",
+    effective_localkey="tonicized",
+    localkey_mode="mode",
+    chord="chord",
+    chord_reduced="reduced",
+    root_roman="roman",
+    root="root",
+    bass_note="bass",
+    numeral_or_applied_to_numeral="numeral/applied",
+)
+phrase_4873.rename(columns=renaming, inplace=True)
+phrase_4873["numeral/dominant"] = [
+    "v",
+    "v",
+    "v",
+    "#vi",
+    "III",
+    "v",
+    "VI",
+    "v",
+    "v",
+    "i",
+    "i",
+    "i",
+    "III/i",
+    "III/i",
+    "III",
+    "III/i",
+    "iv",
+    "iv/i",
+    "i",
+]
+phrase_4873["I/V"] = (
+    phrase_4873["numeral"]
+    .where(phrase_4873["numeral"].isin({"I", "i", "V"}))
+    .ffill()
+    .str.upper()
+)
+phrase_4873
+
+# %% jupyter={"outputs_hidden": false}
+phrase_4873.reset_index(drop=True)[
+    list(renaming.values()) + ["numeral/dominant", "I/V"]
+]
+
+# %% jupyter={"outputs_hidden": false}
 labels = ["1", "2", "3"]
 data = pd.DataFrame(
     dict(
@@ -106,7 +159,7 @@ utils.make_sankey(
     arrangement="fixed",
 )
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 stage_data = utils.make_stage_data(
     phrase_annotations,
     columns=["chord", "numeral_or_applied_to_numeral", "localkey", "duration_qb"],
@@ -119,10 +172,11 @@ split = stage_data.numeral_or_applied_to_numeral.str.extract(r"(b*)(.+)")
 stage_data._df.numeral_or_applied_to_numeral = split[0] + split[1].str.upper()
 stage_data.head(50)
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 stage_data.query("phrase_id == 14633")
 
-# %%
+
+# %% jupyter={"outputs_hidden": false}
 
 
 def make_regrouped_stage_index(
@@ -185,7 +239,26 @@ tondom = (
 )
 tondom.head(50)
 
-# %%
+# %% jupyter={"outputs_hidden": false}
+tondom.tail(10)
+
+# %% jupyter={"outputs_hidden": false}
+print(parse(["I", "IV", "V", "vi", "I", "IV", "V", "I"]))
+
+# %% jupyter={"outputs_hidden": false}
+tondom_stage_parser = Parser()
+no_repeats = (
+    tondom.numeral_or_applied_to_numeral.groupby(level=[0, 1, 2, 3, 4])
+    .first()
+    .iloc[::-1]
+)
+for _, progression in no_repeats.groupby(["phrase_id", "tondom_stage"]):
+    tondom_stage_parser.feed(progression + "-")
+
+# %% jupyter={"outputs_hidden": false}
+print(Grammar(tondom_stage_parser.tree))
+
+# %% jupyter={"outputs_hidden": false}
 phrase_ids = tondom.index.get_level_values("phrase_id").unique()
 remaining = phrase_ids.nunique()
 n_phrases = phrase_ids.max()
@@ -194,13 +267,13 @@ print(
     f"{removed} phrases have been removed ({removed / n_phrases:.1%}), {remaining} are remaining."
 )
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 n = 15
 print(f"Pieces with more than {n} tonic-dominant segments:")
 tondom.query(f"tondom_stage > {n}").index.droplevel([2, 3, 4, 5]).unique().to_list()
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 
 
 def get_node_info(tondom_nodes, stage_nodes, offset=1e-09):
@@ -316,7 +389,7 @@ edge_weights, labels, node_pos = tondom_stages2graph_data(
 )
 
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 def tondom_graph_data2sankey(
     edge_weights: Dict[Tuple[int, int], int],
     labels: List[str],
@@ -336,11 +409,10 @@ fig = tondom_graph_data2sankey(
 )
 fig
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 save_figure_as(fig, "tondom_sankey_draft", width=5000)
 
 # %% [raw]
-#
 #
 # def stages2graph_data(stages, ending_on=None,stop_at_modulation=False, cut_at_stage=None):
 #     stage_nodes = defaultdict(dict) # {stage -> {label -> node}}
@@ -444,15 +516,15 @@ save_figure_as(fig, "tondom_sankey_draft", width=5000)
 # # %%
 # corelli_I
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 phrase_components = phrase_annotations.extract_feature("PhraseComponents")
 phrase_components.head(30)
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 bodies = phrase_components.query("phrase_component == 'body' & n_modulations == 0")
 bodies
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 I_selector = ~bodies.chords.map(
     lambda c: pd.isnull(c[-1]) or c[-1] not in ("I", "i"), na_action="ignore"
 )
@@ -472,7 +544,7 @@ CRITERIA = dict(
 )
 criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 
-# %%
+# %% jupyter={"outputs_hidden": false}
 criterion2stages["numeral_and_localkey"]
 
 # %%

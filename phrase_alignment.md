@@ -17,7 +17,7 @@ kernelspec:
 ToDo: in phrase 14634 the progression `V/IV I6 IV` looks like an obvious mistake that should read `V6/IV` instead of
 `I6`.
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -49,6 +49,7 @@ from dimcat.data.resources.utils import (
 )
 from dimcat.plotting import make_box_plot, write_image
 from git import Repo
+from sksequitur import Grammar, Parser, parse
 
 import utils
 
@@ -56,7 +57,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 RESULTS_PATH = os.path.expanduser("~/git/diss/33_phrases/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -73,7 +74,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = utils.resolve_dir(
@@ -89,17 +90,87 @@ chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 composition_years = D.get_metadata().get_composition_years()
 composition_years.head()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 phrase_annotations: resources.PhraseAnnotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+phrase_4873 = phrase_annotations.query("phrase_id == 4873").iloc[:-1].iloc[::-1].copy()
+renaming = dict(
+    label="label",
+    mn="m.",
+    mn_onset="onset",
+    duration_qb="duration",
+    localkey="local key",
+    effective_localkey="tonicized",
+    localkey_mode="mode",
+    chord="chord",
+    chord_reduced="reduced",
+    root_roman="roman",
+    root="root",
+    bass_note="bass",
+    numeral_or_applied_to_numeral="numeral/applied",
+)
+phrase_4873.rename(columns=renaming, inplace=True)
+phrase_4873["numeral/dominant"] = [
+    "v",
+    "v",
+    "v",
+    "#vi",
+    "III",
+    "v",
+    "VI",
+    "v",
+    "v",
+    "i",
+    "i",
+    "i",
+    "III/i",
+    "III/i",
+    "III",
+    "III/i",
+    "iv",
+    "iv/i",
+    "i",
+]
+phrase_4873["I/V"] = (
+    phrase_4873["numeral"]
+    .where(phrase_4873["numeral"].isin({"I", "i", "V"}))
+    .ffill()
+    .str.upper()
+)
+phrase_4873
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+phrase_4873.reset_index(drop=True)[
+    list(renaming.values()) + ["numeral/dominant", "I/V"]
+]
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 labels = ["1", "2", "3"]
 data = pd.DataFrame(
     dict(
@@ -117,7 +188,11 @@ utils.make_sankey(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 stage_data = utils.make_stage_data(
     phrase_annotations,
     columns=["chord", "numeral_or_applied_to_numeral", "localkey", "duration_qb"],
@@ -131,11 +206,19 @@ stage_data._df.numeral_or_applied_to_numeral = split[0] + split[1].str.upper()
 stage_data.head(50)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 stage_data.query("phrase_id == 14633")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 
 
 def make_regrouped_stage_index(
@@ -199,7 +282,50 @@ tondom = (
 tondom.head(50)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+tondom.tail(10)
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+print(parse(["I", "IV", "V", "vi", "I", "IV", "V", "I"]))
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+tondom_stage_parser = Parser()
+no_repeats = (
+    tondom.numeral_or_applied_to_numeral.groupby(level=[0, 1, 2, 3, 4])
+    .first()
+    .iloc[::-1]
+)
+for _, progression in no_repeats.groupby(["phrase_id", "tondom_stage"]):
+    tondom_stage_parser.feed(progression + "-")
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
+print(Grammar(tondom_stage_parser.tree))
+```
+
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 phrase_ids = tondom.index.get_level_values("phrase_id").unique()
 remaining = phrase_ids.nunique()
 n_phrases = phrase_ids.max()
@@ -209,13 +335,21 @@ print(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 n = 15
 print(f"Pieces with more than {n} tonic-dominant segments:")
 tondom.query(f"tondom_stage > {n}").index.droplevel([2, 3, 4, 5]).unique().to_list()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 
 
 def get_node_info(tondom_nodes, stage_nodes, offset=1e-09):
@@ -331,7 +465,11 @@ edge_weights, labels, node_pos = tondom_stages2graph_data(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 def tondom_graph_data2sankey(
     edge_weights: Dict[Tuple[int, int], int],
     labels: List[str],
@@ -352,12 +490,15 @@ fig = tondom_graph_data2sankey(
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 save_figure_as(fig, "tondom_sankey_draft", width=5000)
 ```
 
 ```{raw-cell}
-
 
 def stages2graph_data(stages, ending_on=None,stop_at_modulation=False, cut_at_stage=None):
     stage_nodes = defaultdict(dict) # {stage -> {label -> node}}
@@ -462,17 +603,29 @@ print(f"{explained.sum()} phrases are explained.")
 corelli_I
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 phrase_components = phrase_annotations.extract_feature("PhraseComponents")
 phrase_components.head(30)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 bodies = phrase_components.query("phrase_component == 'body' & n_modulations == 0")
 bodies
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 I_selector = ~bodies.chords.map(
     lambda c: pd.isnull(c[-1]) or c[-1] not in ("I", "i"), na_action="ignore"
 )
@@ -480,7 +633,7 @@ bodies_I = bodies[I_selector]
 bodies_I.sort_values("n_chords").query("n_chords > 1")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 CRITERIA = dict(
     chord_reduced_and_localkey=["chord_reduced", "localkey"],
     numeral_and_localkey=["numeral", "localkey"],
@@ -494,18 +647,22 @@ CRITERIA = dict(
 criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 criterion2stages["numeral_and_localkey"]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 uncompressed_lengths = utils.get_criterion_phrase_lengths(
     criterion2stages["uncompressed"]
 )
 uncompressed_lengths.groupby("corpus").describe()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 make_box_plot(
     uncompressed_lengths,
     x_col="corpus",
@@ -515,7 +672,7 @@ make_box_plot(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def _make_root_roman_or_its_dominants_criterion(
     phrase_data: resources.PhraseData,
     inspect_masks: bool = False,
@@ -766,7 +923,7 @@ utils._compare_criteria_entropies(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
@@ -876,7 +1033,7 @@ def make_timeline_data(root_roman_or_its_dominants, detailed=True):
     return timeline_data
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_function_colors(detailed=True):
     if detailed:
         colorscale = {
@@ -1451,7 +1608,7 @@ def get_extended_tonicization_shape_data(stage_inspection_data, y_min):
     return shapes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 DETAILED_FUNCTIONS = True
 timeline_data = make_timeline_data(
     root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
@@ -1460,7 +1617,7 @@ n_phrases = max(timeline_data.index.levels[2])
 colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def plot_phrase_stages(
     phrase_annotations,
     phrase_id,
@@ -1496,7 +1653,7 @@ def plot_phrase_stages(
 plot_phrase_stages(phrase_annotations, phrase_id=5932)  # 4157)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 PIN_PHRASE_ID = None
 # 827
 # 2358
@@ -1512,7 +1669,7 @@ else:
 plot_phrase_stages(phrase_annotations, phrase_id=current_id)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 plot_phrase_stages(phrase_annotations, phrase_id=2358)
 ```
 
