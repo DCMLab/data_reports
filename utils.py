@@ -37,6 +37,8 @@ from dimcat.data.resources.features import extend_bass_notes_feature
 from dimcat.data.resources.results import TypeAlias, _entropy
 from dimcat.data.resources.utils import (
     join_df_on_index,
+    make_adjacency_groups,
+    make_group_start_mask,
     merge_columns_into_one,
     str2pd_interval,
     transpose_notes_to_c,
@@ -2202,6 +2204,227 @@ def make_transition_heatmap_plots(
 
 
 # region phrase stage helpers
+
+
+def _make_root_roman_or_its_dominants_criterion(
+    phrase_data: resources.PhraseData,
+    inspect_masks: bool = False,
+) -> Tuple[pd.DataFrame, pd.Series, pd.Series]:
+    # region prepare required chord features
+    localkey_tonic_fifths = ms3.transform(
+        phrase_data,
+        ms3.roman_numeral2fifths,
+        ["localkey_resolved", "globalkey_is_minor"],
+    )
+    globalkey_tpc = ms3.transform(phrase_data.globalkey, ms3.name2fifths)
+    localkey_tonic_tpc = localkey_tonic_fifths.add(globalkey_tpc).rename(
+        "localkey_tonic_tpc"
+    )
+    expected_root_tpc = (
+        ms3.transform(
+            phrase_data,
+            ms3.roman_numeral2fifths,
+            ["effective_localkey", "globalkey_is_minor"],
+        )
+        .add(globalkey_tpc)
+        .rename("expected_root_tpc")
+    )
+    is_dominant = make_dominant_selector(phrase_data)
+    expected_root_tpc = expected_root_tpc.where(is_dominant).astype("Int64")
+    expected_numeral = phrase_data.relativeroot.fillna(
+        phrase_data.effective_localkey_is_minor.map({True: "i", False: "I"})
+    ).rename(
+        "expected_numeral"
+    )  # this is equivalent to the effective_localkey (which is relative to the global tonic),
+    # but relative to the localkey
+    effective_numeral = (
+        ms3.transform(
+            phrase_data,
+            ms3.rel2abs_key,
+            ["numeral", "effective_localkey_resolved", "globalkey_is_minor"],
+        )
+        .astype("string")
+        .rename("effective_numeral")
+    )
+    root_tpc = (
+        ms3.transform(
+            pd.concat(
+                [
+                    effective_numeral,
+                    phrase_data.globalkey_is_minor,
+                ],
+                axis=1,
+            ),
+            ms3.roman_numeral2fifths,
+        )
+        .add(globalkey_tpc)
+        .astype("Int64")
+        .rename("root_tpc")
+    )
+    subsequent_root_tpc = root_tpc.shift().rename("subsequent_root_tpc")
+    # set ultima rows (first of phrase_id groups) to NA
+    all_but_ultima_selector = ~make_group_start_mask(subsequent_root_tpc, "phrase_id")
+    subsequent_root_tpc.where(all_but_ultima_selector, inplace=True)
+    subsequent_root_roman = phrase_data.root_roman.shift().rename(
+        "subsequent_root_roman"
+    )
+    subsequent_root_roman.where(all_but_ultima_selector, inplace=True)
+    subsequent_numeral_is_minor = (
+        effective_numeral.str.islower().shift().rename("subsequent_numeral_is_minor")
+    )
+    subsequent_numeral_is_minor.where(all_but_ultima_selector, inplace=True)
+    # endregion prepare required chord features
+    # region prepare masks
+    # naming can be confusing: phrase data is expected to be reversed, i.e. the first row is a phrase's ultima chord
+    # hence, when column names say "subsequent", the corresponding variable names say "previous" to avoid confusion
+    # regarding the direction of the shift. In other words, .shift() yields previous values (values of preceding rows)
+    # that correspond to subsequent chords
+    merge_with_previous = (expected_root_tpc == subsequent_root_tpc).fillna(False)
+    copy_decision_from_previous = effective_numeral.where(is_dominant)
+    copy_decision_from_previous = copy_decision_from_previous.eq(
+        copy_decision_from_previous.shift()
+    ).fillna(False)
+    copy_chain_decision_from_previous = expected_root_tpc.eq(
+        expected_root_tpc.shift()
+    ).fillna(
+        False
+    )  # has same expectation as previous dominant and will take on its value if the end of a dominant chain
+    # is resolved; otherwise it keeps its own expected tonic as value
+    dominant_grouper, _ = make_adjacency_groups(is_dominant, groupby="phrase_id")
+    first_merge_index_in_group = {
+        group: mask.values.argmax()
+        for group, mask in merge_with_previous.groupby(dominant_grouper)
+        if mask.any()
+    }  # for each dominant group where at least one dominant resolves ('merge_with_previous' is True), the index of
+    # the revelant row within the group, which serves as signal for a potential dominant chain starting with this index
+    # to be fille with the expected resolution of its first member
+    potential_dominant_chain_mask = (
+        merge_with_previous | copy_chain_decision_from_previous
+    )
+    dominant_chains_groupby = potential_dominant_chain_mask.groupby(dominant_grouper)
+    dominant_chain_fill_indices = []
+    for (group, dominant_chain), index in zip(
+        dominant_chains_groupby, dominant_chains_groupby.indices.values()
+    ):
+        fill_after = first_merge_index_in_group.get(group)
+        if fill_after is None:
+            continue
+        fill_from = fill_after + 1
+        for do_fill, ix in zip(dominant_chain[fill_from:], index[fill_from:]):
+            # collect all indices following the first (which is already merged and will provide the root_numeral to be
+            # propagated) which are either the same dominant (copy_chain_decision_from_previous) or the previous
+            # dominant's dominant (merge_with_previous), but stop when the chain is broken, leaving unconnected
+            # dominants alone with their own expected resolutions
+            if not do_fill:
+                break
+            dominant_chain_fill_indices.append(ix)
+    dominant_chain_fill_mask = np.zeros_like(potential_dominant_chain_mask, bool)
+    dominant_chain_fill_mask[dominant_chain_fill_indices] = True
+    # endregion prepare masks
+    # region make criteria
+
+    # without dominant chains
+    # for this criterion, only those dominants that resolve as expected take on the value of their expected tonic, so
+    # that, otherwise, they are available for merging with their own dominant
+    root_dominant_criterion = expected_numeral.where(
+        is_dominant & merge_with_previous, phrase_data.root_roman
+    )
+    root_dominant_criterion.where(
+        ~merge_with_previous, subsequent_root_roman, inplace=True
+    )
+    root_dominant_criterion = (
+        root_dominant_criterion.where(~copy_decision_from_previous)
+        .ffill()
+        .rename("root_roman_or_its_dominant")
+    )
+
+    # with dominant chains
+    # for this criterion, all dominants
+    root_dominants_criterion = expected_numeral.where(
+        is_dominant & all_but_ultima_selector, phrase_data.root_roman
+    )
+    root_dominants_criterion.where(
+        ~merge_with_previous, subsequent_root_roman, inplace=True
+    )
+    root_dominants_criterion = (
+        root_dominants_criterion.where(~dominant_chain_fill_mask)
+        .ffill()
+        .rename("root_roman_or_its_dominants")
+    )
+    # endregion make criteria
+    concatenate_this = [
+        localkey_tonic_tpc,
+        phrase_data,
+        effective_numeral,
+        expected_numeral,
+        expected_root_tpc,
+        root_tpc,
+        subsequent_root_tpc,
+        subsequent_root_roman,
+        subsequent_numeral_is_minor,
+    ]
+    if inspect_masks:
+        concatenate_this += [
+            merge_with_previous.rename("merge_with_previous"),
+            copy_decision_from_previous.rename("copy_decision_from_previous"),
+            copy_chain_decision_from_previous.rename(
+                "copy_chain_decision_from_previous"
+            ),
+            potential_dominant_chain_mask.rename("potential_dominant_chain_mask"),
+            pd.Series(
+                dominant_chain_fill_mask,
+                index=phrase_data.index,
+                name="dominant_chain_fill_mask",
+            ),
+        ]
+    phrase_data_df = pd.concat(concatenate_this, axis=1)
+    return phrase_data_df, root_dominant_criterion, root_dominants_criterion
+
+
+def make_root_roman_or_its_dominants_criterion(
+    phrase_annotations: resources.PhraseAnnotations,
+    merge_dominant_chains: bool = True,
+    query: Optional[str] = None,
+    inspect_masks: bool = False,
+):
+    """For computing this criterion, dominants take on the numeral of their expected tonic chord except when they are
+    part of a dominant chain that resolves as expected. In this case, the entire chain takes on the numeral of the
+    last expected tonic chord. This results in all chords that are adjacent to their corresponding dominant or to a
+    chain of dominants resolving into the respective chord are grouped into a stage. All other numeral groups form
+    individual stages.
+    """
+    phrase_data = get_phrase_chord_tones(
+        phrase_annotations,
+        additional_columns=[
+            "relativeroot",
+            "localkey_resolved",
+            "localkey_is_minor",
+            "effective_localkey_resolved",
+            "effective_localkey_is_minor",
+            "timesig",
+            "mn_onset",
+            "numeral",
+            "root_roman",
+            "chord_type",
+        ],
+        query=query,
+    )
+    (
+        phrase_data_df,
+        root_dominant_criterion,
+        root_dominants_criterion,
+    ) = _make_root_roman_or_its_dominants_criterion(phrase_data, inspect_masks)
+    if merge_dominant_chains:
+        phrase_data_df = pd.concat([root_dominant_criterion, phrase_data_df], axis=1)
+        regroup_by = root_dominants_criterion
+    else:
+        phrase_data_df = pd.concat([root_dominants_criterion, phrase_data_df], axis=1)
+        regroup_by = root_dominant_criterion
+    phrase_data = phrase_data.from_resource_and_dataframe(
+        phrase_data,
+        phrase_data_df,
+    )
+    return phrase_data.regroup_phrases(regroup_by)
 
 
 def make_stage_data(
