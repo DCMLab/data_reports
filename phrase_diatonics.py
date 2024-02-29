@@ -26,7 +26,7 @@
 # %autoreload 2
 import os
 from random import choice
-from typing import Hashable, Optional
+from typing import Dict, Hashable, Optional
 
 import dimcat as dc
 import ms3
@@ -35,7 +35,7 @@ import pandas as pd
 import plotly.express as px
 from dimcat import resources
 from dimcat.data.resources.utils import make_adjacency_groups, merge_columns_into_one
-from dimcat.plotting import write_image
+from dimcat.plotting import make_bar_plot, write_image
 from git import Repo
 
 import utils
@@ -92,16 +92,17 @@ CRITERIA = dict(
     root_degree=["root"],
     numeral_or_applied_to_numeral=["numeral_or_applied_to_numeral", "localkey_mode"],
     effective_localkey=["effective_localkey"],
+    localkey=["localkey"],
 )
 criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 
 
 def group_operation(group_df):
     return utils._compute_smallest_fifth_ranges(
-        group_df.lowest_tpc.values, group_df.tpc_width.values
+        group_df.lowest_tpc.values, group_df.tpc_width.values, verbose=False
     )
 
 
@@ -161,23 +162,85 @@ criterion2stages[
 ] = effective_numeral_or_its_dominant
 effective_numeral_or_its_dominant.head(100)
 
-# %% jupyter={"outputs_hidden": false}
+# %%
+effective_numeral_or_its_dominant.query(
+    "phrase_id == 4873"
+).effective_numeral_or_its_dominant.to_list()
+
+# %%
 chord_tones = utils.get_phrase_chord_tones(phrase_annotations)
 chord_tones.head()
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 chord_tones.tpc_width.value_counts()
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 diatonics_criterion = make_diatonics_criterion(chord_tones)
 diatonics_stages = chord_tones.regroup_phrases(diatonics_criterion)
 criterion2stages["diatonics"] = diatonics_stages
 
 # %%
-fig = utils.compare_criteria_metrics(
-    criterion2stages, layout=dict(margin=dict(r=20)), height=1000
+
+
+def compare_criteria_metrics(
+    name2phrase_data: Dict[str, resources.PhraseData], **kwargs
+):
+    bar_data = utils.get_metrics_means(name2phrase_data).reset_index()
+    models = dict(
+        uncompressed="Φ<sup>chord ∧ mode</sup>",
+        chord_reduced_and_localkey="Φ<sup>reduced ∧ local key</sup>",
+        chord_reduced_and_mode="Φ<sup>reduced ∧ mode</sup>",
+        bass_degree="Φ<sup>bass</sup>",
+        root_roman="Φ<sup>roman</sup>",
+        root_degree="Φ<sup>root</sup>",
+        numeral_or_applied_to_numeral="Φ<sup>numeral/borrowed</sup>",
+        effective_numeral_or_its_dominant="Φ<sup>numeral/dominant</sup>",
+        effective_localkey="Φ<sup>tncz</sup>",
+        diatonics="Φ<sup>hull</sup>",
+        localkey="Φ<sup>local key</sup>",
+    )
+    bar_data.criterion = bar_data.criterion.replace(models)
+    layout = dict(showlegend=False)
+    if more_layout := kwargs.pop("layout", None):
+        layout.update(more_layout)
+    return make_bar_plot(
+        bar_data,
+        facet_row="metric",
+        color="criterion",
+        x_col="mean",
+        y_col="criterion",
+        x_axis=dict(matches=None, showticklabels=True),
+        category_orders=dict(criterion=models.values()),
+        color_discrete_sequence=px.colors.qualitative.Dark24,
+        layout=layout,
+        error_x="sem",
+        orientation="h",
+        labels=dict(
+            criterion="stage model",
+            entropy="entropy of stage distributions in bits",
+            corpus="",
+        ),
+        **kwargs,
+    )
+
+
+height = 1000
+width = 600
+fig = compare_criteria_metrics(
+    criterion2stages,
+    layout=dict(
+        margin=dict(t=0, r=20),
+        showlegend=False,
+    ),
+    height=height,
+    facet_row_spacing=0.07,
+    font_size=17,
 )
-save_figure_as(fig, "comparison_of_stage_merging_criteria", height=1000, width=700)
+# each subplot should have its own axis title
+fig.update_xaxes(title_text="entropy (bits)", row=1)
+fig.update_xaxes(title_text="number of harmony labels", row=2)
+fig.update_xaxes(title_text="duration (♩)", row=3)
+save_figure_as(fig, "comparison_of_stage_merging_criteria", height=height, width=width)
 fig
 
 # %%
@@ -195,10 +258,10 @@ utils._compare_criteria_entropies(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 
-# %% jupyter={"outputs_hidden": false}
-diatonics_stages
+# %%
+diatonics_stages.query("phrase_id == 4873")
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 LT_DISTANCE2SCALE_DEGREE = {
     0: "7 (#7)",
     1: "3 (#3)",
@@ -290,12 +353,12 @@ def make_timeline_data(chord_tones):
     return timeline_data
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 timeline_data = make_timeline_data(chord_tones)
 timeline_data.head()
 
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 def make_rectangle_shape(group_df, y_min):
     result = dict(
         type="rect",
@@ -356,12 +419,12 @@ def make_diatonics_rectangles(phrase_timeline_data):
 #         shapes.append(utils.make_rectangle_shape(x0=x0, x1=x1, y0=y0, y1=y1, text=text))
 #     return shapes
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 n_phrases = max(timeline_data.index.levels[2])
 # {degree: utils.TailwindColorsHex.get_color(DEGREE2COLOR[degree]) for degree in phrase_timeline_data.Resource.unique()}
 colorscale = DEGREE2COLOR
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 PIN_PHRASE_ID = None
 # 827
 # 2358
@@ -374,7 +437,7 @@ else:
     current_id = PIN_PHRASE_ID
 phrase_timeline_data = timeline_data.query(f"phrase_id == {current_id}")
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 fig = utils.plot_phrase(
     phrase_timeline_data,
     colorscale=colorscale,
@@ -386,7 +449,7 @@ fig = utils.plot_phrase(
 # ).show()
 fig
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 plot_phrase_id = 4873  # 10403
 plot_phrase_data = timeline_data.query(f"phrase_id == {plot_phrase_id}")
 fig = utils.plot_phrase(
@@ -418,7 +481,7 @@ fig
 
 # %%
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 fig.add_shape(
     type="rect",
     line_width=2,
@@ -435,7 +498,7 @@ fig.add_shape(
 )
 fig
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 fig = px.timeline(
     phrase_timeline_data,
     x_start="Start",
@@ -450,10 +513,10 @@ fig = px.timeline(
 # fig.update_layout(dict(xaxis_type=None))
 fig
 
-# %% [markdown] jupyter={"outputs_hidden": false}
+# %% [markdown]
 # ### Demo values
 
-# %% jupyter={"outputs_hidden": false}
+# %%
 for criterion, stages in criterion2stages.items():
     utils.print_heading(criterion)
     values = stages.df.query("phrase_id == 9773").iloc[:, 0].to_list()

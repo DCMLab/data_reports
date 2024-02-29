@@ -2515,28 +2515,6 @@ def get_metrics_means(name2phrase_data: Dict[str, resources.PhraseData]):
     return metrics
 
 
-def compare_criteria_metrics(
-    name2phrase_data: Dict[str, resources.PhraseData], **kwargs
-):
-    metrics = get_metrics_means(name2phrase_data).reset_index()
-    layout = dict(showlegend=False)
-    if more_layout := kwargs.pop("layout", None):
-        layout.update(more_layout)
-    return make_bar_plot(
-        metrics,
-        facet_row="metric",
-        color="criterion",
-        x_col="mean",
-        y_col="criterion",
-        x_axis=dict(matches=None, showticklabels=True),
-        layout=layout,
-        error_x="sem",
-        orientation="h",
-        labels=dict(entropy="entropy of stage distributions in bits", corpus=""),
-        **kwargs,
-    )
-
-
 def plot_corpuswise_criteria_means(
     criterion2values: Dict[str, pd.Series],
     category_title="stage_type",
