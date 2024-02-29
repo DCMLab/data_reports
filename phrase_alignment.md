@@ -97,58 +97,14 @@ composition_years.head()
 
 ```{code-cell} ipython3
 phrase_annotations: resources.PhraseAnnotations = D.get_feature("PhraseAnnotations")
-phrase_annotations
+phrase_annotations.head()
 ```
 
 ```{code-cell} ipython3
-
-```
-
-```{code-cell} ipython3
-
-```
-
-```{code-cell} ipython3
-labels = ["1", "2", "3"]
-data = pd.DataFrame(
-    dict(
-        source=[0, 1, 2],
-        target=[0, 0, 0],
-        value=[1, 2, 3],
-    )
-)
-utils.make_sankey(
-    data,
-    labels=labels,
-    x=[0.9, 0.5, 0.0001],
-    y=[0.5, 0.25, 0.75],
-    arrangement="fixed",
-)
-```
-
-```{code-cell} ipython3
-stage_data = ms3.load_tsv(
-    "/home/laser/dimcat_data/distant_listening_corpus.expanded.phraseannotations.phrase_data.tsv",
-    index_col=[0, 1, 2, 3, 4],
-    converters=dict(
-        chord_tone_tpcs=ms3.str2inttuple,
-    ),
-    dtype=dict(
-        corpus="string",
-        piece="string",
-        root_roman_or_its_dominants="string",
-        root_roman_or_its_dominant="string",
-        effective_localkey="string",
-        globalkey="string",
-        timesig="string",
-        root_roman="string",
-        effective_numeral="string",
-        expected_numeral="string",
-        expected_root_tpc="Int64",
-        subsequent_root_tpc="Int64",
-        subsequent_root_roman="string",
-        subsequent_numeral_is_minor="boolean",
-    ),
+stage_data = utils.make_stage_data(
+    phrase_annotations,
+    columns=["chord", "numeral_or_applied_to_numeral", "localkey", "duration_qb"],
+    wide_format=False,
 )
 stage_data._df["numeral_fifths"] = stage_data.numeral_or_applied_to_numeral.map(
     ms3.roman_numeral2fifths
@@ -158,8 +114,21 @@ stage_data._df.numeral_or_applied_to_numeral = split[0] + split[1].str.upper()
 stage_data.head(50)
 ```
 
-```{code-cell} ipython3
-stage_data.query("phrase_id == 14633")
+```{raw-cell}
+root_roman_or_its_dominants = utils.make_root_roman_or_its_dominants_criterion(
+    phrase_annotations,  # query=f"phrase_id == 9649", inspect_masks=True
+)
+
+rroid = root_roman_or_its_dominants.root_roman_or_its_dominants
+tondom_criterion = rroid
+tondom_criterion = tondom_criterion.where(tondom_criterion.isin({"I", "i", "V"}))
+tondom_criterion = (
+    tondom_criterion.groupby("phrase_id").ffill().rename("tondom_segment")
+)
+tonic_dominant = root_roman_or_its_dominants.regroup_phrases(
+    tondom_criterion, level_names=("tondom_stage", "substage")
+).droplevel(3)
+tonic_dominant
 ```
 
 ```{code-cell} ipython3
@@ -245,7 +214,7 @@ tondom.query(f"tondom_stage > {n}").index.droplevel([2, 3, 4, 5]).unique().to_li
 ```{code-cell} ipython3
 
 
-def get_node_info(tondom_nodes, stage_nodes, offset=1e-09):
+def sankey_draft_node_info(tondom_nodes, stage_nodes, offset=1e-09):
     """Offset is a workaround for the bug in Plotly preventing coordinates from being zero."""
     # labels
     node2label = {
@@ -349,16 +318,9 @@ def tondom_stages2graph_data(
             if previous_node is not None:
                 edge_weights.update([(current_node, previous_node)])
             previous_node = current_node
-    labels, node_pos = get_node_info(tondom_nodes, stage_nodes)
-    return edge_weights, labels, node_pos
+    return edge_weights, tondom_nodes, stage_nodes
 
 
-edge_weights, labels, node_pos = tondom_stages2graph_data(
-    tondom, ending_on={"I"}, stop_at_modulation=True, cut_at_stage=2
-)
-```
-
-```{code-cell} ipython3
 def tondom_graph_data2sankey(
     edge_weights: Dict[Tuple[int, int], int],
     labels: List[str],
@@ -373,14 +335,31 @@ def tondom_graph_data2sankey(
     return utils.make_sankey(data, labels, node_pos=node_pos, **kwargs)
 
 
-fig = tondom_graph_data2sankey(
-    edge_weights, labels, node_pos, height=800, arrangement="fixed"
-)
-fig
-```
+def make_phrase_sankey_plot(
+    stages,
+    ending_on=None,
+    stop_at_modulation=False,
+    cut_at_stage=None,
+    height=800,
+    get_node_info=sankey_draft_node_info,
+):
+    edge_weights, tondom_nodes, stage_nodes = tondom_stages2graph_data(
+        stages,
+        ending_on=ending_on,
+        stop_at_modulation=stop_at_modulation,
+        cut_at_stage=cut_at_stage,
+    )
+    labels, node_pos = get_node_info(tondom_nodes, stage_nodes)
+    return tondom_graph_data2sankey(
+        edge_weights, labels, node_pos, height=height, arrangement="fixed"
+    )
 
-```{code-cell} ipython3
+
+fig = make_phrase_sankey_plot(
+    tondom, ending_on={"I"}, stop_at_modulation=True, cut_at_stage=2
+)
 save_figure_as(fig, "tondom_sankey_draft", width=5000)
+fig
 ```
 
 ```{code-cell} ipython3
