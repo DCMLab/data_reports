@@ -3206,7 +3206,7 @@ def make_cosine_distances(
     return distance_matrix
 
 
-def sort_tpcs(
+def sort_tpcs_by_piano_keys(
     tpcs: Iterable[int], ascending: bool = True, start: Optional[int] = None
 ) -> list[int]:
     """Sort tonal pitch classes by order on the piano.
@@ -3240,7 +3240,9 @@ def plot_chord_profiles(
     profiles = chord_profiles.query(
         f"chord_and_mode == '{chord_and_mode}'"
     ).reset_index()
-    tpc_order = sort_tpcs(profiles.fifths_over_local_tonic.unique(), start=bass_note)
+    tpc_order = sort_tpcs_by_piano_keys(
+        profiles.fifths_over_local_tonic.unique(), start=bass_note
+    )
 
     if xaxis_format is None or xaxis_format == BassNotesFormat.FIFTHS:
         x_col = "fifths_over_local_tonic"
