@@ -101,57 +101,11 @@ phrase_annotations
 ```
 
 ```{code-cell} ipython3
-phrase_4873 = phrase_annotations.query("phrase_id == 4873").iloc[:-1].iloc[::-1].copy()
-renaming = dict(
-    label="label",
-    mn="m.",
-    mn_onset="onset",
-    duration_qb="duration",
-    localkey="local key",
-    effective_localkey="tonicized",
-    localkey_mode="mode",
-    chord="chord",
-    chord_reduced="reduced",
-    root_roman="roman",
-    root="root",
-    bass_note="bass",
-    numeral_or_applied_to_numeral="numeral/applied",
-)
-phrase_4873.rename(columns=renaming, inplace=True)
-phrase_4873["numeral/dominant"] = [
-    "v",
-    "v",
-    "v",
-    "#vi",
-    "III",
-    "v",
-    "VI",
-    "v",
-    "v",
-    "i",
-    "i",
-    "i",
-    "III/i",
-    "III/i",
-    "III",
-    "III/i",
-    "iv",
-    "iv/i",
-    "i",
-]
-phrase_4873["I/V"] = (
-    phrase_4873["numeral"]
-    .where(phrase_4873["numeral"].isin({"I", "i", "V"}))
-    .ffill()
-    .str.upper()
-)
-phrase_4873
+
 ```
 
 ```{code-cell} ipython3
-phrase_4873.reset_index(drop=True)[
-    list(renaming.values()) + ["numeral/dominant", "I/V"]
-]
+
 ```
 
 ```{code-cell} ipython3
@@ -173,10 +127,28 @@ utils.make_sankey(
 ```
 
 ```{code-cell} ipython3
-stage_data = utils.make_stage_data(
-    phrase_annotations,
-    columns=["chord", "numeral_or_applied_to_numeral", "localkey", "duration_qb"],
-    wide_format=False,
+stage_data = ms3.load_tsv(
+    "/home/laser/dimcat_data/distant_listening_corpus.expanded.phraseannotations.phrase_data.tsv",
+    index_col=[0, 1, 2, 3, 4],
+    converters=dict(
+        chord_tone_tpcs=ms3.str2inttuple,
+    ),
+    dtype=dict(
+        corpus="string",
+        piece="string",
+        root_roman_or_its_dominants="string",
+        root_roman_or_its_dominant="string",
+        effective_localkey="string",
+        globalkey="string",
+        timesig="string",
+        root_roman="string",
+        effective_numeral="string",
+        expected_numeral="string",
+        expected_root_tpc="Int64",
+        subsequent_root_tpc="Int64",
+        subsequent_root_roman="string",
+        subsequent_numeral_is_minor="boolean",
+    ),
 )
 stage_data._df["numeral_fifths"] = stage_data.numeral_or_applied_to_numeral.map(
     ms3.roman_numeral2fifths

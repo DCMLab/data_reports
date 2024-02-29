@@ -84,6 +84,55 @@ phrase_annotations: resources.PhraseAnnotations = D.get_feature("PhraseAnnotatio
 phrase_annotations
 
 # %%
+phrase_4873 = phrase_annotations.query("phrase_id == 4873").iloc[:-1].iloc[::-1].copy()
+renaming = dict(
+    label="label",
+    mn="m.",
+    mn_onset="onset",
+    duration_qb="duration",
+    localkey="local key",
+    effective_localkey="tonicized",
+    localkey_mode="mode",
+    chord="chord",
+    chord_reduced="reduced",
+    root_roman="roman",
+    root="root",
+    bass_note="bass",
+    numeral_or_applied_to_numeral="numeral/applied",
+)
+phrase_4873.rename(columns=renaming, inplace=True)
+phrase_4873["numeral/dominant"] = [
+    "v",
+    "v",
+    "v",
+    "#vi",
+    "III",
+    "v",
+    "VI",
+    "v",
+    "v",
+    "i",
+    "i",
+    "i",
+    "III/i",
+    "III/i",
+    "III",
+    "III/i",
+    "iv",
+    "iv/i",
+    "i",
+]
+phrase_4873["I/V"] = (
+    phrase_4873["numeral"]
+    .where(phrase_4873["numeral"].isin({"I", "i", "V"}))
+    .ffill()
+    .str.upper()
+)
+phrase_4873.reset_index(drop=True)[
+    list(renaming.values()) + ["numeral/dominant", "I/V"]
+]
+
+# %%
 CRITERIA = dict(
     chord_reduced_and_localkey=["chord_reduced", "localkey"],
     chord_reduced_and_mode=["chord_reduced_and_mode"],
@@ -178,6 +227,7 @@ chord_tones.tpc_width.value_counts()
 diatonics_criterion = make_diatonics_criterion(chord_tones)
 diatonics_stages = chord_tones.regroup_phrases(diatonics_criterion)
 criterion2stages["diatonics"] = diatonics_stages
+
 
 # %%
 
