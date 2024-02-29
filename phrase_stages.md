@@ -359,48 +359,56 @@ root_roman_or_its_dominants.head(100)
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils.compare_criteria_metrics(criterion2stages, height=1000)
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils._compare_criteria_stage_durations(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils._compare_criteria_phrase_lengths(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 utils._compare_criteria_entropies(
     criterion2stages, chronological_corpus_names=chronological_corpus_names
 )
 ```
 
+```{raw-cell}
+root_roman_or_its_dominants.store_resource()
+restored = ms3.load_tsv(
+    "/home/laser/dimcat_data/distant_listening_corpus.expanded.phraseannotations.phrase_data.tsv",
+    index_col=[0, 1, 2, 3, 4],
+    converters=dict(
+      chord_tone_tpcs=ms3.str2inttuple,
+    ),
+    dtype=dict(
+        corpus="string",
+        piece="string",
+        root_roman_or_its_dominants="string",
+        root_roman_or_its_dominant="string",
+        effective_localkey="string",
+        globalkey="string",
+        timesig="string",
+        root_roman="string",
+        effective_numeral="string",
+        expected_numeral="string",
+        expected_root_tpc="Int64",
+        subsequent_root_tpc="Int64",
+        subsequent_root_roman="string",
+        subsequent_numeral_is_minor="boolean",
+    )
+)
+restored.compare(root_roman_or_its_dominants.df)
+```
+
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
@@ -511,10 +519,6 @@ def make_timeline_data(root_roman_or_its_dominants, detailed=True):
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 def make_function_colors(detailed=True):
     if detailed:
         colorscale = {
@@ -1090,10 +1094,6 @@ def get_extended_tonicization_shape_data(stage_inspection_data, y_min):
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 DETAILED_FUNCTIONS = True
 timeline_data = make_timeline_data(
     root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
@@ -1103,10 +1103,6 @@ colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 def plot_phrase_stages(
     phrase_annotations,
     phrase_id,
@@ -1172,10 +1168,6 @@ fig.layout.shapes
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 PIN_PHRASE_ID = 10403
 # 24 good Bach
 # 87 short and simple ABC example, e-a-G with pivot chord, pretty ideal
@@ -1205,10 +1197,6 @@ plot_phrase_stages(phrase_annotations, phrase_id=current_id)
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 modulating_phrases = phrase_annotations.groupby("phrase_id").filter(
     lambda df: df.localkey.nunique() > 1
 )
@@ -1216,27 +1204,15 @@ modulating_ids = modulating_phrases.index.get_level_values("phrase_id").unique()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 selected_modulating_id = choice(modulating_ids)
 plot_phrase_stages(phrase_annotations, phrase_id=selected_modulating_id)
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 # plot_phrase_stages(phrase_annotations, phrase_id=2358)
 ```
 
 ```{raw-cell}
----
-jupyter:
-  outputs_hidden: false
----
 from pandas.core.indexers.objects import BaseIndexer
 import numpy.typing as npt
 
@@ -1260,9 +1236,5 @@ indexer = DominantsToEndIndexer()
 ```
 
 ```{code-cell} ipython3
----
-jupyter:
-  outputs_hidden: false
----
 criterion2stages["uncompressed"]
 ```
