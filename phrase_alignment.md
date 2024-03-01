@@ -231,26 +231,27 @@ def combine_labels(tondom_nodes, stage_nodes):
     return labels
 
 
-def sankey_draft_node_info(tondom_nodes, stage_nodes, offset=1e-09):
-    """Offset is a workaround for the bug in Plotly preventing coordinates from being zero."""
-    # labels
-    labels = combine_labels(tondom_nodes, stage_nodes)
+def get_rank2x_logarithmic(substages_per_stage, offset, node_margin=0.01):
+    n_stages = len(substages_per_stage)
+    stage_distance = (1 - offset) / n_stages
+    rank2x = []
+    for stage in range(len(substages_per_stage)):
+        stage_x = 1 - stage * stage_distance
+        rank2x.append(stage_x)
+        next_stage_x = 1 - (stage + 1) * stage_distance
+        n_substages = substages_per_stage[stage]
+        rank2x.extend(
+            np.geomspace(stage_x, next_stage_x + node_margin, n_substages)[1:]
+        )
+    return rank2x
 
-    # y-coordinates (label-wise)
-    label2fifths = dict(zip(labels, map(ms3.roman_numeral2fifths, labels)))
-    smallest = min(label2fifths.values())
-    label2norm_fifths = {k: v - smallest for k, v in label2fifths.items()}
-    norm_fifths2y = pd.Series(
-        np.linspace(offset, 1, max(label2norm_fifths.values()) + 1)
-    )
-    label2y = {k: norm_fifths2y[v] for k, v in label2norm_fifths.items()}
 
-    # x-coordinates (substage-wise); the evenly spaced positions are called ranks and are counted from right to left
-    substages_per_stage = Counter(tondom_nodes)
+def get_stage_ranks(tondom_nodes, stage_nodes):
+    substages_per_stage = Counter(stage for stage, _ in tondom_nodes.keys())
     substages_per_stage.update(tondom_stage for (tondom_stage, _) in stage_nodes)
-    stage_distances = [0] + [
+    stage_distances = [
         substages_per_stage[tondom_stage - 1]
-        for tondom_stage in range(1, len(tondom_nodes))
+        for tondom_stage in range(len(tondom_nodes) + 1)
     ]
     stage_ranks = list(accumulate(stage_distances))
     node2rank_and_label = {
@@ -264,8 +265,103 @@ def sankey_draft_node_info(tondom_nodes, stage_nodes, offset=1e-09):
             for label, node in nodes.items()
         }
     )
-    n_ranks = max((rank for rank, _ in node2rank_and_label.values())) + 1
-    rank2x = np.linspace(1, offset, n_ranks)
+    return node2rank_and_label, stage_ranks, substages_per_stage
+
+
+def scale_ordered_node_info(
+    tondom_nodes,
+    stage_nodes,
+    node_margin=0.01,
+    stage_y=0.5,
+    min_y=1e-09,
+    max_y=1,
+    log_x=True,
+    offset=1e-09,
+):
+    """compute x and y coordinates for the nodes of a Sankey diagram.
+
+    Args:
+        tondom_nodes: {(tondom_stage, label) -> node}
+        stage_nodes: {(tondom_stage, numeral_stage) -> {label -> node}}
+        node_margin: for logarithmic space, defined the distance of the left-most substage node from the following
+            stage node on its left
+        stage_y: y-coordinate for all stage nodes
+        min_y: lower bound for y-coordinates of substage nodes
+        max_y: upper bound for y-coordinates of substage nodes
+        log_x: whether to use logarithmic space for the x-coordinates
+        offset: workaround for the bug in Plotly preventing coordinates from being zero.
+
+    """
+    assert (
+        min_y > 0
+    ), "min_y cannot be 0 due to plotly bug. Simply use a tiny positive number."
+    labels = combine_labels(tondom_nodes, stage_nodes)
+
+    # y-coordinates (label-wise)
+    label2fifths = dict(zip(labels, map(ms3.roman_numeral2fifths, labels)))
+    fifths2rank = {
+        tpc: rank
+        for rank, tpc in enumerate(
+            utils.sort_tpcs_by_piano_keys(
+                [0 if f is None else f for f in label2fifths.values()],
+                ascending=False,
+                start=5,
+            )
+        )
+    }
+    fifths2rank[None] = fifths2rank[0]
+    label2rank = {k: fifths2rank[v] for k, v in label2fifths.items()}
+    rank2y = pd.Series(np.linspace(min_y, max_y, len(label2rank)))
+    label2y = {k: rank2y[v] for k, v in label2rank.items()}
+
+    # x-coordinates (substage-wise); the evenly spaced positions are called ranks and are counted from right to left
+    node2rank_and_label, stage_ranks, substages_per_stage = get_stage_ranks(
+        tondom_nodes, stage_nodes
+    )
+    if log_x:
+        rank2x = get_rank2x_logarithmic(
+            substages_per_stage, offset, node_margin=node_margin
+        )
+    else:
+        n_ranks = max((rank for rank, _ in node2rank_and_label.values())) + 1
+        rank2x = np.linspace(1, offset, n_ranks)
+    node_pos = {
+        node: (rank2x[rank], stage_y if rank in stage_ranks else label2y[label])
+        for node, (rank, label) in node2rank_and_label.items()
+    }
+    return labels, node_pos
+
+
+def sankey_draft_node_info(
+    tondom_nodes, stage_nodes, log_x=False, node_margin=0.01, offset=1e-09
+):
+    """Offset is a workaround for the bug in Plotly preventing coordinates from being zero."""
+    # labels
+    labels = combine_labels(tondom_nodes, stage_nodes)
+
+    # y-coordinates (label-wise)
+    label2fifths = {
+        label: 0 if fifths is None else fifths
+        for label, fifths in zip(labels, map(ms3.roman_numeral2fifths, labels))
+    }
+    smallest = min(label2fifths.values())
+    label2norm_fifths = {k: v - smallest for k, v in label2fifths.items()}
+    norm_fifths2y = pd.Series(
+        np.linspace(offset, 1, max(label2norm_fifths.values()) + 1)
+    )
+    label2y = {k: norm_fifths2y[v] for k, v in label2norm_fifths.items()}
+
+    # x-coordinates (substage-wise); the evenly spaced positions are called ranks and are counted from right to left
+    node2rank_and_label, stage_ranks, substages_per_stage = get_stage_ranks(
+        tondom_nodes, stage_nodes
+    )
+    if log_x:
+        rank2x = get_rank2x_logarithmic(
+            substages_per_stage, offset, node_margin=node_margin
+        )
+    else:
+        n_ranks = max((rank for rank, _ in node2rank_and_label.values())) + 1
+        rank2x = np.linspace(1, offset, n_ranks)
     node_pos = {
         node: (rank2x[rank], label2y[label])
         for node, (rank, label) in node2rank_and_label.items()
@@ -274,6 +370,184 @@ def sankey_draft_node_info(tondom_nodes, stage_nodes, offset=1e-09):
 
 
 def tondom_stages2graph_data(
+    stages,
+    ending_on=None,
+    stop_at_modulation=False,
+    cut_at_stage=None,
+    cut_at_substage=None,
+):
+    """Sankey graph data based on two nested stage levels, one for the tonic-dominant criterion and one for the numeral
+    criterion.
+    """
+    tondom_nodes = (
+        {}
+    )  # {(tondom_stage, tondom) -> node} <-- targets for all numeral_stage == 1 nodes
+    stage_nodes = defaultdict(
+        dict
+    )  # {(tondom_stage, numeral_stage) -> {numeral -> node}} <-- for every sub-stage, the paradigmatic choice of
+    # numerals
+    edge_weights = Counter()  # {(source_node, target_node) -> weight}
+    node_counter = 0
+    if ending_on is not None:
+        if isinstance(ending_on, str):
+            ending_on = {ending_on}
+        else:
+            ending_on = set(ending_on)
+    for phrase_id, progression in stages.groupby("phrase_id"):
+        previous_node = None
+        for (tondom_stage, numeral_stage), stage_df in progression.groupby(
+            ["tondom_stage", "numeral_stage"]
+        ):
+            if cut_at_stage and tondom_stage > cut_at_stage:
+                break
+            first_row = stage_df.iloc[0]
+            current_tondom = first_row.tondom_segment
+            current_numeral = first_row.numeral_or_applied_to_numeral
+            # noinspection PyUnboundLocalVariable
+            if tondom_stage == 0 and numeral_stage == 0:
+                if ending_on is not None and current_numeral not in ending_on:
+                    break
+                if stop_at_modulation:
+                    localkey = first_row.localkey
+            elif stop_at_modulation and first_row.localkey != localkey:
+                break
+            if numeral_stage == 0:
+                tondom_node_id = (tondom_stage, current_tondom)
+                if tondom_node_id in tondom_nodes:
+                    current_node = tondom_nodes[tondom_node_id]
+                else:
+                    tondom_nodes[tondom_node_id] = current_node = node_counter
+                    node_counter += 1
+            else:
+                if cut_at_substage and numeral_stage > cut_at_substage:
+                    symbol = "[...]"
+                    if symbol in stage_nodes[(tondom_stage, cut_at_substage)]:
+                        previous_node = stage_nodes[(tondom_stage, cut_at_substage)][
+                            symbol
+                        ]
+                    else:
+                        stage_nodes[(tondom_stage, cut_at_substage)][
+                            symbol
+                        ] = current_node = node_counter
+                        node_counter += 1
+                    # this creates a back-loop within the same substage
+                    if numeral_stage == cut_at_substage + 1:
+                        edge_weights.update([(current_node, previous_node)])
+                    previous_node = current_node
+                    continue
+                if current_numeral in stage_nodes[(tondom_stage, numeral_stage)]:
+                    current_node = stage_nodes[(tondom_stage, numeral_stage)][
+                        current_numeral
+                    ]
+                else:
+                    stage_nodes[(tondom_stage, numeral_stage)][
+                        current_numeral
+                    ] = current_node = node_counter
+                    node_counter += 1
+            if previous_node is not None:
+                edge_weights.update([(current_node, previous_node)])
+            previous_node = current_node
+    return edge_weights, tondom_nodes, stage_nodes
+
+
+def tondom_graph_data2sankey(
+    edge_weights: Dict[Tuple[int, int], int],
+    labels: List[str],
+    node_pos,
+    **kwargs,
+):
+    """Create a Sankey diagram from the nodes of every stage and the edge weights between them."""
+    data = pd.DataFrame(
+        [(u, v, w) for (u, v), w in edge_weights.items()],
+        columns=["source", "target", "value"],
+    )
+    return utils.make_sankey(data, labels, node_pos=node_pos, **kwargs)
+
+
+def make_phrase_sankey_plot(
+    stages,
+    ending_on=None,
+    stop_at_modulation=False,
+    cut_at_stage=None,
+    cut_at_substage=None,
+    height=800,
+    get_node_info=sankey_draft_node_info,
+    **kwargs,
+):
+    edge_weights, tondom_nodes, stage_nodes = tondom_stages2graph_data(
+        stages,
+        ending_on=ending_on,
+        stop_at_modulation=stop_at_modulation,
+        cut_at_stage=cut_at_stage,
+        cut_at_substage=cut_at_substage,
+    )
+    labels, node_pos = get_node_info(tondom_nodes, stage_nodes, **kwargs)
+    return tondom_graph_data2sankey(
+        edge_weights, labels, node_pos, height=height, arrangement="fixed"
+    )
+
+
+fig = make_phrase_sankey_plot(
+    tondom,
+    ending_on={"I"},
+    stop_at_modulation=True,
+    cut_at_stage=2,
+    cut_at_substage=5,
+    # log_x=True
+)
+# save_figure_as(fig, "tondom_sankey_draft", width=5000)
+fig
+```
+
+```{code-cell} ipython3
+make_phrase_sankey_plot(
+    tondom,
+    ending_on={"I"},
+    stop_at_modulation=True,
+    cut_at_stage=5,
+    cut_at_substage=5,
+    get_node_info=scale_ordered_node_info,
+)
+```
+
+```{code-cell} ipython3
+edge_weights, tondom_nodes, stage_nodes = tondom_stages2graph_data(
+    tondom.query("corpus == 'handel_keyboard'"),
+    # tondom.query("corpus == 'kozeluh_sonatas'"),
+    ending_on={"I"},
+    stop_at_modulation=True,
+    # cut_at_stage=5,
+)
+stage_nodes
+```
+
+```{code-cell} ipython3
+
+
+labels, node_pos = scale_ordered_node_info(tondom_nodes, stage_nodes, log_x=False)
+fig = tondom_graph_data2sankey(
+    edge_weights, labels, node_pos, width=2500, arrangement="fixed"
+)
+save_figure_as(fig, "test", width=2500)
+fig
+```
+
+```{code-cell} ipython3
+fig = make_phrase_sankey_plot(
+    tondom,
+    ending_on={"I"},
+    stop_at_modulation=True,
+    cut_at_stage=3,
+    get_node_info=scale_ordered_node_info,
+)
+# save_figure_as(fig, "tondom_sankey_draft", width=5000)
+fig
+```
+
+```{code-cell} ipython3
+
+
+def tondom_stages2graph_data_with_loops(
     stages, ending_on=None, stop_at_modulation=False, cut_at_stage=None
 ):
     """Sankey graph data based on two nested stage levels, one for the tonic-dominant criterion and one for the numeral
@@ -334,187 +608,28 @@ def tondom_stages2graph_data(
     return edge_weights, tondom_nodes, stage_nodes
 
 
-def tondom_graph_data2sankey(
-    edge_weights: Dict[Tuple[int, int], int],
-    labels: List[str],
-    node_pos,
-    **kwargs,
-):
-    """Create a Sankey diagram from the nodes of every stage and the edge weights between them."""
-    data = pd.DataFrame(
-        [(u, v, w) for (u, v), w in edge_weights.items()],
-        columns=["source", "target", "value"],
-    )
-    return utils.make_sankey(data, labels, node_pos=node_pos, **kwargs)
-
-
-def make_phrase_sankey_plot(
-    stages,
-    ending_on=None,
-    stop_at_modulation=False,
-    cut_at_stage=None,
-    height=800,
-    get_node_info=sankey_draft_node_info,
-):
-    edge_weights, tondom_nodes, stage_nodes = tondom_stages2graph_data(
-        stages,
-        ending_on=ending_on,
-        stop_at_modulation=stop_at_modulation,
-        cut_at_stage=cut_at_stage,
-    )
-    labels, node_pos = get_node_info(tondom_nodes, stage_nodes)
-    return tondom_graph_data2sankey(
-        edge_weights, labels, node_pos, height=height, arrangement="fixed"
-    )
-
-
-fig = make_phrase_sankey_plot(
-    tondom, ending_on={"I"}, stop_at_modulation=True, cut_at_stage=1
-)
-# save_figure_as(fig, "tondom_sankey_draft", width=5000)
-fig
-```
-
-```{code-cell} ipython3
-edge_weights, tondom_nodes, stage_nodes = tondom_stages2graph_data(
+edge_weights, tondom_nodes, stage_nodes = tondom_stages2graph_data_with_loops(
     tondom.query("corpus == 'handel_keyboard'"),
-    # tondom.query("corpus == 'kozeluh_sonatas'"),
     ending_on={"I"},
     stop_at_modulation=True,
     # cut_at_stage=5,
 )
-tondom_nodes
-```
-
-```{code-cell} ipython3
-
-
-def get_rank2x_logarithmic(substages_per_stage, offset, node_margin=0.01):
-    n_stages = len(substages_per_stage)
-    stage_distance = (1 - offset) / n_stages
-    rank2x = []
-    for stage in range(len(substages_per_stage)):
-        stage_x = 1 - stage * stage_distance
-        rank2x.append(stage_x)
-        next_stage_x = 1 - (stage + 1) * stage_distance
-        n_substages = substages_per_stage[stage]
-        rank2x.extend(
-            np.geomspace(stage_x, next_stage_x + node_margin, n_substages)[1:]
-        )
-    return rank2x
-
-
-def scale_ordered_node_info(
-    tondom_nodes,
-    stage_nodes,
-    node_margin=0.01,
-    stage_y=0.5,
-    min_y=1e-09,
-    max_y=1,
-    log_x=True,
-    offset=1e-09,
-):
-    """compute x and y coordinates for the nodes of a Sankey diagram.
-
-    Args:
-        tondom_nodes: {(tondom_stage, label) -> node}
-        stage_nodes: {(tondom_stage, numeral_stage) -> {label -> node}}
-        node_margin: for logarithmic space, defined the distance of the left-most substage node from the following
-            stage node on its left
-        stage_y: y-coordinate for all stage nodes
-        min_y: lower bound for y-coordinates of substage nodes
-        max_y: upper bound for y-coordinates of substage nodes
-        log_x: whether to use logarithmic space for the x-coordinates
-        offset: workaround for the bug in Plotly preventing coordinates from being zero.
-
-    """
-    assert (
-        min_y > 0
-    ), "min_y cannot be 0 due to plotly bug. Simply use a tiny positive number."
-    labels = combine_labels(tondom_nodes, stage_nodes)
-
-    # y-coordinates (label-wise)
-    label2fifths = dict(zip(labels, map(ms3.roman_numeral2fifths, labels)))
-    fifths2rank = {
-        tpc: rank
-        for rank, tpc in enumerate(
-            utils.sort_tpcs_by_piano_keys(
-                label2fifths.values(), ascending=False, start=5
-            )
-        )
-    }
-    label2rank = {k: fifths2rank[v] for k, v in label2fifths.items()}
-    rank2y = pd.Series(np.linspace(min_y, max_y, len(label2rank)))
-    label2y = {k: rank2y[v] for k, v in label2rank.items()}
-
-    # x-coordinates (substage-wise); the evenly spaced positions are called ranks and are counted from right to left
-    substages_per_stage = Counter(stage for stage, _ in tondom_nodes.keys())
-    substages_per_stage.update(tondom_stage for (tondom_stage, _) in stage_nodes)
-    stage_distances = [
-        substages_per_stage[tondom_stage - 1]
-        for tondom_stage in range(len(tondom_nodes) + 1)
-    ]
-    stage_ranks = list(accumulate(stage_distances))
-    node2rank_and_label = {
-        node: (stage_ranks[tondom_stage], label)
-        for (tondom_stage, label), node in tondom_nodes.items()
-    }
-    node2rank_and_label.update(
-        {
-            node: (stage_ranks[tondom_stage] + numeral_stage, label)
-            for (tondom_stage, numeral_stage), nodes in stage_nodes.items()
-            for label, node in nodes.items()
-        }
-    )
-    if log_x:
-        rank2x = get_rank2x_logarithmic(
-            substages_per_stage, offset, node_margin=node_margin
-        )
-    else:
-        n_ranks = max((rank for rank, _ in node2rank_and_label.values())) + 1
-        rank2x = np.linspace(1, offset, n_ranks)
-    node_pos = {
-        node: (rank2x[rank], stage_y if rank in stage_ranks else label2y[label])
-        for node, (rank, label) in node2rank_and_label.items()
-    }
-    return labels, node_pos
-
-
-labels, node_pos = scale_ordered_node_info(tondom_nodes, stage_nodes, log_x=False)
-fig = tondom_graph_data2sankey(
-    edge_weights, labels, node_pos, width=2500, arrangement="fixed"
-)
-save_figure_as(fig, "test", width=2500)
-fig
-```
-
-```{code-cell} ipython3
-fig = make_phrase_sankey_plot(
-    tondom,
-    ending_on={"I"},
-    stop_at_modulation=True,
-    cut_at_stage=3,
-    get_node_info=scale_ordered_node_info,
-)
-# save_figure_as(fig, "tondom_sankey_draft", width=5000)
-fig
-```
-
-```{code-cell} ipython3
-labels, node_pos = scale_ordered_node_info(
-    tondom_nodes, stage_nodes, min_y=0.3, max_y=0.5
-)
-tondom_graph_data2sankey(
-    edge_weights, labels, node_pos, height=800, arrangement="fixed"
-)
-```
-
-```{code-cell} ipython3
 stage_nodes
 ```
 
 ```{code-cell} ipython3
-tondom.query("phrase_id ==3542")
+handel_phrases = (
+    tondom.query("corpus == 'handel_keyboard'")
+    .groupby(["phrase_id", "tondom_stage", "numeral_stage"])
+    .numeral_or_applied_to_numeral.first()
+    .groupby("phrase_id")
+    .apply(tuple)
+)
+handel_phrases[handel_phrases.str[0] == "I"]
+```
+
+```{code-cell} ipython3
+tondom.query("corpus == 'handel_keyboard'")
 ```
 
 ```{code-cell} ipython3
