@@ -30,16 +30,15 @@ tags: [hide-cell]
 %autoreload 2
 import os
 from random import choice
-from typing import Dict, Hashable, Optional
+from typing import Dict, Hashable, Iterable, Optional
 
 import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
 import plotly.express as px
-from dimcat import resources
+from dimcat import plotting, resources
 from dimcat.data.resources.utils import make_adjacency_groups, merge_columns_into_one
-from dimcat.plotting import make_bar_plot, write_image
 from git import Repo
 
 import utils
@@ -66,9 +65,9 @@ def save_figure_as(
 ):
     if formats is not None:
         for fmt in formats:
-            write_image(fig, filename, directory, format=fmt, **kwargs)
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
     else:
-        write_image(fig, filename, directory, **kwargs)
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell} ipython3
@@ -157,6 +156,116 @@ criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 ```
 
 ```{code-cell} ipython3
+phi0 = criterion2stages["uncompressed"]
+```
+
+```{code-cell} ipython3
+def show_stage(df, stage: int, **kwargs):
+    """Pie chart for a given stage."""
+    stage = df.query(f"stage == {stage}")
+    if isinstance(stage, pd.DataFrame):
+        column = stage.iloc(axis=1)[0]
+    else:
+        column = stage
+    vc = column.value_counts().to_frame()
+    settings = dict(
+        traces_settings=dict(
+            textposition="inside",
+            textinfo="value+percent",
+        ),
+        layout=dict(uniformtext_minsize=20, uniformtext_mode="hide"),
+        color_discrete_sequence=px.colors.qualitative.Light24,
+    )
+    settings.update(kwargs)
+    return plotting.make_pie_chart(vc, **settings)
+
+
+phi0_0 = show_stage(
+    phi0,
+    stage=0,
+    layout=dict(
+        margin=dict(t=0, r=0, b=0, l=0),
+    ),
+)
+# save_figure_as(phi0_0, "phi0_0_pie_chart", height=800, width=1000)
+phi0_0
+```
+
+```{code-cell} ipython3
+phi0_0_counts = phi0.query("stage == 0").chord_and_mode.value_counts()
+phi0_0_counts.iloc[:7].sum() / phi0_0_counts.sum()
+```
+
+```{code-cell} ipython3
+def show_stages(df, stages: int | Iterable[int] = (0, 1, 2), **kwargs):
+    """Pie chart for a given stage."""
+    column_name = df.columns[0]
+    if isinstance(stages, int):
+        stages = [stages]
+    else:
+        stages = list(stages)
+    data = df.query("stage in @stages").reset_index()
+    data["aligned stage"] = "S<sub>" + data.stage.astype(str) + "</sub>"
+    pie_data = data.groupby("aligned stage")[column_name].value_counts().reset_index()
+    settings = dict(
+        x_col=column_name,
+        traces_settings=dict(
+            textposition="inside",
+            textinfo="value+percent",
+        ),
+        layout=dict(
+            uniformtext_minsize=20,
+            uniformtext_mode="hide",
+            color_discrete_sequence=px.colors.qualitative.Light24,
+            # showlegend=False,
+            # legend=dict(orientation="h")
+        ),
+        facet_col="aligned stage",
+    )
+    settings.update(kwargs)
+    return plotting.make_pie_chart(pie_data, **settings)
+
+
+phi0_facets = show_stages(
+    phi0,
+    layout=dict(
+        margin=dict(t=38, r=0, b=0, l=0),
+    ),
+)
+save_figure_as(phi0_facets, "phi0_pies", height=600, width=2000)
+phi0_facets
+```
+
+```{code-cell} ipython3
+for trace in phi0_facets["data"]:
+    print(trace)
+    break
+```
+
+```{code-cell} ipython3
+stages = [0, 1, 2]
+data = phi0.query("stage in @stages").reset_index()
+data["aligned stage"] = "S<sub>" + data.stage.astype(str) + "</sub>"
+pie_data = data.groupby("aligned stage").chord_and_mode.value_counts().reset_index()
+plotting.make_pie_chart(
+    pie_data,
+    x_col="chord_and_mode",
+    traces_settings=dict(
+        textposition="inside",
+        textinfo="value+percent",
+    ),
+    facet_col="aligned stage",
+    color_discrete_sequence=px.colors.qualitative.Light24,
+    layout=dict(
+        margin=dict(t=30, r=0, b=0, l=0),
+        uniformtext_minsize=20,
+        uniformtext_mode="hide",
+    ),
+)
+```
+
+```{code-cell} ipython3
+
 
 def group_operation(group_df):
     return utils._compute_smallest_fifth_ranges(
@@ -244,6 +353,7 @@ criterion2stages["diatonics"] = diatonics_stages
 
 ```{code-cell} ipython3
 
+
 def compare_criteria_metrics(
     name2phrase_data: Dict[str, resources.PhraseData], **kwargs
 ):
@@ -265,7 +375,7 @@ def compare_criteria_metrics(
     layout = dict(showlegend=False)
     if more_layout := kwargs.pop("layout", None):
         layout.update(more_layout)
-    return make_bar_plot(
+    return plotting.make_bar_plot(
         bar_data,
         facet_row="metric",
         color="criterion",
