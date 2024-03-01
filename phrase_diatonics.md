@@ -165,7 +165,7 @@ phrase_4873.reset_index(drop=True)[
 
 ```{code-cell} ipython3
 CRITERIA = dict(
-    chord_reduced_and_localkey=["chord_reduced", "localkey"],
+    # chord_reduced_and_localkey=["chord_reduced", "localkey"],
     chord_reduced_and_mode=["chord_reduced_and_mode"],
     bass_degree=["bass_note"],
     root_roman=["root_roman", "localkey_mode"],
@@ -388,8 +388,8 @@ def compare_criteria_metrics(
 ):
     bar_data = utils.get_metrics_means(name2phrase_data).reset_index()
     models = dict(
-        uncompressed="Φ<sup>chord ∧ mode</sup>",
-        chord_reduced_and_localkey="Φ<sup>reduced ∧ local key</sup>",
+        uncompressed="Φ°",
+        # chord_reduced_and_localkey="Φ<sup>reduced ∧ local key</sup>",
         chord_reduced_and_mode="Φ<sup>reduced ∧ mode</sup>",
         bass_degree="Φ<sup>bass</sup>",
         root_roman="Φ<sup>roman</sup>",
