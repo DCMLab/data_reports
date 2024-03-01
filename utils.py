@@ -34,7 +34,7 @@ from dimcat.base import FriendlyEnum, deserialize_json_file, get_setting
 from dimcat.data import resources
 from dimcat.data.resources.facets import add_chord_tone_intervals
 from dimcat.data.resources.features import extend_bass_notes_feature
-from dimcat.data.resources.results import TypeAlias, _entropy
+from dimcat.data.resources.results import TypeAlias
 from dimcat.data.resources.utils import (
     join_df_on_index,
     make_adjacency_groups,
@@ -2698,15 +2698,13 @@ def get_criterion_phrase_lengths(phrase_data: resources.PhraseData):
     return stage_lengths.rename("phrase_length")
 
 
-def get_criterion_phrase_entropies(
+def get_criterion_stage_entropies(
     phrase_data: resources.PhraseData, criterion_name: Optional[str] = None
 ):
     if not criterion_name:
         criterion_name = phrase_data.columns.to_list()[0]
-    criterion_distributions = phrase_data.groupby(
-        ["corpus", criterion_name]
-    ).duration_qb.sum()
-    return criterion_distributions.groupby("corpus").agg(_entropy).rename("entropy")
+    phrases = phrase_data.df[criterion_name].groupby(["phrase_id", "stage"]).first()
+    return phrases.groupby("stage").apply(lambda S: entropy(S.value_counts(), base=2))
 
 
 def get_metrics_means(name2phrase_data: Dict[str, resources.PhraseData]):
@@ -2726,13 +2724,13 @@ def get_metrics_means(name2phrase_data: Dict[str, resources.PhraseData]):
         criterion_metric2value[
             (name, "mean phrase length", "sem")
         ] = phrase_lengths.sem()
-        phrase_entropies = get_criterion_phrase_entropies(stages)
+        stage_entropies = get_criterion_stage_entropies(stages)
         criterion_metric2value[
-            (name, "mean phrase entropy", "mean")
-        ] = phrase_entropies.mean()
+            (name, "mean stage entropy", "mean")
+        ] = stage_entropies.mean()
         criterion_metric2value[
-            (name, "mean phrase entropy", "sem")
-        ] = phrase_entropies.sem()
+            (name, "mean stage entropy", "sem")
+        ] = stage_entropies.sem()
     metrics = pd.Series(criterion_metric2value, name="value").unstack(sort=False)
     metrics.index.names = ["criterion", "metric"]
     return metrics
@@ -2860,7 +2858,7 @@ def _compare_criteria_entropies(
     chronological_corpus_names: Optional[List[str]] = None,
 ):
     entropies = {
-        name: get_criterion_phrase_entropies(durations)
+        name: get_criterion_stage_entropies(durations)
         for name, durations in name2phrase_data.items()
     }
     return plot_corpuswise_criteria(
