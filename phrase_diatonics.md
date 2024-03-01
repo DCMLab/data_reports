@@ -92,6 +92,28 @@ phrase_annotations
 ```
 
 ```{code-cell} ipython3
+codette = phrase_annotations.get_phrase_data(
+    ["label", "phraseend", "cadence"], components="codetta"
+)
+new_style_codette = codette.groupby("phrase_id").filter(
+    lambda df: ~df.label.str.contains(r"\\").any()
+)
+n_new_style_phrases = new_style_codette.index.get_level_values("phrase_id").nunique()
+has_cadence = new_style_codette.groupby("phrase_id").apply(
+    lambda df: df.label.str.contains("\|").any()  # noqa W605
+)
+n_with_cadence = has_cadence.sum()
+print(
+    f"{n_with_cadence} out of {n_new_style_phrases} eligible phrases ({n_with_cadence/n_new_style_phrases:.1%}) "
+    f"include a cadence."
+)
+```
+
+```{code-cell} ipython3
+has_cadence
+```
+
+```{code-cell} ipython3
 phrase_4873 = phrase_annotations.query("phrase_id == 4873").iloc[:-1].iloc[::-1].copy()
 renaming = dict(
     label="label",
@@ -193,7 +215,8 @@ phi0_0
 
 ```{code-cell} ipython3
 phi0_0_counts = phi0.query("stage == 0").chord_and_mode.value_counts()
-phi0_0_counts.iloc[:7].sum() / phi0_0_counts.sum()
+n_phrases = phi0_0_counts.sum()
+phi0_0_counts.iloc[:7].sum() / n_phrases
 ```
 
 ```{code-cell} ipython3
@@ -237,31 +260,37 @@ phi0_facets
 ```
 
 ```{code-cell} ipython3
-for trace in phi0_facets["data"]:
-    print(trace)
-    break
+phi0_first3 = phi0.query("stage in (0,1,2)")
+ix = phi0_first3.chord_and_mode.value_counts().index
+selected_labels = ix[ix.str.match("^(I,|i,|V,)")]
+print(f"Showing fraction of selected labels {set(selected_labels)} for each stage.")
+phi0_first3.groupby("stage").chord_and_mode.apply(
+    lambda S: S.value_counts().loc[selected_labels].sum() / n_phrases
+)
 ```
 
 ```{code-cell} ipython3
-stages = [0, 1, 2]
-data = phi0.query("stage in @stages").reset_index()
-data["aligned stage"] = "S<sub>" + data.stage.astype(str) + "</sub>"
-pie_data = data.groupby("aligned stage").chord_and_mode.value_counts().reset_index()
-plotting.make_pie_chart(
-    pie_data,
-    x_col="chord_and_mode",
-    traces_settings=dict(
-        textposition="inside",
-        textinfo="value+percent",
-    ),
-    facet_col="aligned stage",
-    color_discrete_sequence=px.colors.qualitative.Light24,
-    layout=dict(
-        margin=dict(t=30, r=0, b=0, l=0),
-        uniformtext_minsize=20,
-        uniformtext_mode="hide",
-    ),
+trigrams = (
+    phi0_first3.chord_and_mode.str.split(",", expand=True)
+    .iloc[:, 0]
+    .rename("trigram")
+    .groupby("phrase_id")
+    .apply(tuple)
 )
+trigram_distribution = utils.value_count_df(trigrams, rank_index=True)
+trigram_distribution
+```
+
+```{code-cell} ipython3
+100 - trigram_distribution.iloc[:20]["%"].sum()
+```
+
+```{code-cell} ipython3
+ix = phi0_first3.chord_and_mode.value_counts().index
+```
+
+```{code-cell} ipython3
+
 ```
 
 ```{code-cell} ipython3
@@ -410,8 +439,8 @@ fig = compare_criteria_metrics(
 )
 # each subplot should have its own axis title
 fig.update_xaxes(title_text="entropy (bits)", row=1)
-fig.update_xaxes(title_text="number of harmony labels", row=2)
-fig.update_xaxes(title_text="duration (♩)", row=3)
+fig.update_xaxes(title_text="number of stages", row=2)
+fig.update_xaxes(title_text="duration in ♩", row=3)
 save_figure_as(fig, "comparison_of_stage_merging_criteria", height=height, width=width)
 fig
 ```
