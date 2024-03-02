@@ -22,7 +22,6 @@
 # * 07-1, phrase_id 2415, vi/V in D would be f# but this is clearly in a. It is a minor key, so bVI should be VI
 # * phrase806_n14op131_05_1-79 clearly too long, begins with sequenced segments ending on HCs
 
-# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 # %load_ext autoreload
 # %autoreload 2
 import os
@@ -41,6 +40,8 @@ from dimcat.data.resources.utils import (
     subselect_multiindex_from_df,
 )
 from dimcat.plotting import make_box_plot, write_image
+
+# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 from git import Repo
 
 import utils
@@ -115,9 +116,7 @@ make_box_plot(
     category_orders=dict(corpus=chronological_corpus_names),
 )
 
-
 # %%
-
 
 root_roman_or_its_dominants = utils.make_root_roman_or_its_dominants_criterion(
     phrase_annotations,  # query=f"phrase_id == 9649", inspect_masks=True
@@ -143,7 +142,6 @@ root_roman_or_its_dominants.head(100)
 # utils._compare_criteria_entropies(
 #     criterion2stages, chronological_corpus_names=chronological_corpus_names
 # )
-
 
 # %% [raw]
 # root_roman_or_its_dominants.store_resource()
@@ -171,7 +169,6 @@ root_roman_or_its_dominants.head(100)
 #     )
 # )
 # restored.compare(root_roman_or_its_dominants.df)
-
 
 # %%
 def make_simple_resource_column(timeline_data, name="Resource"):
@@ -414,31 +411,6 @@ def subselect_dominant_stages(timeline_data):
     return all_dominant_stages
 
 
-SHARPWISE_COLORS = [
-    "RED",  # localkey + 1 fifths
-    "ROSE",  # + 2
-    "ORANGE",  # + 3 etc.
-    "PINK",
-    "AMBER",
-    "FUCHSIA",
-    "YELLOW",
-    "SLATE",
-    "STONE",
-]
-FLATWISE_COLORS = [
-    "LIME",  # localkey - 1 fifths
-    "GREEN",  # - 2
-    "BLUE",  # - 3 etc.
-    "CYAN",
-    "EMERALD",
-    "INDIGO",
-    "TEAL",
-    "VIOLET",
-    "SLATE",
-    "STONE",
-]
-
-
 def style_shape_data_by_root(
     root_tpc: int,
     minor: bool,
@@ -451,19 +423,8 @@ def style_shape_data_by_root(
     y_root = root_tpc - y_min
     shape_data = dict(x0=x0, x1=x1, y_root=y_root, is_minor=minor, **kwargs)
     distance_to_local_tonic = int(root_tpc - localkey_tonic_tpc)
-    if distance_to_local_tonic == 0:
-        if minor:
-            primary_color = ("PURPLE", 700)
-        else:
-            primary_color = ("SKY", 500)
-    else:
-        color_index = abs(distance_to_local_tonic) - 1
-        if distance_to_local_tonic > 0:
-            color = SHARPWISE_COLORS[color_index]
-        else:
-            color = FLATWISE_COLORS[color_index]
-        primary_color = (color, 600)
-    shape_data["primary_color"] = utils.TailwindColorsHex.get_color(*primary_color)
+    color_code, primary_color = utils.get_fifths_color(distance_to_local_tonic, minor)
+    shape_data["primary_color"] = color_code
     if minor:
         color_name, color_shade = primary_color
         color_shade -= 300
@@ -930,7 +891,7 @@ fig.layout.shapes
 [shape for shape in fig.layout.shapes if shape.x0 == -18.0]
 
 # %%
-PIN_PHRASE_ID = 10403
+PIN_PHRASE_ID = 9773
 # 24 good Bach
 # 87 short and simple ABC example, e-a-G with pivot chord, pretty ideal
 # 638 exciting ABC
@@ -944,6 +905,7 @@ PIN_PHRASE_ID = 10403
 # 5103 Corelli with visible encoding error (pops out)
 # 5122 super cool Couperin but the beginning is a bit verkorkst, modulation debatable
 # 5932
+# 9773 Liszt Dante --> example label with recursive secondary key
 # 9649
 # 141102 Liederkreis great but has modulation to IV for a single measure. Discuss?
 # 14031 Kinderszenen with pivot chord

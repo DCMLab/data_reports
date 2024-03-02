@@ -823,6 +823,63 @@ class TailwindColorsRgb(TailwindColors):
     ROSE_950: tuple[Literal[76], Literal[5], Literal[25]] = (76, 5, 25)
 
 
+SHARPWISE_COLORS = [
+    "RED",  # localkey + 1 fifths
+    "ROSE",  # + 2
+    "ORANGE",  # + 3 etc.
+    "PINK",
+    "AMBER",
+    "FUCHSIA",
+    "YELLOW",
+    "SLATE",
+    "STONE",
+    "NEUTRAL",
+    "ZINC",
+    "GRAY",
+]
+FLATWISE_COLORS = [
+    "LIME",  # localkey - 1 fifths
+    "GREEN",  # - 2
+    "BLUE",  # - 3 etc.
+    "CYAN",
+    "EMERALD",
+    "INDIGO",
+    "TEAL",
+    "VIOLET",
+    "SLATE",
+    "STONE",
+    "NEUTRAL",
+    "ZINC",
+    "GRAY",
+]
+
+
+def get_fifths_color(
+    fifths: int,
+    minor: bool = False,
+    error_color=("ZINC", 950),
+):
+    if pd.isnull(fifths):
+        primary_color = error_color
+    elif fifths == 0:
+        if minor:
+            primary_color = ("PURPLE", 700)
+        else:
+            primary_color = ("SKY", 500)
+    else:
+        try:
+            color_index = abs(fifths) - 1
+            if fifths > 0:
+                color = SHARPWISE_COLORS[color_index]
+            else:
+                color = FLATWISE_COLORS[color_index]
+            primary_color = (color, 600)
+        except TypeError:
+            primary_color = error_color
+    color_code = TailwindColorsHex.get_color(*primary_color)
+    return color_code, primary_color
+
+
 def add_mode_column(df: pd.DataFrame) -> pd.DataFrame:
     """Returns a copy of a DataFrame (which needs to have 'localkey_is_minor' boolean col) and adds a 'mode' column
     containing 'major' and 'minor'.
@@ -1077,9 +1134,12 @@ def get_repo_name(repo: Repo) -> str:
 def graph_data2sankey(
     stage_nodes: Dict[str, Dict[str, int]],
     edge_weights: Dict[Tuple[int, int], int],
+    color_map: Optional[Dict[str, str]] = None,
     **kwargs,
 ):
-    """Create a Sankey diagram from the nodes of every stage and the edge weights between them."""
+    """Create a Sankey diagram from the nodes of every stage and the edge weights between them.
+    Color map lets you define a color per label, which is then automatically assigned to all nodes accordingly.
+    """
     data = pd.DataFrame(
         [(u, v, w) for (u, v), w in edge_weights.items()],
         columns=["source", "target", "value"],
@@ -1088,6 +1148,9 @@ def graph_data2sankey(
         node: label for nodes in stage_nodes.values() for label, node in nodes.items()
     }
     labels = [node2label[i] for i in range(len(node2label))]
+    if color_map:
+        color = [color_map[label] for label in labels]
+        kwargs["color"] = color
     return make_sankey(data, labels, **kwargs)
 
 
