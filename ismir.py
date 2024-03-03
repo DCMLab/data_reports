@@ -27,49 +27,43 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-from dimcat import analyzers, groupers
-from dimcat.plotting import write_image
+from dimcat import analyzers, groupers, plotting
 from git import Repo
 from IPython.display import display
 from matplotlib import pyplot as plt
 
-# %%
-from utils import (
-    CORPUS_COLOR_SCALE,
-    DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
-    STD_LAYOUT,
-    corpus_mean_composition_years,
-    get_corpus_display_name,
-    get_repo_name,
-    plot_cum,
-    plot_transition_heatmaps,
-    print_heading,
-    remove_non_chord_labels,
-    remove_none_labels,
-    resolve_dir,
-    value_count_df,
-)
+import utils
 
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "ismir"))
+# %%
+RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
 
 
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 
 
 # %% tags=["remove-output"]
-package_path = resolve_dir(
+package_path = utils.resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
 repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
@@ -103,10 +97,12 @@ transitions
 # %%
 all_metadata = D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
-mean_composition_years = corpus_mean_composition_years(all_metadata)
+mean_composition_years = utils.corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
+corpus_colors = dict(zip(chronological_order, utils.CORPUS_COLOR_SCALE))
+corpus_names = {
+    corp: utils.get_corpus_display_name(corp) for corp in chronological_order
+}
 chronological_corpus_names = list(corpus_names.values())
 corpus_name_colors = {
     corpus_names[corp]: color for corp, color in corpus_colors.items()
@@ -154,7 +150,7 @@ piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(ke
 keys.plot(output=make_output_path("localkey_distributions"), height=5000)
 
 # %%
-plot_transition_heatmaps(
+utils.plot_transition_heatmaps(
     piecewise_localkey_transitions.to_list(),
     top=10,
     bottom_margin=0.05,
@@ -210,7 +206,7 @@ fig = px.bar(
     ),
     category_orders=dict(corpus_name=chronological_corpus_names),
 )
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 fig.update_xaxes(tickangle=45)
 save_figure_as(
     fig, "major_minor_key_segments_corpuswise_absolute_stacked_bars", height=800
@@ -235,8 +231,8 @@ except Exception:
 n_annotations = len(all_annotations)
 includes_annotations = n_annotations > 0
 if includes_annotations:
-    all_chords = remove_none_labels(all_annotations)
-    all_chords = remove_non_chord_labels(all_chords)
+    all_chords = utils.remove_none_labels(all_annotations)
+    all_chords = utils.remove_non_chord_labels(all_chords)
     display(all_chords.head())
     print(f"Concatenated annotation tables contain {n_annotations} rows.")
     no_chord = all_annotations.root.isna()
@@ -273,13 +269,13 @@ for i, bass_notes in segment2bass_note_series.items():
         full_grams_major.append(progression)
 
 # %%
-plot_transition_heatmaps(full_grams_major, full_grams_minor, top=20)
+utils.plot_transition_heatmaps(full_grams_major, full_grams_minor, top=20)
 plt.savefig(make_output_path("bass_degree_bigrams"), dpi=400)
 plt.show()
 
 # %%
 # font_dict = {'font': {'size': 20}}2
-fig = plot_cum(all_chords.chord, font_size=35, markersize=10, **STD_LAYOUT)
+fig = utils.plot_cum(all_chords.chord, font_size=35, markersize=10, **utils.STD_LAYOUT)
 save_figure_as(
     fig,
     "chord_type_distribution_cumulative",
@@ -291,11 +287,11 @@ grouped_chords = groupers.ModeGrouper().process(labels)
 grouped_chords.default_groupby
 
 # %%
-value_count_df(grouped_chords.chord)
+utils.value_count_df(grouped_chords.chord)
 
 # %%
 ugs_dict = {
-    mode: value_count_df(chords).reset_index()
+    mode: utils.value_count_df(chords).reset_index()
     for mode, chords in grouped_chords.groupby("mode").chord
 }
 ugs_df = pd.concat(ugs_dict, axis=1)
