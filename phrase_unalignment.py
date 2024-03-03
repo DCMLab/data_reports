@@ -214,7 +214,9 @@ def make_simple_phrase_sankey(
 original_stages = original_stage_data.regroup_phrases(
     original_stage_data.numeral_or_applied_to_numeral
 ).join(composition_years)
-original_sankey = make_simple_phrase_sankey(original_stages)
+original_sankey = make_simple_phrase_sankey(
+    original_stages[original_stages.iloc[:, 0].notna()], cut_at_stage=10
+)
 save_figure_as(original_sankey, "numeral_borrowed_sankey_before", width=800, height=500)
 original_sankey
 
