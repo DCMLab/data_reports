@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -71,7 +71,6 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```
 
 ```{code-cell}
-
 def _compute_cross_entropies(P_column_vectors, Q_column_vectors=None):
     """Expects an NxP matrix where the index has N observations and the P columns represent probability distributions
     of P groups. If Q is not specified, the result will contain the cross-entropies between all pairs of groups in a

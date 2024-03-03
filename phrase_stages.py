@@ -22,8 +22,10 @@
 # * 07-1, phrase_id 2415, vi/V in D would be f# but this is clearly in a. It is a minor key, so bVI should be VI
 # * phrase806_n14op131_05_1-79 clearly too long, begins with sequenced segments ending on HCs
 
+# %%
 # %load_ext autoreload
 # %autoreload 2
+
 import os
 import warnings
 from numbers import Number
@@ -169,6 +171,7 @@ root_roman_or_its_dominants.head(100)
 #     )
 # )
 # restored.compare(root_roman_or_its_dominants.df)
+
 
 # %%
 def make_simple_resource_column(timeline_data, name="Resource"):

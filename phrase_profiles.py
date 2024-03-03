@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -257,7 +257,6 @@ utils.plot_pca(tf, "(reduced) chord frequency matrix", **SCATTER_PLOT_SETTINGS)
 
 # %%
 utils.plot_pca(f.mul(idf), "f-idf matrix (reduced chords)", **SCATTER_PLOT_SETTINGS)
-
 
 # %% [markdown]
 # ## Only root, regardless of chord type or inversion

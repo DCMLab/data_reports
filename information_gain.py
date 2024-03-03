@@ -162,7 +162,6 @@ ig_values = compute_information_gains(bigram_table, "chord", antecedents)
 ig_values
 
 # %%
-
 fig = make_bar_plot(
     ig_values,
     x_col="group",

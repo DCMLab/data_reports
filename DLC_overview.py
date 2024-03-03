@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -455,3 +455,13 @@ if includes_annotations:
     )
 else:
     print("Dataset contains no annotations.")
+
+# %%
+all_chords
+chord_counts = all_chords.chord_and_mode.value_counts()
+ix = chord_counts.index
+selected_labels = ix[ix.str.match("^(I,|i,|V,)")]
+tondom_fraction = chord_counts[selected_labels].sum() / chord_counts.sum()
+print(
+    f"The labels {tuple(selected_labels)} account for {tondom_fraction:.2%} of all labels."
+)

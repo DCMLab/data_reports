@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -17,8 +17,6 @@
 # # Chord profiles for pieces in the DLC
 #
 # Initial exploration and experiments with chord profiles, PCA, RobustSclaer, and KMeans clustering.
-#
-
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 # %load_ext autoreload
@@ -129,7 +127,6 @@ SCATTER_PLOT_SETTINGS = dict(
 utils.plot_pca(
     data=chord_and_mode.relative, info="chord frequency matrix", **SCATTER_PLOT_SETTINGS
 )
-
 
 # %%
 scaler = RobustScaler()

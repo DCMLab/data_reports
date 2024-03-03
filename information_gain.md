@@ -174,7 +174,6 @@ ig_values
 ```
 
 ```{code-cell}
-
 fig = make_bar_plot(
     ig_values,
     x_col="group",

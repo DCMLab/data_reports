@@ -20,6 +20,7 @@ ToDo
 * 07-1, phrase_id 2415, vi/V in D would be f# but this is clearly in a. It is a minor key, so bVI should be VI
 * phrase806_n14op131_05_1-79 clearly too long, begins with sequenced segments ending on HCs
 
+```{code-cell} ipython3
 %load_ext autoreload
 %autoreload 2
 
@@ -39,6 +40,15 @@ from dimcat.data.resources.utils import (
     subselect_multiindex_from_df,
 )
 from dimcat.plotting import make_box_plot, write_image
+```
+
+```{code-cell} ipython3
+---
+mystnb:
+  code_prompt_hide: Hide imports
+  code_prompt_show: Show imports
+tags: [hide-cell]
+---
 from git import Repo
 
 import utils

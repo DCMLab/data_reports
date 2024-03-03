@@ -577,7 +577,6 @@ value_count_df(bass_prog_no_dups)
 
 ```{code-cell}
 
-
 def progressions2graph_data(progressions, cut_at_stage=None):
     stage_nodes = defaultdict(dict)
     edge_weights = Counter()
