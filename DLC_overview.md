@@ -34,8 +34,7 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-from dimcat import filters
-from dimcat.plotting import update_figure_layout, write_image
+from dimcat import filters, plotting
 from dimcat.utils import get_middle_composition_year
 from git import Repo
 from IPython.display import display
@@ -45,14 +44,26 @@ import utils
 ```
 
 ```{code-cell}
-
-
-RESULTS_PATH = os.path.abspath("/home/laser/git/DLC/img")
+RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def save_figure_as(fig, filename, format=None, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, format=format, directory=directory, **kwargs)
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
+
+
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 **Loading data**
@@ -74,6 +85,9 @@ D
 filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
 all_metadata = filtered_D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
+all_metadata._df["corpus_name"] = all_metadata.index.get_level_values(0).map(
+    utils.get_corpus_display_name
+)
 all_metadata
 ```
 
@@ -139,7 +153,7 @@ fig = px.histogram(
     color_discrete_map=corpus_name_colors,
     title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 # save_figure_as(fig, "pieces_timeline_histogram", height=1250)
@@ -193,7 +207,7 @@ fig = px.histogram(
     color_discrete_map=corpus_name_colors,
     title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 ```
@@ -273,7 +287,7 @@ fig = make_single_go_histogram(
     hist_data,
     xbins_start=1600,
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig,
     x_axis=dict(title_text="composition year"),
     y_axis=dict(title_text="# pieces"),
@@ -338,7 +352,7 @@ fig = make_stacked_go_histograms(
     xaxis_labels="composition year",
     yaxis_labels=["# pieces", "# notes", "# annotation labels"],
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig,
     title_text="Size of the Distant Listening Corpus",
     traces_settings=dict(xbins=dict(size=25, start=1575)),
@@ -359,7 +373,7 @@ update_figure_layout(
     ),
     font_size=25,
 )
-save_figure_as(fig, "corpus_size", height=1200, width=1440, format="pdf")
+save_figure_as(fig, "corpus_size", height=1200, width=1440)
 fig
 ```
 
@@ -391,7 +405,7 @@ def make_overview_table(groupby, group_name="pieces"):
     return absolute
 
 
-absolute = make_overview_table(summary.groupby("workTitle"))
+absolute = make_overview_table(summary.groupby("corpus_name", dropna=False))
 # print(absolute.astype(int).to_markdown())
 absolute.astype(int)
 ```
@@ -406,8 +420,11 @@ public
 ```{code-cell}
 def summarize_dataset(D):
     all_metadata = D.get_metadata()
+    all_metadata._df["corpus_name"] = all_metadata.index.get_level_values(0).map(
+        utils.get_corpus_display_name
+    )
     summary = make_summary(all_metadata)
-    return make_overview_table(summary.groupby(level=0))
+    return make_overview_table(summary.groupby("corpus_name"))
 
 
 dcml_corpora = summarize_dataset(public)
@@ -422,7 +439,7 @@ print(distant_listening.astype(int).to_markdown())
 ### Measures
 
 ```{code-cell}
-all_measures = D.get_feature("measures").df
+all_measures = filtered_D.get_feature("measures")
 print(
     f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files."
 )
@@ -430,8 +447,48 @@ all_measures.head()
 ```
 
 ```{code-cell}
-print("Distribution of time signatures per XML measure (MC):")
-all_measures.timesig.value_counts(dropna=False)
+timesig_counts = all_measures.timesig.value_counts(dropna=False)
+print(
+    f"Distribution of time signatures over the {timesig_counts.sum()} XML measure (MC):"
+)
+timesig_counts
+```
+
+```{code-cell}
+k = 6
+most_frequent_ts = timesig_counts.iloc[:k]
+most_frequent_ts_count = most_frequent_ts.sum()
+print(
+    f"The {k} most frequent time signatures {most_frequent_ts.index.to_list()} "
+    f"account for {most_frequent_ts_count} {most_frequent_ts_count / timesig_counts.sum():.2%} of all time signatures."
+)
+```
+
+```{code-cell}
+tsc = timesig_counts[timesig_counts >= 5].to_dict()
+tsc["other"] = timesig_counts[timesig_counts < 5].sum()
+y_name = "# measures"
+timesig_data = pd.Series(tsc, name=y_name)
+timesig_data.index.name = "Time signature"
+timesig_data = timesig_data.reset_index()
+timesig_data["fraction"] = round(
+    100 * timesig_data[y_name] / timesig_data[y_name].sum(), 1
+)
+ts_bar = plotting.make_bar_plot(
+    timesig_data,
+    x_col="Time signature",
+    y_col=y_name,
+    hover_data=["fraction"],
+    log_y=True,
+    x_axis=dict(showgrid=False, tickangle=45),
+    layout=dict(margin=dict(t=0, r=0)),
+    traces_settings=dict(
+        marker_color="#39a275",
+        marker_line_width=1,
+        marker_line_color="#064e3b",
+    ),
+)
+save_figure_as(ts_bar, "timesig_bar", width=800, height=290)
 ```
 
 ### Harmony labels
@@ -475,5 +532,7 @@ chord_counts = all_chords.chord_and_mode.value_counts()
 ix = chord_counts.index
 selected_labels = ix[ix.str.match("^(I,|i,|V,)")]
 tondom_fraction = chord_counts[selected_labels].sum() / chord_counts.sum()
-print(f"The labels {tuple(selected_labels)} account for {tondom_fraction:.2%} of all labels.")
+print(
+    f"The labels {tuple(selected_labels)} account for {tondom_fraction:.2%} of all labels."
+)
 ```
