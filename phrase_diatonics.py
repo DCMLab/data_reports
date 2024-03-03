@@ -100,58 +100,6 @@ print(
 )
 
 # %%
-has_cadence
-
-# %%
-phrase_4873 = phrase_annotations.query("phrase_id == 4873").iloc[:-1].iloc[::-1].copy()
-renaming = dict(
-    label="label",
-    mn="m.",
-    mn_onset="onset",
-    duration_qb="duration",
-    localkey="local key",
-    effective_localkey="tonicized",
-    localkey_mode="mode",
-    chord="chord",
-    chord_reduced="reduced",
-    root_roman="roman",
-    root="root",
-    bass_note="bass",
-    numeral_or_applied_to_numeral="numeral/applied",
-)
-phrase_4873.rename(columns=renaming, inplace=True)
-phrase_4873["numeral/dominant"] = [
-    "v",
-    "v",
-    "v",
-    "#vi",
-    "III",
-    "v",
-    "VI",
-    "v",
-    "v",
-    "i",
-    "i",
-    "i",
-    "III/i",
-    "III/i",
-    "III",
-    "III/i",
-    "iv",
-    "iv/i",
-    "i",
-]
-phrase_4873["I/V"] = (
-    phrase_4873["numeral"]
-    .where(phrase_4873["numeral"].isin({"I", "i", "V"}))
-    .ffill()
-    .str.upper()
-)
-phrase_4873.reset_index(drop=True)[
-    list(renaming.values()) + ["numeral/dominant", "I/V"]
-]
-
-# %%
 CRITERIA = dict(
     # chord_reduced_and_localkey=["chord_reduced", "localkey"],
     chord_reduced_and_mode=["chord_reduced_and_mode"],
@@ -218,6 +166,7 @@ def show_stages(df, stages: int | Iterable[int] = (0, 1, 2), **kwargs):
     pie_data = data.groupby("aligned stage")[column_name].value_counts().reset_index()
     settings = dict(
         x_col=column_name,
+        color_discrete_sequence=px.colors.qualitative.Light24,
         traces_settings=dict(
             textposition="inside",
             textinfo="value+percent",
@@ -225,7 +174,6 @@ def show_stages(df, stages: int | Iterable[int] = (0, 1, 2), **kwargs):
         layout=dict(
             uniformtext_minsize=20,
             uniformtext_mode="hide",
-            color_discrete_sequence=px.colors.qualitative.Light24,
             # showlegend=False,
             # legend=dict(orientation="h")
         ),
@@ -309,29 +257,9 @@ def make_diatonics_criterion(
 
 
 # %%
-numeral_type_effective_key = phrase_annotations.get_phrase_data(
-    reverse=True,
-    columns=[
-        "numeral",
-        "chord_type",
-        "effective_localkey",
-        "effective_localkey_is_minor",
-    ],
-    drop_levels="phrase_component",
-)
-dominant_selector = utils.make_dominant_selector(numeral_type_effective_key)
-effective_numeral = ms3.transform(
-    numeral_type_effective_key,
-    ms3.rel2abs_key,
-    ["numeral", "effective_localkey", "effective_localkey_is_minor"],
-).rename("effective_numeral_or_its_dominant")
-effective_numeral.where(
-    ~dominant_selector,
-    numeral_type_effective_key.effective_localkey,
-    inplace=True,
-)
+enoid = utils.make_effective_numeral_or_its_dominant_criterion(phrase_annotations)
 effective_numeral_or_its_dominant = criterion2stages["uncompressed"].regroup_phrases(
-    effective_numeral
+    enoid
 )
 criterion2stages[
     "effective_numeral_or_its_dominant"
@@ -339,9 +267,35 @@ criterion2stages[
 effective_numeral_or_its_dominant.head(100)
 
 # %%
-effective_numeral_or_its_dominant.query(
+phrase_4873 = phrase_annotations.query("phrase_id == 4873").iloc[:-1].iloc[::-1].copy()
+renaming = dict(
+    label="label",
+    mn="m.",
+    mn_onset="onset",
+    duration_qb="duration",
+    localkey="local key",
+    effective_localkey="tonicized",
+    localkey_mode="mode",
+    chord="chord",
+    chord_reduced="reduced",
+    root_roman="roman",
+    root="root",
+    bass_note="bass",
+    numeral_or_applied_to_numeral="numeral/applied",
+)
+phrase_4873.rename(columns=renaming, inplace=True)
+phrase_4873["numeral/dominant"] = effective_numeral_or_its_dominant.query(
     "phrase_id == 4873"
 ).effective_numeral_or_its_dominant.to_list()
+phrase_4873["I/V"] = (
+    phrase_4873["numeral"]
+    .where(phrase_4873["numeral"].isin({"I", "i", "V"}))
+    .ffill()
+    .str.upper()
+)
+phrase_4873.reset_index(drop=True)[
+    list(renaming.values()) + ["numeral/dominant", "I/V"]
+]
 
 # %%
 chord_tones = utils.get_phrase_chord_tones(phrase_annotations)

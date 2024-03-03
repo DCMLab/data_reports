@@ -2269,6 +2269,50 @@ def make_transition_heatmap_plots(
 # region phrase stage helpers
 
 
+def make_effective_numeral_criterion(phrase_annotations):
+    """Currently not in use. This is a reduced version of make_effective_numeral_or_its_dominant_criterion but
+    is not uses by it because it would not considerable reduce the code duplication.
+    """
+    numeral_type_effective_key = phrase_annotations.get_phrase_data(
+        reverse=True,
+        columns=[
+            "numeral",
+            "chord_type",
+            "effective_localkey",
+            "effective_localkey_is_minor",
+        ],
+        drop_levels="phrase_component",
+    )
+    return ms3.transform(
+        numeral_type_effective_key,
+        ms3.rel2abs_key,
+        ["numeral", "effective_localkey", "effective_localkey_is_minor"],
+    ).rename("effective_numeral")
+
+
+def make_effective_numeral_or_its_dominant_criterion(phrase_annotations):
+    numeral_type_effective_key = phrase_annotations.get_phrase_data(
+        reverse=True,
+        columns=[
+            "numeral",
+            "chord_type",
+            "effective_localkey",
+            "effective_localkey_is_minor",
+        ],
+        drop_levels="phrase_component",
+    )
+    dominant_selector = make_dominant_selector(numeral_type_effective_key)
+    effective_numeral = ms3.transform(
+        numeral_type_effective_key,
+        ms3.rel2abs_key,
+        ["numeral", "effective_localkey", "effective_localkey_is_minor"],
+    ).rename("effective_numeral_or_its_dominant")
+    return effective_numeral.where(
+        ~dominant_selector,
+        numeral_type_effective_key.effective_localkey,
+    )
+
+
 def _make_root_roman_or_its_dominants_criterion(
     phrase_data: resources.PhraseData,
     inspect_masks: bool = False,
@@ -2766,7 +2810,7 @@ def get_criterion_stage_entropies(
 ):
     if not criterion_name:
         criterion_name = phrase_data.columns.to_list()[0]
-    phrases = phrase_data.df[criterion_name].groupby(["phrase_id", "stage"]).first()
+    phrases = phrase_data[criterion_name].groupby(["phrase_id", "stage"]).first()
     return phrases.groupby("stage").apply(lambda S: entropy(S.value_counts(), base=2))
 
 
