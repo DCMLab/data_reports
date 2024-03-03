@@ -26,7 +26,6 @@ import os
 import dimcat as dc
 import ms3
 import pandas as pd
-import plotly.express as px
 from dimcat import analyzers, groupers, plotting
 from git import Repo
 from IPython.display import display
@@ -147,7 +146,7 @@ keys.load()
 piecewise_localkey_transitions = piecewise_localkeys_expressed_in_globalmajor(keys)
 
 # %%
-keys.plot(output=make_output_path("localkey_distributions"), height=5000)
+# keys.plot(output=make_output_path("localkey_distributions"), height=5000)
 
 # %%
 utils.plot_transition_heatmaps(
@@ -176,6 +175,9 @@ grouped_keys_df = grouped_keys.df
 grouped_keys_df
 
 # %%
+len(set(grouped_keys_df.index.to_frame()[["corpus", "piece"]].itertuples(index=False)))
+
+# %%
 segment_duration_per_corpus = (
     grouped_keys.groupby(["corpus", "mode"]).duration_qb.sum().round(2)
 )
@@ -194,24 +196,42 @@ maj_min_ratio_per_corpus = pd.concat(
 maj_min_ratio_per_corpus[
     "corpus_name"
 ] = maj_min_ratio_per_corpus.index.get_level_values("corpus").map(corpus_names)
-fig = px.bar(
+fig = plotting.make_bar_plot(
     maj_min_ratio_per_corpus.reset_index(),
-    x="corpus_name",
-    y="duration_qb",
+    x_col="corpus_name",
+    y_col="duration_qb",
     title=None,  # f"Fractions of summed corpus duration that are in major vs. minor",
     color="mode",
     text="fraction",
+    color_discrete_map=utils.MAJOR_MINOR_COLORS,
     labels=dict(
-        duration_qb="duration in 𝅘𝅥", corpus_name="Key segments grouped by corpus"
+        duration_qb="duration in 𝅘𝅥",
+        corpus_name="",  # "Key segments grouped by corpus"
     ),
-    category_orders=dict(corpus_name=chronological_corpus_names),
+    category_orders=dict(
+        corpus_name=[
+            name
+            for name in chronological_corpus_names
+            if name in maj_min_ratio_per_corpus.corpus_name.unique()
+        ]
+    ),
+    layout=dict(
+        barmode="stack",
+        margin=dict(l=0, r=0, b=0, t=0),
+    ),
+    x_axis=dict(
+        tickangle=45,
+        tickfont_size=15,
+        showgrid=False,
+    ),
 )
-fig.update_layout(**utils.STD_LAYOUT)
-fig.update_xaxes(tickangle=45)
 save_figure_as(
-    fig, "major_minor_key_segments_corpuswise_absolute_stacked_bars", height=800
+    fig,
+    "major_minor_key_segments_corpuswise_absolute_stacked_bars",
+    height=400,
+    width=1200,
 )
-fig.show()
+fig
 
 # %% [raw]
 # to_be_filled = grouped_keys_df.quarterbeats_all_endings == ''

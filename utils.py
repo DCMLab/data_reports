@@ -853,6 +853,11 @@ FLATWISE_COLORS = [
     "GRAY",
 ]
 
+MAJOR_MINOR_COLORS = dict(
+    major="#1d4ed8",  # BLUE_700
+    minor="#b91c1c",  # RED_700
+)
+
 
 def get_fifths_color(
     fifths: int,

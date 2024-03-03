@@ -31,6 +31,13 @@ import pandas as pd
 from dimcat import slicers, plotting
 
 import utils
+import plotly.io as pio
+# workaround to remove the "loading mathjax" box from the PDF figure
+# see https://github.com/plotly/plotly.py/issues/3469#issuecomment-994907721
+pio.kaleido.scope.mathjax = None
+# if mathjax was needed to render math, one could try
+# pio.full_figure_for_development(fig, warn=False)
+
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 100)
 ```
@@ -139,6 +146,7 @@ legend=dict(
     xanchor="right",
     x=0.99
 )
+
 fig = plotting.make_bar_plot(
     mode_tpcs[selector], #.query("duration_pct > 0.001")
     x_col='sd',
@@ -146,10 +154,7 @@ fig = plotting.make_bar_plot(
     #title="Scale degree distribution over major and minor segments",
     color='mode',
     barmode='group',
-    color_discrete_map=dict(
-        major="#1d4ed8", # BLUE_700
-        minor="#b91c1c", # RED_700
-    ),
+    color_discrete_map=utils.MAJOR_MINOR_COLORS,
     labels=dict(
         duration_pct='normalized duration',
         duration_qb="duration in ♩",
@@ -160,15 +165,17 @@ fig = plotting.make_bar_plot(
             t=0
         )
     ),
+    x_axis=dict(
+        showgrid=False,
+    ),
     #log_y=True,
     category_orders=dict(sd=sd_order)
     )
 save_figure_as(fig, 'scale_degree_distributions_maj_min_normalized_bars', height=350, width=1200)
 fig.show()
-```
-
-```{code-cell}
-mode_tpcs[~selector].describe()mode_tpcs.tpc
+other_sum = mode_tpcs[~selector].sum()
+print(f"{(~selector).sum()} scale degrees with a total duration of {other_sum.duration_qb} ♩ "
+      f"({other_sum.duration_pct:.2%}) are not in the range -7 to 10 and have been omitted.")
 ```
 
 ```{code-cell}
