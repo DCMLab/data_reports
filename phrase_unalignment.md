@@ -31,6 +31,7 @@ import pandas as pd
 from dimcat import resources
 from dimcat.plotting import write_image
 from git import Repo
+from IPython.display import display
 
 import utils
 
@@ -51,8 +52,14 @@ def make_output_path(
     return utils.make_output_path(filename=filename, extension=extension, path=path)
 
 
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell} ipython3
@@ -93,6 +100,8 @@ stage_data = utils.make_stage_data(
     ],
     wide_format=False,
 )
+original_stage_data = stage_data.copy()
+original_stage_data._df = stage_data._df.copy()
 # convert the criterion to fifths over local tonic
 stage_data._df["numeral_fifths"] = ms3.transform(
     stage_data,
@@ -111,7 +120,7 @@ stage_data.sample(50)
 width = 1280
 height = 800
 COLOR_MAP = {
-    "II": "hsv(0%,100%,100%)",
+    "VI": "hsv(0%,100%,100%)",
     "I": "hsv(4%,100%,100%)",
     "bbIII": "hsv(8%,100%,100%)",
     "#VII": "hsv(12%,100%,100%)",
@@ -126,7 +135,7 @@ COLOR_MAP = {
     "VII": "hsv(46%,100%,100%)",
     "#VI": "hsv(50%,100%,100%)",
     "#III": "hsv(54%,100%,100%)",
-    "VI": "hsv(58%,100%,100%)",
+    "II": "hsv(58%,100%,100%)",
     "bIII": "hsv(62%,100%,100%)",
     "III": "hsv(65%,100%,100%)",
     "#I": "hsv(69%,100%,100%)",
@@ -137,11 +146,13 @@ COLOR_MAP = {
     "#V": "hsv(88%,100%,100%)",
     "bI": "hsv(92%,100%,100%)",
     pd.NA: "hsv(96%,100%,100%)",
+    "@none": "#000000",
 }
+COLOR_MAP.update({k.lower(): v for k, v in COLOR_MAP.items() if not pd.isnull(k)})
 
 
 def stages2graph_data(
-    stages, ending_on=None, stop_at_modulation=False, cut_at_stage=None
+    stages, ending_on=None, stop_at_modulation=True, cut_at_stage=None
 ):
     stage_nodes = defaultdict(dict)  # {stage -> {label -> node}}
     edge_weights = Counter()  # {(source_node, target_node) -> weight}
@@ -182,6 +193,8 @@ def make_simple_phrase_sankey(
     stop_at_modulation=True,
     cut_at_stage=10,
     height=800,
+    color_map=None,
+    font_color="blue",
     **kwargs,
 ):
     stage_nodes, edge_weights = stages2graph_data(
@@ -190,21 +203,174 @@ def make_simple_phrase_sankey(
         stop_at_modulation=stop_at_modulation,
         cut_at_stage=cut_at_stage,
     )
+    node2label = {
+        node: label for nodes in stage_nodes.values() for label, node in nodes.items()
+    }
+    if color_map is None:
+        labels = [node2label[i] for i in range(len(node2label))]
+        color_map = dict(COLOR_MAP)
+        for label in labels:
+            if label in color_map:
+                continue
+            resolved_label = ms3.resolve_relative_keys(label)
+            while resolved_label and resolved_label not in color_map:
+                resolved_label = resolved_label[1:]
+            color_map[label] = color_map[resolved_label]
+    settings = dict(font=dict(color="blue"), **kwargs)
     return utils.graph_data2sankey(
-        stage_nodes, edge_weights, color_map=COLOR_MAP, height=height
+        stage_nodes, edge_weights, color_map=color_map, height=height, **settings
     )
+```
+
+```{code-cell} ipython3
+original_stages = original_stage_data.regroup_phrases(
+    original_stage_data.numeral_or_applied_to_numeral
+).join(composition_years)
+original_sankey = make_simple_phrase_sankey(original_stages)
+save_figure_as(original_sankey, "numeral_borrowed_sankey_before", width=800, height=500)
+original_sankey
 ```
 
 ```{code-cell} ipython3
 numeral_criterion = stage_data.numeral_or_applied_to_numeral
 stages = stage_data.regroup_phrases(numeral_criterion).join(composition_years)
+stages = stages.loc[:, ~stages.columns.duplicated()].copy()
 first10_sankey = make_simple_phrase_sankey(stages)
-save_figure_as(first10_sankey, "first10_sankey", width=width, height=height)
-first10_sankey
+save_figure_as(
+    first10_sankey, "numeral_borrowed_sankey_after", width=width, height=height
+)
+# first10_sankey
 ```
 
 ```{code-cell} ipython3
-make_simple_phrase_sankey(stages.query("corpus == 'bach_en_fr_suites'"))
+DEFAULT_ERAS = dict(
+    prebaroque="mean_composition_year < 1650",
+    baroque="1650 <= mean_composition_year <= 1750",
+    classical="1750 < mean_composition_year <= 1800",
+    extended="1800 < mean_composition_year",
+)
+
+
+def make_era_sankeys(
+    stages,
+    ending_on={"I"},
+    stop_at_modulation=True,
+    cut_at_stage=10,
+    height=300,
+    width=1000,
+    eras=None,
+):
+    if eras is None:
+        eras = DEFAULT_ERAS
+    for era, query in eras.items():
+        era_stages = stages.query(query)
+        era_sankey = make_simple_phrase_sankey(
+            era_stages,
+            ending_on=ending_on,
+            stop_at_modulation=stop_at_modulation,
+            cut_at_stage=cut_at_stage,
+        )
+        name = f"{era}_{','.join(ending_on)}_{cut_at_stage}_sankey"
+        save_figure_as(era_sankey, name, width=width, height=height)
+
+
+make_era_sankeys(stages, ending_on={"I"})
+```
+
+```{code-cell} ipython3
+make_era_sankeys(stages, ending_on={"V"})
+```
+
+```{code-cell} ipython3
+stages.index.names
+```
+
+```{code-cell} ipython3
+stages.head()
+```
+
+```{code-cell} ipython3
+def show_era_stats(stages, eras=DEFAULT_ERAS):
+    overall = {}
+    for era, query in eras.items():
+        era_stages = stages.query(query)
+        column = era_stages.columns[0]
+        end_label = era_stages.groupby("phrase_id")[column].first()
+        index_levels = era_stages.index.to_frame()
+        n_phrases = index_levels.phrase_id.nunique()
+        n_pieces = len(set(index_levels[["corpus", "piece"]].itertuples(index=False)))
+        print(f"{era}: {n_phrases} phrases in {n_pieces} pieces")
+        vc = utils.value_count_df(end_label)
+        display(vc)
+        tondom_count = vc.loc[["I", "V"], "counts"].sum()
+        nontondom = vc.counts.sum() - tondom_count
+        overall[era] = dict(
+            n_phrases=n_phrases,
+            n_pieces=n_pieces,
+            tondom_count=tondom_count,
+            nontondom=nontondom,
+        )
+    return pd.DataFrame(overall).T
+
+
+stats = show_era_stats(stages)
+stats
+```
+
+```{code-cell} ipython3
+tondom_ending = stats.tondom_count.sum()
+print(
+    f"{tondom_ending} ({tondom_ending / stats.n_phrases.sum():.1%}) phrases end on I or V"
+)
+```
+
+```{code-cell} ipython3
+corpus_wise_entropy = stages.groupby("corpus").apply(
+    lambda df: pd.Series(
+        dict(
+            mean_year=df.mean_composition_year.mean(),
+            mean_entropy=utils.get_criterion_stage_entropies(df).mean(),
+        )
+    )
+)  # entropy(df
+corpus_wise_entropy
+```
+
+```{code-cell} ipython3
+prebaroque = corpus_wise_entropy.query("mean_year < 1650").index.to_list()
+baroque = corpus_wise_entropy.query("1650 <= mean_year <= 1750").index.to_list()
+
+# # %%
+# import plotly.express as px
+#
+# px.scatter(
+#     corpus_wise_entropy.reset_index(),
+#     x="mean_year",
+#     y="mean_entropy",
+#     hover_name="corpus",
+# )
+```
+
+```{code-cell} ipython3
+make_simple_phrase_sankey(stages, ending_on={"I"}, cut_at_stage=20)
+```
+
+```{code-cell} ipython3
+bach_sankey = make_simple_phrase_sankey(stages.query("corpus == 'bach_en_fr_suites'"))
+bach_sankey.update_layout(font=dict(size=25, color="blue"))
+```
+
+```{code-cell} ipython3
+type(numeral_criterion)
+```
+
+```{code-cell} ipython3
+enoid = utils.make_effective_numeral_or_its_dominant_criterion(phrase_annotations)
+enoid_stages = stage_data.regroup_phrases(enoid)
+```
+
+```{code-cell} ipython3
+make_simple_phrase_sankey(enoid_stages)
 ```
 
 ```{code-cell} ipython3
@@ -212,14 +378,14 @@ numeral_criterion = stage_data.numeral_or_applied_to_numeral
 stages = stage_data.regroup_phrases(numeral_criterion).join(composition_years)
 stage_nodes, edge_weights = stages2graph_data(
     stages,  # .query("corpus == 'corelli'"),
-    # ending_on={"I"},
+    ending_on={"I"},
     stop_at_modulation=True,
     cut_at_stage=10,
 )
 all_I_sankey = utils.graph_data2sankey(
     stage_nodes, edge_weights, color_map=COLOR_MAP, height=800
 )
-save_figure_as(all_I_sankey, "all_I_sankey", width=width, height=height)
+# save_figure_as(all_I_sankey, "all_I_sankey", width=width, height=height)
 ```
 
 ```{code-cell} ipython3
