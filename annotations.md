@@ -1,6 +1,6 @@
 ---
 jupytext:
-  formats: md:myst,ipynb
+  formats: ipynb,md:myst,py:percent
   text_representation:
     extension: .md
     format_name: myst
@@ -21,39 +21,53 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+from dimcat.steps import slicers
 %load_ext autoreload
 %autoreload 2
+
 import os
 from fractions import Fraction
 
-from dimcat.steps import groupers
 from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
+from dimcat import plotting, groupers
 
-from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
+import utils
 ```
 
 ```{code-cell}
-from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
-from dimcat.plotting import write_image
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "annotations"))
+RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
 os.makedirs(RESULTS_PATH, exist_ok=True)
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+
+
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
+
+
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell}
 :tags: [hide-input]
 
-package_path = resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+package_path = utils.resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
@@ -109,7 +123,7 @@ fig = px.bar(
              ),
 
 )
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, 'chord_type_distribution_over_scale_degrees_absolute_stacked_bars')
 fig.show()
 ```
@@ -133,7 +147,7 @@ bar_data = root_durations.reset_index()
 bar_data.root = bar_data.root.map(ms3.fifths2iv)
 root_order = bar_data.groupby('root').duration_qb.sum().sort_values(ascending=False).index.to_list()
 fig = px.bar(bar_data, x='root', y='duration_qb', color='type_reduced', barmode='group', log_y=True,
-             color_discrete_map=TYPE_COLORS,
+             color_discrete_map=utils.TYPE_COLORS,
              category_orders=dict(root=root_order,
                                   type_reduced=relative_roots.type_reduced.value_counts().index.to_list(),
                                  ),
@@ -144,7 +158,7 @@ fig = px.bar(bar_data, x='root', y='duration_qb', color='type_reduced', barmode=
              width=1000,
              height=400,
             )
-fig.update_layout(**STD_LAYOUT,
+fig.update_layout(**utils.STD_LAYOUT,
                   legend=dict(
                       orientation='h',
                       xanchor="right",
@@ -193,7 +207,7 @@ chords_by_mode.get_default_analysis().make_ranking_table()
 unigram_proportions.plot_grouped()
 ```
 
-```{code-cell}
+```{raw-cell}
 k = 20
 modes = {True: 'MINOR', False: 'MAJOR'}
 for (is_minor,), ugs in unigram_proportions.iter():
@@ -201,7 +215,7 @@ for (is_minor,), ugs in unigram_proportions.iter():
     print(ugs.head(k).to_string())
 ```
 
-```{code-cell}
+```{raw-cell}
 ugs_dict = {modes[is_minor].lower(): (ugs/ugs.sum() * 100).round(2).rename('%').reset_index() for (is_minor,), ugs in unigram_proportions.iter()}
 ugs_df = pd.concat(ugs_dict, axis=1)
 ugs_df.columns = ['_'.join(map(str, col)) for col in ugs_df.columns]
@@ -209,23 +223,25 @@ ugs_df.index = (ugs_df.index + 1).rename('k')
 print(ugs_df.iloc[:50].to_markdown())
 ```
 
+```{raw-cell}
 #### Per corpus
+```
 
-```{code-cell}
+```{raw-cell}
 corpus_wise_unigrams = dc.Pipeline([dc.CorpusGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process(mode_slices)
 ```
 
-```{code-cell}
+```{raw-cell}
 corpus_wise_unigrams.get()
 ```
 
-```{code-cell}
+```{raw-cell}
 for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
     print(f"{corpus_name} {modes[is_minor]} unigrams ({ugs.shape[0]} types, {ugs.sum()} tokens)")
     print(ugs.head(5).to_string())
 ```
 
-```{code-cell}
+```{raw-cell}
 types_shared_between_corpora = {}
 for (is_minor, corpus_name), ugs in corpus_wise_unigrams.iter():
     if is_minor in types_shared_between_corpora:
@@ -237,17 +253,19 @@ n_types = {k: len(v) for k, v in types_shared_between_corpora.items()}
 print(f"Chords which occur in all corpora, sorted by descending global frequency:\n{types_shared_between_corpora}\nCounts: {n_types}")
 ```
 
+```{raw-cell}
 #### Per piece
+```
 
-```{code-cell}
+```{raw-cell}
 piece_wise_unigrams = dc.Pipeline([dc.PieceGrouper(), dc.ChordSymbolUnigrams(once_per_group=True)]).process(mode_slices)
 ```
 
-```{code-cell}
+```{raw-cell}
 piece_wise_unigrams.get()
 ```
 
-```{code-cell}
+```{raw-cell}
 types_shared_between_pieces = {}
 for (is_minor, corpus_name), ugs in piece_wise_unigrams.iter():
     if is_minor in types_shared_between_pieces:
@@ -264,13 +282,18 @@ print(types_shared_between_pieces)
 #### Tone profiles for all major and minor local keys
 
 ```{code-cell}
-notes_by_keys = keys_segmented.get_facet("notes")
-notes_by_keys
+keys_segmented = slicers.KeySlicer().process(D)
+notes = keys_segmented.get_facet("notes")
+notes
 ```
 
 ```{code-cell}
-keys = keys[[col for col in keys.columns if col not in notes_by_keys]]
-notes_joined_with_keys = notes_by_keys.join(keys, on=keys.index.names)
+keys = keys_segmented.pipeline.steps[-1].slice_metadata
+```
+
+```{code-cell}
+keys = keys[[col for col in keys.columns if col not in notes]]
+notes_joined_with_keys = notes.join(keys, on=keys.index.names)
 notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
 mode_tpcs = notes_by_keys_transposed.reset_index(drop=True).groupby(['localkey_is_minor', 'tpc']).duration_qb.sum().reset_index(-1).sort_values('tpc').reset_index()
 mode_tpcs['sd'] = ms3.fifths2sd(mode_tpcs.tpc)
