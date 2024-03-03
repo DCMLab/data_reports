@@ -27,43 +27,42 @@ import matplotlib.pyplot as plt
 import ms3
 import pandas as pd
 import plotly.express as px
-from dimcat import groupers
+from dimcat import groupers, plotting
 from dimcat.data.resources.utils import make_adjacency_groups
-from dimcat.plotting import write_image
 
-from utils import (
-    DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
-    make_key_region_summary_table,
-    plot_transition_heatmaps,
-    prettify_counts,
-    remove_non_chord_labels,
-    remove_none_labels,
-    resolve_dir,
-    sorted_gram_counts,
-)
+import utils
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "bass_degrees"))
+RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
 
 
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 
 
 # %% [markdown]
 # **Loading data**
 
 # %%
-package_path = resolve_dir(
+package_path = utils.resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
 D = dc.Dataset.from_package(package_path)
@@ -183,13 +182,13 @@ df[df.key_regions.isin(selected)]
 # as transitions!
 
 # %%
-df = remove_none_labels(df)
+df = utils.remove_none_labels(df)
 
 # %% [markdown]
 # **Delete non-chord labels (typically, phrase labels)**
 
 # %%
-df = remove_non_chord_labels(df)
+df = utils.remove_non_chord_labels(df)
 
 # %% [markdown]
 # ### Get bass degree progressions & intervals
@@ -387,7 +386,7 @@ df[["mc", "mn", "chord", "bass_degree", "bass_interval", "bass_interval_pc"]].he
 # | **ixb**               | index of the segment's last row                                |
 
 # %% editable=true slideshow={"slide_type": ""}
-key_regions = make_key_region_summary_table(df, "key_regions")
+key_regions = utils.make_key_region_summary_table(df, "key_regions")
 key_regions.head(10)
 
 # %% [markdown]
@@ -430,12 +429,12 @@ for bd, chord in zip(
 ):
     ascending_minor[remove_immediate_repetitions(bd)].append(chord)
 ascending_minor_counts = Counter({k: len(v) for k, v in ascending_minor.items()})
-prettify_counts(ascending_minor_counts)
+utils.prettify_counts(ascending_minor_counts)
 
 # %%
 show_progression = "3 4 5"
 chords_3_4_5 = Counter(ascending_minor[show_progression])
-prettify_counts(chords_3_4_5)
+utils.prettify_counts(chords_3_4_5)
 
 # %% [markdown]
 # #### All stepwise ascending bass progressions in major
@@ -447,12 +446,12 @@ for bd, chord in zip(
 ):
     ascending_major[remove_immediate_repetitions(bd)].append(chord)
 ascending_major_counts = Counter({k: len(v) for k, v in ascending_major.items()})
-prettify_counts(ascending_major_counts)
+utils.prettify_counts(ascending_major_counts)
 
 # %%
 show_progression = "6 7 1"
 chords_6_7_1 = Counter(ascending_major[show_progression])
-prettify_counts(chords_6_7_1)
+utils.prettify_counts(chords_6_7_1)
 
 # %% [markdown]
 # #### All stepwise descending bass progressions in minor
@@ -464,12 +463,12 @@ for bd, chord in zip(
 ):
     descending_minor[remove_immediate_repetitions(bd)].append(chord)
 descending_minor_counts = Counter({k: len(v) for k, v in descending_minor.items()})
-prettify_counts(descending_minor_counts)
+utils.prettify_counts(descending_minor_counts)
 
 # %%
 show_progression = "3 2 1"
 chords_3_2_1 = Counter(descending_minor[show_progression])
-prettify_counts(chords_3_2_1)
+utils.prettify_counts(chords_3_2_1)
 
 # %% [markdown]
 # #### All stepwise descending bass progressions in major
@@ -481,12 +480,12 @@ for bd, chord in zip(
 ):
     descending_major[remove_immediate_repetitions(bd)].append(chord)
 descending_major_counts = Counter({k: len(v) for k, v in descending_major.items()})
-prettify_counts(descending_major_counts)
+utils.prettify_counts(descending_major_counts)
 
 # %%
 show_progression = "5 4 3"
 chords_5_4_3 = Counter(descending_major[show_progression])
-prettify_counts(chords_5_4_3)
+utils.prettify_counts(chords_5_4_3)
 
 # %% [markdown]
 # ### Transitions between bass degrees
@@ -506,17 +505,19 @@ full_grams_minor = [ms3.fifths2sd(full_grams[i], True) + ["∅"] for i in minor_
 full_grams_major = [ms3.fifths2sd(full_grams[i], False) + ["∅"] for i in major_regions]
 
 # %%
-plot_transition_heatmaps(full_grams_major, full_grams_minor)
+utils.plot_transition_heatmaps(full_grams_major, full_grams_minor)
 save_pdf_path = os.path.join(
-    RESULTS_PATH, f"bass_degree_bigrams{DEFAULT_OUTPUT_FORMAT}"
+    RESULTS_PATH, f"bass_degree_bigrams{utils.DEFAULT_OUTPUT_FORMAT}"
 )
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
 
 # %%
-plot_transition_heatmaps(full_grams_major, full_grams_minor, sort_scale_degrees=True)
+utils.plot_transition_heatmaps(
+    full_grams_major, full_grams_minor, sort_scale_degrees=True
+)
 save_pdf_path = os.path.join(
-    RESULTS_PATH, f"bass_degree_bigrams_scale_order{DEFAULT_OUTPUT_FORMAT}"
+    RESULTS_PATH, f"bass_degree_bigrams_scale_order{utils.DEFAULT_OUTPUT_FORMAT}"
 )
 plt.savefig(save_pdf_path, dpi=400)
 plt.show()
@@ -533,13 +534,13 @@ k = 25
 # ##### Major
 
 # %%
-sorted_gram_counts(full_grams_major, 2)
+utils.sorted_gram_counts(full_grams_major, 2)
 
 # %% [markdown]
 # ##### Minor
 
 # %%
-sorted_gram_counts(full_grams_minor, 2)
+utils.sorted_gram_counts(full_grams_minor, 2)
 
 # %% [markdown]
 # #### Most frequent 3-grams
@@ -547,13 +548,13 @@ sorted_gram_counts(full_grams_minor, 2)
 # ##### Major
 
 # %%
-sorted_gram_counts(full_grams_major, 3)
+utils.sorted_gram_counts(full_grams_major, 3)
 
 # %% [markdown]
 # ##### Minor
 
 # %%
-sorted_gram_counts(full_grams_minor, 3)
+utils.sorted_gram_counts(full_grams_minor, 3)
 
 # %% [markdown]
 # #### Most frequent 4-grams
@@ -561,13 +562,13 @@ sorted_gram_counts(full_grams_minor, 3)
 # ##### Major
 
 # %%
-sorted_gram_counts(full_grams_major, 4)
+utils.sorted_gram_counts(full_grams_major, 4)
 
 # %% [markdown]
 # ##### Minor
 
 # %%
-sorted_gram_counts(full_grams_minor, 4)
+utils.sorted_gram_counts(full_grams_minor, 4)
 
 # %% [markdown]
 # #### Most frequent 5-grams
@@ -575,10 +576,10 @@ sorted_gram_counts(full_grams_minor, 4)
 # ##### Major
 
 # %%
-sorted_gram_counts(full_grams_major, 5)
+utils.sorted_gram_counts(full_grams_major, 5)
 
 # %% [markdown]
 # ##### Minor
 
 # %%
-sorted_gram_counts(full_grams_minor, 5)
+utils.sorted_gram_counts(full_grams_minor, 5)
