@@ -131,14 +131,24 @@ notes_joined_with_keys = notes.join(keys_data, how="left",)
 notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
 tpc_distribution = notes_by_keys_transposed.reset_index(drop=True).groupby(['localkey_is_minor', 'tpc']).duration_qb.sum()
 mode_tpcs = tpc_distribution.reset_index(-1).sort_values('tpc').reset_index()
+additional_columns = dict(
+    sd = ms3.fifths2sd(mode_tpcs.tpc),
+    duration_pct = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum()),
+    mode = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'}),
+    std_err = std_err_mean
+)
 mode_tpcs['sd'] = ms3.fifths2sd(mode_tpcs.tpc)
 mode_tpcs['duration_pct'] = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum())
 mode_tpcs['mode'] = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'})
+corpuswise_tpc_distribution = notes_by_keys_transposed.groupby(["corpus", "localkey_is_minor", "tpc"]).duration_qb.sum().reset_index()
+corpuswise_tpc_distribution['duration_pct'] = corpuswise_tpc_distribution.groupby(["corpus", "localkey_is_minor"], group_keys=False).duration_qb.apply(lambda S: S / S.sum())
+std_err_mean = corpuswise_tpc_distribution.groupby(["localkey_is_minor", "tpc"]).duration_pct.sem().rename("std_err")
+mode_tpcs = mode_tpcs.join(std_err_mean, on=["localkey_is_minor", "tpc"])
 mode_tpcs
 ```
 
 ```{code-cell}
-sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', 'b4', '4', '#4', 'b5', '5', '#5', 'b6','6', '#6', 'b7', '7']
+sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', '4', '#4', 'b5', '5', '#5', 'b6','6', '#6', 'b7', '7']
 selector = (mode_tpcs.tpc > -8) & (mode_tpcs.tpc < 11)
 legend=dict(
     yanchor="top",
@@ -160,6 +170,7 @@ fig = plotting.make_bar_plot(
         duration_qb="duration in ♩",
         sd="Notes transposed to the local key, as major-scale degrees",
         ),
+    error_y="std_err",
     layout=dict(
         margin=dict(
             t=0
