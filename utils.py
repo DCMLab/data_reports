@@ -1396,6 +1396,7 @@ def plot_cum(
     font_size: Optional[int] = None,
     left_range: Optional[Tuple[float, float]] = None,
     right_range: Optional[Tuple[float, float]] = None,
+    percent=True,
     **kwargs,
 ):
     """Pass either a Series or cumulative_fraction(S).reset_index()"""
@@ -1439,11 +1440,18 @@ def plot_cum(
         go.Scatter(**scatter_args),
         secondary_y=False,
     )
+    cum_frac = cum.y
+    cum_frac_name = "Cumulative fraction"
+    right_dtick = 0.1
+    if percent:
+        cum_frac *= 100
+        cum_frac_name += " (%)"
+        right_dtick *= 100
     fig.add_trace(
         go.Scatter(
             x=ix,
-            y=cum.y,
-            name="Cumulative fraction",
+            y=cum_frac,
+            name=cum_frac_name,
             mode="markers",
             marker=dict(size=markersize),
         ),
@@ -1462,16 +1470,16 @@ def plot_cum(
         title_text="Absolute label count",
         secondary_y=False,
         type="log",
-        gridcolor="lightgrey",
+        gridcolor="lightpink",
         zeroline=True,
         dtick=1,
     )
     right_y_axis = dict(
-        title_text="Cumulative fraction",
+        title_text=cum_frac_name,
         secondary_y=True,
-        gridcolor="lightpink",
+        gridcolor="lightgrey",
         zeroline=False,
-        dtick=0.25,
+        dtick=right_dtick,
     )
     if left_range is not None:
         left_y_axis["range"] = left_range

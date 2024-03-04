@@ -318,10 +318,28 @@ plt.show()
 
 ```{code-cell}
 # font_dict = {'font': {'size': 20}}2
-fig = utils.plot_cum(all_chords.chord, font_size=35, markersize=10, **utils.STD_LAYOUT)
+width = 1600
+height = 900
+layout=dict(
+    utils.STD_LAYOUT,
+    margin=dict(l=0, r=0, b=0, t=0),
+)
+fig = utils.plot_cum(
+    all_chords.chord,
+    font_size=35,
+    markersize=10,
+    percent=True,
+    height=height,
+    width=width,
+    **layout,
+)
+for trace, color in zip(fig.data, (utils.TailwindColorsHex.get_color(c) for c in ("PURPLE_800", "EMERALD_800"))):
+    trace.marker.color = color
 save_figure_as(
     fig,
     "chord_type_distribution_cumulative",
+    width=width,
+    height=height,
 )
 fig.show()
 ```
