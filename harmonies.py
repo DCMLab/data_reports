@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.0
+#       jupytext_version: 1.16.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -397,3 +397,11 @@ phraseending_progressions(df)
 
 # %%
 phraseending_progressions(df, 4)
+
+# %%
+phraseending_progressions(df, 5)
+
+# %%
+phraseending_progressions(df, 6)
+
+# %%

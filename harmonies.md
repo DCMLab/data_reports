@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -418,4 +418,16 @@ phraseending_progressions(df)
 
 ```{code-cell}
 phraseending_progressions(df, 4)
+```
+
+```{code-cell}
+phraseending_progressions(df, 5)
+```
+
+```{code-cell}
+phraseending_progressions(df, 6)
+```
+
+```{code-cell}
+
 ```
