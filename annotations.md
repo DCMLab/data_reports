@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -29,11 +29,14 @@ from fractions import Fraction
 from dimcat.steps import groupers
 from git import Repo
 import dimcat as dc
+from dimcat import resources
 import ms3
 import pandas as pd
 import plotly.express as px
 
 from utils import STD_LAYOUT, CORPUS_COLOR_SCALE, TYPE_COLORS, color_background, get_corpus_display_name, value_count_df, get_repo_name, print_heading, resolve_dir
+
+pd.set_option("display.max_columns", 100)
 ```
 
 ```{code-cell} ipython3
@@ -50,7 +53,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell} ipython3
 :tags: [hide-input]
 
-package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
+package_path = resolve_dir("/home/laser/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
 print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
@@ -61,8 +64,306 @@ D
 ```
 
 ```{code-cell} ipython3
+phrases = D.get_feature(dict(dtype="PhraseAnnotations", format="PHRASE"))
+phrases
+```
+
+```{code-cell} ipython3
+phrases.iloc[:10]
+```
+
+```{code-cell} ipython3
+test = phrases.iloc[-10:]
+test
+```
+
+```{code-cell} ipython3
+test["phrase_labels"].to_list()
+```
+
+```{code-cell} ipython3
+phrases.n_localkeys.value_counts()
+```
+
+```{code-cell} ipython3
+phrases.loc(axis=0)[:, :, :, "body"]
+```
+
+```{code-cell} ipython3
+lasts = [idx[-1] for idx in phrases.loc(axis=0)[:, :, :, "body"].groupby(level=-2).indices.values()]
+lasts
+```
+
+```{code-cell} ipython3
+
+```
+
+```{code-cell} ipython3
+phrases.get_slice_intervals()
+```
+
+```{code-cell} ipython3
+import itertools
+test = phrases.iloc[-50:,12]
+for val, gr in itertools.groupby(test):
+    print(val)
+```
+
+```{code-cell} ipython3
+test = phrases.iloc[-50:,].take([12], axis=1)
+tuple(test)
+```
+
+```{code-cell} ipython3
+import numpy as np
+starts = np.random.randint(len(phrases), size=100000)
+stops = starts + 5
+counts = stops - starts
+```
+
+```{code-cell} ipython3
+%%timeit
+np.array([np.arange(start, stop) for start, stop in zip(starts, stops)]).flatten()
+```
+
+```{code-cell} ipython3
+from dimcat.data.resources.features import _make_concatenated_ranges
+
+(_make_concatenated_ranges(starts, stops, counts) == np.array([np.arange(start, stop) for start, stop in zip(starts, stops)]).flatten()).all()
+```
+
+```{code-cell} ipython3
+%%timeit
+_make_concatenated_ranges(starts, stops, counts)
+```
+
+```{code-cell} ipython3
+%%timeit
+phrases.take(selection)
+```
+
+```{code-cell} ipython3
+%%timeit
+phrases.take(sl)
+```
+
+```{code-cell} ipython3
+def multirange(counts):
+    """Thanks to Warren Weckesser via https://stackoverflow.com/a/20033438"""
+    counts = np.asarray(counts)
+    # Remove the following line if counts is always strictly positive.
+    counts = counts[counts != 0]
+
+    counts1 = counts[:-1]
+    reset_index = np.cumsum(counts1)
+
+    incr = np.ones(counts.sum(), dtype=int)
+    incr[0] = 0
+    incr[reset_index] = 1 - counts1
+
+    # Reuse the incr array for the final result.
+    incr.cumsum(out=incr)
+    return incr
+```
+
+```{code-cell} ipython3
+
+```
+
+```{code-cell} ipython3
+lengths = ranges[:,1] - ranges[:,0]
+not_empty_mask = lengths > 0
+selected_lengths = lengths[not_empty_mask]
+selected_ranges = ranges[not_empty_mask]
+selected_ranges
+```
+
+```{code-cell} ipython3
+def make_concatenated_ranges(starts, stops, counts):
+    """Takes an Nx2 array representing (right-exclusive) range boundaries and returns a 1-D array with the
+    corresponding ranges spelled out.
+
+    Adapted from Warren Weckesser via https://stackoverflow.com/a/20033438
+    """
+
+    counts1 = counts[:-1]
+    reset_index = np.cumsum(counts1)
+    reset_values = 1 + starts[1:] - stops[:-1]
+    incr = np.ones(counts.sum(), dtype=int)
+    incr[0] = starts[0]
+    incr[reset_index] = reset_values
+    incr.cumsum(out=incr)
+    return incr
+
+def make_take_mask_and_index(
+    ranges,
+    names = None
+):
+    """Takes an Nx2 array representing (right-exclusive) range boundaries and returns a 1-D array with the
+    corresponding ranges spelled out.
+    """
+    starts, stops = ranges.T
+    counts = stops - starts
+    not_empty_mask = counts > 0
+    if not_empty_mask.any():
+        take_mask = _make_concatenated_ranges(
+            starts[not_empty_mask],
+            stops[not_empty_mask],
+            counts[not_empty_mask])
+    else:
+        take_mask = make_concatenated_ranges(starts, stops, counts)
+    n_repeats = int(counts.shape[0] / 4)
+    phrase_ids = np.repeat(np.arange(n_repeats), 4)
+    names = np.tile(np.array(["before", "body", "codetta", "after"]), n_repeats)
+    index = np.vstack([
+        phrase_ids.repeat(counts),
+        names.repeat(counts)
+    ])
+    return index
+
+```
+
+```{code-cell} ipython3
+ix_intervals = [
+    (0, 0, 10, 11, 13),
+    (13, 15, 20, 20, 22),
+    (22, 24, 30, 35, 37),
+    (37, 39, 45, 45, 45),
+]
+def _make_range_boundaries(intervals):
+    first, start, end, sbsq, last = intervals
+    return np.array([
+        [first, start],
+        [start, end+1],
+        [end, sbsq],
+        [sbsq, last]
+    ])
+
+def make_range_boundaries(ix_intervals):
+    return np.vstack(list(map(_make_range_boundaries, ix_intervals)))
+
+ranges = make_range_boundaries(ix_intervals)
+new_levels = make_take_mask_and_index(ranges).T
+new_levels
+```
+
+```{code-cell} ipython3
+test = phrases.iloc[:new_levels.shape[0]]
+test_ix = test.index
+test_ix
+```
+
+```{code-cell} ipython3
+test_df = test_ix.to_frame(index=False)
+test_df
+```
+
+```{code-cell} ipython3
+test_df.take([-1], axis=1)
+```
+
+```{code-cell} ipython3
+a, b = make_take_mask_and_index(ranges)
+mix = pd.MultiIndex.from_arrays([a, b])
+mix
+```
+
+```{code-cell} ipython3
+pd.concat([mix.to_frame(index=False), test_ix.to_frame(index=False)], axis=1)
+```
+
+```{code-cell} ipython3
+pd.concat([pd.DataFrame(new_levels), test_ix.to_frame(index=False)], axis=1)
+```
+
+```{code-cell} ipython3
+
+```
+
+```{code-cell} ipython3
+reshaped = counts.reshape((-1,4))
+reshaped
+```
+
+```{code-cell} ipython3
+
+```
+
+```{code-cell} ipython3
+strings = np.array(["before", "body", "codetta", "after"])
+repeated_strings = np.tile(strings, int(counts.shape[0] / 4))
+repeated_strings
+```
+
+```{code-cell} ipython3
+repeated_strings.repeat(counts)
+```
+
+```{code-cell} ipython3
+issubclass(resources.PhraseAnnotations, resources.Feature)
+```
+
+```{code-cell} ipython3
+fail
+```
+
+```{code-cell} ipython3
 filtered_D = D.apply_step("HasHarmonyLabelsFilter")
 all_metadata = filtered_D.get_metadata()
+```
+
+```{code-cell} ipython3
+labels = filtered_D.get_feature("DcmlAnnotations")
+```
+
+```{code-cell} ipython3
+labels.loc[('bach_en_fr_suites', 'BWV806_08_Bouree_I'), "quarterbeats_all_endings"].iloc[0]
+```
+
+```{code-cell} ipython3
+# ("pergolesi_stabat_mater", "07. Eja, Mater fons amois")
+wcb = labels.loc[("jc_bach_sonatas", "wa01op05no1a_Allegretto")]
+wcb[wcb.phraseend == "\\\\"]
+```
+
+```{code-cell} ipython3
+labels.phraseend.value_counts()
+```
+
+```{code-cell} ipython3
+
+```
+
+```{code-cell} ipython3
+PA = resources.PhraseAnnotations()
+PA._format_dataframe(labels)
+```
+
+```{code-cell} ipython3
+labels_df = labels.df
+for group, df in labels_df.groupby(["corpus", "piece"]):
+    break
+
+df.phraseend.value_counts()
+```
+
+```{code-cell} ipython3
+import numpy as np
+from dimcat.data.resources.features import make_phrase_selection_masks
+
+phrase_masks = make_phrase_selection_masks(df.phraseend, n_before=1, n_after=1)
+phrase_masks
+```
+
+```{code-cell} ipython3
+pd.Index([2,3,4]).min()
+```
+
+```{code-cell} ipython3
+for r in phrase_masks.T:
+    print(r[:25])
+    display(df[r].iloc[:30, :30])
+    break
 ```
 
 ```{code-cell} ipython3
@@ -83,6 +384,10 @@ print(f"The annotated pieces have {len(annotated_notes)} notes.")
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 all_chords = filtered_D.get_feature("harmonylabels")
 all_chords.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
@@ -167,6 +472,10 @@ print(f"On diminished or augmented scale degrees: {dim_or_aug} / {complete} = {d
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 chords_by_mode = groupers.ModeGrouper().process(all_chords)
 chords_by_mode.format = "scale_degree"
 ```
@@ -379,16 +688,24 @@ piece_wise_bigrams = dc.Pipeline([dc.PieceGrouper(), dc.ChordSymbolBigrams(once_
 piece_wise_bigrams.get()
 ```
 
-+++ {"jp-MarkdownHeadingCollapsed": true}
++++ {"jp-MarkdownHeadingCollapsed": true, "jupyter": {"outputs_hidden": false}}
 
 ## Phrases
 ### Presence of phrase annotation symbols per dataset:
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 all_annotations.groupby(["corpus"]).phraseend.value_counts()
 ```
 
 ```{code-cell} ipython3
+---
+jupyter:
+  outputs_hidden: false
+---
 all_annotations.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
 
