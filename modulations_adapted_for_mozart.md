@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -33,20 +33,44 @@ make_modulation_plans(corpus_obj, regex='{name}')
 ````
 
 ```{code-cell}
-from git import Repo
-
-from utils import print_heading, resolve_dir, get_repo_name
 %load_ext autoreload
 %autoreload 2
 
 from typing import Literal
+import os
 import re
 import ms3
+from git import Repo
 import pandas as pd
+from dimcat import plotting
+
+import utils
+from create_gantt import create_modulation_plan, get_phraseends
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
+```
 
-from create_gantt import create_modulation_plan, get_phraseends
+```{code-cell}
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "modulations"))
+os.makedirs(RESULTS_PATH, exist_ok=True)
+
+
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
+
+
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell}
@@ -54,15 +78,15 @@ from create_gantt import create_modulation_plan, get_phraseends
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))  # for running the notebook in the homepage deployment
 # workflow
 CORPUS_PATH = "~/all_subcorpora/mozart_piano_sonatas"         # for running the notebook locally
-print_heading("Notebook settings")
+utils.print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
-CORPUS_PATH = resolve_dir(CORPUS_PATH)
+CORPUS_PATH = utils.resolve_dir(CORPUS_PATH)
 ```
 
 ```{code-cell}
 repo = Repo(CORPUS_PATH)
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print("dimcat version [NOT USED]")
 print(f"ms3 version {ms3.__version__}")
 ```
@@ -83,7 +107,10 @@ md.head()
 def make_modulation_plans(
     corpus_obj: ms3.Corpus,
     yaxis: Literal['semitones', 'fifths', 'numeral'] = 'semitones',
-    regex = None
+    regex = None,
+    output_path = RESULTS_PATH,
+    width=1024,
+    height=576,
 ):
     for fname, piece in corpus_obj.iter_pieces():
         if regex is not None and not re.search(regex, fname):
@@ -105,6 +132,14 @@ def make_modulation_plans(
         phrases = get_phraseends(at, "quarterbeats")
         data.sort_values(yaxis, ascending=False, inplace=True)
         fig = create_modulation_plan(data, title=f"{fname}", globalkey=globalkey, task_column=yaxis, phraseends=phrases)
+        save_figure_as(
+            fig,
+            filename=f"{fname}_modulation_plan",
+            formats=("png", "pdf"),
+            directory=output_path,
+            width=width,
+            height=height
+        )
         fig.show()
 ```
 

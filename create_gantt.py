@@ -40,6 +40,7 @@ def create_modulation_plan(
     task_column="semitones",
     sort_and_fill=True,
     title="Modulation plan",
+    xaxis_title="Quarter notes",
     globalkey=None,
     phraseends=None,
     cadences=None,
@@ -91,7 +92,11 @@ def create_modulation_plan(
     if task_column in ("semitones", "fifths"):
         ytitle += f" ({task_column})"
 
-    layout = dict(xaxis={"type": None, "title": "Measures"}, yaxis={"title": ytitle})
+    layout = dict(
+        xaxis={"type": None, "title": xaxis_title},
+        yaxis={"title": ytitle},
+        legend=dict(orientation="h", itemsizing="constant", y=1.07),
+    )
 
     if colors is None:
         colors = KEY_COLORS
@@ -248,7 +253,7 @@ def create_gantt(
     fig = ff.create_gantt(data, colors=colors, title=title, **params)
 
     # prevent Plotly from interpreting positions as dates
-    default_layout = dict(xaxis={"type": None})
+    default_layout = dict(xaxis={"type": None}, margin=dict(t=70, b=0, l=0, r=0))
     if layout is not None:
         default_layout.update(layout)
 
