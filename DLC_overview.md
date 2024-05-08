@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -45,7 +45,6 @@ import utils
 ```
 
 ```{code-cell}
-
 
 RESULTS_PATH = os.path.abspath("/home/laser/git/DLC/img")
 os.makedirs(RESULTS_PATH, exist_ok=True)
@@ -143,6 +142,67 @@ update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 # save_figure_as(fig, "pieces_timeline_histogram", height=1250)
+fig.show()
+```
+
+```{code-cell}
+fig = px.histogram(
+    hist_data,
+    x="composed_end",
+    y="length_qb",
+    color="corpus",
+    labels=dict(
+        composed_end="decade",
+        count="pieces",
+    ),
+    color_discrete_map=corpus_name_colors,
+    title=f"Total lengths of the {N} annotated pieces in the Distant Listening Corpus",
+)
+update_figure_layout(
+    fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
+)
+# save_figure_as(fig, "lengths_timeline_histogram", height=1250)
+fig.show()
+```
+
+```{code-cell}
+fig = px.histogram(
+    hist_data,
+    x="composed_end",
+    y="label_count",
+    color="corpus",
+    labels=dict(
+        composed_end="decade",
+        count="pieces",
+    ),
+    color_discrete_map=corpus_name_colors,
+    title=f"Number of labels of the {N} annotated pieces in the Distant Listening Corpus",
+)
+update_figure_layout(
+    fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
+)
+# save_figure_as(fig, "lengths_timeline_histogram", height=1250)
+fig.show()
+```
+
+```{code-cell}
+fig = px.histogram(
+    hist_data,
+    x="composed_end",
+    y="last_mn",
+    color="corpus",
+    labels=dict(
+        composed_end="decade",
+        count="pieces",
+    ),
+    color_discrete_map=corpus_name_colors,
+    title=f"Number of measures in the {N} annotated pieces in the Distant Listening Corpus",
+    height=500,
+)
+update_figure_layout(
+    fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
+)
+# save_figure_as(fig, "lengths_timeline_histogram", height=1250)
 fig.show()
 ```
 
@@ -357,6 +417,7 @@ update_figure_layout(
         # x=0.5,
         # y=-0.1,
     ),
+    height=800,
     font_size=25,
 )
 save_figure_as(fig, "corpus_size", height=1200, width=1440, format="pdf")
