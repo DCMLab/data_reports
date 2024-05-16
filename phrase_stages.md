@@ -359,7 +359,12 @@ def get_minor_y_coordinates(y_root):
 
 
 def _make_localkey_shapes(
-    y_root: int, is_minor: bool, x0: Number, x1: Number, text: Optional[str] = None
+    y_root: int,
+    is_minor: bool,
+    x0: Number,
+    x1: Number,
+    text: Optional[str] = None,
+    parallel: bool = True,
 ) -> List[dict]:
     result = []
     if is_minor:
@@ -382,7 +387,7 @@ def _make_localkey_shapes(
     )
     result.append(make_tonic_line(y_root, x0, x1, line_dash="solid"))
     text = "parallel major" if is_minor else "parallel minor"
-    if y0_secondary is not None:
+    if parallel and y0_secondary is not None:
         result.append(
             utils.make_rectangle_shape(
                 x0=x0,
@@ -397,7 +402,10 @@ def _make_localkey_shapes(
     return result
 
 
-def make_localkey_shapes(phrase_timeline_data):
+def make_localkey_shapes(
+    phrase_timeline_data,
+    parallel: bool = True,
+):
     shapes = []
     rectangle_grouper, _ = make_adjacency_groups(phrase_timeline_data.localkey)
     y_min = phrase_timeline_data.chord_tone_tpc.min()
@@ -407,7 +415,12 @@ def make_localkey_shapes(phrase_timeline_data):
         y_root = first_row.localkey_tonic_tpc - y_min
         text = first_row.localkey
         localkey_shapes = _make_localkey_shapes(
-            y_root, is_minor=first_row.localkey_is_minor, x0=x0, x1=x1, text=text
+            y_root,
+            is_minor=first_row.localkey_is_minor,
+            x0=x0,
+            x1=x1,
+            text=text,
+            parallel=parallel,
         )
         shapes.extend(localkey_shapes)
     shapes[0].update(dict(showlegend=True, name="local key"))
@@ -975,19 +988,6 @@ plot_phrase_stages(phrase_annotations, phrase_id=selected_modulating_id)
 plot_phrase_stages(phrase_annotations, phrase_id=9685)
 ```
 
-```{code-cell} ipython3
-sposalizio = utils.make_root_roman_or_its_dominants_criterion(
-    phrase_annotations, query="phrase_id == 9685 & mc < 19"
-)
-plot_stage_data(
-    sposalizio,
-    localkey_shapes=False,
-    stage_shapes=False,
-    tonicization_shapes=False,
-    detailed_functions=False,
-)
-```
-
 ```{raw-cell}
 from pandas.core.indexers.objects import BaseIndexer
 import numpy.typing as npt
@@ -1013,4 +1013,50 @@ indexer = DominantsToEndIndexer()
 
 ```{code-cell} ipython3
 criterion2stages["uncompressed"]
+```
+
+## Sposalizio chromaticity example
+
+```{code-cell} ipython3
+sposalizio = utils.make_root_roman_or_its_dominants_criterion(
+    phrase_annotations, query="phrase_id == 9685 & mc < 19"
+)
+detailed = True
+phrase_timeline_data = make_timeline_data(sposalizio, detailed=detailed)
+phrase_timeline_data[["Start", "Finish"]] += 60
+colorscale = make_function_colors(detailed=detailed)
+shapes = []
+shapes.extend(make_localkey_shapes(phrase_timeline_data, parallel=False))
+# if stage_shapes:
+#     shapes.extend(
+#         get_tonicization_data(
+#             phrase_timeline_data, stages=True, tonicizations=False
+#         )
+#     )
+# if tonicization_shapes:
+#     shapes.extend(
+#         get_extended_tonicization_shape_data(
+#             stage_data, y_min=phrase_timeline_data.chord_tone_tpc.min()
+#         )
+#     )
+fig = utils.plot_phrase(
+    phrase_timeline_data,
+    colorscale=colorscale,
+    shapes=shapes,
+    x_axis=dict(
+        tick0=0,
+    ),
+)
+fig
+```
+
+```{code-cell} ipython3
+phrase_timeline_data
+```
+
+```{code-cell} ipython3
+ct = phrase_timeline_data.chord_tone_tpc
+above = (ct - 9).astype(str)
+below = (3 - ct).astype(str)
+task = phrase_timeline_data.Task.copy()
 ```
