@@ -20,9 +20,9 @@ ToDo
 * 07-1, phrase_id 2415, vi/V in D would be f# but this is clearly in a. It is a minor key, so bVI should be VI
 * phrase806_n14op131_05_1-79 clearly too long, begins with sequenced segments ending on HCs
 
+```{code-cell} ipython3
 %load_ext autoreload
 %autoreload 2
-
 import os
 import warnings
 from numbers import Number
@@ -39,6 +39,15 @@ from dimcat.data.resources.utils import (
     subselect_multiindex_from_df,
 )
 from dimcat.plotting import make_box_plot, write_image
+```
+
+```{code-cell} ipython3
+---
+mystnb:
+  code_prompt_hide: Hide imports
+  code_prompt_show: Show imports
+tags: [hide-cell]
+---
 from git import Repo
 
 import utils
@@ -122,7 +131,6 @@ make_box_plot(
 ```
 
 ```{code-cell} ipython3
-
 root_roman_or_its_dominants = utils.make_root_roman_or_its_dominants_criterion(
     phrase_annotations,  # query=f"phrase_id == 9649", inspect_masks=True
 )
@@ -839,18 +847,14 @@ colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
 ```{code-cell} ipython3
-def plot_phrase_stages(
-    phrase_annotations,
-    phrase_id,
+def plot_stage_data(
+    stage_data,
     localkey_shapes: bool = True,
     stage_shapes: bool = True,
     tonicization_shapes: bool = True,
     detailed_functions=True,
     **kwargs,
 ):
-    stage_data = utils.make_root_roman_or_its_dominants_criterion(
-        phrase_annotations, query=f"phrase_id == {phrase_id}"
-    )
     phrase_timeline_data = make_timeline_data(stage_data, detailed=detailed_functions)
     colorscale = make_function_colors(detailed=detailed_functions)
     shapes = []
@@ -872,6 +876,28 @@ def plot_phrase_stages(
         phrase_timeline_data, colorscale=colorscale, shapes=shapes, **kwargs
     )
     return fig
+
+
+def plot_phrase_stages(
+    phrase_annotations,
+    phrase_id,
+    localkey_shapes: bool = True,
+    stage_shapes: bool = True,
+    tonicization_shapes: bool = True,
+    detailed_functions=True,
+    **kwargs,
+):
+    stage_data = utils.make_root_roman_or_its_dominants_criterion(
+        phrase_annotations, query=f"phrase_id == {phrase_id}"
+    )
+    return plot_stage_data(
+        stage_data,
+        localkey_shapes,
+        stage_shapes,
+        tonicization_shapes,
+        detailed_functions,
+        **kwargs,
+    )
 
 
 fig = plot_phrase_stages(
@@ -946,7 +972,20 @@ plot_phrase_stages(phrase_annotations, phrase_id=selected_modulating_id)
 ```
 
 ```{code-cell} ipython3
-# plot_phrase_stages(phrase_annotations, phrase_id=2358)
+plot_phrase_stages(phrase_annotations, phrase_id=9685)
+```
+
+```{code-cell} ipython3
+sposalizio = utils.make_root_roman_or_its_dominants_criterion(
+    phrase_annotations, query="phrase_id == 9685 & mc < 19"
+)
+plot_stage_data(
+    sposalizio,
+    localkey_shapes=False,
+    stage_shapes=False,
+    tonicization_shapes=False,
+    detailed_functions=False,
+)
 ```
 
 ```{raw-cell}
