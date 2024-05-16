@@ -23,7 +23,6 @@ ToDo
 ```{code-cell} ipython3
 %load_ext autoreload
 %autoreload 2
-
 import os
 import warnings
 from numbers import Number
@@ -132,7 +131,6 @@ make_box_plot(
 ```
 
 ```{code-cell} ipython3
-
 root_roman_or_its_dominants = utils.make_root_roman_or_its_dominants_criterion(
     phrase_annotations,  # query=f"phrase_id == 9649", inspect_masks=True
 )
@@ -849,18 +847,14 @@ colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
 ```{code-cell} ipython3
-def plot_phrase_stages(
-    phrase_annotations,
-    phrase_id,
+def plot_stage_data(
+    stage_data,
     localkey_shapes: bool = True,
     stage_shapes: bool = True,
     tonicization_shapes: bool = True,
     detailed_functions=True,
     **kwargs,
 ):
-    stage_data = utils.make_root_roman_or_its_dominants_criterion(
-        phrase_annotations, query=f"phrase_id == {phrase_id}"
-    )
     phrase_timeline_data = make_timeline_data(stage_data, detailed=detailed_functions)
     colorscale = make_function_colors(detailed=detailed_functions)
     shapes = []
@@ -882,6 +876,28 @@ def plot_phrase_stages(
         phrase_timeline_data, colorscale=colorscale, shapes=shapes, **kwargs
     )
     return fig
+
+
+def plot_phrase_stages(
+    phrase_annotations,
+    phrase_id,
+    localkey_shapes: bool = True,
+    stage_shapes: bool = True,
+    tonicization_shapes: bool = True,
+    detailed_functions=True,
+    **kwargs,
+):
+    stage_data = utils.make_root_roman_or_its_dominants_criterion(
+        phrase_annotations, query=f"phrase_id == {phrase_id}"
+    )
+    return plot_stage_data(
+        stage_data,
+        localkey_shapes,
+        stage_shapes,
+        tonicization_shapes,
+        detailed_functions,
+        **kwargs,
+    )
 
 
 fig = plot_phrase_stages(
