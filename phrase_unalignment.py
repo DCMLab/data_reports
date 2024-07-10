@@ -218,7 +218,16 @@ original_sankey = make_simple_phrase_sankey(
     original_stages[original_stages.iloc[:, 0].notna()], cut_at_stage=10
 )
 save_figure_as(original_sankey, "numeral_borrowed_sankey_before", width=800, height=500)
+
 original_sankey
+
+# %%
+# created for public defense
+original_sankey.update_layout(
+    font=dict(size=25, color="blue"),
+    title=dict(text="Harmony from a distance (~1600 - ~1930)", automargin=True),
+)
+original_sankey.write_html("numeral_borrowed_sankey_before.html")
 
 # %%
 numeral_criterion = stage_data.numeral_or_applied_to_numeral
@@ -280,7 +289,7 @@ def show_era_stats(stages, eras=DEFAULT_ERAS):
     for era, query in eras.items():
         era_stages = stages.query(query)
         column = era_stages.columns[0]
-        end_label = era_stages.groupby("phrase_id")[column].first()
+        end_label = era_stages.groupby("phrase_id")[column].stage_values()
         index_levels = era_stages.index.to_frame()
         n_phrases = index_levels.phrase_id.nunique()
         n_pieces = len(set(index_levels[["corpus", "piece"]].itertuples(index=False)))
