@@ -955,8 +955,149 @@ selected_modulating_id = choice(modulating_ids)
 plot_phrase_stages(phrase_annotations, phrase_id=selected_modulating_id)
 ```
 
+# Sposalizio plot for Chromaticity paper
+
 ```{code-cell} ipython3
-# plot_phrase_stages(phrase_annotations, phrase_id=2358)
+sposalizio = plot_phrase_stages(phrase_annotations, phrase_id=9685)
+```
+
+```{code-cell} ipython3
+
+def _make_localkey_shapes(
+    y_root: int, is_minor: bool, x0: Number, x1: Number, text: Optional[str] = None
+) -> List[dict]:
+    result = []
+    if is_minor:
+        y0_primary, y1_primary, y0_secondary, y1_secondary = get_minor_y_coordinates(
+            y_root
+        )
+    else:
+        y0_primary, y1_primary, y0_secondary, y1_secondary = get_major_y_coordinates(
+            y_root
+        )
+    result.append(
+        utils.make_rectangle_shape(
+            x0=x0,
+            x1=x1,
+            y0=y0_primary,
+            y1=y1_primary,
+            text=text,
+            legendgroup="localkey",
+        )
+    )
+    result.append(make_tonic_line(y_root, x0, x1, line_dash="solid"))
+    # text = "parallel major" if is_minor else "parallel minor"
+    # if y0_secondary is not None:
+    #     result.append(
+    #         utils.make_rectangle_shape(
+    #             x0=x0,
+    #             x1=x1,
+    #             y0=y0_secondary,
+    #             y1=y1_secondary,
+    #             text=text,
+    #             line_dash="dot",
+    #             legendgroup="localkey",
+    #         )
+    #     )
+    return result
+
+def add_tone_to_timeline(df, row_number, tpc, task, resource="out"):
+    new_row = df.iloc[row_number].copy()
+    new_row.loc["chord_tone_tpc"] = tpc
+    new_row.loc["Task"] = task
+    if resource is not None:
+        new_row.loc["Resource"] = resource
+    return pd.concat([df.iloc[:row_number], new_row.to_frame().T, df.iloc[row_number:]])
+
+def make_sposalizio(
+    phrase_annotations,
+    phrase_id,
+    localkey_shapes: bool = True,
+    stage_shapes: bool = True,
+    tonicization_shapes: bool = True,
+    detailed_functions=True,
+    **kwargs,
+):
+    stage_data = utils.make_root_roman_or_its_dominants_criterion(
+        phrase_annotations, query=f"phrase_id == {phrase_id}"
+    )
+    phrase_timeline_data = make_timeline_data(stage_data, detailed=detailed_functions)
+    phrase_timeline_data = phrase_timeline_data.iloc[70:][["label", "chord_tone_tpc", "Start", "Finish", "Task", "Resource", "globalkey", "localkey", "localkey_tonic_tpc", "localkey_is_minor", ]]
+    #return phrase_timeline_data
+    new_resource_column = pd.Series("chromatic-in", index=phrase_timeline_data.index)
+    new_resource_column.loc[phrase_timeline_data.chord_tone_tpc.between(3, 9)] = "diatonic-in"
+    phrase_timeline_data.Resource = new_resource_column
+    tones_to_add = [
+        (33, 11, "E#", "chromatic-out"),
+        (30, 11, "E#", "chromatic-out"),
+        (27, 8, "G#", "diatonic-out"),
+        (24, 8, "G#", "diatonic-out"),
+        (12, -3, "Eb", "chromatic-out"),
+        (12, -2, "Bb", "chromatic-out"),
+        (9, -3, "Eb", "chromatic-out"),
+        (9, -2, "Bb", "chromatic-out"),
+        (3, 7, "C#", "diatonic-out"),
+        (3, 8, "G#", "diatonic-out"),
+        (0, 7, "C#", "diatonic-out"),
+        (0, 8, "G#", "diatonic-out"),
+    ]
+    for row_number, tpc, task, resource in tones_to_add:
+        phrase_timeline_data = add_tone_to_timeline(phrase_timeline_data, row_number, tpc, task, resource)
+    #colorscale = make_function_colors(detailed=detailed_functions)
+    colorscale = {
+        'diatonic-in': "#000000", # '#6b7280',
+        'diatonic-out': "#0055ff",
+        "chromatic-in": "#ff0000",
+        "chromatic-out": "#ad4aad",
+    }
+    shapes = []
+    if localkey_shapes:
+        shapes.extend(make_localkey_shapes(phrase_timeline_data))
+    if stage_shapes:
+        shapes.extend(
+            get_tonicization_data(
+                phrase_timeline_data, stages=True, tonicizations=False
+            )
+        )
+    if tonicization_shapes:
+        shapes.extend(
+            get_extended_tonicization_shape_data(
+                stage_data, y_min=phrase_timeline_data.chord_tone_tpc.min()
+            )
+        )
+    print(shapes)
+    fig = utils.plot_phrase(
+        phrase_timeline_data, colorscale=colorscale, shapes=shapes, **kwargs
+    )
+    return fig
+
+
+sposalizio = make_sposalizio(
+    phrase_annotations,
+    phrase_id=9685,
+    stage_shapes=False,
+    tonicization_shapes=False,
+    x_axis=dict(
+        range=[-117, -55],
+        tickmode="array",
+        tickvals=[-116, -110, -104, -98, -92, -86, -80, -74, -68, -62, -56],
+        ticktext=[9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19],
+    ),
+    title=""
+)
+
+sposalizio
+```
+
+```{code-cell} ipython3
+save_figure_as(
+    sposalizio,
+    "chromatic_example_sposalizio",
+    formats=["svg", "png", "pdf"],
+    directory="/home/laser/git/chromaticism-paper/figures/examples/",
+    width=1280,
+    height=600,
+)
 ```
 
 ```{raw-cell}
