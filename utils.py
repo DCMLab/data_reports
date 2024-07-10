@@ -2084,41 +2084,32 @@ def add_bass_degree_columns(feature_df):
     return feature_df
 
 
-def make_key_region_summary_table(
-    df, mutate_dataframe: bool = True, *groupby_args, **groupby_kwargs
-):
+def make_key_region_summary_table(df, *groupby_args, **groupby_kwargs):
     """Takes an extended harmonies table that is segmented by local keys. The segments are iterated over using the
     *groupby_args and **groupby_kwargs arguments.
     """
     groupby_kwargs = dict(groupby_kwargs, group_keys=False)
-    if mutate_dataframe:
-        df = add_bass_degree_columns(
-            df, mutate_dataframe=mutate_dataframe, *groupby_args, **groupby_kwargs
-        )
-    else:
-        add_bass_degree_columns(
-            df, mutate_dataframe=mutate_dataframe, *groupby_args, **groupby_kwargs
-        )
-    if "bass_interval" not in df.columns:
-        bass_interval_column = df.groupby(
-            *groupby_args, **groupby_kwargs
-        ).bass_note.apply(lambda bd: bd.shift(-1) - bd)
-        pc_interval_column = ms3.transform(bass_interval_column, ms3.fifths2pc)
-        pc_interval_column = pc_interval_column.where(
-            pc_interval_column <= 6, pc_interval_column % -6
-        )
-        if mutate_dataframe:
-            df["bass_interval"] = bass_interval_column
-            df["bass_interval_pc"] = pc_interval_column
-        else:
-            df = pd.concat(
-                [
-                    df,
-                    bass_interval_column.rename("bass_interval"),
-                    pc_interval_column.rename("bass_interval_pc"),
-                ],
-                axis=1,
-            )
+    df = add_bass_degree_columns(df)
+    # if "bass_interval" not in df.columns:
+    #     bass_interval_column = df.groupby(
+    #         *groupby_args, **groupby_kwargs
+    #     ).bass_note.apply(lambda bd: bd.shift(-1) - bd)
+    #     pc_interval_column = ms3.transform(bass_interval_column, ms3.fifths2pc)
+    #     pc_interval_column = pc_interval_column.where(
+    #         pc_interval_column <= 6, pc_interval_column % -6
+    #     )
+    #     if mutate_dataframe:
+    #         df["bass_interval"] = bass_interval_column
+    #         df["bass_interval_pc"] = pc_interval_column
+    #     else:
+    #         df = pd.concat(
+    #             [
+    #                 df,
+    #                 bass_interval_column.rename("bass_interval"),
+    #                 pc_interval_column.rename("bass_interval_pc"),
+    #             ],
+    #             axis=1,
+    #         )
     return df.groupby(*groupby_args, **groupby_kwargs).apply(summarize)
 
 
