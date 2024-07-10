@@ -1781,6 +1781,8 @@ def plot_transition_heatmaps(
         left_unigrams = left_unigrams.sort_index(key=scale_degree_order)
     else:
         left_unigrams = left_unigrams.sort_values(ascending=False)
+    if "∅" in left_unigrams.index:
+        left_unigrams["∅"] = 0
     left_unigrams_norm = left_unigrams / left_unigrams.sum()
     ix_intersection = left_unigrams_norm.index.intersection(
         left_transition_matrix.index
@@ -1808,6 +1810,8 @@ def plot_transition_heatmaps(
             right_unigrams = right_unigrams.sort_index(key=scale_degree_order)
         else:
             right_unigrams = right_unigrams.sort_values(ascending=False)
+        if "∅" in right_unigrams.index:
+            right_unigrams["∅"] = 0
         right_unigrams_norm = right_unigrams / right_unigrams.sum()
         ix_intersection = right_unigrams_norm.index.intersection(
             right_transition_matrix.index
@@ -1976,7 +1980,7 @@ def scale_degree_order(
         return (10,)
     match = re.match(r"([#b]*)([1-7])", scale_degree)
     accidental, degree = match.groups()
-    return int(degree), accidental.find("#") - accidental.find("b")
+    return int(degree), accidental.count("#") - accidental.count("b")
 
 
 def safe_interval(fifths, terminal_symbol="⋉"):
