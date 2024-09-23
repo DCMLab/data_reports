@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: revamp
   language: python
@@ -16,7 +16,7 @@ kernelspec:
 
 This notebook gives a general overview of the features included in the dataset.
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -43,7 +43,7 @@ from plotly.subplots import make_subplots
 import utils
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -68,7 +68,7 @@ def save_figure_as(
 
 **Loading data**
 
-```{code-cell}
+```{code-cell} ipython3
 package_path = utils.resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
@@ -81,7 +81,7 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
 all_metadata = filtered_D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
@@ -91,7 +91,7 @@ all_metadata._df["corpus_name"] = all_metadata.index.get_level_values(0).map(
 all_metadata
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 mean_composition_years = utils.corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
 corpus_colors = dict(zip(chronological_order, utils.CORPUS_COLOR_SCALE))
@@ -104,7 +104,7 @@ corpus_name_colors = {
 }
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 mean_composition_years
 ```
 
@@ -112,7 +112,7 @@ mean_composition_years
 
 This section relies on the dataset's metadata.
 
-```{code-cell}
+```{code-cell} ipython3
 valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors="coerce")
 valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors="coerce")
 print(
@@ -123,13 +123,13 @@ print(
 
 ### Mean composition years per corpus
 
-```{code-cell}
+```{code-cell} ipython3
 def make_summary(metadata_df):
     piece_is_annotated = metadata_df.label_count > 0
     return metadata_df[piece_is_annotated].copy()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 summary = make_summary(all_metadata)
 N = len(summary)
 summary
@@ -137,7 +137,7 @@ summary
 
 ### Composition years histogram
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 hist_data = summary.reset_index()
@@ -160,7 +160,7 @@ plotting.update_figure_layout(
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.histogram(
     hist_data,
     x="composed_end",
@@ -173,14 +173,14 @@ fig = px.histogram(
     color_discrete_map=corpus_name_colors,
     title=f"Total lengths of the {N} annotated pieces in the Distant Listening Corpus",
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 # save_figure_as(fig, "lengths_timeline_histogram", height=1250)
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.histogram(
     hist_data,
     x="composed_end",
@@ -193,14 +193,14 @@ fig = px.histogram(
     color_discrete_map=corpus_name_colors,
     title=f"Number of labels of the {N} annotated pieces in the Distant Listening Corpus",
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 # save_figure_as(fig, "lengths_timeline_histogram", height=1250)
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.histogram(
     hist_data,
     x="composed_end",
@@ -214,14 +214,14 @@ fig = px.histogram(
     title=f"Number of measures in the {N} annotated pieces in the Distant Listening Corpus",
     height=500,
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 # save_figure_as(fig, "lengths_timeline_histogram", height=1250)
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 all_subcorpora = pd.read_csv("/home/laser/git/workflow_deployment/all_subcorpora.csv")
 is_public = all_subcorpora.dcml_corpora.notna()
 # is_dlc = all_subcorpora.distant_listening_corpus.notna()
@@ -252,11 +252,15 @@ hist_data = summary.reset_index().sort_values(
 hist_data.corpus = hist_data.corpus.map(corpus_names)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+hist_data.groupby("first published").corpus.nunique()
+```
+
+```{code-cell} ipython3
 hist_data.head()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.histogram(
     hist_data,
     x="composed_end",
@@ -273,7 +277,7 @@ plotting.update_figure_layout(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 COLOR_MAPPING = dict(
     zip(
         (
@@ -356,7 +360,7 @@ plotting.update_figure_layout(
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_stacked_go_histograms(
     hist_data,
     y: List[Optional[str]],
@@ -443,7 +447,7 @@ fig
 
 ### Overview
 
-```{code-cell}
+```{code-cell} ipython3
 def piece_order(_):
     return get_middle_composition_year(all_metadata)
 
@@ -451,7 +455,7 @@ def piece_order(_):
 all_metadata.sort_values("composed_start", key=piece_order)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_overview_table(groupby, group_name="pieces"):
     n_groups = groupby.size().rename(group_name)
     absolute_numbers = dict(
@@ -472,14 +476,14 @@ absolute = make_overview_table(summary.groupby("corpus_name", dropna=False))
 absolute.astype(int)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 public = dc.Dataset.from_package(
     "/home/laser/git/meta_repositories/dcml_corpora/dcml_corpora.datapackage.json"
 )
 public
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def summarize_dataset(D):
     all_metadata = D.get_metadata()
     all_metadata._df["corpus_name"] = all_metadata.index.get_level_values(0).map(
@@ -493,14 +497,23 @@ dcml_corpora = summarize_dataset(public)
 print(dcml_corpora.astype(int).to_markdown())
 ```
 
-```{code-cell}
+**To update table in the paper:**
+
+* Paste the markdown into https://tablesgenerator.com/
+* set to Booktabs style
+* set last row to bold
+* Generate Latex
+* replace only the table contents in the paper (not headers, not commands)
+* Add a `\midrule` at the end of the second-to-last row
+
+```{code-cell} ipython3
 distant_listening = summarize_dataset(D)
-print(distant_listening.astype(int).to_markdown())
+print(distant_listening.astype(int).astype(object).to_markdown())
 ```
 
 ### Measures
 
-```{code-cell}
+```{code-cell} ipython3
 all_measures = filtered_D.get_feature("measures")
 print(
     f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files."
@@ -508,7 +521,7 @@ print(
 all_measures.head()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 timesig_counts = all_measures.timesig.value_counts(dropna=False)
 print(
     f"Distribution of time signatures over the {timesig_counts.sum()} XML measure (MC):"
@@ -516,7 +529,7 @@ print(
 timesig_counts
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 k = 6
 most_frequent_ts = timesig_counts.iloc[:k]
 most_frequent_ts_count = most_frequent_ts.sum()
@@ -526,7 +539,7 @@ print(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 tsc = timesig_counts[timesig_counts >= 5].to_dict()
 tsc["other"] = timesig_counts[timesig_counts < 5].sum()
 y_name = "# measures"
@@ -557,7 +570,7 @@ save_figure_as(ts_bar, "timesig_bar", width=800, height=290)
 
 All symbols, independent of the local key (the mode of which changes their semantics).
 
-```{code-cell}
+```{code-cell} ipython3
 try:
     all_annotations = D.get_feature("harmonylabels").df
 except Exception:
@@ -588,7 +601,7 @@ else:
     print("Dataset contains no annotations.")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 all_chords
 chord_counts = all_chords.chord_and_mode.value_counts()
 ix = chord_counts.index

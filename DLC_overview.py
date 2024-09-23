@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -165,7 +165,7 @@ fig = px.histogram(
     color_discrete_map=corpus_name_colors,
     title=f"Total lengths of the {N} annotated pieces in the Distant Listening Corpus",
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 # save_figure_as(fig, "lengths_timeline_histogram", height=1250)
@@ -184,7 +184,7 @@ fig = px.histogram(
     color_discrete_map=corpus_name_colors,
     title=f"Number of labels of the {N} annotated pieces in the Distant Listening Corpus",
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 # save_figure_as(fig, "lengths_timeline_histogram", height=1250)
@@ -204,7 +204,7 @@ fig = px.histogram(
     title=f"Number of measures in the {N} annotated pieces in the Distant Listening Corpus",
     height=500,
 )
-update_figure_layout(
+plotting.update_figure_layout(
     fig, traces_settings=dict(xbins=dict(size=10)), legend=dict(font=dict(size=16))
 )
 # save_figure_as(fig, "lengths_timeline_histogram", height=1250)
@@ -239,6 +239,9 @@ hist_data = summary.reset_index().sort_values(
     "first published", key=lambda S: S.eq("DLC")
 )  # DLC always last bar
 hist_data.corpus = hist_data.corpus.map(corpus_names)
+
+# %%
+hist_data.groupby("first published").corpus.nunique()
 
 # %%
 hist_data.head()
@@ -479,9 +482,19 @@ def summarize_dataset(D):
 dcml_corpora = summarize_dataset(public)
 print(dcml_corpora.astype(int).to_markdown())
 
+# %% [markdown]
+# **To update table in the paper:**
+#
+# * Paste the markdown into https://tablesgenerator.com/
+# * set to Booktabs style
+# * set last row to bold
+# * Generate Latex
+# * replace only the table contents in the paper (not headers, not commands)
+# * Add a `\midrule` at the end of the second-to-last row
+
 # %%
 distant_listening = summarize_dataset(D)
-print(distant_listening.astype(int).to_markdown())
+print(distant_listening.astype(int).astype(object).to_markdown())
 
 # %% [markdown]
 # ### Measures
