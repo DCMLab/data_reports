@@ -56,9 +56,7 @@ def save_figure_as(
 
 
 # %% tags=["hide-input"] editable=true slideshow={"slide_type": ""}
-package_path = utils.resolve_dir(
-    "~/dimcat_data/couperin_concerts.datapackage.json"
-)
+package_path = utils.resolve_dir("~/dimcat_data/couperin_concerts.datapackage.json")
 D = dc.Dataset.from_package(package_path)
 D
 
@@ -306,15 +304,16 @@ unigram_proportions.plot_grouped()
 # #### Tone profiles for all major and minor local keys
 
 # %% editable=true slideshow={"slide_type": ""}
-keys_segmented = slicers.KeySlicer().process(D)
+key_slicer = slicers.KeySlicer()
+keys_segmented = key_slicer.process(D)
 notes = keys_segmented.get_feature("Notes")
 notes
 
-# %%
-keys = keys_segmented.pipeline.steps[-1].slice_metadata
+# %% editable=true slideshow={"slide_type": ""}
+keys = key_slicer.slice_metadata
 
-# %%
-keys = keys[[col for col in keys.columns if col not in notes]]
+# %% editable=true slideshow={"slide_type": ""}
+keys = keys[keys.columns.difference(notes.columns)]
 notes_joined_with_keys = notes.join(keys, on=keys.index.names)
 notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
 mode_tpcs = (
@@ -331,7 +330,7 @@ mode_tpcs["duration_pct"] = mode_tpcs.groupby(
 ).duration_qb.apply(lambda S: S / S.sum())
 mode_tpcs["mode"] = mode_tpcs.localkey_is_minor.map({False: "major", True: "minor"})
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 # mode_tpcs = mode_tpcs[mode_tpcs['duration_pct'] > 0.001]
 # sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', 'b4', '4', '#4', '##4', 'b5', '5', '#5', 'b6','6', '#6',
 # 'b7', '7']
@@ -350,12 +349,12 @@ fig = px.bar(
     # log_y=True,
     # category_orders=dict(sd=sd_order)
 )
-fig.update_layout(**STD_LAYOUT, legend=legend)
-fig.update_xaxes(tickmode="array", tickvals=mode_tpcs.tpc, ticktext=mode_tpcs.sd)
-save_figure_as(fig, "scale_degree_distributions_maj_min_normalized_bars", height=600)
+# fig.update_layout(**utils.STD_LAYOUT, legend=legend)
+# fig.update_xaxes(tickmode="array", tickvals=mode_tpcs.tpc, ticktext=mode_tpcs.sd)
+# save_figure_as(fig, "scale_degree_distributions_maj_min_normalized_bars", height=600)
 fig.show()
 
-# %% [markdown]
+# %% [markdown] editable=true slideshow={"slide_type": ""}
 # #### Whole dataset
 
 # %%
@@ -695,10 +694,10 @@ maj_min_ratio_per_corpus = pd.concat(
     ],
     axis=1,
 )
-maj_min_ratio_per_corpus[
-    "corpus_name"
-] = maj_min_ratio_per_corpus.index.get_level_values("corpus").map(
-    get_corpus_display_name
+maj_min_ratio_per_corpus["corpus_name"] = (
+    maj_min_ratio_per_corpus.index.get_level_values("corpus").map(
+        get_corpus_display_name
+    )
 )
 maj_min_ratio_per_corpus["mode"] = maj_min_ratio_per_corpus.index.get_level_values(
     "localkey_is_minor"
