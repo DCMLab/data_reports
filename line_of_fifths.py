@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -50,7 +50,7 @@ def make_output_path(filename):
 
 # %%
 package_path = resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+    "~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json"
 )
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")

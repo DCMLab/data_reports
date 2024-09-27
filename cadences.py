@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.16.4
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -395,7 +395,6 @@ print(
 # %% [markdown]
 # ### Ultimae as Roman numeral
 
-
 # %%
 def highlight(row, color="#ffffb3"):
     if row.counts < 10:
@@ -478,7 +477,6 @@ fig.show()
 # %% [markdown]
 # ### PACs with ultima I/i
 
-
 # %%
 def remove_immediate_duplicates(lst):
     return tuple(a for a, b in zip(lst, (None,) + lst) if a != b)
@@ -554,8 +552,6 @@ value_count_df(bass_prog_no_dups)
 
 
 # %%
-
-
 def progressions2graph_data(progressions, cut_at_stage=None):
     stage_nodes = defaultdict(dict)
     edge_weights = Counter()
@@ -616,7 +612,6 @@ fig.show()
 
 # %% [markdown]
 # #### Bass degrees without accidentals
-
 
 # %%
 def remove_sd_accidentals(t):

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.4
 kernelspec:
   display_name: revamp
   language: python
@@ -576,7 +576,6 @@ value_count_df(bass_prog_no_dups)
 ```
 
 ```{code-cell}
-
 def progressions2graph_data(progressions, cut_at_stage=None):
     stage_nodes = defaultdict(dict)
     edge_weights = Counter()
