@@ -14,12 +14,15 @@ kernelspec:
 
 # Annotations
 
-```{code-cell}
+```{code-cell} ipython3
 ---
+editable: true
 mystnb:
   code_prompt_hide: Hide imports
   code_prompt_show: Show imports
-tags: [hide-cell]
+slideshow:
+  slide_type: ''
+tags: [hide-input]
 ---
 %load_ext autoreload
 %autoreload 2
@@ -37,8 +40,14 @@ from git import Repo
 import utils
 ```
 
-```{code-cell}
-RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [hide-input]
+---
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "annotations"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -60,34 +69,53 @@ def save_figure_as(
         plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
-:tags: [hide-input]
-
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [hide-input]
+---
 package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+    "~/dimcat_data/couperin_concerts.datapackage.json"
 )
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [hide-input]
+---
+package = D.inputs.get_package()
+package_info = package._package.custom
+git_tag = package_info.get("git_tag")
+utils.print_heading("Data and software versions")
+print(f"datapackage version: {package.package_name} {git_tag}")
+print(f"dimcat version {dc.__version__}")
+```
+
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 filtered_D = D.apply_step("HasHarmonyLabelsFilter")
 all_metadata = filtered_D.get_metadata()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 assert len(all_metadata) > 0, "No pieces selected for analysis."
 chronological_corpus_names = all_metadata.get_corpus_names()
 ```
 
 ## DCML harmony labels
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 all_annotations = filtered_D.get_feature("DcmlAnnotations")
@@ -97,12 +125,12 @@ annotated_notes = filtered_D.get_feature("notes").subselect(is_annotated_index)
 print(f"The annotated pieces have {len(annotated_notes)} notes.")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 all_chords = filtered_D.get_feature("harmonylabels")
 all_chords.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 print(
     f"{len(all_annotations)} annotations, of which {len(all_chords)} are harmony labels."
 )
@@ -114,7 +142,7 @@ For computing unigram statistics, the tokens need to be grouped by their occurre
 because this changes their meaning. To that aim, the annotated corpus needs to be sliced into contiguous localkey
 segments which are then grouped into a major (`is_minor=False`) and a minor group.
 
-```{code-cell}
+```{code-cell} ipython3
 root_durations = (
     all_chords[all_chords.root.between(-5, 6)]
     .groupby(["root", "chord_type"])
@@ -142,7 +170,7 @@ save_figure_as(fig, "chord_type_distribution_over_scale_degrees_absolute_stacked
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 relative_roots = all_chords[
     ["numeral", "duration_qb", "relativeroot", "localkey_is_minor", "chord_type"]
 ].copy()
@@ -165,7 +193,7 @@ relative_roots["type_reduced"] = relative_roots.chord_type.map(replace_rare)
 # relative_roots.loc[is_special, 'root'] = -4
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 root_durations = (
     relative_roots.groupby(["root", "type_reduced"])
     .duration_qb.sum()
@@ -212,14 +240,14 @@ save_figure_as(fig, "chord_type_distribution_over_scale_degrees_absolute_grouped
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 print(
     f"Reduced to {len(set(bar_data.iloc[:,:2].itertuples(index=False, name=None)))} types. "
     f"Paper cites the sum of types in major and types in minor (see below), treating them as distinct."
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 dim_or_aug = bar_data[
     bar_data.root.str.startswith("a") | bar_data.root.str.startswith("d")
 ].duration_qb.sum()
@@ -229,7 +257,7 @@ print(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chords_by_mode = groupers.ModeGrouper().process(all_chords)
 chords_by_mode.format = "scale_degree"
 ```
@@ -238,21 +266,21 @@ chords_by_mode.format = "scale_degree"
 
 #### Whole dataset
 
-```{code-cell}
+```{code-cell} ipython3
 unigram_proportions = chords_by_mode.get_default_analysis()
 unigram_proportions.make_ranking_table()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chords_by_mode.apply_step("Counter")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chords_by_mode.format = "scale_degree"
 chords_by_mode.get_default_analysis().make_ranking_table()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 unigram_proportions.plot_grouped()
 ```
 
@@ -337,17 +365,22 @@ print(types_shared_between_pieces)
 
 #### Tone profiles for all major and minor local keys
 
-```{code-cell}
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 keys_segmented = slicers.KeySlicer().process(D)
-notes = keys_segmented.get_facet("notes")
+notes = keys_segmented.get_feature("Notes")
 notes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 keys = keys_segmented.pipeline.steps[-1].slice_metadata
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 keys = keys[[col for col in keys.columns if col not in notes]]
 notes_joined_with_keys = notes.join(keys, on=keys.index.names)
 notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
@@ -366,7 +399,7 @@ mode_tpcs["duration_pct"] = mode_tpcs.groupby(
 mode_tpcs["mode"] = mode_tpcs.localkey_is_minor.map({False: "major", True: "minor"})
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # mode_tpcs = mode_tpcs[mode_tpcs['duration_pct'] > 0.001]
 # sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', 'b4', '4', '#4', '##4', 'b5', '5', '#5', 'b6','6', '#6',
 # 'b7', '7']
@@ -393,15 +426,15 @@ fig.show()
 
 #### Whole dataset
 
-```{code-cell}
+```{code-cell} ipython3
 bigrams = dc.ChordSymbolBigrams(once_per_group=True).process(mode_slices)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 bigrams.get()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 modes = {True: "MINOR", False: "MAJOR"}
 for (is_minor,), ugs in bigrams.iter():
     print(
@@ -412,17 +445,17 @@ for (is_minor,), ugs in bigrams.iter():
 
 #### Per corpus
 
-```{code-cell}
+```{code-cell} ipython3
 corpus_wise_bigrams = dc.Pipeline(
     [dc.CorpusGrouper(), dc.ChordSymbolBigrams(once_per_group=True)]
 ).process(mode_slices)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 corpus_wise_bigrams.get()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 for (is_minor, corpus_name), ugs in corpus_wise_bigrams.iter():
     print(
         f"{corpus_name} {modes[is_minor]} bigrams ({ugs.shape[0]} transition types, {ugs.sum()} tokens)"
@@ -430,14 +463,14 @@ for (is_minor, corpus_name), ugs in corpus_wise_bigrams.iter():
     print(ugs.head(5).to_string())
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 normalized_corpus_unigrams = {
     group: (100 * ugs / ugs.sum()).round(1).rename("frequency")
     for group, ugs in corpus_wise_unigrams.iter()
 }
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 transitions_from_shared_types = {False: {}, True: {}}
 for (is_minor, corpus_name), bgs in corpus_wise_bigrams.iter():
     transitions_normalized_per_from = bgs.groupby(level="from", group_keys=False).apply(
@@ -461,7 +494,7 @@ for (is_minor, corpus_name), bgs in corpus_wise_bigrams.iter():
     transitions_from_shared_types[is_minor][corpus_name] = combined
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 pd.concat(
     transitions_from_shared_types[False].values(),
     keys=transitions_from_shared_types[False].keys(),
@@ -469,7 +502,7 @@ pd.concat(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 pd.concat(
     transitions_from_shared_types[True].values(),
     keys=transitions_from_shared_types[False].keys(),
@@ -479,13 +512,13 @@ pd.concat(
 
 #### Per piece
 
-```{code-cell}
+```{code-cell} ipython3
 piece_wise_bigrams = dc.Pipeline(
     [dc.PieceGrouper(), dc.ChordSymbolBigrams(once_per_group=True)]
 ).process(mode_slices)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 piece_wise_bigrams.get()
 ```
 
@@ -494,17 +527,17 @@ piece_wise_bigrams.get()
 ## Phrases
 ### Presence of phrase annotation symbols per dataset:
 
-```{code-cell}
+```{code-cell} ipython3
 all_annotations.groupby(["corpus"]).phraseend.value_counts()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 all_annotations.subselect([("couperin_concerts", "c03n06_musette_1")])
 ```
 
 ### Presence of legacy phrase endings
 
-```{code-cell}
+```{code-cell} ipython3
 legacy = all_annotations[all_annotations.phraseend == r"\\"]
 legacy.groupby(level=0).size()
 ```
@@ -515,7 +548,7 @@ legacy.groupby(level=0).size()
 * `duration_qb`: duration of each phrase, measured in quarter notes
 * `phrase_slice`: time interval of each annotated phrases (for segmenting chord progressions and notes)
 
-```{code-cell}
+```{code-cell} ipython3
 phrase_segmented = dc.PhraseSlicer().process(filtered_D)
 phrases = phrase_segmented.get_slice_info()
 print(f"Overall number of phrases is {len(phrases.index)}")
@@ -524,12 +557,12 @@ phrases.head(10).style.apply(color_background, subset=["quarterbeats", "duration
 
 ### A table with the chord sequences of all annotated phrases
 
-```{code-cell}
+```{code-cell} ipython3
 phrase_segments = phrase_segmented.get_facet("expanded")
 phrase_segments
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 phrase2timesigs = phrase_segments.groupby(level=[0, 1, 2]).timesig.unique()
@@ -573,7 +606,7 @@ fig.show()
 
 ### Local keys per phrase
 
-```{code-cell}
+```{code-cell} ipython3
 local_keys_per_phrase = (
     phrase_segments.groupby(level=[0, 1, 2]).localkey.unique().map(tuple)
 )
@@ -593,7 +626,7 @@ phrases_with_keys.head(10).style.apply(
 
 #### Number of unique local keys per phrase
 
-```{code-cell}
+```{code-cell} ipython3
 count_n_keys = (
     phrases_with_keys.n_local_keys.value_counts().rename("#phrases").to_frame()
 )
@@ -603,7 +636,7 @@ count_n_keys
 
 #### The most frequent keys for non-modulating phrases
 
-```{code-cell}
+```{code-cell} ipython3
 unique_key_selector = phrases_with_keys.n_local_keys == 1
 phrases_with_unique_key = phrases_with_keys[unique_key_selector].copy()
 phrases_with_unique_key.local_keys = phrases_with_unique_key.local_keys.map(
@@ -614,7 +647,7 @@ value_count_df(phrases_with_unique_key.local_keys, counts_column="#phrases")
 
 #### Most frequent modulations within one phrase
 
-```{code-cell}
+```{code-cell} ipython3
 two_keys_selector = phrases_with_keys.n_local_keys > 1
 phrases_with_unique_key = phrases_with_keys[two_keys_selector].copy()
 value_count_df(phrases_with_unique_key.local_keys, "modulations")
@@ -622,7 +655,7 @@ value_count_df(phrases_with_unique_key.local_keys, "modulations")
 
 ## Key areas
 
-```{code-cell}
+```{code-cell} ipython3
 from ms3 import (
     replace_boolean_mode_by_strings,
     resolve_all_relative_numerals,
@@ -643,7 +676,7 @@ keys.head(5).style.apply(color_background, subset="localkey")
 
 All durations given in quarter notes
 
-```{code-cell}
+```{code-cell} ipython3
 key_durations = (
     keys.groupby(["globalkey_is_minor", "localkey"])
     .duration_qb.sum()
@@ -652,7 +685,7 @@ key_durations = (
 print(f"{len(key_durations)} keys overall including hierarchical such as 'III/v'.")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 keys_resolved = resolve_all_relative_numerals(keys)
 key_resolved_durations = (
     keys_resolved.groupby(["globalkey_is_minor", "localkey"])
@@ -667,7 +700,7 @@ key_resolved_durations
 
 `globalkey_mode=minor` => Piece is in Minor
 
-```{code-cell}
+```{code-cell} ipython3
 pie_data = replace_boolean_mode_by_strings(key_resolved_durations.reset_index())
 fig = px.pie(
     pie_data,
@@ -691,7 +724,7 @@ fig.show()
 
 #### Distribution of intervals between localkey tonic and global tonic
 
-```{code-cell}
+```{code-cell} ipython3
 localkey_fifths_durations = keys.groupby(
     ["localkey_fifths", "localkey_is_minor"]
 ).duration_qb.sum()
@@ -719,7 +752,7 @@ fig.show()
 ### Ratio between major and minor key segments by aggregated durations
 #### Overall
 
-```{code-cell}
+```{code-cell} ipython3
 keys.duration_qb = pd.to_numeric(keys.duration_qb)
 maj_min_ratio = keys.groupby("localkey_is_minor").duration_qb.sum().to_frame()
 maj_min_ratio["fraction"] = (
@@ -730,7 +763,12 @@ maj_min_ratio
 
 #### By dataset
 
-```{code-cell}
+```{code-cell} ipython3
+---
+editable: true
+slideshow:
+  slide_type: ''
+---
 segment_duration_per_corpus = (
     keys.groupby(["corpus", "localkey_is_minor"]).duration_qb.sum().round(2)
 )
@@ -754,23 +792,4 @@ maj_min_ratio_per_corpus[
 maj_min_ratio_per_corpus["mode"] = maj_min_ratio_per_corpus.index.get_level_values(
     "localkey_is_minor"
 ).map({False: "major", True: "minor"})
-```
-
-```{code-cell}
-fig = px.bar(
-    maj_min_ratio_per_corpus.reset_index(),
-    x="corpus_name",
-    y="duration_qb",
-    color="mode",
-    text="fraction",
-    labels=dict(
-        dataset="",
-        duration_qb="duration in 𝅘𝅥",
-        corpus_name="Key segments grouped by corpus",
-    ),
-    category_orders=dict(corpus_name=chronological_corpus_names),
-)
-# fig.update_layout(**STD_LAYOUT)
-save_figure_as(fig, "major_minor_key_segments_corpuswise_bars")
-fig.show()
 ```

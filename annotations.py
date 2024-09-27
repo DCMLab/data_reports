@@ -16,7 +16,7 @@
 # %% [markdown]
 # # Annotations
 
-# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
+# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-input"] editable=true slideshow={"slide_type": ""}
 # %load_ext autoreload
 # %autoreload 2
 
@@ -32,8 +32,8 @@ from git import Repo
 
 import utils
 
-# %%
-RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
+# %% editable=true slideshow={"slide_type": ""} tags=["hide-input"]
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "annotations"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -55,19 +55,22 @@ def save_figure_as(
         plotting.write_image(fig, filename, directory, **kwargs)
 
 
-# %% tags=["hide-input"]
+# %% tags=["hide-input"] editable=true slideshow={"slide_type": ""}
 package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+    "~/dimcat_data/couperin_concerts.datapackage.json"
 )
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
 
-# %%
+# %% editable=true slideshow={"slide_type": ""} tags=["hide-input"]
+package = D.inputs.get_package()
+package_info = package._package.custom
+git_tag = package_info.get("git_tag")
+utils.print_heading("Data and software versions")
+print(f"datapackage version: {package.package_name} {git_tag}")
+print(f"dimcat version {dc.__version__}")
+
+# %% editable=true slideshow={"slide_type": ""}
 filtered_D = D.apply_step("HasHarmonyLabelsFilter")
 all_metadata = filtered_D.get_metadata()
 
@@ -302,9 +305,9 @@ unigram_proportions.plot_grouped()
 # %% [markdown]
 # #### Tone profiles for all major and minor local keys
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 keys_segmented = slicers.KeySlicer().process(D)
-notes = keys_segmented.get_facet("notes")
+notes = keys_segmented.get_feature("Notes")
 notes
 
 # %%
@@ -676,7 +679,7 @@ maj_min_ratio
 # %% [markdown]
 # #### By dataset
 
-# %%
+# %% editable=true slideshow={"slide_type": ""}
 segment_duration_per_corpus = (
     keys.groupby(["corpus", "localkey_is_minor"]).duration_qb.sum().round(2)
 )
@@ -700,21 +703,3 @@ maj_min_ratio_per_corpus[
 maj_min_ratio_per_corpus["mode"] = maj_min_ratio_per_corpus.index.get_level_values(
     "localkey_is_minor"
 ).map({False: "major", True: "minor"})
-
-# %%
-fig = px.bar(
-    maj_min_ratio_per_corpus.reset_index(),
-    x="corpus_name",
-    y="duration_qb",
-    color="mode",
-    text="fraction",
-    labels=dict(
-        dataset="",
-        duration_qb="duration in 𝅘𝅥",
-        corpus_name="Key segments grouped by corpus",
-    ),
-    category_orders=dict(corpus_name=chronological_corpus_names),
-)
-# fig.update_layout(**STD_LAYOUT)
-save_figure_as(fig, "major_minor_key_segments_corpuswise_bars")
-fig.show()
