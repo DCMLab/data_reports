@@ -419,15 +419,3 @@ phraseending_progressions(df)
 ```{code-cell}
 phraseending_progressions(df, 4)
 ```
-
-```{code-cell}
-phraseending_progressions(df, 5)
-```
-
-```{code-cell}
-phraseending_progressions(df, 6)
-```
-
-```{code-cell}
-
-```

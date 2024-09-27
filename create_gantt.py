@@ -5,7 +5,7 @@
 import argparse
 import os
 from fractions import Fraction as frac
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 import pandas as pd
 import plotly.figure_factory as ff
@@ -40,7 +40,6 @@ def create_modulation_plan(
     task_column="semitones",
     sort_and_fill=True,
     title="Modulation plan",
-    xaxis_title="Quarter notes",
     globalkey=None,
     phraseends=None,
     cadences=None,
@@ -48,19 +47,7 @@ def create_modulation_plan(
 ):
     if sort_and_fill:
         if task_column in ("semitones", "fifths"):
-            mi, ma = data[task_column].min(), data[task_column].max()
-            mi = min((0, mi))  # fifths can be negative
-            complete = set(range(mi, ma))
-            missing = complete.difference(set(data[task_column]))
-            missing_data = pd.DataFrame.from_records(
-                [
-                    {"Start": 0, "Finish": 0, "Resource": "local", task_column: m}
-                    for m in missing
-                ]
-            )
-            data = pd.concat([data, missing_data]).sort_values(
-                task_column, ascending=False
-            )
+            data = fill_yaxis_gaps(data, task_column, Resource="local")
         else:
             # assuming task_column contains strings
             data = data.sort_values(
@@ -92,11 +79,7 @@ def create_modulation_plan(
     if task_column in ("semitones", "fifths"):
         ytitle += f" ({task_column})"
 
-    layout = dict(
-        xaxis={"type": None, "title": xaxis_title},
-        yaxis={"title": ytitle},
-        legend=dict(orientation="h", itemsizing="constant", y=1.07),
-    )
+    layout = dict(xaxis={"type": None, "title": "Measures"}, yaxis={"title": ytitle})
 
     if colors is None:
         colors = KEY_COLORS
@@ -183,13 +166,26 @@ def create_modulation_plan(
     )
 
 
+def fill_yaxis_gaps(data: pd.DataFrame, task_column: str, **kwargs) -> pd.DataFrame:
+    """Expects 'task_column' to be numerical and concatenates dummy rows for missing values."""
+    mi, ma = data[task_column].min(), data[task_column].max()
+    complete = set(range(mi, ma))
+    missing = complete.difference(set(data[task_column]))
+    dummy_dict = dict(Start=0, Finish=0, **kwargs)
+    missing_data = pd.DataFrame.from_records(
+        [dummy_dict | {task_column: m} for m in missing]
+    )
+    data = pd.concat([data, missing_data]).sort_values(task_column, ascending=False)
+    return data
+
+
 def create_gantt(
     data,
     task_column="Task",
     title="Gantt chart",
     colors=None,
     layout=None,
-    shapes=None,
+    shapes: Optional[List[dict]] = None,
     annotations=None,
     **kwargs,
 ):
@@ -253,7 +249,7 @@ def create_gantt(
     fig = ff.create_gantt(data, colors=colors, title=title, **params)
 
     # prevent Plotly from interpreting positions as dates
-    default_layout = dict(xaxis={"type": None}, margin=dict(t=70, b=0, l=0, r=0))
+    default_layout = dict(xaxis={"type": None})
     if layout is not None:
         default_layout.update(layout)
 

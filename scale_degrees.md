@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -28,35 +28,52 @@ from git import Repo
 import dimcat as dc
 import ms3
 import pandas as pd
-from dimcat import slicers
+from dimcat import slicers, plotting
 
-from utils import CORPUS_COLOR_SCALE, color_background, corpus_mean_composition_years, \
-  get_corpus_display_name, get_repo_name, print_heading, resolve_dir, make_sunburst, rectangular_sunburst, STD_LAYOUT
+import utils
+import plotly.io as pio
+# workaround to remove the "loading mathjax" box from the PDF figure
+# see https://github.com/plotly/plotly.py/issues/3469#issuecomment-994907721
+pio.kaleido.scope.mathjax = None
+# if mathjax was needed to render math, one could try
+# pio.full_figure_for_development(fig, warn=False)
 
 pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 100)
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER
-from dimcat.plotting import write_image
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "scale_degrees"))
-os.makedirs(RESULTS_PATH, exist_ok=True)
 SUNBURST_WIDTH = 1620
 TERMINAL_SYMBOL = "∎"
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    if not "width" in kwargs:
-        kwargs['width'] = SUNBURST_WIDTH
-    write_image(fig, filename, directory, **kwargs)
+RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
+os.makedirs(RESULTS_PATH, exist_ok=True)
+
+
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
+
+
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell}
 :tags: [hide-input]
 
-package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
+package_path = utils.resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
 repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
@@ -68,10 +85,10 @@ all_metadata = D.get_metadata()
 assert len(all_metadata) > 0, "No pieces selected for analysis."
 all_notes = D.get_feature('notes').df
 all_measures = D.get_feature('measures').df
-mean_composition_years = corpus_mean_composition_years(all_metadata)
+mean_composition_years = utils.corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
+corpus_colors = dict(zip(chronological_order, utils.CORPUS_COLOR_SCALE))
+corpus_names = {corp: utils.get_corpus_display_name(corp) for corp in chronological_order}
 chronological_corpus_names = list(corpus_names.values())
 corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
 ```
@@ -98,13 +115,78 @@ result.plot_grouped()
 ```
 
 ```{code-cell}
-from ms3 import roman_numeral2fifths, transform
+notes.head()
+```
 
-keys_segmented = dc.KeySlicer().process_data(D)
-keys = keys_segmented.get_slice_info()
+```{code-cell}
+keys = keys_segmented.pipeline.steps[-1].slice_metadata
 print(f"Overall number of key segments is {len(keys.index)}")
-keys["localkey_fifths"] = transform(keys, roman_numeral2fifths, ['localkey', 'globalkey_is_minor'])
-keys.head(5).style.apply(color_background, subset="localkey")
+keys.head()
+```
+
+```{code-cell}
+# this bit is copied from the annotations notebook
+keys_data = keys[[col for col in keys.columns if col not in notes.columns]].droplevel(-1)
+notes_joined_with_keys = notes.join(keys_data, how="left",)
+notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
+tpc_distribution = notes_by_keys_transposed.reset_index(drop=True).groupby(['localkey_is_minor', 'tpc']).duration_qb.sum()
+mode_tpcs = tpc_distribution.reset_index(-1).sort_values('tpc').reset_index()
+additional_columns = dict(
+    sd = ms3.fifths2sd(mode_tpcs.tpc),
+    duration_pct = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum()),
+    mode = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'}),
+    std_err = std_err_mean
+)
+mode_tpcs['sd'] = ms3.fifths2sd(mode_tpcs.tpc)
+mode_tpcs['duration_pct'] = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum())
+mode_tpcs['mode'] = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'})
+corpuswise_tpc_distribution = notes_by_keys_transposed.groupby(["corpus", "localkey_is_minor", "tpc"]).duration_qb.sum().reset_index()
+corpuswise_tpc_distribution['duration_pct'] = corpuswise_tpc_distribution.groupby(["corpus", "localkey_is_minor"], group_keys=False).duration_qb.apply(lambda S: S / S.sum())
+std_err_mean = corpuswise_tpc_distribution.groupby(["localkey_is_minor", "tpc"]).duration_pct.sem().rename("std_err")
+mode_tpcs = mode_tpcs.join(std_err_mean, on=["localkey_is_minor", "tpc"])
+mode_tpcs
+```
+
+```{code-cell}
+sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', '4', '#4', 'b5', '5', '#5', 'b6','6', '#6', 'b7', '7']
+selector = (mode_tpcs.tpc > -8) & (mode_tpcs.tpc < 11)
+legend=dict(
+    yanchor="top",
+    y=0.99,
+    xanchor="right",
+    x=0.99
+)
+
+fig = plotting.make_bar_plot(
+    mode_tpcs[selector], #.query("duration_pct > 0.001")
+    x_col='sd',
+    y_col='duration_pct',
+    #title="Scale degree distribution over major and minor segments",
+    color='mode',
+    barmode='group',
+    color_discrete_map=utils.MAJOR_MINOR_COLORS,
+    labels=dict(
+        duration_pct='normalized duration',
+        duration_qb="duration in ♩",
+        sd="Notes transposed to the local key, as major-scale degrees",
+        ),
+    error_y="std_err",
+    layout=dict(
+        margin=dict(
+            t=0
+        )
+    ),
+    x_axis=dict(
+        showgrid=False,
+    ),
+    #log_y=True,
+    category_orders=dict(sd=sd_order)
+    )
+save_figure_as(fig, 'scale_degree_distributions_maj_min_normalized_bars', height=350, width=1200)
+fig.show()
+other_sum = mode_tpcs[~selector].sum()
+print(f"{(~selector).sum()} scale degrees with a total duration of {other_sum.duration_qb} ♩ "
+      f"({other_sum.duration_pct:.2%}) are not in the range -7 to 10 and have been omitted.")
 ```
 
 ```{code-cell}
@@ -142,29 +224,29 @@ chords_by_localkey_minor
 ```
 
 ```{code-cell}
-fig = make_sunburst(chords_by_localkey_major, parent='major', terminal_symbol=TERMINAL_SYMBOL)
-fig.update_layout(**STD_LAYOUT)
+fig = utils.make_sunburst(chords_by_localkey_major, parent='major', terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree_major_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = make_sunburst(chords_by_localkey_minor, parent='minor', terminal_symbol=TERMINAL_SYMBOL)
-fig.update_layout(**STD_LAYOUT)
+fig = utils.make_sunburst(chords_by_localkey_minor, parent='minor', terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree_minor_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'figbass', 'interval'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
-fig.update_layout(**STD_LAYOUT)
+fig = utils.rectangular_sunburst(chords_by_localkey_major, path=['sd', 'figbass', 'interval'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-figbass-progression_major_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
-fig.update_layout(**STD_LAYOUT)
+fig = utils.rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass_major_sunburst")
 fig.show()
 ```
@@ -203,29 +285,29 @@ selected_chords[["mn", "chord"]].droplevel([0, 2, 3]).to_clipboard()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'figbass', 'interval'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
-fig.update_layout(**STD_LAYOUT)
+fig = utils.rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'figbass', 'interval'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-figbass-progression_minor_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
-fig.update_layout(**STD_LAYOUT)
+fig = utils.rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass_minor_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
-fig.update_layout(**STD_LAYOUT)
+fig = utils.rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass-subsequent_figbass_major_sunburst")
 fig.show()
 ```
 
 ```{code-cell}
-fig = rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
-fig.update_layout(**STD_LAYOUT)
+fig = utils.rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass-subsequent_figbass_minor_sunburst")
 fig.show()
 ```

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.0
+    jupytext_version: 1.16.1
 kernelspec:
   display_name: revamp
   language: python
@@ -29,29 +29,39 @@ from typing import Dict, Iterable, Tuple, TypeAlias
 import dimcat as dc
 import ms3
 import pandas as pd
+import plotly.io as pio
 from dimcat import resources
 from dimcat.plotting import make_bar_plot, write_image
 from git import Repo
 
-from utils import (
-    DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
-    get_repo_name,
-    print_heading,
-    resolve_dir,
-)
+import utils
+
+# workaround to remove the "loading mathjax" box from the PDF figure
+# see https://github.com/plotly/plotly.py/issues/3469#issuecomment-994907721
+pio.kaleido.scope.mathjax = None
+# if mathjax was needed to render math, one could try
+# pio.full_figure_for_development(fig, warn=False)
+
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell}
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "reduction"))
+RESULTS_PATH = os.path.expanduser("~/git/diss/33_phrases/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(
+        filename,
+        extension=extension,
+        path=path,
+    )
 
 
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
@@ -61,12 +71,12 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell}
 :tags: [hide-input]
 
-package_path = resolve_dir(
+package_path = utils.resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
 repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
@@ -75,7 +85,7 @@ D
 
 ```{code-cell}
 pipeline = [
-    dict(dtype="HasHarmonyLabelsFilter", keep_values=[True]),
+    "HasHarmonyLabelsFilter",
     "KeySlicer",
     dict(dtype="BigramAnalyzer", features="BassNotes", format="FULL_WITHOUT_CONTEXT"),
 ]
@@ -152,11 +162,11 @@ antecedents = {
     ],
     "predictor + intervals": [
         ("bass_note", "intervals_over_bass"),
-        ("root", "intervals_over_root"),
+        ("root", "intervals_over_bass"),
     ],
     "predictor + localkey + intervals": [
         ("bass_note", "intervals_over_bass", "localkey_mode"),
-        ("root", "intervals_over_root", "localkey_mode"),
+        ("root", "intervals_over_bass", "localkey_mode"),
     ],
 }
 ig_values = compute_information_gains(bigram_table, "chord", antecedents)
@@ -164,13 +174,25 @@ ig_values
 ```
 
 ```{code-cell}
-make_bar_plot(
+fig = make_bar_plot(
     ig_values,
     x_col="group",
     y_col="information_gain",
     color="category",
-    title="Information gain of several predictors on the subsequent chord",
+    # title="Information gain of several predictors on the subsequent chord",
     barmode="group",
     labels=dict(category="predictor"),
 )
+write_image(
+    fig,
+    "information_gain_of_several_predictors_on_the_subsequent_chord.pdf",
+    RESULTS_PATH,
+    width=1000,
+    height=500,
+)
+fig
+```
+
+```{code-cell}
+
 ```
