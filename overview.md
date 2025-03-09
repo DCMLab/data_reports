@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.17.0
 kernelspec:
   display_name: revamp
   language: python
@@ -28,50 +28,48 @@ tags: [hide-cell]
 import os
 
 import dimcat as dc
-import ms3
 import pandas as pd
 import plotly.express as px
-from dimcat import filters
-from dimcat.plotting import write_image
-from git import Repo
+from dimcat import filters, plotting
 from IPython.display import display
+
+import utils
 ```
 
 ```{code-cell}
-from utils import (
-    CORPUS_COLOR_SCALE,
-    DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
-    STD_LAYOUT,
-    corpus_mean_composition_years,
-    get_corpus_display_name,
-    get_repo_name,
-    print_heading,
-    resolve_dir,
-)
-
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "overview"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
 
 
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
-repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = utils.get_dataset("wagner_overtures", corpus_release="latest")
+package = D.inputs.get_package()
+package_info = package._package.custom
+git_tag = package_info.get("git_tag")
+utils.print_heading("Data and software versions")
+print("Pretty name version v2.3")
+print(f"Datapackage '{package.package_name}' @ {git_tag}")
+print(f"dimcat version {dc.__version__}\n")
 D
 ```
 
@@ -83,10 +81,12 @@ all_metadata
 ```
 
 ```{code-cell}
-mean_composition_years = corpus_mean_composition_years(all_metadata)
+mean_composition_years = utils.corpus_mean_composition_years(all_metadata)
 chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, CORPUS_COLOR_SCALE))
-corpus_names = {corp: get_corpus_display_name(corp) for corp in chronological_order}
+corpus_colors = dict(zip(chronological_order, utils.CORPUS_COLOR_SCALE))
+corpus_names = {
+    corp: utils.get_corpus_display_name(corp) for corp in chronological_order
+}
 chronological_corpus_names = list(corpus_names.values())
 corpus_name_colors = {
     corpus_names[corp]: color for corp, color in corpus_colors.items()
@@ -140,7 +140,7 @@ fig = px.bar(
     title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
 )
 fig.update_traces(width=5)
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 fig.update_traces(width=5)
 save_figure_as(fig, "pieces_timeline_bars")
 fig.show()
@@ -169,7 +169,7 @@ fig = px.histogram(
     title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
 )
 fig.update_traces(xbins=dict(size=10))
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 fig.update_legends(font=dict(size=16))
 save_figure_as(fig, "pieces_timeline_histogram", height=1250)
 fig.show()
@@ -201,32 +201,20 @@ absolute.astype(int)
 ```
 
 ```{code-cell}
-public = dc.Dataset.from_package(
-    "/home/laser/git/meta_repositories/dcml_corpora/dcml_corpora.datapackage.json"
-)
-public
-```
-
-```{code-cell}
 def summarize_dataset(D):
     all_metadata = D.get_metadata()
     summary = make_summary(all_metadata)
     return make_overview_table(summary.groupby(level=0))
 
 
-dcml_corpora = summarize_dataset(public)
-print(dcml_corpora.astype(int).to_markdown())
-```
-
-```{code-cell}
-distant_listening = summarize_dataset(D)
-print(distant_listening.astype(int).to_markdown())
+corpus_summary = summarize_dataset(D)
+print(corpus_summary.astype(int).to_markdown())
 ```
 
 ### Measures
 
 ```{code-cell}
-all_measures = D.get_feature("measures").df
+all_measures = D.get_feature("measures")
 print(
     f"{len(all_measures.index)} measures over {len(all_measures.groupby(level=[0,1]))} files."
 )
@@ -234,8 +222,7 @@ all_measures.head()
 ```
 
 ```{code-cell}
-print("Distribution of time signatures per XML measure (MC):")
-all_measures.timesig.value_counts(dropna=False)
+all_measures.get_default_analysis().plot_grouped()
 ```
 
 ### Harmony labels
@@ -264,10 +251,10 @@ if includes_annotations:
         f"{len(all_chords.groupby(level=[0,1]))} documents."
     )
     all_annotations["corpus_name"] = all_annotations.index.get_level_values(0).map(
-        get_corpus_display_name
+        utils.get_corpus_display_name
     )
     all_chords["corpus_name"] = all_chords.index.get_level_values(0).map(
-        get_corpus_display_name
+        utils.get_corpus_display_name
     )
 else:
     print("Dataset contains no annotations.")

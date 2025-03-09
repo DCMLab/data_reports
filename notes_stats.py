@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.0
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -24,7 +24,6 @@ import ms3
 import pandas as pd
 import plotly.express as px
 from dimcat import filters, plotting
-from git import Repo
 
 import utils
 
@@ -32,7 +31,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %% tags=["hide-input"]
-RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "notes_stats"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -58,15 +57,14 @@ def save_figure_as(
 # **Loading data**
 
 # %% tags=["hide-input"]
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
+D = utils.get_dataset("wagner_overtures", corpus_release="latest")
+package = D.inputs.get_package()
+package_info = package._package.custom
+git_tag = package_info.get("git_tag")
 utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+print("Pretty name version v2.3")
+print(f"Datapackage '{package.package_name}' @ {git_tag}")
+print(f"dimcat version {dc.__version__}\n")
 D
 
 # %% [markdown]

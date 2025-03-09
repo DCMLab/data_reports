@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.17.0
 kernelspec:
   display_name: revamp
   language: python
@@ -30,53 +30,62 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-from dimcat.plotting import CADENCE_COLORS, write_image
+from dimcat import plotting
 from dimcat.steps import filters, groupers, slicers
-from git import Repo
+
+import utils
 ```
 
 ```{code-cell}
 :tags: [hide-input]
 
-from utils import (
-    DEFAULT_OUTPUT_FORMAT,
-    OUTPUT_FOLDER,
-    STD_LAYOUT,
-    get_corpus_display_name,
-    get_repo_name,
-    graph_data2sankey,
-    print_heading,
-    resolve_dir,
-    value_count_df,
-)
-
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "cadences"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "cadences"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
 
 
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
+**Loading data**
+
 ```{code-cell}
-package_path = resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+---
+editable: true
+slideshow:
+  slide_type: ''
+tags: [hide-input]
+---
+D = utils.get_dataset("wagner_overtures", corpus_release="latest")
+package = D.inputs.get_package()
+package_info = package._package.custom
+git_tag = package_info.get("git_tag")
+utils.print_heading("Data and software versions")
+print("Pretty name version v2.3")
+print(f"Datapackage '{package.package_name}' @ {git_tag}")
+print(f"dimcat version {dc.__version__}\n")
 D
 ```
 
 ```{code-cell}
-cadence_labels = D.get_feature("cadencelabels")
+try:
+    cadence_labels = D.get_feature("cadencelabels")
+except Exception:
+    raise ValueError("Corpus has no cadence annotations.")
 cadence_labels
 ```
 
@@ -139,7 +148,7 @@ fig.update_traces(width=5)
 
 ```{code-cell}
 print(f"{len(cadence_labels)} cadence labels.")
-value_count_df(cadence_labels.cadence)
+utils.value_count_df(cadence_labels.cadence)
 ```
 
 ```{raw-cell}
@@ -172,7 +181,7 @@ cadence_fraction_per_dataset = cadence_fraction_per_dataset.rename(
     "fraction"
 ).reset_index()
 cadence_fraction_per_dataset["corpus_name"] = cadence_fraction_per_dataset.corpus.map(
-    get_corpus_display_name
+    utils.get_corpus_display_name
 )
 fig = px.bar(
     cadence_fraction_per_dataset,
@@ -180,11 +189,11 @@ fig = px.bar(
     y="fraction",
     title="Distribution of cadence types per corpus",
     color="cadence",
-    color_discrete_map=CADENCE_COLORS,
+    color_discrete_map=plotting.CADENCE_COLORS,
     labels=dict(corpus_name="", fraction="Fraction of all cadences"),
     category_orders=dict(corpus_name=chronological_corpus_names),
 )
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "all_cadences_corpuswise_stacked_bars", height=1000)
 fig.show()
 ```
@@ -198,10 +207,10 @@ fig = px.pie(
     facet_col="corpus",
     facet_col_wrap=4,
     height=2000,
-    color_discrete_map=CADENCE_COLORS,
+    color_discrete_map=plotting.CADENCE_COLORS,
 )
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "all_cadences_corpuswise_pies")
 fig.show()
 ```
@@ -220,10 +229,10 @@ fig = px.pie(
     values="count",
     facet_col="mode",
     height=2000,
-    color_discrete_map=CADENCE_COLORS,
+    color_discrete_map=plotting.CADENCE_COLORS,
 )
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "all_cadences_modewise_pies")
 fig.show()
 ```
@@ -242,10 +251,10 @@ corelli_labels = corelli.get_facet("expanded")
 corelli_cadence_count_per_mode = (
     corelli_labels.groupby("localkey_is_minor").cadence.value_counts().reset_index()
 )
-corelli_cadence_count_per_mode[
-    "mode"
-] = corelli_cadence_count_per_mode.localkey_is_minor.map(
-    {False: "major", True: "minor"}
+corelli_cadence_count_per_mode["mode"] = (
+    corelli_cadence_count_per_mode.localkey_is_minor.map(
+        {False: "major", True: "minor"}
+    )
 )
 fig = px.pie(
     corelli_cadence_count_per_mode,
@@ -254,10 +263,10 @@ fig = px.pie(
     values="count",
     facet_col="mode",
     height=2000,
-    color_discrete_map=CADENCE_COLORS,
+    color_discrete_map=plotting.CADENCE_COLORS,
 )
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "all_corelli_cadences_modewise_pies")
 fig.show()
 ```
@@ -276,10 +285,10 @@ fig = px.pie(
     facet_col="mode",
     facet_row="corpus",
     height=2000,
-    color_discrete_map=CADENCE_COLORS,
+    color_discrete_map=plotting.CADENCE_COLORS,
 )
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
-updated_layout = dict(STD_LAYOUT, font=dict(size=40))
+updated_layout = dict(utils.STD_LAYOUT, font=dict(size=40))
 fig.update_layout(**updated_layout)
 save_figure_as(fig, "couperin_corelli_cadences_modewise_pies")
 fig.show()
@@ -314,7 +323,7 @@ phrases_with_cadences = pd.concat(
     ],
     axis=1,
 )
-value_count_df(phrases_with_cadences.n_cadences, counts_column="#phrases")
+utils.value_count_df(phrases_with_cadences.n_cadences, counts_column="#phrases")
 ```
 
 ```{code-cell}
@@ -343,7 +352,9 @@ fig.show()
 ### Combinations of cadence types for phrases with more than one cadence
 
 ```{code-cell}
-value_count_df(phrases_with_cadences[phrases_with_cadences.n_cadences > 1].cadences)
+utils.value_count_df(
+    phrases_with_cadences[phrases_with_cadences.n_cadences > 1].cadences
+)
 ```
 
 ### Positioning of cadences within phrases
@@ -382,7 +393,7 @@ fig = px.scatter(
     hover_name="description",
     height=3000,
     labels=dict(marker="legend"),
-    color_discrete_map=CADENCE_COLORS,
+    color_discrete_map=plotting.CADENCE_COLORS,
 )
 fig.update_traces(marker_size=5)
 fig.update_yaxes(autorange="reversed")
@@ -447,7 +458,7 @@ fig = px.pie(
 )
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_traces(textposition="inside", textinfo="percent+label")
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "ultima_root_distributions_over_cadence_types_maj_min_pies")
 fig.show()
 ```
@@ -487,7 +498,7 @@ fig = px.pie(
 )
 fig.for_each_annotation(lambda a: a.update(text=a.text.split("=")[-1]))
 fig.update_traces(textposition="inside", textinfo="percent+label")
-fig.update_layout(**STD_LAYOUT)
+fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "ultima_degree_distributions_over_cadence_types_maj_min_pies")
 fig.show()
 ```
@@ -546,17 +557,17 @@ def get_progressions(
 ```{code-cell}
 chord_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "chord")
 print(f"Progressions for {len(chord_progressions)} cadences:")
-value_count_df(chord_progressions, "chord progressions")
+utils.value_count_df(chord_progressions, "chord progressions")
 ```
 
 ```{code-cell}
 numeral_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "numeral")
-value_count_df(numeral_progressions, "numeral progressions")
+utils.value_count_df(numeral_progressions, "numeral progressions")
 ```
 
 ```{code-cell}
 numeral_prog_no_dups = numeral_progressions.map(remove_immediate_duplicates)
-value_count_df(numeral_prog_no_dups)
+utils.value_count_df(numeral_prog_no_dups)
 ```
 
 ### PACs ending on scale degree 1
@@ -567,12 +578,12 @@ value_count_df(numeral_prog_no_dups)
 bass_progressions = get_progressions("PAC", dict(bass_note=0), "bass_note")
 bass_prog = bass_progressions.map(ms3.fifths2sd)
 print(f"Progressions for {len(bass_progressions)} cadences:")
-value_count_df(bass_prog, "bass progressions")
+utils.value_count_df(bass_prog, "bass progressions")
 ```
 
 ```{code-cell}
 bass_prog_no_dups = bass_prog.map(remove_immediate_duplicates)
-value_count_df(bass_prog_no_dups)
+utils.value_count_df(bass_prog_no_dups)
 ```
 
 ```{code-cell}
@@ -601,7 +612,7 @@ def plot_progressions(progressions, cut_at_stage=None, **kwargs):
     stage_nodes, edge_weights = progressions2graph_data(
         progressions, cut_at_stage=cut_at_stage
     )
-    return graph_data2sankey(stage_nodes, edge_weights, **kwargs)
+    return utils.graph_data2sankey(stage_nodes, edge_weights, **kwargs)
 ```
 
 #### Chordal roots for the 3 last stages
