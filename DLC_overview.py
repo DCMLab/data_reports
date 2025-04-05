@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -30,6 +30,9 @@ import ms3
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
+import plotly.io as pio
+
+pio.kaleido.scope.mathjax = None
 from dimcat import filters, plotting
 from dimcat.utils import get_middle_composition_year
 from git import Repo
@@ -39,7 +42,7 @@ from plotly.subplots import make_subplots
 import utils
 
 # %%
-RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
+RESULTS_PATH = os.path.abspath("/home/laser/git/DLC/img")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 

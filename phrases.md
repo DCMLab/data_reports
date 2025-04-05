@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.16.7
 kernelspec:
   display_name: revamp
   language: python
@@ -94,7 +94,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 :tags: [hide-input]
 
 package_path = resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
+    "~/distant_listening_corpus/distant_listening_corpus.datapackage_v3.1.json"
 )
 repo = Repo(os.path.dirname(package_path))
 print_heading("Data and software versions")
@@ -103,6 +103,15 @@ print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 D = dc.Dataset.from_package(package_path)
 D
+```
+
+```{code-cell}
+all_annotations = D.get_feature("harmonylabels")
+all_annotations.columns
+```
+
+```{code-cell}
+
 ```
 
 ```{code-cell}
