@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.16.7
 kernelspec:
   display_name: revamp
   language: python
@@ -19,32 +19,32 @@ import os
 import ms3
 import pandas as pd
 from git import Repo
-from dimcat.plotting import write_image
-from utils import OUTPUT_FOLDER, count_subsequent_occurrences, print_heading, resolve_dir, get_repo_name, remove_none_labels, remove_non_chord_labels
+from dimcat import plotting
+import utils
 
 pd.options.display.max_columns = 50
 pd.options.display.max_rows = 100
 ```
 
 ```{code-cell}
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "chromatic_bass"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "chromatic_bass"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+    plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell}
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..')) # for running the notebook in the homepage deployment workflow
 CORPUS_PATH = "~/distant_listening_corpus/couperin_concerts"                # for running the notebook locally
-print_heading("Notebook settings")
+utils.print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
-CORPUS_PATH = resolve_dir(CORPUS_PATH)
+CORPUS_PATH = utils.resolve_dir(CORPUS_PATH)
 ```
 
 ```{code-cell}
 repo = Repo(CORPUS_PATH)
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print("dimcat version [NOT USED]")
 print(f"ms3 version {ms3.__version__}")
 ```
@@ -68,13 +68,13 @@ labels
 This creates progressions between the label before and after the `@none` label that might not actually be perceived as transitions!
 
 ```{code-cell}
-labels = remove_none_labels(labels)
+labels = utils.remove_none_labels(labels)
 ```
 
 #### Delete non-chord labels (typically, phrase labels)
 
 ```{code-cell}
-labels = remove_non_chord_labels(labels)
+labels = utils.remove_non_chord_labels(labels)
 ```
 
 ## Transform `bass_note` column
@@ -125,7 +125,7 @@ pc_ivs.value_counts()
 ### Successive descending semitones
 
 ```{code-cell}
-desc = count_subsequent_occurrences(pc_ivs, -1)
+desc = utils.count_subsequent_occurrences(pc_ivs, -1)
 desc.n.value_counts()
 ```
 
@@ -148,7 +148,7 @@ four_desc.head(30)
 ### Successive ascending semitones
 
 ```{code-cell}
-asc = count_subsequent_occurrences(pc_ivs, 1)
+asc = utils.count_subsequent_occurrences(pc_ivs, 1)
 asc.n.value_counts()
 ```
 
