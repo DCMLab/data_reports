@@ -18,8 +18,11 @@ from typing import (
     Tuple,
     Union,
 )
+from urllib.error import HTTPError
+from urllib.request import urlretrieve
 
 import colorlover
+import dimcat as dc
 import frictionless as fl
 import ms3
 import numpy as np
@@ -3565,3 +3568,37 @@ def plot_cosine_distances(tf: pd.DataFrame, standardize=True):
 
 
 # endregion chord-tone profile helpers
+
+
+
+def get_dataset(
+    corpus_name,
+    target_dir=".",
+    corpus_release="latest",
+):
+    url_release_component = (
+        "releases/latest/download"
+        if corpus_release == "latest"
+        else f"releases/download/{corpus_release}"
+    )
+
+    def download_if_missing(filename, filepath):
+        try:
+            if not os.path.exists(filepath):
+                url = f"https://github.com/DCMLab/{corpus_name}/{url_release_component}/{filename}"
+                urlretrieve(url, filepath)
+        except HTTPError as e:
+            raise RuntimeError(
+                f"Retrieving {corpus_name!r}@{corpus_release!r} from {url!r} failed: {e}"
+            ) from e
+        assert os.path.exists(
+            filepath
+        ), f"An error occured and {filepath} is not available."
+
+    zip_name, json_name = f"{corpus_name}.zip", f"{corpus_name}.datapackage.json"
+    zip_path, json_path = os.path.join(target_dir, zip_name), os.path.join(
+        target_dir, json_name
+    )
+    download_if_missing(zip_name, zip_path)
+    download_if_missing(json_name, json_path)
+    return dc.Dataset.from_package(json_path)
