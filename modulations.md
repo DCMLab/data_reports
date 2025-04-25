@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.16.7
 kernelspec:
   display_name: revamp
   language: python
@@ -29,34 +29,40 @@ from git import Repo
 import ms3
 import pandas as pd
 
-from utils import print_heading, resolve_dir, get_repo_name
+import utils
+from dimcat import plotting
 from create_gantt import create_modulation_plan, get_phraseends
 pd.set_option('display.max_rows', 1000)
 pd.set_option('display.max_columns', 500)
 ```
 
 ```{code-cell}
-from utils import OUTPUT_FOLDER
-from dimcat.plotting import write_image
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "modulations"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "modulations"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 ```{code-cell}
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))  # for running the notebook in the homepage deployment
 # workflow
 CORPUS_PATH = "~/all_subcorpora/couperin_concerts"         # for running the notebook locally
-print_heading("Notebook settings")
+utils.print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
-CORPUS_PATH = resolve_dir(CORPUS_PATH)
+CORPUS_PATH = utils.resolve_dir(CORPUS_PATH)
 ```
 
 ```{code-cell}
 repo = Repo(CORPUS_PATH)
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
+utils.print_heading("Data and software versions")
+print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
 print("dimcat version [NOT USED]")
 print(f"ms3 version {ms3.__version__}")
 ```
