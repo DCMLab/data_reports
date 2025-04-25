@@ -12,7 +12,7 @@ kernelspec:
   name: revamp
 ---
 
-# Bass degrees
+# New
 
 ```{code-cell}
 %load_ext autoreload

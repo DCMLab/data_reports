@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# # Bass degrees
+# # New
 
 # %%
 # %load_ext autoreload
