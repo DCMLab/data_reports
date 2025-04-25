@@ -5,14 +5,14 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.16.7
 kernelspec:
   display_name: revamp
   language: python
   name: revamp
 ---
 
-# Annotations
+# Sunburst
 
 ```{code-cell}
 ---
@@ -21,14 +21,13 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
+from dimcat.steps import slicers, groupers
 %load_ext autoreload
 %autoreload 2
 import os
-from git import Repo
-import dimcat as dc
 import ms3
 import pandas as pd
-from dimcat import slicers, plotting
+from dimcat import plotting, Pipeline
 
 import utils
 import plotly.io as pio
@@ -45,7 +44,7 @@ pd.set_option('display.max_columns', 100)
 ```{code-cell}
 SUNBURST_WIDTH = 1620
 TERMINAL_SYMBOL = "∎"
-RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "scale_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -67,41 +66,23 @@ def save_figure_as(
         plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
-:tags: [hide-input]
+**Loading data**
 
-package_path = utils.resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+```{code-cell}
+D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
-```
-
-```{code-cell}
-all_metadata = D.get_metadata()
-assert len(all_metadata) > 0, "No pieces selected for analysis."
-all_notes = D.get_feature('notes').df
-all_measures = D.get_feature('measures').df
-mean_composition_years = utils.corpus_mean_composition_years(all_metadata)
-chronological_order = mean_composition_years.index.to_list()
-corpus_colors = dict(zip(chronological_order, utils.CORPUS_COLOR_SCALE))
-corpus_names = {corp: utils.get_corpus_display_name(corp) for corp in chronological_order}
-chronological_corpus_names = list(corpus_names.values())
-corpus_name_colors = {corpus_names[corp]: color for corp, color in corpus_colors.items()}
 ```
 
 ## Key areas
 
 ```{code-cell}
-keys_segmented = slicers.KeySlicer().process(D)
-keys_segmented
+sliced_D = slicers.KeySlicer().process(D)
+grouped_D = groupers.ModeGrouper().process(sliced_D)
+grouped_D
 ```
 
 ```{code-cell}
-notes = keys_segmented.get_feature('notes')
+notes = sliced_D.get_feature('notes')
 notes
 ```
 
@@ -119,7 +100,7 @@ notes.head()
 ```
 
 ```{code-cell}
-keys = keys_segmented.pipeline.steps[-1].slice_metadata
+keys = grouped_D.get_feature("KeyAnnotations")
 print(f"Overall number of key segments is {len(keys.index)}")
 keys.head()
 ```
@@ -131,18 +112,18 @@ notes_joined_with_keys = notes.join(keys_data, how="left",)
 notes_by_keys_transposed = ms3.transpose_notes_to_localkey(notes_joined_with_keys)
 tpc_distribution = notes_by_keys_transposed.reset_index(drop=True).groupby(['localkey_is_minor', 'tpc']).duration_qb.sum()
 mode_tpcs = tpc_distribution.reset_index(-1).sort_values('tpc').reset_index()
-additional_columns = dict(
-    sd = ms3.fifths2sd(mode_tpcs.tpc),
-    duration_pct = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum()),
-    mode = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'}),
-    std_err = std_err_mean
-)
 mode_tpcs['sd'] = ms3.fifths2sd(mode_tpcs.tpc)
 mode_tpcs['duration_pct'] = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum())
 mode_tpcs['mode'] = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'})
 corpuswise_tpc_distribution = notes_by_keys_transposed.groupby(["corpus", "localkey_is_minor", "tpc"]).duration_qb.sum().reset_index()
 corpuswise_tpc_distribution['duration_pct'] = corpuswise_tpc_distribution.groupby(["corpus", "localkey_is_minor"], group_keys=False).duration_qb.apply(lambda S: S / S.sum())
 std_err_mean = corpuswise_tpc_distribution.groupby(["localkey_is_minor", "tpc"]).duration_pct.sem().rename("std_err")
+additional_columns = dict(
+    sd = ms3.fifths2sd(mode_tpcs.tpc),
+    duration_pct = mode_tpcs.groupby('localkey_is_minor', group_keys=False).duration_qb.apply(lambda S: S / S.sum()),
+    mode = mode_tpcs.localkey_is_minor.map({False: 'major', True: 'minor'}),
+    std_err = std_err_mean
+)
 mode_tpcs = mode_tpcs.join(std_err_mean, on=["localkey_is_minor", "tpc"])
 mode_tpcs
 ```
@@ -189,18 +170,10 @@ print(f"{(~selector).sum()} scale degrees with a total duration of {other_sum.du
       f"({other_sum.duration_pct:.2%}) are not in the range -7 to 10 and have been omitted.")
 ```
 
-```{code-cell}
-mode_slices = dc.ModeGrouper().process_data(keys_segmented)
-```
-
 ### Whole dataset
 
 ```{code-cell}
-mode_slices.get_slice_info()
-```
-
-```{code-cell}
-chords_by_localkey = mode_slices.get_facet('expanded')
+chords_by_localkey = grouped_D.get_feature('HarmonyLabels')
 chords_by_localkey
 ```
 
@@ -211,7 +184,7 @@ for is_minor, df in chords_by_localkey.groupby(level=0, group_keys=False):
     sd = ms3.fifths2sd(df.bass_note, minor=is_minor).rename('sd')
     sd.index = df.index
     sd_progression = df.groupby(level=[0,1,2], group_keys=False).bass_note.apply(lambda S: S.shift(-1) - S).rename('sd_progression')
-    if is_minor:
+    if is_minor == "minor":
         chords_by_localkey_minor = pd.concat([df, sd, sd_progression], axis=1)
     else:
         chords_by_localkey_major = pd.concat([df, sd, sd_progression], axis=1)
@@ -299,6 +272,10 @@ fig.show()
 ```
 
 ```{code-cell}
+---
+jupyter:
+  is_executing: true
+---
 fig = utils.rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
 fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass-subsequent_figbass_major_sunburst")
