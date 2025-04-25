@@ -133,18 +133,26 @@ interval2fifths = (
 )
 interval2fifths
 
-# %%
-interval_data = (
-    BN.groupby("mode")
-    .subsequent_interval.value_counts(dropna=False, normalize=True)
-    .reset_index()
-)
+# %% jupyter={"is_executing": true}
+interval_data = pd.concat(
+    [
+        BN.groupby("mode").subsequent_interval.value_counts(normalize=True),
+        BN.groupby(["piece", "mode"])
+        .subsequent_interval.value_counts(normalize=True)
+        .groupby(["mode", "subsequent_interval"])
+        .sem()
+        .rename("std_err"),
+    ],
+    axis=1,
+).reset_index()
 fig = px.bar(
     interval_data,
     x="subsequent_interval",
     y="proportion",
     color="mode",
-    facet_row="mode",
+    barmode="group",
+    error_y="std_err",
+    color_discrete_map=utils.MAJOR_MINOR_COLORS,
     labels=dict(subsequent_interval="Interval"),
     title="Mode-wise proportion of how often a bass note moves by an interval",
     category_orders=dict(subsequent_interval=interval2fifths.index),
@@ -152,21 +160,28 @@ fig = px.bar(
 style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
 
 # %%
-movement_data = (
-    BN.groupby("mode")
-    .subsequent_movement.value_counts(dropna=False, normalize=True)
-    .reset_index()
-)
+movement_data = pd.concat(
+    [
+        BN.groupby("mode").subsequent_movement.value_counts(
+            normalize=True, dropna=False
+        ),
+        BN.groupby(["piece", "mode"])
+        .subsequent_movement.value_counts(normalize=True, dropna=False)
+        .groupby(["mode", "subsequent_movement"])
+        .sem()
+        .rename("std_err"),
+    ],
+    axis=1,
+).reset_index()
 movement_data.subsequent_movement = movement_data.subsequent_movement.fillna("none")
-movement_data
-
-# %%
 fig = px.bar(
     movement_data,
     x="subsequent_movement",
     y="proportion",
     color="mode",
-    facet_row="mode",
+    barmode="group",
+    error_y="std_err",
+    color_discrete_map=utils.MAJOR_MINOR_COLORS,
     labels=dict(subsequent_movement="Movement"),
     title="Mode-wise proportion of a bass note moving in a certain manner",
     category_orders=dict(subsequent_interval=interval2fifths.index),

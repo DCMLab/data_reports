@@ -21,8 +21,8 @@ import os
 
 import ms3
 import pandas as pd
-from dimcat import Pipeline, plotting
 import plotly.express as px
+from dimcat import Pipeline, plotting
 
 import utils
 
@@ -51,6 +51,7 @@ def save_figure_as(
             plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
     else:
         plotting.write_image(fig, filename, directory, **kwargs)
+
 
 def style_plotly(fig, save_as=None, **layout):
     layout_args = dict(utils.STD_LAYOUT, **layout)
@@ -101,58 +102,95 @@ BN["preceding_interval"] = ms3.transform(BN.preceding_iv, ms3.fifths2iv, smalles
 BN["subsequent_interval"] = ms3.transform(
     BN.subsequent_iv, ms3.fifths2iv, smallest=True
 )
-BN["preceding_iv_is_step"] = (BN.preceding_iv.isin((-5, -2, 2, 5)) # +m2, -M2, +M2, -m2
-                              .where(BN.preceding_iv.notna()))
-BN["subsequent_iv_is_step"] = (BN.subsequent_iv.isin((-5, -2, 2, 5))
-                               .where(BN.subsequent_iv.notna()))
+BN["preceding_iv_is_step"] = BN.preceding_iv.isin(
+    (-5, -2, 2, 5)
+).where(  # +m2, -M2, +M2, -m2
+    BN.preceding_iv.notna()
+)
+BN["subsequent_iv_is_step"] = BN.subsequent_iv.isin((-5, -2, 2, 5)).where(
+    BN.subsequent_iv.notna()
+)
 BN["preceding_iv_is_0"] = BN.preceding_iv == 0
 BN["subsequent_iv_is_0"] = BN.subsequent_iv == 0
-BN["preceding_movement"] = (BN.preceding_iv_is_step.map({True: "step", False: "leap"})
-                            .where(~BN.preceding_iv_is_0, "same")
-                            .where(BN.preceding_iv.notna()))
-BN["subsequent_movement"] = (BN.subsequent_iv_is_step.map({True: "step", False: "leap"})
-                            .where(~BN.subsequent_iv_is_0, "same")
-                            .where(BN.subsequent_iv.notna()))
+BN["preceding_movement"] = (
+    BN.preceding_iv_is_step.map({True: "step", False: "leap"})
+    .where(~BN.preceding_iv_is_0, "same")
+    .where(BN.preceding_iv.notna())
+)
+BN["subsequent_movement"] = (
+    BN.subsequent_iv_is_step.map({True: "step", False: "leap"})
+    .where(~BN.subsequent_iv_is_0, "same")
+    .where(BN.subsequent_iv.notna())
+)
 BN
 ```
 
 ```{code-cell}
 ignore_mask = BN.subsequent_interval.isna() | BN.subsequent_interval.duplicated()
-interval2fifths = BN.loc[~ignore_mask, ["subsequent_interval", "subsequent_iv"]].set_index("subsequent_interval").iloc[:,0].sort_values()
+interval2fifths = (
+    BN.loc[~ignore_mask, ["subsequent_interval", "subsequent_iv"]]
+    .set_index("subsequent_interval")
+    .iloc[:, 0]
+    .sort_values()
+)
 interval2fifths
 ```
 
 ```{code-cell}
-interval_data = BN.groupby("mode").subsequent_interval.value_counts(dropna=False, normalize=True).reset_index()
+---
+jupyter:
+  is_executing: true
+---
+interval_data = pd.concat(
+    [
+        BN.groupby("mode").subsequent_interval.value_counts(normalize=True),
+        BN.groupby(["piece", "mode"])
+        .subsequent_interval.value_counts(normalize=True)
+        .groupby(["mode", "subsequent_interval"])
+        .sem()
+        .rename("std_err"),
+    ],
+    axis=1,
+).reset_index()
 fig = px.bar(
     interval_data,
     x="subsequent_interval",
     y="proportion",
     color="mode",
-    facet_row="mode",
+    barmode="group",
+    error_y="std_err",
+    color_discrete_map=utils.MAJOR_MINOR_COLORS,
     labels=dict(subsequent_interval="Interval"),
     title="Mode-wise proportion of how often a bass note moves by an interval",
-    category_orders=dict(subsequent_interval=interval2fifths.index)
+    category_orders=dict(subsequent_interval=interval2fifths.index),
 )
 style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
 ```
 
 ```{code-cell}
-movement_data = BN.groupby("mode").subsequent_movement.value_counts(dropna=False, normalize=True).reset_index()
+movement_data = pd.concat(
+    [
+        BN.groupby("mode").subsequent_movement.value_counts(normalize=True, dropna=False),
+        BN.groupby(["piece", "mode"])
+        .subsequent_movement.value_counts(normalize=True, dropna=False)
+        .groupby(["mode", "subsequent_movement"])
+        .sem()
+        .rename("std_err"),
+    ],
+    axis=1,
+).reset_index()
 movement_data.subsequent_movement = movement_data.subsequent_movement.fillna("none")
-movement_data
-```
-
-```{code-cell}
 fig = px.bar(
     movement_data,
     x="subsequent_movement",
     y="proportion",
     color="mode",
-    facet_row="mode",
+    barmode="group",
+    error_y="std_err",
+    color_discrete_map=utils.MAJOR_MINOR_COLORS,
     labels=dict(subsequent_movement="Movement"),
     title="Mode-wise proportion of a bass note moving in a certain manner",
-    category_orders=dict(subsequent_interval=interval2fifths.index)
+    category_orders=dict(subsequent_interval=interval2fifths.index),
 )
 style_plotly(fig, save_as="mode-wise_bass_motion")
 ```
