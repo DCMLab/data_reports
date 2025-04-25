@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -17,12 +17,12 @@
 # # Bass degrees
 
 # %%
+
 # %load_ext autoreload
 # %autoreload 2
 import os
 from collections import Counter, defaultdict
 
-import dimcat as dc
 import matplotlib.pyplot as plt
 import ms3
 import pandas as pd
@@ -36,7 +36,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
 # %%
-RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "bass_degrees"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
@@ -62,10 +62,7 @@ def save_figure_as(
 # **Loading data**
 
 # %%
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-D = dc.Dataset.from_package(package_path)
+D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 
 # %% [markdown]
