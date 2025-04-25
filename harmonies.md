@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.16.7
 kernelspec:
   display_name: revamp
   language: python
@@ -24,47 +24,41 @@ from statistics import mean
 import dimcat as dc
 import ms3
 import pandas as pd
-from dimcat.plotting import write_image
+from dimcat import plotting
 from dimcat.utils import grams, make_transition_matrix
-from git import Repo
-
-from utils import (
-    OUTPUT_FOLDER,
-    STD_LAYOUT,
-    get_repo_name,
-    plot_cum,
-    print_heading,
-    remove_non_chord_labels,
-    remove_none_labels,
-    resolve_dir,
-    sorted_gram_counts,
-)
+import utils
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell}
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "harmonies"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "harmonies"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
 
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
+
+
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir(
-    "~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 ```
 
@@ -88,13 +82,13 @@ This creates progressions between the label before and after the `@none` label t
 as transitions!
 
 ```{code-cell}
-df = remove_none_labels(labels.df)
+df = utils.remove_none_labels(labels.df)
 ```
 
 **Delete non-chord labels (typically, phrase labels)**
 
 ```{code-cell}
-df = remove_non_chord_labels(df)
+df = utils.remove_non_chord_labels(df)
 ```
 
 ```{code-cell}
@@ -111,7 +105,7 @@ df.chord.value_counts().iloc[:k]
 
 ```{code-cell}
 font_dict = {"font": {"size": 20}}
-H_LAYOUT = STD_LAYOUT.copy()
+H_LAYOUT = utils.STD_LAYOUT.copy()
 H_LAYOUT.update(
     {
         "legend": dict(
@@ -122,7 +116,7 @@ H_LAYOUT.update(
 ```
 
 ```{code-cell}
-fig = plot_cum(
+fig = utils.plot_cum(
     df.chord,
     x_log=True,
     markersize=4,
@@ -149,7 +143,7 @@ major.chord.value_counts().iloc[:k]
 ```
 
 ```{code-cell}
-fig = plot_cum(
+fig = utils.plot_cum(
     major.chord,
     x_log=True,
     markersize=4,
@@ -175,7 +169,7 @@ minor.chord.value_counts().iloc[:k]
 ```
 
 ```{code-cell}
-fig = plot_cum(
+fig = utils.plot_cum(
     minor.chord,
     x_log=True,
     markersize=4,
@@ -325,29 +319,29 @@ print(
 #### Most frequent 3-, 4-, and 5-grams in major
 
 ```{code-cell}
-sorted_gram_counts(major_plain, 3)
+utils.sorted_gram_counts(major_plain, 3)
 ```
 
 ```{code-cell}
-sorted_gram_counts(major_plain, 4)
+utils.sorted_gram_counts(major_plain, 4)
 ```
 
 ```{code-cell}
-sorted_gram_counts(major_plain, 5)
+utils.sorted_gram_counts(major_plain, 5)
 ```
 
 #### Most frequent 3-, 4-, and 5-grams in minor
 
 ```{code-cell}
-sorted_gram_counts(minor_plain, 3)
+utils.sorted_gram_counts(minor_plain, 3)
 ```
 
 ```{code-cell}
-sorted_gram_counts(minor_plain, 4)
+utils.sorted_gram_counts(minor_plain, 4)
 ```
 
 ```{code-cell}
-sorted_gram_counts(minor_plain, 5)
+utils.sorted_gram_counts(minor_plain, 5)
 ```
 
 ### Counting particular progressions
