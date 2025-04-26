@@ -17,12 +17,11 @@
 # # New
 
 # %%
-
 # %load_ext autoreload
 # %autoreload 2
-
 import os
-from typing import List, Literal, Tuple
+from functools import cache
+from typing import List, Literal, Optional, Tuple
 
 import ms3
 import pandas as pd
@@ -93,7 +92,7 @@ bass_notes.intervals_over_bass.iloc[0]
 local_keys = grouped_D.get_feature("KeyAnnotations")
 utils.print_heading("Key Segments")
 print(local_keys.groupby("mode").size().to_string())
-local_keys.df
+local_keys.head()
 
 # %%
 preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
@@ -143,6 +142,9 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
     .iloc[:, 0]
     .sort_values()
 )
+
+# %% [markdown]
+# ## Bass movement
 
 # %%
 interval_data = pd.concat(
@@ -363,4 +365,178 @@ make_bass_degree_sankey(7, "major")
 # %%
 make_bass_degree_sankey(7, "minor")
 
+# %% [markdown]
+# ## Explanatory power of the RoO
+
 # %%
+BN.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
+    lambda S: S.value_counts().idxmax()
+)
+
+# %%
+maj = ("M3", "P5")
+maj6 = ("m3", "m6")
+min = ("m3", "P5")
+min6 = ("M3", "M6")
+Mm56 = ("m3", "d5", "m6")
+Mm34 = ("m3", "P4", "M6")
+Mm24 = ("M2", "a4", "M6")
+mm56 = ("M3", "P5", "M6")
+hdim56 = ("m3", "P5", "M6")
+hdim34 = ("M3", "a4", "M6")
+
+regole = dict(
+    ascending_major=[
+        ("1", maj),  # most frequent
+        ("2", Mm34),  # most frequent
+        ("3", maj6),  # most frequent
+        ("4", mm56),  # not most frequent
+        ("5", maj),  # most frequent
+        ("6", min6),  # not most frequent
+        ("7", Mm56),  # most frequent
+    ],
+    descending_major=[
+        ("1", maj),  # same
+        ("7", maj6),  # different, not most frequent
+        ("6", Mm34),  # different, not most frequent either
+        ("5", maj),  # same
+        ("4", Mm24),  # different, not most frequent either
+        ("3", maj6),  # same
+        ("2", Mm34),  # same
+    ],
+    ascending_minor=[
+        ("1", min),  # most frequent
+        ("2", Mm34),  # most frequent
+        ("3", min6),  # most frequent
+        ("4", hdim56),  # most frequent
+        ("5", maj),  # most frequent
+        ("#6", maj6),  # most frequent
+        ("#7", Mm56),  # most frequent
+    ],
+    descending_minor=[
+        ("1", min),  # same
+        ("7", min6),  # different, most frequent
+        ("6", hdim34),  # different, most frequent
+        ("5", maj),  # same
+        ("4", Mm24),  # different, not most frequent
+        ("3", min6),  # same
+        ("2", Mm34),  # same
+    ],
+)
+
+
+# %%
+@cache
+def get_base_df(
+    basis: Literal[
+        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
+    ],  # minor_diatonic includes 6, #6, 7, #7
+    query: Optional[str] = None,
+):
+    global BN
+    try:
+        mode, selection = basis.split("_")
+    except Exception:
+        raise ValueError(f"Invalid keyword for basis: {basis!r}")
+    base = BN.loc[[mode]]
+    if selection == "all":
+        result = base
+    elif selection == "diatonic":
+        if mode == "major":
+            result = base.query("bass_degree in ('1', '2', '3', '4', '5', '6', '7')")
+        elif mode == "minor":
+            result = base.query(
+                "bass_degree in ('1', '2', '3', '4', '5', '6', '#6', '7', '#7')"
+            )
+    else:
+        raise ValueError(f"Unknown keyword for selection: {selection!r}")
+    if query:
+        result = result.query(query)
+    return result
+
+
+@cache
+def get_bass_degree_mask(
+    basis: Literal[
+        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
+    ],  # minor_diatonic includes 6, #6, 7, #7
+    bass_degree: str,
+    query: Optional[str] = None,
+):
+    base = get_base_df(basis, query=query)
+    return base.bass_degree == bass_degree
+
+
+@cache
+def get_intervals_mask(
+    basis: Literal[
+        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
+    ],  # minor_diatonic includes 6, #6, 7, #7
+    intervals: tuple,
+    query: Optional[str] = None,
+):
+    base = get_base_df(basis, query=query)
+    return base.intervals_over_bass == intervals
+
+
+@cache
+def get_chord_mask(
+    basis: Literal[
+        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
+    ],  # minor_diatonic includes 6, #6, 7, #7
+    bass_degree: str,
+    intervals: tuple,
+    query: Optional[str] = None,
+):
+    bass_degree_mask = get_bass_degree_mask(
+        basis=basis, bass_degree=bass_degree, query=query
+    )
+    intervals_mask = get_intervals_mask(basis=basis, intervals=intervals, query=query)
+    return bass_degree_mask & intervals_mask
+
+
+@cache
+def get_chord_vocabulary_mask(
+    basis: Literal[
+        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
+    ],  # minor_diatonic includes 6, #6, 7, #7
+    vocabulary: Tuple[Tuple[str, tuple], ...],
+    query: Optional[str] = None,
+) -> pd.Series:
+    base = get_base_df(basis, query=query)
+    mask = pd.Series(False, index=base.index, dtype="boolean")
+    for bass_degree, intervals in vocabulary:
+        mask |= get_chord_mask(
+            basis=basis, bass_degree=bass_degree, intervals=intervals, query=query
+        )
+    return mask
+
+
+def get_vocabulary_coverage(
+    basis: Literal[
+        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
+    ],  # minor_diatonic includes 6, #6, 7, #7
+    vocabulary: Tuple[Tuple[str, tuple], ...],
+    query: Optional[str] = None,
+) -> float:
+    mask = get_chord_vocabulary_mask(basis=basis, vocabulary=vocabulary, query=query)
+    return mask.sum() / len(mask)
+
+
+# %%
+regola_vocabulary_major = tuple(
+    set(regole["ascending_major"] + regole["descending_major"])
+)
+regola_vocabulary_minor = tuple(
+    set(regole["ascending_minor"] + regole["descending_minor"])
+)
+get_vocabulary_coverage("major_all", regola_vocabulary_major)
+
+# %%
+get_vocabulary_coverage("major_diatonic", regola_vocabulary_major)
+
+# %%
+get_vocabulary_coverage("minor_all", regola_vocabulary_minor)
+
+# %%
+get_vocabulary_coverage("minor_diatonic", regola_vocabulary_minor)
