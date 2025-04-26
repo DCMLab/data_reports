@@ -304,8 +304,8 @@ make_bass_degree_sankey(3, "major")
 make_bass_degree_sankey(3, "minor")
 ```
 
-# Intervals over bass degree 4
-## Major
+## Intervals over bass degree 4
+### Major
 
 ```{code-cell}
 make_bass_degree_sankey(4, "major")

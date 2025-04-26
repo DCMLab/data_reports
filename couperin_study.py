@@ -300,8 +300,8 @@ make_bass_degree_sankey(3, "major")
 make_bass_degree_sankey(3, "minor")
 
 # %% [markdown]
-# # Intervals over bass degree 4
-# ## Major
+# ## Intervals over bass degree 4
+# ### Major
 
 # %%
 make_bass_degree_sankey(4, "major")
