@@ -1254,6 +1254,20 @@ def make_output_path(
     return os.path.join(directory, file)
 
 
+def make_evenly_distributed_color_map(labels: Iterable[str]) -> List[str]:
+    """Returns a list of HSV colour strings of the same length as the input list. Identical labels
+    are assigned the same color. Unique labels are distributed evenly around the HUE circle to
+    generate the colors."""
+    unique_labels = set(labels)
+    color_step = 100 / len(unique_labels)
+    unique_colors = {
+        label: f"hsv({round(i * color_step)}%,100%,100%)"
+        for i, label in enumerate(unique_labels)
+    }
+    node_color = list(map(lambda lst: unique_colors[lst], labels))
+    return node_color
+
+
 def make_sankey(
     data: pd.DataFrame,
     labels: List[str],
@@ -1262,7 +1276,7 @@ def make_sankey(
     node_pos: Optional[Dict[int, Tuple[float, float]]] = None,
     margin={"l": 10, "r": 10, "b": 10, "t": 10},
     pad=20,
-    color="auto",
+    node_color="auto",
     arrangement: Literal["snap", "perpendicular", "freeform", "fixed"] = "snap",
     **kwargs,
 ):
@@ -1273,7 +1287,9 @@ def make_sankey(
     there is a bug that ignores positions where x or y equals 0.
 
     Args:
-        data: Dataframe with the columns "source", "target" and "value".
+        data:
+            Dataframe with the columns "source", "target" and "value". Optionally, a "color" column
+            can be added for colouring the bands.
         labels: List of node labels.
         x, y:
             List of x and y coordinates for the nodes. Needs to be aligned with labels. If node_pos is defined in
@@ -1281,7 +1297,7 @@ def make_sankey(
         node_pos: {node_id -> (x, y)} dictionary of coordinates. If None, the nodes are placed automatically.
         margin:
         pad:
-        color:
+        node_color:
             A list of colors. If "auto", the colors are chosen automatically based on an equal division of the
             hue circle.
         **kwargs: Layout options.
@@ -1289,14 +1305,8 @@ def make_sankey(
     Returns:
 
     """
-    if color == "auto":
-        unique_labels = set(labels)
-        color_step = 100 / len(unique_labels)
-        unique_colors = {
-            label: f"hsv({round(i*color_step)}%,100%,100%)"
-            for i, label in enumerate(unique_labels)
-        }
-        color = list(map(lambda lst: unique_colors[lst], labels))
+    if node_color == "auto":
+        node_color = make_evenly_distributed_color_map(labels)
     x_pos, y_pos = [], []
     if node_pos is not None:
         for node in range(len(node_pos)):
@@ -1307,6 +1317,10 @@ def make_sankey(
         x_pos = x
     if y is not None:
         y_pos = y
+
+    link_dict = dict(source=data.source, target=data.target, value=data.value)
+    if "color" in data.columns:
+        link_dict["color"] = data.color
     fig = go.Figure(
         go.Sankey(
             arrangement=arrangement,
@@ -1317,9 +1331,9 @@ def make_sankey(
                 label=labels,
                 x=x_pos if x_pos else None,
                 y=y_pos if y_pos else None,
-                color=color,
+                color=node_color,
             ),
-            link=dict(source=data.source, target=data.target, value=data.value),
+            link=link_dict,
         ),
     )
 
@@ -1500,9 +1514,9 @@ def plot_cum(
 
 
 def get_component_analysis_coordinates(
-    component_analysis: PCA
-    | LinearDiscriminantAnalysis
-    | NeighborhoodComponentsAnalysis,
+    component_analysis: (
+        PCA | LinearDiscriminantAnalysis | NeighborhoodComponentsAnalysis
+    ),
     data: pd.DataFrame,
     y: pd.Series = None,
     concat: bool = False,
@@ -1597,9 +1611,9 @@ def plot_component_analysis(
 
 
 def plot_components(
-    component_analysis: PCA
-    | LinearDiscriminantAnalysis
-    | NeighborhoodComponentsAnalysis,
+    component_analysis: (
+        PCA | LinearDiscriminantAnalysis | NeighborhoodComponentsAnalysis
+    ),
     show_features=20,
 ):
     if hasattr(component_analysis, "components_"):
@@ -2775,9 +2789,11 @@ def compute_smallest_diatonics(
 
 
 def make_criterion(
-    phrase_feature: resources.PhraseAnnotations
-    | resources.PhraseComponents
-    | resources.PhraseLabels,
+    phrase_feature: (
+        resources.PhraseAnnotations
+        | resources.PhraseComponents
+        | resources.PhraseLabels
+    ),
     criterion_name: Optional[str] = None,
     columns="chord",
     components="body",
@@ -2868,26 +2884,26 @@ def get_metrics_means(name2phrase_data: Dict[str, resources.PhraseData]):
     criterion_metric2value = {}
     for name, stages in name2phrase_data.items():
         stage_durations = get_stage_durations(stages)
-        criterion_metric2value[
-            (name, "mean stage duration", "mean")
-        ] = stage_durations.mean()
-        criterion_metric2value[
-            (name, "mean stage duration", "sem")
-        ] = stage_durations.sem()
+        criterion_metric2value[(name, "mean stage duration", "mean")] = (
+            stage_durations.mean()
+        )
+        criterion_metric2value[(name, "mean stage duration", "sem")] = (
+            stage_durations.sem()
+        )
         phrase_lengths = get_criterion_phrase_lengths(stages)
-        criterion_metric2value[
-            (name, "mean phrase length", "mean")
-        ] = phrase_lengths.mean()
-        criterion_metric2value[
-            (name, "mean phrase length", "sem")
-        ] = phrase_lengths.sem()
+        criterion_metric2value[(name, "mean phrase length", "mean")] = (
+            phrase_lengths.mean()
+        )
+        criterion_metric2value[(name, "mean phrase length", "sem")] = (
+            phrase_lengths.sem()
+        )
         stage_entropies = get_criterion_stage_entropies(stages)
-        criterion_metric2value[
-            (name, "mean stage entropy", "mean")
-        ] = stage_entropies.mean()
-        criterion_metric2value[
-            (name, "mean stage entropy", "sem")
-        ] = stage_entropies.sem()
+        criterion_metric2value[(name, "mean stage entropy", "mean")] = (
+            stage_entropies.mean()
+        )
+        criterion_metric2value[(name, "mean stage entropy", "sem")] = (
+            stage_entropies.sem()
+        )
     metrics = pd.Series(criterion_metric2value, name="value").unstack(sort=False)
     metrics.index.names = ["criterion", "metric"]
     return metrics
@@ -3568,7 +3584,6 @@ def plot_cosine_distances(tf: pd.DataFrame, standardize=True):
 
 
 # endregion chord-tone profile helpers
-
 
 
 def get_dataset(
