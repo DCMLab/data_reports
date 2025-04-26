@@ -127,6 +127,12 @@ BN["subsequent_movement"] = (
     .where(~BN.subsequent_iv_is_0, "same")
     .where(BN.subsequent_iv.notna(), "none")
 )
+BN["preceding_movement_precise"] = BN.preceding_movement.where(
+    BN.preceding_movement != "step", BN.preceding_interval
+)
+BN["subsequent_movement_precise"] = BN.subsequent_movement.where(
+    BN.subsequent_movement != "step", BN.subsequent_interval
+)
 BN
 
 # %%
@@ -196,16 +202,22 @@ style_plotly(fig, save_as="mode-wise_bass_motion")
 
 # %%
 def make_sankey_data(
-    five_major, color_edges=True
+    five_major, color_edges=True, precise=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
+    preceding_movement = (
+        "preceding_movement_precise" if precise else "preceding_movement"
+    )
+    subsequent_movement = (
+        "subsequent_movement_precise" if precise else "subsequent_movement"
+    )
     type_counts = five_major["intervals_over_bass"].value_counts()
-    preceding_movement_counts = five_major["preceding_movement"].value_counts()
-    subsequent_movement_counts = five_major["subsequent_movement"].value_counts()
+    preceding_movement_counts = five_major[preceding_movement].value_counts()
+    subsequent_movement_counts = five_major[subsequent_movement].value_counts()
     preceding_links = five_major.groupby(
-        ["preceding_movement"]
+        [preceding_movement]
     ).intervals_over_bass.value_counts()
     subsequent_links = five_major.groupby(
-        ["subsequent_movement"]
+        [subsequent_movement]
     ).intervals_over_bass.value_counts()
 
     node_labels = []
