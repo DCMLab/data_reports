@@ -97,6 +97,86 @@ local_keys.head()
 ```
 
 ```{code-cell}
+succession_map = dict(
+    ascending_major = {
+        "1": "2",
+        "2": "3",
+        "3": "4",
+        "4": "5",
+        "5": "6",
+        "6": "7",
+        "7": "1"
+    },
+    ascending_minor = {
+        "1": "2",
+        "2": "3",
+        "3": "4",
+        "4": "5",
+        "5": "#6",
+        "#6": "#7",
+        "#7": "1"
+    },
+    descending = {
+        "1": "7",
+        "2": "1",
+        "3": "2",
+        "4": "3",
+        "5": "4",
+        "6": "5",
+        "7": "6"
+    },
+)
+
+def inverse_dict(d): return {v: k for k, v in d.items()}
+
+predecessor_map = dict(
+    ascending_major = inverse_dict(succession_map["ascending_major"]),
+    ascending_minor = inverse_dict(succession_map["ascending_minor"]),
+    descending = inverse_dict(succession_map["descending"]),
+)
+
+def make_precise_preceding_movement_column(df):
+    """Expects a dataframe containing the columns bass_degree, preceding_bass_degree, and preceding_movement,"""
+    preceding_movement_precise = df.preceding_movement.where(
+        df.preceding_movement != "step", df.preceding_interval
+    )
+    expected_ascending_degree = pd.concat(
+        [
+            df.loc[["major"], "bass_degree"].map(predecessor_map["ascending_major"]),
+            df.loc[["minor"], "bass_degree"].map(predecessor_map["ascending_minor"]),
+        ]
+    )
+    expected_descending_degree = df.bass_degree.map(predecessor_map["descending"])
+    preceding_movement_precise = preceding_movement_precise.where(
+        df.preceding_bass_degree != expected_ascending_degree, "ascending"
+        )
+    preceding_movement_precise = preceding_movement_precise.where(
+        df.preceding_bass_degree != expected_descending_degree, "descending"
+        )
+    return preceding_movement_precise
+
+def make_precise_subsequent_movement_column(df):
+    """Expects a dataframe containing the columns bass_degree, subsequent_bass_degree, and subsequent_movement,"""
+    subsequent_movement_precise = df.subsequent_movement.where(
+        df.subsequent_movement != "step", df.subsequent_interval
+    )
+    expected_ascending_degree = pd.concat(
+        [
+            df.loc[["major"], "bass_degree"].map(succession_map["ascending_major"]),
+            df.loc[["minor"], "bass_degree"].map(succession_map["ascending_minor"]),
+        ]
+    )
+    expected_descending_degree = df.bass_degree.map(succession_map["descending"])
+    subsequent_movement_precise = subsequent_movement_precise.where(
+        df.subsequent_bass_degree != expected_ascending_degree, "ascending"
+        )
+    subsequent_movement_precise = subsequent_movement_precise.where(
+        df.subsequent_bass_degree != expected_descending_degree, "descending"
+        )
+    return subsequent_movement_precise
+```
+
+```{code-cell}
 preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
 preceding.columns = "preceding_" + preceding.columns
 subsequent = bass_notes.groupby(["piece", "localkey_slice"]).shift(-1)
@@ -128,13 +208,10 @@ BN["subsequent_movement"] = (
     .where(~BN.subsequent_iv_is_0, "same")
     .where(BN.subsequent_iv.notna(), "none")
 )
-BN["preceding_movement_precise"] = BN.preceding_movement.where(
-    BN.preceding_movement != "step", BN.preceding_interval
-)
-BN["subsequent_movement_precise"] = BN.subsequent_movement.where(
-    BN.subsequent_movement != "step", BN.subsequent_interval
-)
-BN
+BN["preceding_movement_precise"] = make_precise_preceding_movement_column(BN)
+BN["subsequent_movement_precise"] = make_precise_subsequent_movement_column(BN)
+
+BN.head(15)
 ```
 
 ```{code-cell}
@@ -177,29 +254,32 @@ style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
 ```
 
 ```{code-cell}
+PRECISE_CATEGORIES = True
+
+subsequent_movement = "subsequent_movement_precise" if PRECISE_CATEGORIES else "subsequent_movement"
 movement_data = pd.concat(
     [
-        BN.groupby("mode").subsequent_movement.value_counts(
+        BN.groupby("mode")[subsequent_movement].value_counts(
             normalize=True, dropna=False
         ),
-        BN.groupby(["piece", "mode"])
-        .subsequent_movement.value_counts(normalize=True, dropna=False)
-        .groupby(["mode", "subsequent_movement"])
+        BN.groupby(["piece", "mode"])[subsequent_movement]
+        .value_counts(normalize=True, dropna=False)
+        .groupby(["mode", subsequent_movement])
         .sem()
         .rename("std_err"),
     ],
     axis=1,
 ).reset_index()
-movement_data.subsequent_movement = movement_data.subsequent_movement.fillna("none")
+movement_data[subsequent_movement] = movement_data[subsequent_movement].fillna("none")
 fig = px.bar(
     movement_data,
-    x="subsequent_movement",
+    x=subsequent_movement,
     y="proportion",
     color="mode",
     barmode="group",
     error_y="std_err",
     color_discrete_map=utils.MAJOR_MINOR_COLORS,
-    labels=dict(subsequent_movement="Movement"),
+    labels={subsequent_movement: "Movement"},
     title="Mode-wise proportion of a bass note moving in a certain manner",
     category_orders=dict(subsequent_interval=interval2fifths.index),
 )
@@ -350,7 +430,13 @@ make_bass_degree_sankey(5, "minor")
 make_bass_degree_sankey(6, "major")
 ```
 
-### Minor
+### Minor (ascending)
+
+```{code-cell}
+make_bass_degree_sankey("#6", "minor")
+```
+
+### Minor (descending)
 
 ```{code-cell}
 make_bass_degree_sankey(6, "minor")
@@ -363,7 +449,13 @@ make_bass_degree_sankey(6, "minor")
 make_bass_degree_sankey(7, "major")
 ```
 
-### Minor
+### Minor (ascending)
+
+```{code-cell}
+make_bass_degree_sankey("#7", "minor")
+```
+
+### Minor (descending)
 
 ```{code-cell}
 make_bass_degree_sankey(7, "minor")
