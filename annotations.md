@@ -72,12 +72,12 @@ slideshow:
   slide_type: ''
 tags: [hide-input]
 ---
-D = utils.get_dataset("wagner_overtures", corpus_release="latest")
+D = utils.get_dataset("{{ repo_name }}", corpus_release="{{ corpus_release }}")
 package = D.inputs.get_package()
 package_info = package._package.custom
 git_tag = package_info.get("git_tag")
 utils.print_heading("Data and software versions")
-print("Pretty name version v2.3")
+print("{{ pretty_repo_name }} version {{ corpus_release }}")
 print(f"Datapackage '{package.package_name}' @ {git_tag}")
 print(f"dimcat version {dc.__version__}\n")
 D
