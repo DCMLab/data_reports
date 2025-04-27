@@ -15,10 +15,17 @@ kernelspec:
 # New
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide imports
+  code_prompt_show: Show imports
+tags: [hide-cell]
+---
 %load_ext autoreload
 %autoreload 2
-import os
+
 import itertools
+import os
 from functools import cache
 from typing import List, Literal, Optional, Tuple
 
@@ -34,6 +41,12 @@ pd.set_option("display.max_columns", 500)
 ```
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "couperin_study"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -90,6 +103,8 @@ def style_plotly(
 **Loading data**
 
 ```{code-cell}
+:tags: [hide-input]
+
 D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 ```
@@ -97,21 +112,29 @@ D
 **Grouping data**
 
 ```{code-cell}
+:tags: [hide-input]
+
 pipeline = Pipeline(["KeySlicer", "ModeGrouper"])
 grouped_D = pipeline.process(D)
 grouped_D
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 bass_notes = grouped_D.get_feature("bassnotes")
 bass_notes.df
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 bass_notes.intervals_over_bass.iloc[0]
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 local_keys = grouped_D.get_feature("KeyAnnotations")
 utils.print_heading("Key Segments")
 print(local_keys.groupby("mode").size().to_string())
@@ -119,6 +142,12 @@ local_keys.head()
 ```
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 succession_map = dict(
     ascending_major={
         "1": "2",
@@ -196,6 +225,8 @@ def make_precise_subsequent_movement_column(df):
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
 preceding.columns = "preceding_" + preceding.columns
 subsequent = bass_notes.groupby(["piece", "localkey_slice"]).shift(-1)
@@ -234,6 +265,8 @@ BN.head(15)
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 ignore_mask = BN.subsequent_interval.isna() | BN.subsequent_interval.duplicated()
 interval2fifths = (  # mapping that allows to order the x-axis with intervals according to LoF
     BN.loc[~ignore_mask, ["subsequent_interval", "subsequent_iv"]]
@@ -246,6 +279,8 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
 ## Bass movement
 
 ```{code-cell}
+:tags: [hide-input]
+
 interval_data = pd.concat(
     [
         BN.groupby("mode").subsequent_interval.value_counts(normalize=True),
@@ -273,6 +308,8 @@ style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 PRECISE_CATEGORIES = True
 
 subsequent_movement = (
@@ -308,6 +345,12 @@ style_plotly(fig, save_as="mode-wise_bass_motion")
 ```
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def make_sankey_data(
     five_major, color_edges=True, precise=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
@@ -383,12 +426,16 @@ def make_bass_degree_sankey(
 ### Major
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(1, "major")
 ```
 
 ### Minor
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(1, "minor")
 ```
 
@@ -396,12 +443,16 @@ make_bass_degree_sankey(1, "minor")
 ### Major
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(2, "major")
 ```
 
 ### Minor
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(2, "minor")
 ```
 
@@ -409,12 +460,16 @@ make_bass_degree_sankey(2, "minor")
 ### Major
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(3, "major")
 ```
 
 ### Minor
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(3, "minor")
 ```
 
@@ -422,12 +477,16 @@ make_bass_degree_sankey(3, "minor")
 ### Major
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(4, "major")
 ```
 
 ### Minor
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(4, "minor")
 ```
 
@@ -435,12 +494,16 @@ make_bass_degree_sankey(4, "minor")
 ### Major
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(5, "major")
 ```
 
 ### Minor
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(5, "minor")
 ```
 
@@ -448,18 +511,24 @@ make_bass_degree_sankey(5, "minor")
 ### Major
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(6, "major")
 ```
 
 ### Minor (ascending)
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey("#6", "minor")
 ```
 
 ### Minor (descending)
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(6, "minor")
 ```
 
@@ -467,30 +536,40 @@ make_bass_degree_sankey(6, "minor")
 ### Major
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(7, "major")
 ```
 
 ### Minor (ascending)
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey("#7", "minor")
 ```
 
 ### Minor (descending)
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(7, "minor")
 ```
 
 ## Explanatory power of the RoO
 
 ```{code-cell}
+:tags: [hide-input]
+
 BN.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
     lambda S: S.value_counts().idxmax()
 )
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 maj = ("M3", "P5")
 maj6 = ("m3", "m6")
 min = ("m3", "P5")
@@ -543,6 +622,12 @@ regole = dict(
 ```
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 @cache
 def get_base_df(
     basis: Literal[
@@ -650,15 +735,6 @@ def get_vocabulary_coverage(
 ) -> float:
     mask = get_chord_vocabulary_mask(basis=basis, vocabulary=vocabulary, query=query)
     return mask.sum() / len(mask)
-```
-
-```{code-cell}
-regola_vocabulary_major = tuple(
-    set(regole["ascending_major"] + regole["descending_major"])
-)
-regola_vocabulary_minor = tuple(
-    set(regole["ascending_minor"] + regole["descending_minor"])
-)
 
 
 def get_coverage_values(
@@ -702,7 +778,17 @@ def get_coverage_values(
     result = pd.Series(results, name="proportion")
     result.index.names = ["mode", "coverage_of"]
     return result
+```
 
+```{code-cell}
+:tags: [hide-input]
+
+regola_vocabulary_major = tuple(
+    set(regole["ascending_major"] + regole["descending_major"])
+)
+regola_vocabulary_minor = tuple(
+    set(regole["ascending_minor"] + regole["descending_minor"])
+)
 
 features = dict(
     to_ascending="subsequent_movement_precise == 'ascending'",
@@ -732,18 +818,26 @@ regola_coverage
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 pd.concat(
     {("cumulative", "0"): regola_coverage}, names=["vocabulary", "rank"]
 ).to_frame()
 ```
 
 ```{code-cell}
+:tags: [hide-input]
+
 len(regola_vocabulary_major), len(regola_vocabulary_minor)
 ```
 
 ```{code-cell}
-
-
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def make_coverage_plot_data(
     include_singular_vocabularies=True, **features
 ) -> pd.DataFrame:
@@ -775,6 +869,10 @@ def make_coverage_plot_data(
         results[("single", i)] = pd.concat([values, chord], axis=1)
     index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
     return pd.concat(results, names=index_levels)
+```
+
+```{code-cell}
+:tags: [hide-input]
 
 
 result = make_coverage_plot_data(**features)
@@ -788,10 +886,10 @@ result = pd.concat(
         result,
     ]
 ).sort_index()
-result
 ```
 
 ```{code-cell}
+:tags: [hide-input]
 
 fig = px.line(
     result.reset_index(),

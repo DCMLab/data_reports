@@ -16,11 +16,12 @@
 # %% [markdown]
 # # New
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
 # %load_ext autoreload
 # %autoreload 2
-import os
+
 import itertools
+import os
 from functools import cache
 from typing import List, Literal, Optional, Tuple
 
@@ -34,7 +35,7 @@ import utils
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "couperin_study"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -91,32 +92,32 @@ def style_plotly(
 # %% [markdown]
 # **Loading data**
 
-# %%
+# %% tags=["hide-input"]
 D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 
 # %% [markdown]
 # **Grouping data**
 
-# %%
+# %% tags=["hide-input"]
 pipeline = Pipeline(["KeySlicer", "ModeGrouper"])
 grouped_D = pipeline.process(D)
 grouped_D
 
-# %%
+# %% tags=["hide-input"]
 bass_notes = grouped_D.get_feature("bassnotes")
 bass_notes.df
 
-# %%
+# %% tags=["hide-input"]
 bass_notes.intervals_over_bass.iloc[0]
 
-# %%
+# %% tags=["hide-input"]
 local_keys = grouped_D.get_feature("KeyAnnotations")
 utils.print_heading("Key Segments")
 print(local_keys.groupby("mode").size().to_string())
 local_keys.head()
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 succession_map = dict(
     ascending_major={
         "1": "2",
@@ -193,7 +194,7 @@ def make_precise_subsequent_movement_column(df):
     return subsequent_movement_precise
 
 
-# %%
+# %% tags=["hide-input"]
 preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
 preceding.columns = "preceding_" + preceding.columns
 subsequent = bass_notes.groupby(["piece", "localkey_slice"]).shift(-1)
@@ -230,7 +231,7 @@ BN["subsequent_movement_precise"] = make_precise_subsequent_movement_column(BN)
 
 BN.head(15)
 
-# %%
+# %% tags=["hide-input"]
 ignore_mask = BN.subsequent_interval.isna() | BN.subsequent_interval.duplicated()
 interval2fifths = (  # mapping that allows to order the x-axis with intervals according to LoF
     BN.loc[~ignore_mask, ["subsequent_interval", "subsequent_iv"]]
@@ -242,7 +243,7 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
 # %% [markdown]
 # ## Bass movement
 
-# %%
+# %% tags=["hide-input"]
 interval_data = pd.concat(
     [
         BN.groupby("mode").subsequent_interval.value_counts(normalize=True),
@@ -268,7 +269,7 @@ fig = px.bar(
 )
 style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
 
-# %%
+# %% tags=["hide-input"]
 PRECISE_CATEGORIES = True
 
 subsequent_movement = (
@@ -303,7 +304,7 @@ fig = px.bar(
 style_plotly(fig, save_as="mode-wise_bass_motion")
 
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_sankey_data(
     five_major, color_edges=True, precise=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
@@ -379,114 +380,114 @@ def make_bass_degree_sankey(
 # ## Intervals over bass degree 1
 # ### Major
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(1, "major")
 
 # %% [markdown]
 # ### Minor
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(1, "minor")
 
 # %% [markdown]
 # ## Intervals over bass degree 2
 # ### Major
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(2, "major")
 
 # %% [markdown]
 # ### Minor
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(2, "minor")
 
 # %% [markdown]
 # ## Intervals over bass degree 3
 # ### Major
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(3, "major")
 
 # %% [markdown]
 # ### Minor
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(3, "minor")
 
 # %% [markdown]
 # ## Intervals over bass degree 4
 # ### Major
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(4, "major")
 
 # %% [markdown]
 # ### Minor
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(4, "minor")
 
 # %% [markdown]
 # ## Intervals over bass degree 5
 # ### Major
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(5, "major")
 
 # %% [markdown]
 # ### Minor
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(5, "minor")
 
 # %% [markdown]
 # ## Intervals over bass degree 6
 # ### Major
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(6, "major")
 
 # %% [markdown]
 # ### Minor (ascending)
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey("#6", "minor")
 
 # %% [markdown]
 # ### Minor (descending)
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(6, "minor")
 
 # %% [markdown]
 # ## Intervals over bass degree 7
 # ### Major
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(7, "major")
 
 # %% [markdown]
 # ### Minor (ascending)
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey("#7", "minor")
 
 # %% [markdown]
 # ### Minor (descending)
 
-# %%
+# %% tags=["hide-input"]
 make_bass_degree_sankey(7, "minor")
 
 # %% [markdown]
 # ## Explanatory power of the RoO
 
-# %%
+# %% tags=["hide-input"]
 BN.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
     lambda S: S.value_counts().idxmax()
 )
 
-# %%
+# %% tags=["hide-input"]
 maj = ("M3", "P5")
 maj6 = ("m3", "m6")
 min = ("m3", "P5")
@@ -538,7 +539,7 @@ regole = dict(
 )
 
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 @cache
 def get_base_df(
     basis: Literal[
@@ -648,15 +649,6 @@ def get_vocabulary_coverage(
     return mask.sum() / len(mask)
 
 
-# %%
-regola_vocabulary_major = tuple(
-    set(regole["ascending_major"] + regole["descending_major"])
-)
-regola_vocabulary_minor = tuple(
-    set(regole["ascending_minor"] + regole["descending_minor"])
-)
-
-
 def get_coverage_values(
     major_vocabulary: Optional[Tuple[Tuple[str, tuple], ...]] = None,
     minor_vocabulary: Optional[Tuple[Tuple[str, tuple], ...]] = None,
@@ -700,6 +692,14 @@ def get_coverage_values(
     return result
 
 
+# %% tags=["hide-input"]
+regola_vocabulary_major = tuple(
+    set(regole["ascending_major"] + regole["descending_major"])
+)
+regola_vocabulary_minor = tuple(
+    set(regole["ascending_minor"] + regole["descending_minor"])
+)
+
 features = dict(
     to_ascending="subsequent_movement_precise == 'ascending'",
     to_descending="subsequent_movement_precise == 'descending'",
@@ -726,17 +726,16 @@ regola_coverage = get_coverage_values(
 )
 regola_coverage
 
-# %%
+# %% tags=["hide-input"]
 pd.concat(
     {("cumulative", "0"): regola_coverage}, names=["vocabulary", "rank"]
 ).to_frame()
 
-# %%
+# %% tags=["hide-input"]
 len(regola_vocabulary_major), len(regola_vocabulary_minor)
 
-# %%
 
-
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_coverage_plot_data(
     include_singular_vocabularies=True, **features
 ) -> pd.DataFrame:
@@ -770,6 +769,8 @@ def make_coverage_plot_data(
     return pd.concat(results, names=index_levels)
 
 
+# %% tags=["hide-input"]
+
 result = make_coverage_plot_data(**features)
 regola_results = pd.concat(
     {("cumulative", 10.5): regola_coverage}, names=["vocabulary", "rank"]
@@ -781,10 +782,8 @@ result = pd.concat(
         result,
     ]
 ).sort_index()
-result
 
-# %%
-
+# %% tags=["hide-input"]
 fig = px.line(
     result.reset_index(),
     x="rank",
