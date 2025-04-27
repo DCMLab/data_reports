@@ -119,6 +119,8 @@ grouped_D = pipeline.process(D)
 grouped_D
 ```
 
+**Starting point: DiMCAT's BassNotes feature**
+
 ```{code-cell}
 :tags: [hide-input]
 
@@ -126,11 +128,7 @@ bass_notes = grouped_D.get_feature("bassnotes")
 bass_notes.df
 ```
 
-```{code-cell}
-:tags: [hide-input]
-
-bass_notes.intervals_over_bass.iloc[0]
-```
+**If needed, the `localkey_slice` intervals can be resolved using this table:**
 
 ```{code-cell}
 :tags: [hide-input]
@@ -224,6 +222,12 @@ def make_precise_subsequent_movement_column(df):
     return subsequent_movement_precise
 ```
 
+**This is the main table of this notebook. It corresponds to the `BassNotes` features,
+with a `preceding_` and a `subsequent_` copy of each column concatenated to the right.
+The respective upward and downward shifts are performed within each localkey group,
+leaving first bass degrees with undefined preceding values and last bass degrees without
+undefined subsequent values.**
+
 ```{code-cell}
 :tags: [hide-input]
 
@@ -276,7 +280,8 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
 )
 ```
 
-## Bass movement
+## Overview of how the bass moves
+### Intervals
 
 ```{code-cell}
 :tags: [hide-input]
@@ -306,6 +311,12 @@ fig = px.bar(
 )
 style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
 ```
+
+### Types of movement
+
+**The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
+degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
+this study.**
 
 ```{code-cell}
 :tags: [hide-input]
@@ -343,6 +354,8 @@ fig = px.bar(
 )
 style_plotly(fig, save_as="mode-wise_bass_motion")
 ```
+
+## Sankey diagrams showing movement types before and after each scale degree
 
 ```{code-cell}
 ---
@@ -422,8 +435,8 @@ def make_bass_degree_sankey(
     return fig
 ```
 
-## Intervals over bass degree 1
-### Major
+### Intervals over bass degree 1
+#### Major
 
 ```{code-cell}
 :tags: [hide-input]
@@ -431,7 +444,7 @@ def make_bass_degree_sankey(
 make_bass_degree_sankey(1, "major")
 ```
 
-### Minor
+#### Minor
 
 ```{code-cell}
 :tags: [hide-input]
@@ -439,8 +452,8 @@ make_bass_degree_sankey(1, "major")
 make_bass_degree_sankey(1, "minor")
 ```
 
-## Intervals over bass degree 2
-### Major
+### Intervals over bass degree 2
+#### Major
 
 ```{code-cell}
 :tags: [hide-input]
@@ -448,7 +461,7 @@ make_bass_degree_sankey(1, "minor")
 make_bass_degree_sankey(2, "major")
 ```
 
-### Minor
+#### Minor
 
 ```{code-cell}
 :tags: [hide-input]
@@ -456,8 +469,8 @@ make_bass_degree_sankey(2, "major")
 make_bass_degree_sankey(2, "minor")
 ```
 
-## Intervals over bass degree 3
-### Major
+### Intervals over bass degree 3
+#### Major
 
 ```{code-cell}
 :tags: [hide-input]
@@ -465,7 +478,7 @@ make_bass_degree_sankey(2, "minor")
 make_bass_degree_sankey(3, "major")
 ```
 
-### Minor
+#### Minor
 
 ```{code-cell}
 :tags: [hide-input]
@@ -473,8 +486,8 @@ make_bass_degree_sankey(3, "major")
 make_bass_degree_sankey(3, "minor")
 ```
 
-## Intervals over bass degree 4
-### Major
+### Intervals over bass degree 4
+#### Major
 
 ```{code-cell}
 :tags: [hide-input]
@@ -482,7 +495,7 @@ make_bass_degree_sankey(3, "minor")
 make_bass_degree_sankey(4, "major")
 ```
 
-### Minor
+#### Minor
 
 ```{code-cell}
 :tags: [hide-input]
@@ -490,8 +503,8 @@ make_bass_degree_sankey(4, "major")
 make_bass_degree_sankey(4, "minor")
 ```
 
-## Intervals over bass degree 5
-### Major
+### Intervals over bass degree 5
+#### Major
 
 ```{code-cell}
 :tags: [hide-input]
@@ -499,7 +512,7 @@ make_bass_degree_sankey(4, "minor")
 make_bass_degree_sankey(5, "major")
 ```
 
-### Minor
+#### Minor
 
 ```{code-cell}
 :tags: [hide-input]
@@ -507,8 +520,8 @@ make_bass_degree_sankey(5, "major")
 make_bass_degree_sankey(5, "minor")
 ```
 
-## Intervals over bass degree 6
-### Major
+### Intervals over bass degree 6
+#### Major
 
 ```{code-cell}
 :tags: [hide-input]
@@ -516,7 +529,7 @@ make_bass_degree_sankey(5, "minor")
 make_bass_degree_sankey(6, "major")
 ```
 
-### Minor (ascending)
+#### Minor (ascending)
 
 ```{code-cell}
 :tags: [hide-input]
@@ -524,7 +537,7 @@ make_bass_degree_sankey(6, "major")
 make_bass_degree_sankey("#6", "minor")
 ```
 
-### Minor (descending)
+#### Minor (descending)
 
 ```{code-cell}
 :tags: [hide-input]
@@ -532,8 +545,8 @@ make_bass_degree_sankey("#6", "minor")
 make_bass_degree_sankey(6, "minor")
 ```
 
-## Intervals over bass degree 7
-### Major
+### Intervals over bass degree 7
+#### Major
 
 ```{code-cell}
 :tags: [hide-input]
@@ -541,7 +554,7 @@ make_bass_degree_sankey(6, "minor")
 make_bass_degree_sankey(7, "major")
 ```
 
-### Minor (ascending)
+#### Minor (ascending)
 
 ```{code-cell}
 :tags: [hide-input]
@@ -549,7 +562,7 @@ make_bass_degree_sankey(7, "major")
 make_bass_degree_sankey("#7", "minor")
 ```
 
-### Minor (descending)
+#### Minor (descending)
 
 ```{code-cell}
 :tags: [hide-input]
@@ -558,6 +571,8 @@ make_bass_degree_sankey(7, "minor")
 ```
 
 ## Explanatory power of the RoO
+
+**Most frequent chord for each bass degree**
 
 ```{code-cell}
 :tags: [hide-input]
@@ -780,6 +795,24 @@ def get_coverage_values(
     return result
 ```
 
+### Which proportion of unigrams are "explained" by Campion's regola
+
+The percentages are based on different sets of unigrams.
+`from` means before/leading to a bass degree, `to` means after/following a bass degree.
+
+* `all`: all bass degrees
+* `diatonic`: all non-chromatic bass degrees (in minor, the chromatic scale degrees `#6` and `#7` are considered
+  diatonic)
+* `to_ascending`: all diatonic bass degrees that ascend within the regola
+* `from_ascending`: all diatonic bass degrees that are reached by ascending within the regola
+* `to_and_from_ascending`: all diatonic bass degrees that are reached by ascending within the regola and proceed
+  ascending within the regola
+* `to_and_from_either`: all diatonic bass degrees whose predecessor and successor are both upper or lower neighbors
+  within the regola
+* `to_leap`: all diatonic bass degrees followed by a leap
+* `to_same`: all diatonic bass degrees followed by the same bass degree
+* etc.
+
 ```{code-cell}
 :tags: [hide-input]
 
@@ -817,19 +850,12 @@ regola_coverage = get_coverage_values(
 regola_coverage
 ```
 
-```{code-cell}
-:tags: [hide-input]
+### Comparing the regola against all "top k" vocabularies
 
-pd.concat(
-    {("cumulative", "0"): regola_coverage}, names=["vocabulary", "rank"]
-).to_frame()
-```
-
-```{code-cell}
-:tags: [hide-input]
-
-len(regola_vocabulary_major), len(regola_vocabulary_minor)
-```
+**Campion's regola comprises 10 different chords for both major and minor.
+For comparison, its values are shown at point 10.5 on the x-axis.
+The lower two plots show how many unigrams are covered by individual chords.
+Hover over the points to see the corresponding chords.**
 
 ```{code-cell}
 ---
@@ -900,6 +926,7 @@ fig = px.line(
     facet_row="vocabulary",
     hover_name="chord",
     log_x=True,
+    title="How many unigrams are covered by each top-k vocabulary",
 )
 style_plotly(
     fig,
@@ -911,6 +938,10 @@ style_plotly(
 )
 ```
 
-```{code-cell}
+**In order to inspect these plots you will want to hide traces.
+Click on a legend item to toggle it, double-click on an item to toggle all others.**
 
-```
++++
+
+**In order to inspect these plots you will want to hide traces.
+Click on a legend item to toggle it, double-click on an item to toggle all others.**

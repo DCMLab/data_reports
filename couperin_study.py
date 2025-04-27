@@ -104,12 +104,15 @@ pipeline = Pipeline(["KeySlicer", "ModeGrouper"])
 grouped_D = pipeline.process(D)
 grouped_D
 
+# %% [markdown]
+# **Starting point: DiMCAT's BassNotes feature**
+
 # %% tags=["hide-input"]
 bass_notes = grouped_D.get_feature("bassnotes")
 bass_notes.df
 
-# %% tags=["hide-input"]
-bass_notes.intervals_over_bass.iloc[0]
+# %% [markdown]
+# **If needed, the `localkey_slice` intervals can be resolved using this table:**
 
 # %% tags=["hide-input"]
 local_keys = grouped_D.get_feature("KeyAnnotations")
@@ -194,6 +197,13 @@ def make_precise_subsequent_movement_column(df):
     return subsequent_movement_precise
 
 
+# %% [markdown]
+# **This is the main table of this notebook. It corresponds to the `BassNotes` features,
+# with a `preceding_` and a `subsequent_` copy of each column concatenated to the right.
+# The respective upward and downward shifts are performed within each localkey group,
+# leaving first bass degrees with undefined preceding values and last bass degrees without
+# undefined subsequent values.**
+
 # %% tags=["hide-input"]
 preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
 preceding.columns = "preceding_" + preceding.columns
@@ -241,7 +251,8 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
 )
 
 # %% [markdown]
-# ## Bass movement
+# ## Overview of how the bass moves
+# ### Intervals
 
 # %% tags=["hide-input"]
 interval_data = pd.concat(
@@ -268,6 +279,13 @@ fig = px.bar(
     category_orders=dict(subsequent_interval=interval2fifths.index),
 )
 style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
+
+# %% [markdown]
+# ### Types of movement
+#
+# **The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
+# degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
+# this study.**
 
 # %% tags=["hide-input"]
 PRECISE_CATEGORIES = True
@@ -303,6 +321,9 @@ fig = px.bar(
 )
 style_plotly(fig, save_as="mode-wise_bass_motion")
 
+
+# %% [markdown]
+# ## Sankey diagrams showing movement types before and after each scale degree
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_sankey_data(
@@ -377,110 +398,112 @@ def make_bass_degree_sankey(
 
 
 # %% [markdown]
-# ## Intervals over bass degree 1
-# ### Major
+# ### Intervals over bass degree 1
+# #### Major
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(1, "major")
 
 # %% [markdown]
-# ### Minor
+# #### Minor
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(1, "minor")
 
 # %% [markdown]
-# ## Intervals over bass degree 2
-# ### Major
+# ### Intervals over bass degree 2
+# #### Major
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(2, "major")
 
 # %% [markdown]
-# ### Minor
+# #### Minor
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(2, "minor")
 
 # %% [markdown]
-# ## Intervals over bass degree 3
-# ### Major
+# ### Intervals over bass degree 3
+# #### Major
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(3, "major")
 
 # %% [markdown]
-# ### Minor
+# #### Minor
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(3, "minor")
 
 # %% [markdown]
-# ## Intervals over bass degree 4
-# ### Major
+# ### Intervals over bass degree 4
+# #### Major
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(4, "major")
 
 # %% [markdown]
-# ### Minor
+# #### Minor
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(4, "minor")
 
 # %% [markdown]
-# ## Intervals over bass degree 5
-# ### Major
+# ### Intervals over bass degree 5
+# #### Major
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(5, "major")
 
 # %% [markdown]
-# ### Minor
+# #### Minor
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(5, "minor")
 
 # %% [markdown]
-# ## Intervals over bass degree 6
-# ### Major
+# ### Intervals over bass degree 6
+# #### Major
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(6, "major")
 
 # %% [markdown]
-# ### Minor (ascending)
+# #### Minor (ascending)
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey("#6", "minor")
 
 # %% [markdown]
-# ### Minor (descending)
+# #### Minor (descending)
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(6, "minor")
 
 # %% [markdown]
-# ## Intervals over bass degree 7
-# ### Major
+# ### Intervals over bass degree 7
+# #### Major
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(7, "major")
 
 # %% [markdown]
-# ### Minor (ascending)
+# #### Minor (ascending)
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey("#7", "minor")
 
 # %% [markdown]
-# ### Minor (descending)
+# #### Minor (descending)
 
 # %% tags=["hide-input"]
 make_bass_degree_sankey(7, "minor")
 
 # %% [markdown]
 # ## Explanatory power of the RoO
+#
+# **Most frequent chord for each bass degree**
 
 # %% tags=["hide-input"]
 BN.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
@@ -692,6 +715,25 @@ def get_coverage_values(
     return result
 
 
+# %% [markdown]
+# ### Which proportion of unigrams are "explained" by Campion's regola
+#
+# The percentages are based on different sets of unigrams.
+# `from` means before/leading to a bass degree, `to` means after/following a bass degree.
+#
+# * `all`: all bass degrees
+# * `diatonic`: all non-chromatic bass degrees (in minor, the chromatic scale degrees `#6` and `#7` are considered
+#   diatonic)
+# * `to_ascending`: all diatonic bass degrees that ascend within the regola
+# * `from_ascending`: all diatonic bass degrees that are reached by ascending within the regola
+# * `to_and_from_ascending`: all diatonic bass degrees that are reached by ascending within the regola and proceed
+#   ascending within the regola
+# * `to_and_from_either`: all diatonic bass degrees whose predecessor and successor are both upper or lower neighbors
+#   within the regola
+# * `to_leap`: all diatonic bass degrees followed by a leap
+# * `to_same`: all diatonic bass degrees followed by the same bass degree
+# * etc.
+
 # %% tags=["hide-input"]
 regola_vocabulary_major = tuple(
     set(regole["ascending_major"] + regole["descending_major"])
@@ -726,14 +768,14 @@ regola_coverage = get_coverage_values(
 )
 regola_coverage
 
-# %% tags=["hide-input"]
-pd.concat(
-    {("cumulative", "0"): regola_coverage}, names=["vocabulary", "rank"]
-).to_frame()
 
-# %% tags=["hide-input"]
-len(regola_vocabulary_major), len(regola_vocabulary_minor)
-
+# %% [markdown]
+# ### Comparing the regola against all "top k" vocabularies
+#
+# **Campion's regola comprises 10 different chords for both major and minor.
+# For comparison, its values are shown at point 10.5 on the x-axis.
+# The lower two plots show how many unigrams are covered by individual chords.
+# Hover over the points to see the corresponding chords.**
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_coverage_plot_data(
@@ -793,6 +835,7 @@ fig = px.line(
     facet_row="vocabulary",
     hover_name="chord",
     log_x=True,
+    title="How many unigrams are covered by each top-k vocabulary",
 )
 style_plotly(
     fig,
@@ -803,4 +846,10 @@ style_plotly(
     ),
 )
 
-# %%
+# %% [markdown]
+# **In order to inspect these plots you will want to hide traces.
+# Click on a legend item to toggle it, double-click on an item to toggle all others.**
+
+# %% [markdown]
+# **In order to inspect these plots you will want to hide traces.
+# Click on a legend item to toggle it, double-click on an item to toggle all others.**
