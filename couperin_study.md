@@ -18,6 +18,7 @@ kernelspec:
 %load_ext autoreload
 %autoreload 2
 import os
+import itertools
 from functools import cache
 from typing import List, Literal, Optional, Tuple
 
@@ -55,11 +56,32 @@ def save_figure_as(
         plotting.write_image(fig, filename, directory, **kwargs)
 
 
-def style_plotly(fig, save_as=None, **layout):
+def style_plotly(
+    fig,
+    save_as=None,
+    xaxes: Optional[dict] = None,
+    yaxes: Optional[dict] = None,
+    match_facet_yaxes=False,
+    **layout,
+):
     layout_args = dict(utils.STD_LAYOUT, **layout)
     fig.update_layout(**layout_args)
-    fig.update_xaxes(gridcolor="lightgrey")
-    fig.update_yaxes(gridcolor="lightgrey")
+    xaxes_settings = dict(gridcolor="lightgrey")
+    if xaxes:
+        xaxes_settings.update(xaxes)
+    fig.update_xaxes(**xaxes_settings)
+    yaxes_settings = dict(gridcolor="lightgrey")
+    if yaxes:
+        yaxes_settings.update(yaxes)
+    fig.update_yaxes(**yaxes_settings)
+    if match_facet_yaxes:
+        for row_idx, row_figs in enumerate(fig._grid_ref):
+            for col_idx, col_fig in enumerate(row_figs):
+                fig.update_yaxes(
+                    row=row_idx + 1,
+                    col=col_idx + 1,
+                    matches="y" + str(len(row_figs) * row_idx + 1),
+                )
     if save_as:
         save_figure_as(fig, save_as)
     fig.show()
@@ -98,42 +120,38 @@ local_keys.head()
 
 ```{code-cell}
 succession_map = dict(
-    ascending_major = {
+    ascending_major={
         "1": "2",
         "2": "3",
         "3": "4",
         "4": "5",
         "5": "6",
         "6": "7",
-        "7": "1"
+        "7": "1",
     },
-    ascending_minor = {
+    ascending_minor={
         "1": "2",
         "2": "3",
         "3": "4",
         "4": "5",
         "5": "#6",
         "#6": "#7",
-        "#7": "1"
+        "#7": "1",
     },
-    descending = {
-        "1": "7",
-        "2": "1",
-        "3": "2",
-        "4": "3",
-        "5": "4",
-        "6": "5",
-        "7": "6"
-    },
+    descending={"1": "7", "2": "1", "3": "2", "4": "3", "5": "4", "6": "5", "7": "6"},
 )
 
-def inverse_dict(d): return {v: k for k, v in d.items()}
+
+def inverse_dict(d):
+    return {v: k for k, v in d.items()}
+
 
 predecessor_map = dict(
-    ascending_major = inverse_dict(succession_map["ascending_major"]),
-    ascending_minor = inverse_dict(succession_map["ascending_minor"]),
-    descending = inverse_dict(succession_map["descending"]),
+    ascending_major=inverse_dict(succession_map["ascending_major"]),
+    ascending_minor=inverse_dict(succession_map["ascending_minor"]),
+    descending=inverse_dict(succession_map["descending"]),
 )
+
 
 def make_precise_preceding_movement_column(df):
     """Expects a dataframe containing the columns bass_degree, preceding_bass_degree, and preceding_movement,"""
@@ -149,11 +167,12 @@ def make_precise_preceding_movement_column(df):
     expected_descending_degree = df.bass_degree.map(predecessor_map["descending"])
     preceding_movement_precise = preceding_movement_precise.where(
         df.preceding_bass_degree != expected_ascending_degree, "ascending"
-        )
+    )
     preceding_movement_precise = preceding_movement_precise.where(
         df.preceding_bass_degree != expected_descending_degree, "descending"
-        )
+    )
     return preceding_movement_precise
+
 
 def make_precise_subsequent_movement_column(df):
     """Expects a dataframe containing the columns bass_degree, subsequent_bass_degree, and subsequent_movement,"""
@@ -169,10 +188,10 @@ def make_precise_subsequent_movement_column(df):
     expected_descending_degree = df.bass_degree.map(succession_map["descending"])
     subsequent_movement_precise = subsequent_movement_precise.where(
         df.subsequent_bass_degree != expected_ascending_degree, "ascending"
-        )
+    )
     subsequent_movement_precise = subsequent_movement_precise.where(
         df.subsequent_bass_degree != expected_descending_degree, "descending"
-        )
+    )
     return subsequent_movement_precise
 ```
 
@@ -256,7 +275,9 @@ style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
 ```{code-cell}
 PRECISE_CATEGORIES = True
 
-subsequent_movement = "subsequent_movement_precise" if PRECISE_CATEGORIES else "subsequent_movement"
+subsequent_movement = (
+    "subsequent_movement_precise" if PRECISE_CATEGORIES else "subsequent_movement"
+)
 movement_data = pd.concat(
     [
         BN.groupby("mode")[subsequent_movement].value_counts(
@@ -608,6 +629,18 @@ def get_chord_vocabulary_mask(
     return mask
 
 
+def inspect(
+    basis: Literal[
+        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
+    ],  # minor_diatonic includes 6, #6, 7, #7
+    vocabulary: Tuple[Tuple[str, tuple], ...],
+    query: Optional[str] = None,
+) -> pd.DataFrame:
+    base = get_base_df(basis, query=query)
+    mask = get_chord_vocabulary_mask(basis=basis, vocabulary=vocabulary, query=query)
+    return base[mask]
+
+
 def get_vocabulary_coverage(
     basis: Literal[
         "major_all", "minor_all", "major_diatonic", "minor_diatonic"
@@ -626,17 +659,160 @@ regola_vocabulary_major = tuple(
 regola_vocabulary_minor = tuple(
     set(regole["ascending_minor"] + regole["descending_minor"])
 )
-get_vocabulary_coverage("major_all", regola_vocabulary_major)
+
+
+def get_coverage_values(
+    major_vocabulary: Optional[Tuple[Tuple[str, tuple], ...]] = None,
+    minor_vocabulary: Optional[Tuple[Tuple[str, tuple], ...]] = None,
+    **name2query,
+) -> pd.Series:
+    if not (major_vocabulary or minor_vocabulary):
+        return pd.Series()
+    results = {}
+    if major_vocabulary:
+        results.update(
+            {
+                ("major", "all"): get_vocabulary_coverage(
+                    "major_all", major_vocabulary
+                ),
+                ("major", "diatonic"): get_vocabulary_coverage(
+                    "major_diatonic", major_vocabulary
+                ),
+            }
+        )
+        for name, query in name2query.items():
+            results[("major", name)] = get_vocabulary_coverage(
+                "major_diatonic", major_vocabulary, query=query
+            )
+    if minor_vocabulary:
+        results.update(
+            {
+                ("minor", "all"): get_vocabulary_coverage(
+                    "minor_all", minor_vocabulary
+                ),
+                ("minor", "diatonic"): get_vocabulary_coverage(
+                    "minor_diatonic", minor_vocabulary
+                ),
+            }
+        )
+        for name, query in name2query.items():
+            results[("minor", name)] = get_vocabulary_coverage(
+                "minor_diatonic", minor_vocabulary, query=query
+            )
+    result = pd.Series(results, name="proportion")
+    result.index.names = ["mode", "coverage_of"]
+    return result
+
+
+features = dict(
+    to_ascending="subsequent_movement_precise == 'ascending'",
+    to_descending="subsequent_movement_precise == 'descending'",
+    to_either="subsequent_movement_precise == ['ascending', 'descending']",
+    to_leap="subsequent_movement == 'leap'",
+    to_same="subsequent_movement == 'same'",
+    last_notes="subsequent_movement == 'none'",
+    from_ascending="preceding_movement_precise == 'ascending'",
+    from_descending="preceding_movement_precise == 'descending'",
+    from_either="preceding_movement_precise == ['ascending', 'descending']",
+    from_leap="preceding_movement == 'leap'",
+    from_same="preceding_movement == 'same'",
+    first_notes="preceding_movement == 'none'",
+    to_and_from_ascending="subsequent_movement_precise == 'ascending' & preceding_movement_precise == 'ascending'",
+    to_and_from_descending="subsequent_movement_precise == 'descending' & preceding_movement_precise == 'descending'",
+    to_and_from_either="subsequent_movement_precise == ['ascending', 'descending'] & "
+    "preceding_movement_precise == ['ascending', 'descending']",
+    to_and_from_leap="subsequent_movement == 'leap' & preceding_movement == 'leap'",
+    to_and_from_same="subsequent_movement == 'same' & preceding_movement == 'same'",
+)
+
+regola_coverage = get_coverage_values(
+    regola_vocabulary_major, regola_vocabulary_minor, **features
+)
+regola_coverage
 ```
 
 ```{code-cell}
-get_vocabulary_coverage("major_diatonic", regola_vocabulary_major)
+pd.concat(
+    {("cumulative", "0"): regola_coverage}, names=["vocabulary", "rank"]
+).to_frame()
 ```
 
 ```{code-cell}
-get_vocabulary_coverage("minor_all", regola_vocabulary_minor)
+len(regola_vocabulary_major), len(regola_vocabulary_minor)
 ```
 
 ```{code-cell}
-get_vocabulary_coverage("minor_diatonic", regola_vocabulary_minor)
+
+
+def make_coverage_plot_data(
+    include_singular_vocabularies=True, **features
+) -> pd.DataFrame:
+    all_chords = BN[["bass_degree", "intervals_over_bass"]].apply(tuple, axis=1)
+    chord_ranking = all_chords.groupby("mode").value_counts(normalize=True)
+    major_ranking, minor_ranking = (
+        chord_ranking.loc["major"],
+        chord_ranking.loc["minor"],
+    )
+    major_vocab, minor_vocab = [], []
+    results = {}
+    for i, (maj_chord, min_chord) in enumerate(
+        itertools.zip_longest(major_ranking.index, minor_ranking.index), 1
+    ):
+        if maj_chord:
+            major_vocab.append(maj_chord)
+        if min_chord:
+            minor_vocab.append(min_chord)
+        key = ("cumulative", i) if include_singular_vocabularies else i
+        values = get_coverage_values(tuple(major_vocab), tuple(minor_vocab), **features)
+        chord = pd.Series(str(maj_chord), index=values.index, name="chord")
+        chord.loc["minor"] = str(min_chord)
+        results[key] = pd.concat([values, chord], axis=1)
+        if not include_singular_vocabularies:
+            continue
+        single_maj_vocab = (maj_chord,) if maj_chord else None
+        single_min_vocab = (min_chord,) if min_chord else None
+        values = get_coverage_values(single_maj_vocab, single_min_vocab, **features)
+        results[("single", i)] = pd.concat([values, chord], axis=1)
+    index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
+    return pd.concat(results, names=index_levels)
+
+
+result = make_coverage_plot_data(**features)
+regola_results = pd.concat(
+    {("cumulative", 10.5): regola_coverage}, names=["vocabulary", "rank"]
+).to_frame()
+regola_results.loc[:, "chord"] = "regola"
+result = pd.concat(
+    [
+        regola_results,
+        result,
+    ]
+).sort_index()
+result
+```
+
+```{code-cell}
+
+fig = px.line(
+    result.reset_index(),
+    x="rank",
+    y="proportion",
+    color="coverage_of",
+    facet_col="mode",
+    facet_row="vocabulary",
+    hover_name="chord",
+    log_x=True,
+)
+style_plotly(
+    fig,
+    match_facet_yaxes=True,
+    height=1500,
+    legend=dict(
+        orientation="h",
+    ),
+)
+```
+
+```{code-cell}
+
 ```
