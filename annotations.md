@@ -7,9 +7,9 @@ jupytext:
     format_version: 0.13
     jupytext_version: 1.17.0
 kernelspec:
-  display_name: revamp
+  display_name: corpus_docs
   language: python
-  name: revamp
+  name: corpus_docs
 ---
 
 # Annotations

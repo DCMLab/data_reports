@@ -9,9 +9,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.0
 #   kernelspec:
-#     display_name: revamp
+#     display_name: corpus_docs
 #     language: python
-#     name: revamp
+#     name: corpus_docs
 # ---
 
 # %% [markdown]
