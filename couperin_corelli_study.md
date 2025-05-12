@@ -451,7 +451,7 @@ def make_bass_degree_sankey(
     BN: pd.DataFrame,
     corpus: str,
     mode: Literal["major", "minor"],
-    bass_degree: str = None,
+    bass_degree: Optional[str | int] = None,
     **layout,
 ):
     """bass_degree None means all unigrams."""
@@ -674,7 +674,7 @@ BN.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
 )
 ```
 
-### Couperin
+### Corelli
 
 ```{code-cell}
 BN_cor.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
@@ -743,14 +743,16 @@ mystnb:
   code_prompt_show: Show helpers
 tags: [hide-cell]
 ---
+name2BN = {"couperin": BN, "corelli": BN_cor}
+
+
 @cache
 def get_base_df(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name: str,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     query: Optional[str] = None,
 ):
-    global BN
+    BN = name2BN[bn_name]
     try:
         mode, selection = basis.split("_")
     except Exception:
@@ -774,85 +776,90 @@ def get_base_df(
 
 @cache
 def get_bass_degree_mask(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name: str,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     bass_degree: str,
     query: Optional[str] = None,
 ):
-    base = get_base_df(basis, query=query)
+    base = get_base_df(bn_name, basis, query=query)
     return base.bass_degree == bass_degree
 
 
 @cache
 def get_intervals_mask(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     intervals: tuple,
     query: Optional[str] = None,
 ):
-    base = get_base_df(basis, query=query)
+    base = get_base_df(bn_name, basis, query=query)
     return base.intervals_over_bass == intervals
 
 
 @cache
 def get_chord_mask(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     bass_degree: str,
     intervals: tuple,
     query: Optional[str] = None,
 ):
     bass_degree_mask = get_bass_degree_mask(
-        basis=basis, bass_degree=bass_degree, query=query
+        bn_name, basis=basis, bass_degree=bass_degree, query=query
     )
-    intervals_mask = get_intervals_mask(basis=basis, intervals=intervals, query=query)
+    intervals_mask = get_intervals_mask(
+        bn_name, basis=basis, intervals=intervals, query=query
+    )
     return bass_degree_mask & intervals_mask
 
 
 @cache
 def get_chord_vocabulary_mask(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     vocabulary: Tuple[Tuple[str, tuple], ...],
     query: Optional[str] = None,
 ) -> pd.Series:
-    base = get_base_df(basis, query=query)
+    base = get_base_df(bn_name, basis, query=query)
     mask = pd.Series(False, index=base.index, dtype="boolean")
     for bass_degree, intervals in vocabulary:
         mask |= get_chord_mask(
-            basis=basis, bass_degree=bass_degree, intervals=intervals, query=query
+            bn_name,
+            basis=basis,
+            bass_degree=bass_degree,
+            intervals=intervals,
+            query=query,
         )
     return mask
 
 
 def inspect(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     vocabulary: Tuple[Tuple[str, tuple], ...],
     query: Optional[str] = None,
 ) -> pd.DataFrame:
-    base = get_base_df(basis, query=query)
-    mask = get_chord_vocabulary_mask(basis=basis, vocabulary=vocabulary, query=query)
+    base = get_base_df(bn_name, basis, query=query)
+    mask = get_chord_vocabulary_mask(
+        bn_name, basis=basis, vocabulary=vocabulary, query=query
+    )
     return base[mask]
 
 
 def get_vocabulary_coverage(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     vocabulary: Tuple[Tuple[str, tuple], ...],
     query: Optional[str] = None,
 ) -> float:
-    mask = get_chord_vocabulary_mask(basis=basis, vocabulary=vocabulary, query=query)
+    mask = get_chord_vocabulary_mask(
+        bn_name, basis=basis, vocabulary=vocabulary, query=query
+    )
     return mask.sum() / len(mask)
 
 
 def get_coverage_values(
+    bn_name,
     major_vocabulary: Optional[Tuple[Tuple[str, tuple], ...]] = None,
     minor_vocabulary: Optional[Tuple[Tuple[str, tuple], ...]] = None,
     **name2query,
@@ -864,31 +871,31 @@ def get_coverage_values(
         results.update(
             {
                 ("major", "all"): get_vocabulary_coverage(
-                    "major_all", major_vocabulary
+                    bn_name, "major_all", major_vocabulary
                 ),
                 ("major", "diatonic"): get_vocabulary_coverage(
-                    "major_diatonic", major_vocabulary
+                    bn_name, "major_diatonic", major_vocabulary
                 ),
             }
         )
         for name, query in name2query.items():
             results[("major", name)] = get_vocabulary_coverage(
-                "major_diatonic", major_vocabulary, query=query
+                bn_name, "major_diatonic", major_vocabulary, query=query
             )
     if minor_vocabulary:
         results.update(
             {
                 ("minor", "all"): get_vocabulary_coverage(
-                    "minor_all", minor_vocabulary
+                    bn_name, "minor_all", minor_vocabulary
                 ),
                 ("minor", "diatonic"): get_vocabulary_coverage(
-                    "minor_diatonic", minor_vocabulary
+                    bn_name, "minor_diatonic", minor_vocabulary
                 ),
             }
         )
         for name, query in name2query.items():
             results[("minor", name)] = get_vocabulary_coverage(
-                "minor_diatonic", minor_vocabulary, query=query
+                bn_name, "minor_diatonic", minor_vocabulary, query=query
             )
     result = pd.Series(results, name="proportion")
     result.index.names = ["mode", "coverage_of"]
@@ -945,9 +952,22 @@ features = dict(
 )
 
 regola_coverage = get_coverage_values(
-    regola_vocabulary_major, regola_vocabulary_minor, **features
+    "couperin", regola_vocabulary_major, regola_vocabulary_minor, **features
+)
+utils.print_heading(
+    "What percentage of each unigram category the RoO covers in Couperin"
 )
 regola_coverage
+```
+
+```{code-cell}
+regola_coverage_cor = get_coverage_values(
+    "corelli", regola_vocabulary_major, regola_vocabulary_minor, **features
+)
+utils.print_heading(
+    "What percentage of each unigram category the RoO covers in Corelli"
+)
+regola_coverage_cor
 ```
 
 ### Comparing the regola against all "top k" vocabularies
@@ -965,8 +985,9 @@ mystnb:
 tags: [hide-cell]
 ---
 def make_coverage_plot_data(
-    include_singular_vocabularies=True, **features
+    bn_name, include_singular_vocabularies=True, **features
 ) -> pd.DataFrame:
+    BN = name2BN[bn_name]
     all_chords = BN[["bass_degree", "intervals_over_bass"]].apply(tuple, axis=1)
     chord_ranking = all_chords.groupby("mode").value_counts(normalize=True)
     major_ranking, minor_ranking = (
@@ -983,7 +1004,9 @@ def make_coverage_plot_data(
         if min_chord:
             minor_vocab.append(min_chord)
         key = ("cumulative", i) if include_singular_vocabularies else i
-        values = get_coverage_values(tuple(major_vocab), tuple(minor_vocab), **features)
+        values = get_coverage_values(
+            bn_name, tuple(major_vocab), tuple(minor_vocab), **features
+        )
         chord = pd.Series(str(maj_chord), index=values.index, name="chord")
         chord.loc["minor"] = str(min_chord)
         results[key] = pd.concat([values, chord], axis=1)
@@ -991,7 +1014,9 @@ def make_coverage_plot_data(
             continue
         single_maj_vocab = (maj_chord,) if maj_chord else None
         single_min_vocab = (min_chord,) if min_chord else None
-        values = get_coverage_values(single_maj_vocab, single_min_vocab, **features)
+        values = get_coverage_values(
+            bn_name, single_maj_vocab, single_min_vocab, **features
+        )
         results[("single", i)] = pd.concat([values, chord], axis=1)
     index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
     return pd.concat(results, names=index_levels)
@@ -1000,48 +1025,48 @@ def make_coverage_plot_data(
 ```{code-cell}
 :tags: [hide-input]
 
+def plot_regola_vs_top_k_coverage(bn_name):
+    result = make_coverage_plot_data(bn_name, **features)
+    regola_results = pd.concat(
+        {("cumulative", 10.5): regola_coverage}, names=["vocabulary", "rank"]
+    ).to_frame()
+    regola_results.loc[:, "chord"] = "regola"
+    result = pd.concat(
+        [
+            regola_results,
+            result,
+        ]
+    ).sort_index()
+    fig = px.line(
+        result.reset_index(),
+        x="rank",
+        y="proportion",
+        color="coverage_of",
+        facet_col="mode",
+        facet_row="vocabulary",
+        hover_name="chord",
+        log_x=True,
+        title=f"How many {bn_name.title()} unigrams are covered by each top-k vocabulary",
+    )
+    style_plotly(
+        fig,
+        match_facet_yaxes=True,
+        height=1500,
+        legend=dict(
+            orientation="h",
+        ),
+    )
 
-result = make_coverage_plot_data(**features)
-regola_results = pd.concat(
-    {("cumulative", 10.5): regola_coverage}, names=["vocabulary", "rank"]
-).to_frame()
-regola_results.loc[:, "chord"] = "regola"
-result = pd.concat(
-    [
-        regola_results,
-        result,
-    ]
-).sort_index()
-```
 
-```{code-cell}
-:tags: [hide-input]
-
-fig = px.line(
-    result.reset_index(),
-    x="rank",
-    y="proportion",
-    color="coverage_of",
-    facet_col="mode",
-    facet_row="vocabulary",
-    hover_name="chord",
-    log_x=True,
-    title="How many unigrams are covered by each top-k vocabulary",
-)
-style_plotly(
-    fig,
-    match_facet_yaxes=True,
-    height=1500,
-    legend=dict(
-        orientation="h",
-    ),
-)
+plot_regola_vs_top_k_coverage("couperin")
 ```
 
 **In order to inspect these plots you will want to hide traces.
 Click on a legend item to toggle it, double-click on an item to toggle all others.**
 
-+++
+```{code-cell}
+plot_regola_vs_top_k_coverage("corelli")
+```
 
 **In order to inspect these plots you will want to hide traces.
 Click on a legend item to toggle it, double-click on an item to toggle all others.**
