@@ -30,6 +30,7 @@ from functools import cache
 from typing import List, Literal, Optional, Tuple
 
 import ms3
+import numpy as np
 import pandas as pd
 import plotly.express as px
 from dimcat import Pipeline, plotting
@@ -586,20 +587,9 @@ make_bass_degree_sankey(BN, "Couperin", "minor", 7)
 ```
 
 ## Explanatory power of the RoO
-### Most frequent chord for each bass degree
-#### Couperin
+### Defining the vocabulary
 
 ```{code-cell}
-:tags: [hide-input]
-
-BN.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
-    lambda S: S.value_counts().idxmax()
-)
-```
-
-```{code-cell}
-:tags: [hide-input]
-
 maj = ("M3", "P5")
 maj6 = ("m3", "m6")
 min = ("m3", "P5")
@@ -618,7 +608,7 @@ regole = dict(
         ("3", maj6),  # most frequent
         ("4", mm56),  # not most frequent
         ("5", maj),  # most frequent
-        ("6", min6),  # not most frequent
+        ("6", maj6),  # not most frequent
         ("7", Mm56),  # most frequent
     ],
     descending_major=[
@@ -649,6 +639,129 @@ regole = dict(
         ("2", Mm34),  # same
     ],
 )
+regola_vocabulary_major = tuple(
+    set(regole["ascending_major"] + regole["descending_major"])
+)
+regola_vocabulary_minor = tuple(
+    set(regole["ascending_minor"] + regole["descending_minor"])
+)
+```
+
+### Most frequent chords for each bass degree
+
+```{code-cell}
+:tags: [hide-input]
+
+def summarize_groups_top_k_chords(df, column="intervals_over_bass", k=3):
+    """Used in Groupby.apply()"""
+    proportions = df[column].value_counts(normalize=True)
+    entropy = -(proportions * np.log2(proportions)).sum()
+    N = len(proportions)
+    normalized_entropy = entropy / np.log2(N) if N > 1 else 0.0
+    top_k = proportions.iloc[:k]
+    rank_col = list(range(1, len(top_k) + 1))
+    result = pd.DataFrame(
+        dict(
+            intervals_over_bass=top_k.index,
+            proportion=top_k.values,
+            normalized_entropy=normalized_entropy,
+        ),
+        index=rank_col,
+    ).rename_axis("rank_chord")
+    return result
+
+
+def rank_bass_degrees(df: pd.Series):
+    """Used in Groupby.apply()"""
+    vc = df.bass_degree.value_counts(normalize=True).to_frame()
+    vc["rank_bass"] = list(range(1, len(vc) + 1))
+    return vc
+
+
+def summarize_degree_wise_top_k(BN, column="intervals_over_bass", k=3):
+    result = (
+        BN.groupby(["mode", "bass_degree"]).apply(
+            summarize_groups_top_k_chords, column=column, k=k
+        )
+    ).reset_index(level=-1)
+    bass_proportions = BN.groupby("mode").apply(rank_bass_degrees)
+    result = result.join(bass_proportions, lsuffix="_chord", rsuffix="_bass")
+    return result
+
+
+def degree_wise_top_k(BN, column="intervals_over_bass", k=3):
+    summary = summarize_degree_wise_top_k(BN, column=column, k=k)
+    result = []
+    for mode, df in summary.groupby("mode"):
+        vocab = regola_vocabulary_major if mode == "major" else regola_vocabulary_minor
+        is_regola = (
+            df.reset_index(level="bass_degree")[["bass_degree", "intervals_over_bass"]]
+            .apply(tuple, axis=1)
+            .isin(vocab)
+        ).values
+        df["is_regola"] = is_regola
+        df = (
+            df.sort_values(["rank_bass", "rank_chord"])
+            .reset_index("bass_degree")
+            .reset_index("mode", drop=True)
+            .set_index(
+                [
+                    "rank_bass",
+                    "bass_degree",
+                    "proportion_bass",
+                    "normalized_entropy",
+                    "rank_chord",
+                ]
+            )
+        )[["intervals_over_bass", "proportion_chord", "is_regola"]]
+        result.append(df)
+    return result
+
+
+def style_rank_table(df: pd.DataFrame):
+
+    def color_true_green(value):
+        if value:
+            return "background-color: lightgreen"
+        return None
+
+    new_index_names = dict(
+        rank_bass="Rank",
+        bass_degree="Bass Degree",
+        proportion_bass="Proportion",
+        normalized_entropy="Entropy",
+        rank_chord="Top",
+    )
+    df = df.rename_axis(index=new_index_names)
+    return (
+        df.style.format({"proportion_chord": "{:.1%}"})
+        .format_index(
+            axis=0,
+            formatter={
+                "Proportion": "{:.1%}",  # Format as percentage with 1 decimal place
+                "Entropy": "{:.3f}",  # Format as float with 3 decimal places
+            },
+        )
+        .map(color_true_green, subset=["is_regola"])
+        .relabel_index(["Chord", "Proportion", "Regola"], axis=1)
+        # .format_index_names(new_index_names, axis=0) # available in a future pandas version
+        # https://pandas.pydata.org/docs/dev/reference/api/pandas.io.formats.style.Styler.format_index_names.html
+    )
+```
+
+#### Major
+
+```{code-cell}
+:tags: [hide-input]
+
+major, minor = degree_wise_top_k(BN)
+style_rank_table(major)
+```
+
+#### Minor
+
+```{code-cell}
+style_rank_table(minor)
 ```
 
 ```{code-cell}
