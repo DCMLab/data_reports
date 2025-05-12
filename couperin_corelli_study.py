@@ -549,11 +549,19 @@ make_bass_degree_sankey(BN_cor, "Corelli", 7, "minor")
 
 # %% [markdown]
 # ## Explanatory power of the RoO
-#
-# **Most frequent chord for each bass degree**
+# ### Most frequent chord for each bass degree
+# #### Couperin
 
 # %% tags=["hide-input"]
 BN.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
+    lambda S: S.value_counts().idxmax()
+)
+
+# %% [markdown]
+# ### Couperin
+
+# %%
+BN_cor.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
     lambda S: S.value_counts().idxmax()
 )
 

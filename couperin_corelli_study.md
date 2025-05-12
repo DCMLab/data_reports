@@ -245,7 +245,9 @@ def make_adjacency_table(bass_notes):
     BN = pd.concat([bass_notes, preceding, subsequent], axis=1)
     BN["preceding_iv"] = BN.bass_note - BN.preceding_bass_note
     BN["subsequent_iv"] = BN.subsequent_bass_note - BN.bass_note
-    BN["preceding_interval"] = ms3.transform(BN.preceding_iv, ms3.fifths2iv, smallest=True)
+    BN["preceding_interval"] = ms3.transform(
+        BN.preceding_iv, ms3.fifths2iv, smallest=True
+    )
     BN["subsequent_interval"] = ms3.transform(
         BN.subsequent_iv, ms3.fifths2iv, smallest=True
     )
@@ -272,6 +274,7 @@ def make_adjacency_table(bass_notes):
     BN["preceding_movement_precise"] = make_precise_preceding_movement_column(BN)
     BN["subsequent_movement_precise"] = make_precise_subsequent_movement_column(BN)
     return BN
+
 
 BN = make_adjacency_table(bass_notes)
 BN_cor = make_adjacency_table(bass_notes_cor)
@@ -321,6 +324,7 @@ def plot_bass_movement(BN, corpus_name):
     )
     style_plotly(fig, f"how_often_a_bass_note_moves_by_an_interval_{corpus_name}")
 
+
 plot_bass_movement(BN, "Couperin")
 plot_bass_movement(BN_cor, "Corelli")
 ```
@@ -334,7 +338,7 @@ this study.**
 ```{code-cell}
 :tags: [hide-input]
 
-def plot_movement_types(BN, corpus_name, precise_categories = True):
+def plot_movement_types(BN, corpus_name, precise_categories=True):
     subsequent_movement = (
         "subsequent_movement_precise" if precise_categories else "subsequent_movement"
     )
@@ -351,7 +355,9 @@ def plot_movement_types(BN, corpus_name, precise_categories = True):
         ],
         axis=1,
     ).reset_index()
-    movement_data[subsequent_movement] = movement_data[subsequent_movement].fillna("none")
+    movement_data[subsequent_movement] = movement_data[subsequent_movement].fillna(
+        "none"
+    )
     fig = px.bar(
         movement_data,
         x=subsequent_movement,
@@ -365,6 +371,7 @@ def plot_movement_types(BN, corpus_name, precise_categories = True):
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
     style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}")
+
 
 plot_movement_types(BN, "Couperin")
 plot_movement_types(BN_cor, "Corelli")
@@ -447,7 +454,9 @@ def make_bass_degree_sankey(
         BN.loc[mode].query(f"bass_degree == '{bass_degree}'")
     )
     title = f"Motions to and from bass degree {bass_degree} in {corpus}"
-    fig = utils.make_sankey(edge_data, node_labels, node_color=node_colors, title=title, **layout)
+    fig = utils.make_sankey(
+        edge_data, node_labels, node_color=node_colors, title=title, **layout
+    )
     return fig
 ```
 
@@ -575,13 +584,21 @@ make_bass_degree_sankey(BN_cor, "Corelli", 7, "minor")
 ```
 
 ## Explanatory power of the RoO
-
-**Most frequent chord for each bass degree**
+### Most frequent chord for each bass degree
+#### Couperin
 
 ```{code-cell}
 :tags: [hide-input]
 
 BN.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
+    lambda S: S.value_counts().idxmax()
+)
+```
+
+### Couperin
+
+```{code-cell}
+BN_cor.groupby(["mode", "bass_degree"]).intervals_over_bass.apply(
     lambda S: S.value_counts().idxmax()
 )
 ```
