@@ -12,7 +12,7 @@ kernelspec:
   name: revamp
 ---
 
-# New
+# Cou
 
 ```{code-cell}
 ---
@@ -115,7 +115,7 @@ D
 :tags: [hide-input]
 
 pipeline = Pipeline(["KeySlicer", "ModeGrouper"])
-grouped_D = pipeline.process(D)
+grouped_D = D.apply_step(pipeline)
 grouped_D
 ```
 
@@ -124,7 +124,7 @@ grouped_D
 ```{code-cell}
 :tags: [hide-input]
 
-bass_notes = grouped_D.get_feature("bassnotes")
+bass_notes = D.apply_step(pipeline).get_feature("bassnotes")
 bass_notes.df
 ```
 
@@ -134,7 +134,7 @@ bass_notes.df
 :tags: [hide-input]
 
 local_keys = grouped_D.get_feature("KeyAnnotations")
-utils.print_heading("Key Segments")
+utils.print_heading("Key Segments Couperin")
 print(local_keys.groupby("mode").size().to_string())
 local_keys.head()
 ```
@@ -231,41 +231,46 @@ undefined subsequent values.**
 ```{code-cell}
 :tags: [hide-input]
 
-preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
-preceding.columns = "preceding_" + preceding.columns
-subsequent = bass_notes.groupby(["piece", "localkey_slice"]).shift(-1)
-subsequent.columns = "subsequent_" + subsequent.columns
-BN = pd.concat([bass_notes, preceding, subsequent], axis=1)
-BN["preceding_iv"] = BN.bass_note - BN.preceding_bass_note
-BN["subsequent_iv"] = BN.subsequent_bass_note - BN.bass_note
-BN["preceding_interval"] = ms3.transform(BN.preceding_iv, ms3.fifths2iv, smallest=True)
-BN["subsequent_interval"] = ms3.transform(
-    BN.subsequent_iv, ms3.fifths2iv, smallest=True
-)
-BN["preceding_iv_is_step"] = BN.preceding_iv.isin(
-    (-5, -2, 2, 5)
-).where(  # +m2, -M2, +M2, -m2
-    BN.preceding_iv.notna()
-)
-BN["subsequent_iv_is_step"] = BN.subsequent_iv.isin((-5, -2, 2, 5)).where(
-    BN.subsequent_iv.notna()
-)
-BN["preceding_iv_is_0"] = BN.preceding_iv == 0
-BN["subsequent_iv_is_0"] = BN.subsequent_iv == 0
-BN["preceding_movement"] = (
-    BN.preceding_iv_is_step.map({True: "step", False: "leap"})
-    .where(~BN.preceding_iv_is_0, "same")
-    .where(BN.preceding_iv.notna(), "none")
-)
-BN["subsequent_movement"] = (
-    BN.subsequent_iv_is_step.map({True: "step", False: "leap"})
-    .where(~BN.subsequent_iv_is_0, "same")
-    .where(BN.subsequent_iv.notna(), "none")
-)
-BN["preceding_movement_precise"] = make_precise_preceding_movement_column(BN)
-BN["subsequent_movement_precise"] = make_precise_subsequent_movement_column(BN)
+def make_adjacency_table(bass_notes):
+    preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
+    preceding.columns = "preceding_" + preceding.columns
+    subsequent = bass_notes.groupby(["piece", "localkey_slice"]).shift(-1)
+    subsequent.columns = "subsequent_" + subsequent.columns
+    BN = pd.concat([bass_notes, preceding, subsequent], axis=1)
+    BN["preceding_iv"] = BN.bass_note - BN.preceding_bass_note
+    BN["subsequent_iv"] = BN.subsequent_bass_note - BN.bass_note
+    BN["preceding_interval"] = ms3.transform(
+        BN.preceding_iv, ms3.fifths2iv, smallest=True
+    )
+    BN["subsequent_interval"] = ms3.transform(
+        BN.subsequent_iv, ms3.fifths2iv, smallest=True
+    )
+    BN["preceding_iv_is_step"] = BN.preceding_iv.isin(
+        (-5, -2, 2, 5)
+    ).where(  # +m2, -M2, +M2, -m2
+        BN.preceding_iv.notna()
+    )
+    BN["subsequent_iv_is_step"] = BN.subsequent_iv.isin((-5, -2, 2, 5)).where(
+        BN.subsequent_iv.notna()
+    )
+    BN["preceding_iv_is_0"] = BN.preceding_iv == 0
+    BN["subsequent_iv_is_0"] = BN.subsequent_iv == 0
+    BN["preceding_movement"] = (
+        BN.preceding_iv_is_step.map({True: "step", False: "leap"})
+        .where(~BN.preceding_iv_is_0, "same")
+        .where(BN.preceding_iv.notna(), "none")
+    )
+    BN["subsequent_movement"] = (
+        BN.subsequent_iv_is_step.map({True: "step", False: "leap"})
+        .where(~BN.subsequent_iv_is_0, "same")
+        .where(BN.subsequent_iv.notna(), "none")
+    )
+    BN["preceding_movement_precise"] = make_precise_preceding_movement_column(BN)
+    BN["subsequent_movement_precise"] = make_precise_subsequent_movement_column(BN)
+    return BN
 
-BN.head(15)
+
+BN = make_adjacency_table(bass_notes)
 ```
 
 ```{code-cell}
@@ -286,30 +291,34 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
 ```{code-cell}
 :tags: [hide-input]
 
-interval_data = pd.concat(
-    [
-        BN.groupby("mode").subsequent_interval.value_counts(normalize=True),
-        BN.groupby(["piece", "mode"])
-        .subsequent_interval.value_counts(normalize=True)
-        .groupby(["mode", "subsequent_interval"])
-        .sem()
-        .rename("std_err"),
-    ],
-    axis=1,
-).reset_index()
-fig = px.bar(
-    interval_data,
-    x="subsequent_interval",
-    y="proportion",
-    color="mode",
-    barmode="group",
-    error_y="std_err",
-    color_discrete_map=utils.MAJOR_MINOR_COLORS,
-    labels=dict(subsequent_interval="Interval"),
-    title="Mode-wise proportion of how often a bass note moves by an interval",
-    category_orders=dict(subsequent_interval=interval2fifths.index),
-)
-style_plotly(fig, "how_often_a_bass_note_moves_by_an_interval")
+def plot_bass_movement(BN, corpus_name):
+    interval_data = pd.concat(
+        [
+            BN.groupby("mode").subsequent_interval.value_counts(normalize=True),
+            BN.groupby(["piece", "mode"])
+            .subsequent_interval.value_counts(normalize=True)
+            .groupby(["mode", "subsequent_interval"])
+            .sem()
+            .rename("std_err"),
+        ],
+        axis=1,
+    ).reset_index()
+    fig = px.bar(
+        interval_data,
+        x="subsequent_interval",
+        y="proportion",
+        color="mode",
+        barmode="group",
+        error_y="std_err",
+        color_discrete_map=utils.MAJOR_MINOR_COLORS,
+        labels=dict(subsequent_interval="Interval"),
+        title=f"Mode-wise proportion of how often a bass note moves by an interval in {corpus_name}",
+        category_orders=dict(subsequent_interval=interval2fifths.index),
+    )
+    style_plotly(fig, f"how_often_a_bass_note_moves_by_an_interval_{corpus_name}")
+
+
+plot_bass_movement(BN, "Couperin")
 ```
 
 ### Types of movement
@@ -321,38 +330,42 @@ this study.**
 ```{code-cell}
 :tags: [hide-input]
 
-PRECISE_CATEGORIES = True
+def plot_movement_types(BN, corpus_name, precise_categories=True):
+    subsequent_movement = (
+        "subsequent_movement_precise" if precise_categories else "subsequent_movement"
+    )
+    movement_data = pd.concat(
+        [
+            BN.groupby("mode")[subsequent_movement].value_counts(
+                normalize=True, dropna=False
+            ),
+            BN.groupby(["piece", "mode"])[subsequent_movement]
+            .value_counts(normalize=True, dropna=False)
+            .groupby(["mode", subsequent_movement])
+            .sem()
+            .rename("std_err"),
+        ],
+        axis=1,
+    ).reset_index()
+    movement_data[subsequent_movement] = movement_data[subsequent_movement].fillna(
+        "none"
+    )
+    fig = px.bar(
+        movement_data,
+        x=subsequent_movement,
+        y="proportion",
+        color="mode",
+        barmode="group",
+        error_y="std_err",
+        color_discrete_map=utils.MAJOR_MINOR_COLORS,
+        labels={subsequent_movement: "Movement"},
+        title=f"Mode-wise proportion of a bass note moving in a certain manner in {corpus_name}",
+        category_orders=dict(subsequent_interval=interval2fifths.index),
+    )
+    style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}")
 
-subsequent_movement = (
-    "subsequent_movement_precise" if PRECISE_CATEGORIES else "subsequent_movement"
-)
-movement_data = pd.concat(
-    [
-        BN.groupby("mode")[subsequent_movement].value_counts(
-            normalize=True, dropna=False
-        ),
-        BN.groupby(["piece", "mode"])[subsequent_movement]
-        .value_counts(normalize=True, dropna=False)
-        .groupby(["mode", subsequent_movement])
-        .sem()
-        .rename("std_err"),
-    ],
-    axis=1,
-).reset_index()
-movement_data[subsequent_movement] = movement_data[subsequent_movement].fillna("none")
-fig = px.bar(
-    movement_data,
-    x=subsequent_movement,
-    y="proportion",
-    color="mode",
-    barmode="group",
-    error_y="std_err",
-    color_discrete_map=utils.MAJOR_MINOR_COLORS,
-    labels={subsequent_movement: "Movement"},
-    title="Mode-wise proportion of a bass note moving in a certain manner",
-    category_orders=dict(subsequent_interval=interval2fifths.index),
-)
-style_plotly(fig, save_as="mode-wise_bass_motion")
+
+plot_movement_types(BN, "Couperin")
 ```
 
 ## Sankey diagrams showing movement types before and after each scale degree
@@ -426,13 +439,39 @@ def make_sankey_data(
 
 
 def make_bass_degree_sankey(
-    bass_degree: str, mode: Literal["major", "minor"], **layout
+    BN: pd.DataFrame,
+    corpus: str,
+    mode: Literal["major", "minor"],
+    bass_degree: Optional[str | int] = None,
+    **layout,
 ):
-    edge_data, node_labels, node_colors = make_sankey_data(
-        BN.loc[mode].query(f"bass_degree == '{bass_degree}'")
+    """bass_degree None means all unigrams."""
+    selected_unigrams = BN.loc[mode]
+    if bass_degree:
+        selected_unigrams = selected_unigrams.query(f"bass_degree == '{bass_degree}'")
+        selection_text = f"bass degree {bass_degree}"
+    else:
+        selection_text = "any harmony"
+    edge_data, node_labels, node_colors = make_sankey_data(selected_unigrams)
+
+    title = f"Motions to and from {selection_text} in {corpus} ({mode})"
+    fig = utils.make_sankey(
+        edge_data, node_labels, node_color=node_colors, title=title, **layout
     )
-    fig = utils.make_sankey(edge_data, node_labels, node_color=node_colors, **layout)
     return fig
+```
+
+### All unigrams
+#### Major
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Couperin", "major")
+```
+
+#### Minor
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Couperin", "minor")
 ```
 
 ### Intervals over bass degree 1
@@ -441,7 +480,7 @@ def make_bass_degree_sankey(
 ```{code-cell}
 :tags: [hide-input]
 
-make_bass_degree_sankey(1, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 1)
 ```
 
 #### Minor
@@ -449,130 +488,106 @@ make_bass_degree_sankey(1, "major")
 ```{code-cell}
 :tags: [hide-input]
 
-make_bass_degree_sankey(1, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 1)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Corelli", "minor")
 ```
 
 ### Intervals over bass degree 2
 #### Major
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(2, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 2)
 ```
 
 #### Minor
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(2, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 2)
 ```
 
 ### Intervals over bass degree 3
 #### Major
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(3, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 3)
 ```
 
 #### Minor
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(3, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 3)
 ```
 
 ### Intervals over bass degree 4
 #### Major
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(4, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 4)
 ```
 
 #### Minor
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(4, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 4)
 ```
 
 ### Intervals over bass degree 5
 #### Major
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(5, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 5)
 ```
 
 #### Minor
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(5, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 5)
 ```
 
 ### Intervals over bass degree 6
 #### Major
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(6, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 6)
 ```
 
 #### Minor (ascending)
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey("#6", "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", "#6")
 ```
 
 #### Minor (descending)
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(6, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 6)
 ```
 
 ### Intervals over bass degree 7
 #### Major
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(7, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 7)
 ```
 
 #### Minor (ascending)
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey("#7", "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", "#7")
 ```
 
 #### Minor (descending)
 
 ```{code-cell}
-:tags: [hide-input]
-
-make_bass_degree_sankey(7, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 7)
 ```
 
 ## Explanatory power of the RoO
-
-**Most frequent chord for each bass degree**
+### Most frequent chord for each bass degree
+#### Couperin
 
 ```{code-cell}
 :tags: [hide-input]
@@ -643,14 +658,16 @@ mystnb:
   code_prompt_show: Show helpers
 tags: [hide-cell]
 ---
+name2BN = {"couperin": BN}
+
+
 @cache
 def get_base_df(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name: str,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     query: Optional[str] = None,
 ):
-    global BN
+    BN = name2BN[bn_name]
     try:
         mode, selection = basis.split("_")
     except Exception:
@@ -674,85 +691,90 @@ def get_base_df(
 
 @cache
 def get_bass_degree_mask(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name: str,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     bass_degree: str,
     query: Optional[str] = None,
 ):
-    base = get_base_df(basis, query=query)
+    base = get_base_df(bn_name, basis, query=query)
     return base.bass_degree == bass_degree
 
 
 @cache
 def get_intervals_mask(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     intervals: tuple,
     query: Optional[str] = None,
 ):
-    base = get_base_df(basis, query=query)
+    base = get_base_df(bn_name, basis, query=query)
     return base.intervals_over_bass == intervals
 
 
 @cache
 def get_chord_mask(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     bass_degree: str,
     intervals: tuple,
     query: Optional[str] = None,
 ):
     bass_degree_mask = get_bass_degree_mask(
-        basis=basis, bass_degree=bass_degree, query=query
+        bn_name, basis=basis, bass_degree=bass_degree, query=query
     )
-    intervals_mask = get_intervals_mask(basis=basis, intervals=intervals, query=query)
+    intervals_mask = get_intervals_mask(
+        bn_name, basis=basis, intervals=intervals, query=query
+    )
     return bass_degree_mask & intervals_mask
 
 
 @cache
 def get_chord_vocabulary_mask(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     vocabulary: Tuple[Tuple[str, tuple], ...],
     query: Optional[str] = None,
 ) -> pd.Series:
-    base = get_base_df(basis, query=query)
+    base = get_base_df(bn_name, basis, query=query)
     mask = pd.Series(False, index=base.index, dtype="boolean")
     for bass_degree, intervals in vocabulary:
         mask |= get_chord_mask(
-            basis=basis, bass_degree=bass_degree, intervals=intervals, query=query
+            bn_name,
+            basis=basis,
+            bass_degree=bass_degree,
+            intervals=intervals,
+            query=query,
         )
     return mask
 
 
 def inspect(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     vocabulary: Tuple[Tuple[str, tuple], ...],
     query: Optional[str] = None,
 ) -> pd.DataFrame:
-    base = get_base_df(basis, query=query)
-    mask = get_chord_vocabulary_mask(basis=basis, vocabulary=vocabulary, query=query)
+    base = get_base_df(bn_name, basis, query=query)
+    mask = get_chord_vocabulary_mask(
+        bn_name, basis=basis, vocabulary=vocabulary, query=query
+    )
     return base[mask]
 
 
 def get_vocabulary_coverage(
-    basis: Literal[
-        "major_all", "minor_all", "major_diatonic", "minor_diatonic"
-    ],  # minor_diatonic includes 6, #6, 7, #7
+    bn_name,
+    basis: Literal["major_all", "minor_all", "major_diatonic", "minor_diatonic"],
     vocabulary: Tuple[Tuple[str, tuple], ...],
     query: Optional[str] = None,
 ) -> float:
-    mask = get_chord_vocabulary_mask(basis=basis, vocabulary=vocabulary, query=query)
+    mask = get_chord_vocabulary_mask(
+        bn_name, basis=basis, vocabulary=vocabulary, query=query
+    )
     return mask.sum() / len(mask)
 
 
 def get_coverage_values(
+    bn_name,
     major_vocabulary: Optional[Tuple[Tuple[str, tuple], ...]] = None,
     minor_vocabulary: Optional[Tuple[Tuple[str, tuple], ...]] = None,
     **name2query,
@@ -764,31 +786,31 @@ def get_coverage_values(
         results.update(
             {
                 ("major", "all"): get_vocabulary_coverage(
-                    "major_all", major_vocabulary
+                    bn_name, "major_all", major_vocabulary
                 ),
                 ("major", "diatonic"): get_vocabulary_coverage(
-                    "major_diatonic", major_vocabulary
+                    bn_name, "major_diatonic", major_vocabulary
                 ),
             }
         )
         for name, query in name2query.items():
             results[("major", name)] = get_vocabulary_coverage(
-                "major_diatonic", major_vocabulary, query=query
+                bn_name, "major_diatonic", major_vocabulary, query=query
             )
     if minor_vocabulary:
         results.update(
             {
                 ("minor", "all"): get_vocabulary_coverage(
-                    "minor_all", minor_vocabulary
+                    bn_name, "minor_all", minor_vocabulary
                 ),
                 ("minor", "diatonic"): get_vocabulary_coverage(
-                    "minor_diatonic", minor_vocabulary
+                    bn_name, "minor_diatonic", minor_vocabulary
                 ),
             }
         )
         for name, query in name2query.items():
             results[("minor", name)] = get_vocabulary_coverage(
-                "minor_diatonic", minor_vocabulary, query=query
+                bn_name, "minor_diatonic", minor_vocabulary, query=query
             )
     result = pd.Series(results, name="proportion")
     result.index.names = ["mode", "coverage_of"]
@@ -845,7 +867,10 @@ features = dict(
 )
 
 regola_coverage = get_coverage_values(
-    regola_vocabulary_major, regola_vocabulary_minor, **features
+    "couperin", regola_vocabulary_major, regola_vocabulary_minor, **features
+)
+utils.print_heading(
+    "What percentage of each unigram category the RoO covers in Couperin"
 )
 regola_coverage
 ```
@@ -865,8 +890,9 @@ mystnb:
 tags: [hide-cell]
 ---
 def make_coverage_plot_data(
-    include_singular_vocabularies=True, **features
+    bn_name, include_singular_vocabularies=True, **features
 ) -> pd.DataFrame:
+    BN = name2BN[bn_name]
     all_chords = BN[["bass_degree", "intervals_over_bass"]].apply(tuple, axis=1)
     chord_ranking = all_chords.groupby("mode").value_counts(normalize=True)
     major_ranking, minor_ranking = (
@@ -883,7 +909,9 @@ def make_coverage_plot_data(
         if min_chord:
             minor_vocab.append(min_chord)
         key = ("cumulative", i) if include_singular_vocabularies else i
-        values = get_coverage_values(tuple(major_vocab), tuple(minor_vocab), **features)
+        values = get_coverage_values(
+            bn_name, tuple(major_vocab), tuple(minor_vocab), **features
+        )
         chord = pd.Series(str(maj_chord), index=values.index, name="chord")
         chord.loc["minor"] = str(min_chord)
         results[key] = pd.concat([values, chord], axis=1)
@@ -891,7 +919,9 @@ def make_coverage_plot_data(
             continue
         single_maj_vocab = (maj_chord,) if maj_chord else None
         single_min_vocab = (min_chord,) if min_chord else None
-        values = get_coverage_values(single_maj_vocab, single_min_vocab, **features)
+        values = get_coverage_values(
+            bn_name, single_maj_vocab, single_min_vocab, **features
+        )
         results[("single", i)] = pd.concat([values, chord], axis=1)
     index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
     return pd.concat(results, names=index_levels)
@@ -900,48 +930,41 @@ def make_coverage_plot_data(
 ```{code-cell}
 :tags: [hide-input]
 
+def plot_regola_vs_top_k_coverage(bn_name):
+    result = make_coverage_plot_data(bn_name, **features)
+    regola_results = pd.concat(
+        {("cumulative", 10.5): regola_coverage}, names=["vocabulary", "rank"]
+    ).to_frame()
+    regola_results.loc[:, "chord"] = "regola"
+    result = pd.concat(
+        [
+            regola_results,
+            result,
+        ]
+    ).sort_index()
+    fig = px.line(
+        result.reset_index(),
+        x="rank",
+        y="proportion",
+        color="coverage_of",
+        facet_col="mode",
+        facet_row="vocabulary",
+        hover_name="chord",
+        log_x=True,
+        title=f"How many {bn_name.title()} unigrams are covered by each top-k vocabulary",
+    )
+    style_plotly(
+        fig,
+        match_facet_yaxes=True,
+        height=1500,
+        legend=dict(
+            orientation="h",
+        ),
+    )
 
-result = make_coverage_plot_data(**features)
-regola_results = pd.concat(
-    {("cumulative", 10.5): regola_coverage}, names=["vocabulary", "rank"]
-).to_frame()
-regola_results.loc[:, "chord"] = "regola"
-result = pd.concat(
-    [
-        regola_results,
-        result,
-    ]
-).sort_index()
+
+plot_regola_vs_top_k_coverage("couperin")
 ```
-
-```{code-cell}
-:tags: [hide-input]
-
-fig = px.line(
-    result.reset_index(),
-    x="rank",
-    y="proportion",
-    color="coverage_of",
-    facet_col="mode",
-    facet_row="vocabulary",
-    hover_name="chord",
-    log_x=True,
-    title="How many unigrams are covered by each top-k vocabulary",
-)
-style_plotly(
-    fig,
-    match_facet_yaxes=True,
-    height=1500,
-    legend=dict(
-        orientation="h",
-    ),
-)
-```
-
-**In order to inspect these plots you will want to hide traces.
-Click on a legend item to toggle it, double-click on an item to toggle all others.**
-
-+++
 
 **In order to inspect these plots you will want to hide traces.
 Click on a legend item to toggle it, double-click on an item to toggle all others.**
