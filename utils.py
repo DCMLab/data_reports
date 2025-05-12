@@ -1274,7 +1274,7 @@ def make_sankey(
     x: Optional[List[float]] = None,
     y: Optional[List[float]] = None,
     node_pos: Optional[Dict[int, Tuple[float, float]]] = None,
-    margin={"l": 10, "r": 10, "b": 10, "t": 10},
+    margin={"l": 10, "r": 10, "b": 10, "t": 40},
     pad=20,
     node_color="auto",
     arrangement: Literal["snap", "perpendicular", "freeform", "fixed"] = "snap",

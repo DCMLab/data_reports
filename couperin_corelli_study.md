@@ -448,16 +448,43 @@ def make_sankey_data(
 
 
 def make_bass_degree_sankey(
-    BN, corpus, bass_degree: str, mode: Literal["major", "minor"], **layout
+    BN: pd.DataFrame,
+    corpus: str,
+    mode: Literal["major", "minor"],
+    bass_degree: str = None,
+    **layout,
 ):
-    edge_data, node_labels, node_colors = make_sankey_data(
-        BN.loc[mode].query(f"bass_degree == '{bass_degree}'")
-    )
-    title = f"Motions to and from bass degree {bass_degree} in {corpus}"
+    """bass_degree None means all unigrams."""
+    selected_unigrams = BN.loc[mode]
+    if bass_degree:
+        selected_unigrams = selected_unigrams.query(f"bass_degree == '{bass_degree}'")
+        selection_text = f"bass degree {bass_degree}"
+    else:
+        selection_text = "any harmony"
+    edge_data, node_labels, node_colors = make_sankey_data(selected_unigrams)
+
+    title = f"Motions to and from {selection_text} in {corpus} ({mode})"
     fig = utils.make_sankey(
         edge_data, node_labels, node_color=node_colors, title=title, **layout
     )
     return fig
+```
+
+### All unigrams
+#### Major
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Couperin", "major")
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Corelli", "major")
+```
+
+#### Minor
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Couperin", "minor")
 ```
 
 ### Intervals over bass degree 1
@@ -466,8 +493,11 @@ def make_bass_degree_sankey(
 ```{code-cell}
 :tags: [hide-input]
 
-make_bass_degree_sankey(BN, "Couperin", 1, "major")
-make_bass_degree_sankey(BN_cor, "Corelli", 1, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 1)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "major", 1)
 ```
 
 #### Minor
@@ -475,112 +505,161 @@ make_bass_degree_sankey(BN_cor, "Corelli", 1, "major")
 ```{code-cell}
 :tags: [hide-input]
 
-make_bass_degree_sankey(BN, "Couperin", 1, "minor")
-make_bass_degree_sankey(BN_cor, "Corelli", 1, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 1)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "minor", 1)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Corelli", "minor")
 ```
 
 ### Intervals over bass degree 2
 #### Major
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 2, "major")
-make_bass_degree_sankey(BN_cor, "Corelli", 2, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 2)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "major", 2)
 ```
 
 #### Minor
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 2, "minor")
-make_bass_degree_sankey(BN_cor, "Corelli", 2, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 2)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "minor", 2)
 ```
 
 ### Intervals over bass degree 3
 #### Major
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 3, "major")
-make_bass_degree_sankey(BN_cor, "Corelli", 3, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 3)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "major", 3)
 ```
 
 #### Minor
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 3, "minor")
-make_bass_degree_sankey(BN_cor, "Corelli", 3, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 3)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "minor", 3)
 ```
 
 ### Intervals over bass degree 4
 #### Major
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 4, "major")
-make_bass_degree_sankey(BN_cor, "Corelli", 4, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 4)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "major", 4)
 ```
 
 #### Minor
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 4, "minor")
-make_bass_degree_sankey(BN_cor, "Corelli", 4, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 4)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "minor", 4)
 ```
 
 ### Intervals over bass degree 5
 #### Major
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 5, "major")
-make_bass_degree_sankey(BN_cor, "Corelli", 5, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 5)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "major", 5)
 ```
 
 #### Minor
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 5, "minor")
-make_bass_degree_sankey(BN_cor, "Corelli", 5, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 5)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "minor", 5)
 ```
 
 ### Intervals over bass degree 6
 #### Major
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 6, "major")
-make_bass_degree_sankey(BN_cor, "Corelli", 6, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 6)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "major", 6)
 ```
 
 #### Minor (ascending)
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", "#6", "minor")
-make_bass_degree_sankey(BN, "Corelli", "#6", "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", "#6")
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Corelli", "minor", "#6")
 ```
 
 #### Minor (descending)
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 6, "minor")
-make_bass_degree_sankey(BN_cor, "Corelli", 6, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 6)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "minor", 6)
 ```
 
 ### Intervals over bass degree 7
 #### Major
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 7, "major")
-make_bass_degree_sankey(BN_cor, "Corelli", 7, "major")
+make_bass_degree_sankey(BN, "Couperin", "major", 7)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "major", 7)
 ```
 
 #### Minor (ascending)
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", "#7", "minor")
-make_bass_degree_sankey(BN, "Corelli", "#7", "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", "#7")
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN, "Corelli", "minor", "#7")
 ```
 
 #### Minor (descending)
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", 7, "minor")
-make_bass_degree_sankey(BN_cor, "Corelli", 7, "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 7)
+```
+
+```{code-cell}
+make_bass_degree_sankey(BN_cor, "Corelli", "minor", 7)
 ```
 
 ## Explanatory power of the RoO
