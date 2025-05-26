@@ -1259,7 +1259,10 @@ def make_evenly_distributed_color_map(labels: Iterable[str]) -> List[str]:
     are assigned the same color. Unique labels are distributed evenly around the HUE circle to
     generate the colors."""
     unique_labels = set(labels)
-    color_step = 100 / len(unique_labels)
+    n_unique = len(unique_labels)
+    if not n_unique:
+        return []
+    color_step = 100 / n_unique
     unique_colors = {
         label: f"hsv({round(i * color_step)}%,100%,100%)"
         for i, label in enumerate(unique_labels)

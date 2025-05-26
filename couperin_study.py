@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.7
+#       jupytext_version: 1.17.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -23,7 +23,7 @@
 import itertools
 import os
 from functools import cache
-from typing import List, Literal, Optional, Tuple
+from typing import Iterable, List, Literal, Optional, Tuple
 
 import ms3
 import numpy as np
@@ -447,17 +447,14 @@ make_bass_degree_sankey(BN, "Couperin", "minor")
 # ### Intervals over bass degree 1
 # #### Major
 
-# %% tags=["hide-input"]
+# %%
 make_bass_degree_sankey(BN, "Couperin", "major", 1)
 
 # %% [markdown]
 # #### Minor
 
-# %% tags=["hide-input"]
-make_bass_degree_sankey(BN, "Couperin", "minor", 1)
-
 # %%
-make_bass_degree_sankey(BN, "Corelli", "minor")
+make_bass_degree_sankey(BN, "Couperin", "minor", 1)
 
 # %% [markdown]
 # ### Intervals over bass degree 2
@@ -653,16 +650,29 @@ def summarize_degree_wise_top_k(BN, column="intervals_over_bass", k=3):
     return result
 
 
+def make_boolean_is_regola_chord_mask(
+    df, mode_or_vocab: str | dict[str, Iterable[str]]
+):
+    """Mode can be "major" or "minor" or another vocabulary defined as {"bass_degree" => ["interval"]}."""
+    if isinstance(mode_or_vocab, str):
+        global regola_vocabulary_major, regola_vocabulary_minor
+        vocab = (
+            regola_vocabulary_major
+            if mode_or_vocab == "major"
+            else regola_vocabulary_minor
+        )
+    else:
+        vocab = mode_or_vocab
+    if "bass_degree" not in df.columns and "bass_degree" in df.index.names:
+        df = df.reset_index(level="bass_degree")
+    return df[["bass_degree", "intervals_over_bass"]].apply(tuple, axis=1).isin(vocab)
+
+
 def degree_wise_top_k(BN, column="intervals_over_bass", k=3):
     summary = summarize_degree_wise_top_k(BN, column=column, k=k)
     result = []
     for mode, df in summary.groupby("mode"):
-        vocab = regola_vocabulary_major if mode == "major" else regola_vocabulary_minor
-        is_regola = (
-            df.reset_index(level="bass_degree")[["bass_degree", "intervals_over_bass"]]
-            .apply(tuple, axis=1)
-            .isin(vocab)
-        ).values
+        is_regola = make_boolean_is_regola_chord_mask(df, mode).values
         df["is_regola"] = is_regola
         df = (
             df.sort_values(["rank_bass", "rank_chord"])
@@ -715,6 +725,10 @@ def style_rank_table(df: pd.DataFrame):
 
 # %% [markdown]
 # #### Major
+
+# %%
+maj5, min5 = degree_wise_top_k(BN, k=5)
+maj5
 
 # %% tags=["hide-input"]
 major, minor = degree_wise_top_k(BN)
@@ -1030,3 +1044,174 @@ plot_regola_vs_top_k_coverage("couperin")
 # %% [markdown]
 # **In order to inspect these plots you will want to hide traces.
 # Click on a legend item to toggle it, double-click on an item to toggle all others.**
+
+# %% [markdown]
+# ## Regola chords and movement types
+# ### All regola chords
+# **The following table shows absolute counts and proportion of movement types preceding and
+# succeeding all RoO chords.**
+
+
+# %% tags=["hide-input"]
+def get_BN_reg(BN, regola_only=True):
+    """A version of BN filtered on regola chords only."""
+    result = []
+    for mode, df in BN.groupby("mode"):
+        is_regola = make_boolean_is_regola_chord_mask(df, mode)
+        df["is_regola"] = is_regola.values
+        result.append(df)
+    result_df = pd.concat(result)
+    if regola_only:
+        return result_df[result_df.is_regola]
+    return result_df
+
+
+def tally_movement_per_chord(BN_reg, degree_wise=False):
+    if degree_wise:
+        gpb = BN_reg.groupby(["mode", "bass_degree", "intervals_over_bass"])
+    else:
+        gpb = BN_reg.groupby(["mode"])
+    return pd.concat(
+        [
+            gpb.preceding_movement_precise.value_counts().rename("preceding"),
+            gpb.preceding_movement_precise.value_counts(normalize=True).rename(
+                "preceding_%"
+            )
+            * 100,
+            gpb.subsequent_movement_precise.value_counts().rename("subsequent"),
+            gpb.subsequent_movement_precise.value_counts(normalize=True).rename(
+                "subsequent_%"
+            )
+            * 100,
+        ],
+        axis=1,
+    ).astype(dict(preceding="Int64", subsequent="Int64"))
+
+
+BN_reg = get_BN_reg(BN)
+tally_movement_per_chord(BN_reg)
+
+# %% [markdown]
+# ### Degree-wise
+# **The following table shows absolute counts and proportion of movement types preceding and
+# succeeding each individual RoO chord.**
+
+# %% tags=["hide-input"]
+regola_chord_movement = tally_movement_per_chord(BN_reg, degree_wise=True)
+regola_chord_movement
+
+# %% [markdown]
+# ### As Sankey diagrams
+# #### Major
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "major")
+
+# %% [markdown]
+# #### Minor
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor")
+
+# %% tags=["hide-input"]
+make_bass_degree_sankey(BN_reg, "Couperin", "major", 1)
+
+# %% [markdown]
+# #### Minor
+
+# %% tags=["hide-input"]
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", 1)
+
+# %% [markdown]
+# ### Intervals over bass degree 2
+# #### Major
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "major", 2)
+
+# %% [markdown]
+# #### Minor
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", 2)
+
+# %% [markdown]
+# ### Intervals over bass degree 3
+# #### Major
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "major", 3)
+
+# %% [markdown]
+# #### Minor
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", 3)
+
+# %% [markdown]
+# ### Intervals over bass degree 4
+# #### Major
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "major", 4)
+
+# %% [markdown]
+# #### Minor
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", 4)
+
+# %% [markdown]
+# ### Intervals over bass degree 5
+# #### Major
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "major", 5)
+
+# %% [markdown]
+# #### Minor
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", 5)
+
+# %% [markdown]
+# ### Intervals over bass degree 6
+# #### Major
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "major", 6)
+
+# %% [markdown]
+# #### Minor (ascending)
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", "#6")
+
+# %% [markdown]
+# #### Minor (descending)
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", 6)
+
+# %% [markdown]
+# ### Intervals over bass degree 7
+# #### Major
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "major", 7)
+
+# %% [markdown]
+# #### Minor (ascending)
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", "#7")
+
+# %% [markdown]
+# #### Minor (descending)
+
+# %%
+make_bass_degree_sankey(BN_reg, "Couperin", "minor", 7)
+
+# %% [markdown]
+# ## Studying leaps
+# Are they predominantly chord inversions by modern standards?
