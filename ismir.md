@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.4
+    jupytext_version: 1.17.1
 kernelspec:
   display_name: revamp
   language: python
@@ -210,9 +210,9 @@ maj_min_ratio_per_corpus = pd.concat(
     ],
     axis=1,
 )
-maj_min_ratio_per_corpus[
-    "corpus_name"
-] = maj_min_ratio_per_corpus.index.get_level_values("corpus").map(corpus_names)
+maj_min_ratio_per_corpus["corpus_name"] = (
+    maj_min_ratio_per_corpus.index.get_level_values("corpus").map(corpus_names)
+)
 fig = plotting.make_bar_plot(
     maj_min_ratio_per_corpus.reset_index(),
     x_col="corpus_name",
@@ -320,7 +320,7 @@ plt.show()
 # font_dict = {'font': {'size': 20}}2
 width = 1600
 height = 900
-layout=dict(
+layout = dict(
     utils.STD_LAYOUT,
     margin=dict(l=0, r=0, b=0, t=0),
 )
@@ -333,7 +333,10 @@ fig = utils.plot_cum(
     width=width,
     **layout,
 )
-for trace, color in zip(fig.data, (utils.TailwindColorsHex.get_color(c) for c in ("PURPLE_800", "EMERALD_800"))):
+for trace, color in zip(
+    fig.data,
+    (utils.TailwindColorsHex.get_color(c) for c in ("PURPLE_800", "EMERALD_800")),
+):
     trace.marker.color = color
 save_figure_as(
     fig,

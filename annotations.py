@@ -1,12 +1,13 @@
 # ---
 # jupyter:
 #   jupytext:
+#     default_lexer: ipython3
 #     formats: ipynb,md:myst,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -16,7 +17,7 @@
 # %% [markdown]
 # # Annotations
 
-# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-input"] editable=true slideshow={"slide_type": ""}
+# %% editable=true mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} slideshow={"slide_type": ""} tags=["hide-input"]
 # %load_ext autoreload
 # %autoreload 2
 
@@ -55,7 +56,7 @@ def save_figure_as(
         plotting.write_image(fig, filename, directory, **kwargs)
 
 
-# %% tags=["hide-input"] editable=true slideshow={"slide_type": ""}
+# %% editable=true slideshow={"slide_type": ""} tags=["hide-input"]
 package_path = utils.resolve_dir("~/dimcat_data/couperin_concerts.datapackage.json")
 D = dc.Dataset.from_package(package_path)
 D

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.7
+#       jupytext_version: 1.17.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -17,7 +17,6 @@
 # # Bass degrees
 
 # %%
-
 # %load_ext autoreload
 # %autoreload 2
 import os

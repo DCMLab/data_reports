@@ -27,7 +27,7 @@ tags: [hide-cell]
 import itertools
 import os
 from functools import cache
-from typing import List, Literal, Optional, Tuple, Iterable
+from typing import Iterable, List, Literal, Optional, Tuple
 
 import ms3
 import numpy as np
@@ -761,20 +761,24 @@ def summarize_degree_wise_top_k(BN, column="intervals_over_bass", k=3):
     result = result.join(bass_proportions, lsuffix="_chord", rsuffix="_bass")
     return result
 
-def make_boolean_is_regola_chord_mask(df, mode_or_vocab: str | dict[str, Iterable[str]]):
+
+def make_boolean_is_regola_chord_mask(
+    df, mode_or_vocab: str | dict[str, Iterable[str]]
+):
     """Mode can be "major" or "minor" or another vocabulary defined as {"bass_degree" => ["interval"]}."""
     if isinstance(mode_or_vocab, str):
         global regola_vocabulary_major, regola_vocabulary_minor
-        vocab = regola_vocabulary_major if mode_or_vocab == "major" else regola_vocabulary_minor
+        vocab = (
+            regola_vocabulary_major
+            if mode_or_vocab == "major"
+            else regola_vocabulary_minor
+        )
     else:
         vocab = mode_or_vocab
     if "bass_degree" not in df.columns and "bass_degree" in df.index.names:
         df = df.reset_index(level="bass_degree")
-    return (
-        df[["bass_degree", "intervals_over_bass"]]
-        .apply(tuple, axis=1)
-        .isin(vocab)
-    )
+    return df[["bass_degree", "intervals_over_bass"]].apply(tuple, axis=1).isin(vocab)
+
 
 def degree_wise_top_k(BN, column="intervals_over_bass", k=3):
     summary = summarize_degree_wise_top_k(BN, column=column, k=k)
@@ -1203,9 +1207,9 @@ def get_BN_reg(BN, regola_only=True):
     """A version of BN filtered on regola chords only."""
     result = []
     for mode, df in BN.groupby("mode"):
-            is_regola = make_boolean_is_regola_chord_mask(df, mode)
-            df["is_regola"] = is_regola.values
-            result.append(df)
+        is_regola = make_boolean_is_regola_chord_mask(df, mode)
+        df["is_regola"] = is_regola.values
+        result.append(df)
     result_df = pd.concat(result)
     if regola_only:
         return result_df[result_df.is_regola]

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.7
+    jupytext_version: 1.17.0
 kernelspec:
   display_name: revamp
   language: python
@@ -14,7 +14,7 @@ kernelspec:
 
 # Sunburst
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -41,7 +41,7 @@ pd.set_option('display.max_rows', 500)
 pd.set_option('display.max_columns', 100)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 SUNBURST_WIDTH = 1620
 TERMINAL_SYMBOL = "∎"
 RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "scale_degrees"))
@@ -68,44 +68,44 @@ def save_figure_as(
 
 **Loading data**
 
-```{code-cell}
+```{code-cell} ipython3
 D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 ```
 
 ## Key areas
 
-```{code-cell}
+```{code-cell} ipython3
 sliced_D = slicers.KeySlicer().process(D)
 grouped_D = groupers.ModeGrouper().process(sliced_D)
 grouped_D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 notes = sliced_D.get_feature('notes')
 notes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 result = notes.get_default_analysis()
 result
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 result.plot_grouped()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 notes.head()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 keys = grouped_D.get_feature("KeyAnnotations")
 print(f"Overall number of key segments is {len(keys.index)}")
 keys.head()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # this bit is copied from the annotations notebook
 keys_data = keys[[col for col in keys.columns if col not in notes.columns]].droplevel(-1)
 notes_joined_with_keys = notes.join(keys_data, how="left",)
@@ -128,7 +128,7 @@ mode_tpcs = mode_tpcs.join(std_err_mean, on=["localkey_is_minor", "tpc"])
 mode_tpcs
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 sd_order = ['b1', '1', '#1', 'b2', '2', '#2', 'b3', '3', '4', '#4', 'b5', '5', '#5', 'b6','6', '#6', 'b7', '7']
 selector = (mode_tpcs.tpc > -8) & (mode_tpcs.tpc < 11)
 legend=dict(
@@ -172,12 +172,12 @@ print(f"{(~selector).sum()} scale degrees with a total duration of {other_sum.du
 
 ### Whole dataset
 
-```{code-cell}
+```{code-cell} ipython3
 chords_by_localkey = grouped_D.get_feature('HarmonyLabels')
 chords_by_localkey
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 for is_minor, df in chords_by_localkey.groupby(level=0, group_keys=False):
     df = df.droplevel(0)
     df = df[df.bass_note.notna()]
@@ -192,39 +192,39 @@ for is_minor, df in chords_by_localkey.groupby(level=0, group_keys=False):
 
 ## Scale degrees
 
-```{code-cell}
+```{code-cell} ipython3
 chords_by_localkey_minor
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = utils.make_sunburst(chords_by_localkey_major, parent='major', terminal_symbol=TERMINAL_SYMBOL)
 fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree_major_sunburst")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = utils.make_sunburst(chords_by_localkey_minor, parent='minor', terminal_symbol=TERMINAL_SYMBOL)
 fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree_minor_sunburst")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = utils.rectangular_sunburst(chords_by_localkey_major, path=['sd', 'figbass', 'interval'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
 fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-figbass-progression_major_sunburst")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = utils.rectangular_sunburst(chords_by_localkey_major, path=['sd', 'interval', 'figbass'], title="MAJOR", terminal_symbol=TERMINAL_SYMBOL)
 fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass_major_sunburst")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_table(sd_major, sd_progression_major, sd_minor=None, sd_progression_minor=None):
     selected_chords = chords_by_localkey_major[(
         (chords_by_localkey_major.sd == sd_major) &
@@ -246,7 +246,7 @@ comparison_table = make_table("4", 5, "4", -2)
 comparison_table #.to_clipboard()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 selector = (
             (chords_by_localkey_minor.sd == "4") &
             (chords_by_localkey_minor.sd_progression == -2) &
@@ -257,21 +257,21 @@ selected_chords = chords_by_localkey_minor[selector]
 selected_chords[["mn", "chord"]].droplevel([0, 2, 3]).to_clipboard()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = utils.rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'figbass', 'interval'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
 fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-figbass-progression_minor_sunburst")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = utils.rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
 fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass_minor_sunburst")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 jupyter:
   is_executing: true
@@ -282,7 +282,7 @@ save_figure_as(fig, "bass_degree-progression-figbass-subsequent_figbass_major_su
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = utils.rectangular_sunburst(chords_by_localkey_minor, path=['sd', 'interval', 'figbass', 'following_figbass'], title="MINOR", terminal_symbol=TERMINAL_SYMBOL)
 fig.update_layout(**utils.STD_LAYOUT)
 save_figure_as(fig, "bass_degree-progression-figbass-subsequent_figbass_minor_sunburst")

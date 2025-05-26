@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.7
+    jupytext_version: 1.17.1
 kernelspec:
   display_name: revamp
   language: python
@@ -26,6 +26,7 @@ import ms3
 import pandas as pd
 from dimcat import plotting
 from dimcat.utils import grams, make_transition_matrix
+
 import utils
 
 pd.set_option("display.max_rows", 1000)

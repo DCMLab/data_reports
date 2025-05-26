@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.4
+#       jupytext_version: 1.17.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -226,10 +226,10 @@ corelli_labels = corelli.get_facet("expanded")
 corelli_cadence_count_per_mode = (
     corelli_labels.groupby("localkey_is_minor").cadence.value_counts().reset_index()
 )
-corelli_cadence_count_per_mode[
-    "mode"
-] = corelli_cadence_count_per_mode.localkey_is_minor.map(
-    {False: "major", True: "minor"}
+corelli_cadence_count_per_mode["mode"] = (
+    corelli_cadence_count_per_mode.localkey_is_minor.map(
+        {False: "major", True: "minor"}
+    )
 )
 fig = px.pie(
     corelli_cadence_count_per_mode,
