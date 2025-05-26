@@ -1202,7 +1202,14 @@ make_bass_degree_sankey(BN_reg, "Corelli", "major")
 # %%
 make_bass_degree_sankey(BN_reg, "Couperin", "minor")
 
-# %% tags=["hide-input"]
+# %%
+make_bass_degree_sankey(BN_reg, "Corelli", "minor")
+
+# %% [markdown]
+# ### Intervals over bass degree 1
+# #### Major
+
+# %%
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 1)
 
 # %%
@@ -1211,14 +1218,11 @@ make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 1)
 # %% [markdown]
 # #### Minor
 
-# %% tags=["hide-input"]
+# %%
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 1)
 
 # %%
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 1)
-
-# %%
-make_bass_degree_sankey(BN_reg, "Corelli", "minor")
 
 # %% [markdown]
 # ### Intervals over bass degree 2

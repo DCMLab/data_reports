@@ -1272,8 +1272,13 @@ make_bass_degree_sankey(BN_reg, "Couperin", "minor")
 ```
 
 ```{code-cell}
-:tags: [hide-input]
+make_bass_degree_sankey(BN_reg, "Corelli", "minor")
+```
 
+### Intervals over bass degree 1
+#### Major
+
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 1)
 ```
 
@@ -1284,17 +1289,11 @@ make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 1)
 #### Minor
 
 ```{code-cell}
-:tags: [hide-input]
-
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 1)
 ```
 
 ```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 1)
-```
-
-```{code-cell}
-make_bass_degree_sankey(BN_reg, "Corelli", "minor")
 ```
 
 ### Intervals over bass degree 2

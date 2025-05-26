@@ -1113,13 +1113,17 @@ make_bass_degree_sankey(BN_reg, "Couperin", "major")
 # %%
 make_bass_degree_sankey(BN_reg, "Couperin", "minor")
 
+# %% [markdown]
+# ### Intervals over bass degree 1
+# #### Major
+
 # %% tags=["hide-input"]
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 1)
 
 # %% [markdown]
 # #### Minor
 
-# %% tags=["hide-input"]
+# %%
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 1)
 
 # %% [markdown]
