@@ -1181,7 +1181,6 @@ tally_movement_per_chord(BN_reg)
 # **The following table shows absolute counts and proportion of movement types preceding and
 # succeeding each individual RoO chord.**
 
-
 # %% tags=["hide-input"]
 regola_chord_movement = tally_movement_per_chord(BN_reg, degree_wise=True)
 regola_chord_movement

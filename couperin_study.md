@@ -98,7 +98,7 @@ def style_plotly(
                 )
     if save_as:
         save_figure_as(fig, save_as)
-    fig.show()
+    return fig
 ```
 
 **Loading data**
@@ -363,7 +363,7 @@ def plot_movement_types(BN, corpus_name, precise_categories=True):
         title=f"Mode-wise proportion of a bass note moving in a certain manner in {corpus_name}",
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
-    style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}")
+    return style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}")
 
 
 plot_movement_types(BN, "Couperin")
@@ -1053,7 +1053,10 @@ def make_coverage_plot_data(
 ```{code-cell}
 :tags: [hide-input]
 
-def plot_regola_vs_top_k_coverage(bn_name):
+
+
+def make_coverage_plot_data_with_regola(bn_name):
+    global features, regola_coverage
     result = make_coverage_plot_data(bn_name, **features)
     regola_results = pd.concat(
         {("cumulative", 10.5): regola_coverage}, names=["vocabulary", "rank"]
@@ -1065,27 +1068,123 @@ def plot_regola_vs_top_k_coverage(bn_name):
             result,
         ]
     ).sort_index()
+    return result.reset_index()
+
+
+def plot_regola_vs_top_k_coverage(bn_name):
+    result = make_coverage_plot_data_with_regola(bn_name)
+    plot_coverage_data(result, bn_name)
+
+
+def plot_coverage_data(
+    coverage_data,
+    bn_name="couperin",
+    facet_row="vocabulary",
+    xaxes: Optional[dict] = None,
+    yaxes: Optional[dict] = None,
+):
+    if facet_row != "vocabulary":
+        coverage_data = coverage_data.query("vocabulary == 'cumulative'")
     fig = px.line(
-        result.reset_index(),
+        coverage_data,
         x="rank",
         y="proportion",
+        markers=True,
         color="coverage_of",
         facet_col="mode",
-        facet_row="vocabulary",
+        facet_row=facet_row,
         hover_name="chord",
         log_x=True,
         title=f"How many {bn_name.title()} unigrams are covered by each top-k vocabulary",
     )
-    style_plotly(
+    return style_plotly(
         fig,
         match_facet_yaxes=True,
         height=1500,
         legend=dict(
             orientation="h",
         ),
+        xaxes=xaxes,
+        yaxes=yaxes,
     )
 
 
+def plot_coverage_data_categorical(
+    coverage_data,
+    bn_name="couperin",
+    facet_row="comparison",
+    xaxes: Optional[dict] = None,
+    yaxes: Optional[dict] = None,
+):
+    coverage_data = coverage_data.copy()
+    coverage_data["vocab"] = (
+        "top " + coverage_data["rank"].astype(int).astype(str)
+    ).where(coverage_data["rank"] != 10.5, "RoO")
+    if facet_row != "vocabulary":
+        coverage_data = coverage_data.query("vocabulary == 'cumulative'")
+    fig = px.line(
+        coverage_data,
+        x="vocab",
+        y="proportion",
+        markers=True,
+        color="coverage_of",
+        facet_col="mode",
+        facet_row=facet_row,
+        hover_name="chord",
+        title=f"How many {bn_name.title()} unigrams are covered by each top-k vocabulary",
+    )
+    return style_plotly(
+        fig,
+        match_facet_yaxes=True,
+        height=1500,
+        legend=dict(
+            orientation="h",
+        ),
+        xaxes=xaxes,
+        yaxes=yaxes,
+    )
+```
+
+```{code-cell}
+feature_group = dict(
+    to_same="less",
+    to_and_from_same="less",
+    from_same="less",
+    to_and_from_leap="less",
+    to_leap="less",
+    all="less",
+    diatonic="less",
+    from_leap="less",
+    from_ascending="less",
+    to_descending="more",
+    from_either="less",
+    first_notes="less",
+    to_either="more",
+    from_descending="more",
+    to_ascending="more",
+    last_notes="less",
+    to_and_from_ascending="more",
+    to_and_from_either="more",
+    to_and_from_descending="more",
+)
+coverage_data = make_coverage_plot_data_with_regola("couperin")
+coverage_data["comparison"] = coverage_data.coverage_of.map(feature_group)
+plot_coverage_data_categorical(
+    coverage_data,
+)
+```
+
+```{code-cell}
+r0, r1 = 8, 13
+selection = coverage_data.query("@r0 - 1 <= rank <= @r1 + 1")
+fig = plot_coverage_data_categorical(
+    selection,
+)
+save_figure_as(fig, "couperin_top_k_coverage")
+fig
+```
+
+```{code-cell}
 plot_regola_vs_top_k_coverage("couperin")
 ```
 
