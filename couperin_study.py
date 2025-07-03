@@ -435,13 +435,17 @@ def make_bass_degree_sankey(
 # #### Major
 
 # %%
-make_bass_degree_sankey(BN, "Couperin", "major")
+fig = make_bass_degree_sankey(BN, "Couperin", "major")
+save_figure_as(fig, "couperin_sankey_complete_major")
+fig
 
 # %% [markdown]
 # #### Minor
 
 # %%
-make_bass_degree_sankey(BN, "Couperin", "minor")
+fig = make_bass_degree_sankey(BN, "Couperin", "minor")
+save_figure_as(fig, "couperin_sankey_complete_minor")
+fig
 
 # %% [markdown]
 # ### Intervals over bass degree 1
@@ -1202,13 +1206,17 @@ regola_chord_movement
 # #### Major
 
 # %%
-make_bass_degree_sankey(BN_reg, "Couperin", "major")
+fig = make_bass_degree_sankey(BN_reg, "Couperin", "major")
+save_figure_as(fig, "couperin_sankey_regola_major")
+fig
 
 # %% [markdown]
 # #### Minor
 
 # %%
-make_bass_degree_sankey(BN_reg, "Couperin", "minor")
+fig = make_bass_degree_sankey(BN_reg, "Couperin", "minor")
+save_figure_as(fig, "couperin_sankey_regola_minor")
+fig
 
 # %% [markdown]
 # ### Intervals over bass degree 1
