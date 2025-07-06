@@ -98,7 +98,7 @@ def style_plotly(
                 )
     if save_as:
         save_figure_as(fig, save_as)
-    fig.show()
+    return fig
 ```
 
 **Loading data**
@@ -371,7 +371,7 @@ def plot_movement_types(BN, corpus_name, precise_categories=True):
         title=f"Mode-wise proportion of a bass note moving in a certain manner in {corpus_name}",
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
-    style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}")
+    return style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}")
 
 
 plot_movement_types(BN, "Couperin")
@@ -471,25 +471,104 @@ def make_bass_degree_sankey(
     return fig
 ```
 
-### All unigrams
-#### Major
+### Unigram Table
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", "major")
+major_regola_rn = {
+    "I": "both",
+    "V43": "both",
+    "I6": "both",
+    "ii65": "ascending",
+    "V2": "descending",
+    "V": "both",
+    "IV6": "ascending",
+    "V43/V": "descending",
+    "V65": "ascending",
+    "V6": "descending",
+}
+minor_regola_rn = {
+    "i": "both",
+    "V43": "both",
+    "i6": "both",
+    "ii%65": "ascending",
+    "V2": "descending",
+    "V": "both",
+    "IV6": "ascending",
+    "ii%43": "descending",
+    "V65": "ascending",
+    "v6": "descending",
+}
+
+category2color = dict(
+    both="lightcoral",
+    ascending="lightgreen",
+    descending="lightblue",
+)
+
+
+def get_color(chord, mode):
+    if mode == "major":
+        category = major_regola_rn.get(chord)
+    elif mode == "minor":
+        category = minor_regola_rn.get(chord)
+    if category:
+        return category2color[category]
+
+
+def style_unigram_table(df: pd.DataFrame):
+
+    def color_regola_rows(row, mode):
+        if pd.isna(row.iloc[0]):
+            return None
+        if color := get_color(row.iloc[0], mode):
+            return [f"background-color: {color}"] * len(row)
+        return None
+
+    new_index = pd.MultiIndex.from_product(
+        [["Major", "Minor"], ["Unigram", "Occurrences", "Proportion"]]
+    )
+    df = df.set_axis(new_index, axis=1)
+    return df.style.apply(
+        color_regola_rows, axis=1, subset=["Major"], mode="major"
+    ).apply(color_regola_rows, axis=1, subset=["Minor"], mode="minor")
 ```
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Corelli", "major")
+chord_labels_cor = grouped_D_cor.get_feature("HarmonyLabels")
+unigram_occurrences_cor = chord_labels_cor.apply_step("Counter")
+occurrence_ranking_cor = unigram_occurrences_cor.make_ranking_table(
+    drop_cols=["chord_and_mode", "proportion"], top_k=0
+)
+style_unigram_table(occurrence_ranking_cor)
+```
+
+### Unigram movement Sankey
+#### Major
+
+```{code-cell}
+fig = make_bass_degree_sankey(BN, "Couperin", "major")
+save_figure_as(fig, "couperin_sankey_complete_major")
+fig
+```
+
+```{code-cell}
+fig = make_bass_degree_sankey(BN_cor, "Corelli", "major")
+save_figure_as(fig, "corelli_sankey_complete_major")
+fig
 ```
 
 #### Minor
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Couperin", "minor")
+fig = make_bass_degree_sankey(BN, "Couperin", "minor")
+save_figure_as(fig, "couperin_sankey_complete_minor")
+fig
 ```
 
 ```{code-cell}
-make_bass_degree_sankey(BN, "Corelli", "minor")
+fig = make_bass_degree_sankey(BN_cor, "Corelli", "minor")
+save_figure_as(fig, "corelli_sankey_complete_minor")
+fig
 ```
 
 ### Intervals over bass degree 1
@@ -839,6 +918,11 @@ def style_rank_table(df: pd.DataFrame):
 ##### Couperin
 
 ```{code-cell}
+maj5, min5 = degree_wise_top_k(BN, k=5)
+maj5
+```
+
+```{code-cell}
 :tags: [hide-input]
 
 major, minor = degree_wise_top_k(BN)
@@ -1052,6 +1136,13 @@ The percentages are based on different sets of unigrams.
 ```{code-cell}
 :tags: [hide-input]
 
+regola_vocabulary_major = tuple(
+    set(regole["ascending_major"] + regole["descending_major"])
+)
+regola_vocabulary_minor = tuple(
+    set(regole["ascending_minor"] + regole["descending_minor"])
+)
+
 features = dict(
     to_ascending="subsequent_movement_precise == 'ascending'",
     to_descending="subsequent_movement_precise == 'descending'",
@@ -1147,7 +1238,10 @@ def make_coverage_plot_data(
 ```{code-cell}
 :tags: [hide-input]
 
-def plot_regola_vs_top_k_coverage(bn_name):
+
+
+def make_coverage_plot_data_with_regola(bn_name):
+    global features, regola_coverage
     result = make_coverage_plot_data(bn_name, **features)
     regola_results = pd.concat(
         {("cumulative", 10.5): regola_coverage}, names=["vocabulary", "rank"]
@@ -1159,27 +1253,123 @@ def plot_regola_vs_top_k_coverage(bn_name):
             result,
         ]
     ).sort_index()
+    return result.reset_index()
+
+
+def plot_regola_vs_top_k_coverage(bn_name):
+    result = make_coverage_plot_data_with_regola(bn_name)
+    plot_coverage_data(result, bn_name)
+
+
+def plot_coverage_data(
+    coverage_data,
+    bn_name="couperin",
+    facet_row="vocabulary",
+    xaxes: Optional[dict] = None,
+    yaxes: Optional[dict] = None,
+):
+    if facet_row != "vocabulary":
+        coverage_data = coverage_data.query("vocabulary == 'cumulative'")
     fig = px.line(
-        result.reset_index(),
+        coverage_data,
         x="rank",
         y="proportion",
+        markers=True,
         color="coverage_of",
         facet_col="mode",
-        facet_row="vocabulary",
+        facet_row=facet_row,
         hover_name="chord",
         log_x=True,
         title=f"How many {bn_name.title()} unigrams are covered by each top-k vocabulary",
     )
-    style_plotly(
+    return style_plotly(
         fig,
         match_facet_yaxes=True,
         height=1500,
         legend=dict(
             orientation="h",
         ),
+        xaxes=xaxes,
+        yaxes=yaxes,
     )
 
 
+def plot_coverage_data_categorical(
+    coverage_data,
+    bn_name="couperin",
+    facet_row="comparison",
+    xaxes: Optional[dict] = None,
+    yaxes: Optional[dict] = None,
+):
+    coverage_data = coverage_data.copy()
+    coverage_data["vocab"] = (
+        "top " + coverage_data["rank"].astype(int).astype(str)
+    ).where(coverage_data["rank"] != 10.5, "RoO")
+    if facet_row != "vocabulary":
+        coverage_data = coverage_data.query("vocabulary == 'cumulative'")
+    fig = px.line(
+        coverage_data,
+        x="vocab",
+        y="proportion",
+        markers=True,
+        color="coverage_of",
+        facet_col="mode",
+        facet_row=facet_row,
+        hover_name="chord",
+        title=f"How many {bn_name.title()} unigrams are covered by each top-k vocabulary",
+    )
+    return style_plotly(
+        fig,
+        match_facet_yaxes=True,
+        height=1500,
+        legend=dict(
+            orientation="h",
+        ),
+        xaxes=xaxes,
+        yaxes=yaxes,
+    )
+```
+
+```{code-cell}
+feature_group = dict(
+    to_same="less",
+    to_and_from_same="less",
+    from_same="less",
+    to_and_from_leap="less",
+    to_leap="less",
+    all="less",
+    diatonic="less",
+    from_leap="less",
+    from_ascending="less",
+    to_descending="more",
+    from_either="less",
+    first_notes="less",
+    to_either="more",
+    from_descending="more",
+    to_ascending="more",
+    last_notes="less",
+    to_and_from_ascending="more",
+    to_and_from_either="more",
+    to_and_from_descending="more",
+)
+coverage_data = make_coverage_plot_data_with_regola("couperin")
+coverage_data["comparison"] = coverage_data.coverage_of.map(feature_group)
+plot_coverage_data_categorical(
+    coverage_data,
+)
+```
+
+```{code-cell}
+r0, r1 = 8, 13
+selection = coverage_data.query("@r0 - 1 <= rank <= @r1 + 1")
+fig = plot_coverage_data_categorical(
+    selection,
+)
+save_figure_as(fig, "couperin_top_k_coverage")
+fig
+```
+
+```{code-cell}
 plot_regola_vs_top_k_coverage("couperin")
 ```
 
@@ -1258,27 +1448,37 @@ regola_chord_movement
 #### Major
 
 ```{code-cell}
-make_bass_degree_sankey(BN_reg, "Couperin", "major")
+fig = make_bass_degree_sankey(BN_reg, "Couperin", "major")
+save_figure_as(fig, "couperin_sankey_regola_major")
+fig
 ```
 
 ```{code-cell}
-make_bass_degree_sankey(BN_reg, "Corelli", "major")
+fig = make_bass_degree_sankey(BN_reg, "Corelli", "major")
+save_figure_as(fig, "corelli_sankey_regola_major")
+fig
 ```
 
 #### Minor
 
 ```{code-cell}
-make_bass_degree_sankey(BN_reg, "Couperin", "minor")
+fig = make_bass_degree_sankey(BN_reg, "Couperin", "minor")
+save_figure_as(fig, "couperin_sankey_regola_minor")
+fig
 ```
 
 ```{code-cell}
-make_bass_degree_sankey(BN_reg, "Corelli", "minor")
+fig = make_bass_degree_sankey(BN_reg, "Corelli", "minor")
+save_figure_as(fig, "corelli_sankey_regola_minor")
+fig
 ```
 
 ### Intervals over bass degree 1
 #### Major
 
 ```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 1)
 ```
 
