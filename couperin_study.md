@@ -462,7 +462,94 @@ def make_bass_degree_sankey(
     return fig
 ```
 
-### All unigrams
+### Unigram Table
+
+```{code-cell}
+major_regola_rn = {
+    "I": "both",
+    "V43": "both",
+    "I6": "both",
+    "ii65": "ascending",
+    "V2": "descending",
+    "V": "both",
+    "IV6": "ascending",
+    "V43/V": "descending",
+    "V65": "ascending",
+    "V6": "descending",
+}
+minor_regola_rn = {
+    "i": "both",
+    "V43": "both",
+    "i6": "both",
+    "ii%65": "ascending",
+    "V2": "descending",
+    "V": "both",
+    "IV6": "ascending",
+    "ii%43": "descending",
+    "V65": "ascending",
+    "v6": "descending",
+}
+
+category2color = dict(
+    both="lightcoral",
+    ascending="lightgreen",
+    descending="lightblue",
+)
+
+
+def get_color(chord, mode):
+    if mode == "major":
+        category = major_regola_rn.get(chord)
+    elif mode == "minor":
+        category = minor_regola_rn.get(chord)
+    if category:
+        return category2color[category]
+
+
+def style_unigram_table(df: pd.DataFrame):
+
+    def color_regola_rows(row, mode):
+        if pd.isna(row.iloc[0]):
+            return None
+        if color := get_color(row.iloc[0], mode):
+            return [f"background-color: {color}"] * len(row)
+        return None
+
+    new_index = pd.MultiIndex.from_product(
+        [["Major", "Minor"], ["Unigram", "Occurrences", "Proportion"]]
+    )
+    df = df.set_axis(new_index, axis=1)
+    return df.style.apply(
+        color_regola_rows, axis=1, subset=["Major"], mode="major"
+    ).apply(color_regola_rows, axis=1, subset=["Minor"], mode="minor")
+```
+
+```{code-cell}
+chord_labels = grouped_D.get_feature("HarmonyLabels")
+unigram_occurrences = chord_labels.apply_step("Counter")
+occurrence_ranking = unigram_occurrences.make_ranking_table(
+    drop_cols=["chord_and_mode", "proportion"], top_k=0
+)
+style_unigram_table(occurrence_ranking)
+```
+
+```{code-cell}
+
+```
+
+```{code-cell}
+
+```
+
+```{code-cell}
+occurrence_ranking.dtypes
+```
+
+```{code-cell}
+occurrence_ranking.columns
+```
+
+### Unigram movement Sankey
 #### Major
 
 ```{code-cell}
