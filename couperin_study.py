@@ -705,13 +705,18 @@ def summarize_groups_top_k_chords(df, column="intervals_over_bass", k=3):
     N = len(proportions)
     normalized_entropy = entropy / np.log2(N) if N > 1 else 0.0
     top_k = proportions.iloc[:k]
-    rank_col = list(range(1, len(top_k) + 1))
+    n_rows = len(top_k)
+    if len(proportions) > k:
+        other = proportions.iloc[k:]
+        n_rows += 1
+        top_k["other"] = other.sum()
+    rank_col = list(range(1, n_rows + 1))
     result = pd.DataFrame(
-        dict(
-            intervals_over_bass=top_k.index,
-            proportion=top_k.values,
-            normalized_entropy=normalized_entropy,
-        ),
+        {
+            column: top_k.index,
+            "proportion": top_k.values,
+            "normalized_entropy": normalized_entropy,
+        },
         index=rank_col,
     ).rename_axis("rank_chord")
     return result
@@ -812,8 +817,81 @@ def style_rank_table(df: pd.DataFrame):
 # #### Major
 
 # %%
-maj5, min5 = degree_wise_top_k(BN, k=5)
-maj5
+# def degree_wise_top_k_movement(BN, column="intervals_over_bass"):
+#     summary = summarize_degree_wise_top_k_movement(BN, column=column)
+#     result = []
+#     for mode, df in summary.groupby("mode"):
+#         is_regola = make_boolean_is_regola_chord_mask(df, mode).values
+#         df["is_regola"] = is_regola
+#         df = (
+#             df.sort_values(["rank_bass", "rank_chord"])
+#             .reset_index("bass_degree")
+#             .reset_index("mode", drop=True)
+#             .set_index(
+#                 [
+#                     "rank_bass",
+#                     "bass_degree",
+#                     "proportion_bass",
+#                     "normalized_entropy",
+#                     "rank_chord",
+#                 ]
+#             )
+#         )[["intervals_over_bass", "proportion_chord", "is_regola"]]
+#         result.append(df)
+#     return result
+
+
+def summarize_groups_movements(df, column="preceding_movement_precise"):
+    """Used in Groupby.apply()"""
+    proportions = df[column].replace("none", "same").value_counts(normalize=True)
+    entropy = -(proportions * np.log2(proportions)).sum()
+    N = len(proportions)
+    normalized_entropy = entropy / np.log2(N) if N > 1 else 0.0
+    main_movements = [
+        ix
+        for ix in ("ascending", "descending", "leap", "same")
+        if ix in proportions.index.values
+    ]
+    main_types = proportions.loc[main_movements]
+    n_rows = len(main_types)
+    if len(proportions) > n_rows:
+        other = proportions.loc[proportions.index.difference(main_movements)]
+        n_rows += 1
+        main_types["other_step"] = other.sum()
+    main_types["movement_entropy"] = normalized_entropy
+    result = pd.DataFrame(
+        {
+            column: main_types.index,
+            "proportion": main_types.values,
+        },
+    )
+    return result
+
+
+def summarize_degree_wise_movement(BN, column="preceding_movement_precise"):
+    result = (
+        BN.groupby(["mode", "bass_degree", "intervals_over_bass"]).apply(
+            summarize_groups_movements, column=column
+        )
+    ).droplevel(-1)
+    column_order = [
+        "movement_entropy",
+        "leap",
+        "ascending",
+        "descending",
+        "same",
+        "other_step",
+    ]
+    result = result.pivot(columns="preceding_movement_precise", values="proportion")[
+        column_order
+    ]
+    return result
+
+
+preceding_movements = summarize_degree_wise_movement(
+    BN, column="preceding_movement_precise"
+)
+preceding_movements
 
 # %% tags=["hide-input"]
 major, minor = degree_wise_top_k(BN)
