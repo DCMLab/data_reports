@@ -1142,6 +1142,7 @@ fig
 # %%
 plot_regola_vs_top_k_coverage("couperin")
 
+
 # %% [markdown]
 # **In order to inspect these plots you will want to hide traces.
 # Click on a legend item to toggle it, double-click on an item to toggle all others.**
