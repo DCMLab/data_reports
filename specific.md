@@ -26,36 +26,40 @@ tags: [hide-cell]
 %load_ext autoreload
 %autoreload 2
 import os
-from git import Repo
 import dimcat as dc
-import ms3
 import pandas as pd
-from dimcat.steps import slicers, groupers, analyzers
+from dimcat import slicers, groupers, analyzers, plotting
 
-from utils import get_repo_name, print_heading, resolve_dir
+import utils
 ```
 
 ```{code-cell}
-from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
-from dimcat.plotting import write_image
-RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "couperin_article"))
+RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "harmonies"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
-def make_output_path(filename):
-    return os.path.join(RESULTS_PATH, f"{filename}{DEFAULT_OUTPUT_FORMAT}")
-def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
-    write_image(fig, filename, directory, **kwargs)
+
+
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
+
+
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        plotting.write_image(fig, filename, directory, **kwargs)
 ```
 
 **Loading data**
 
 ```{code-cell}
-package_path = resolve_dir("~/distant_listening_corpus/couperin_concerts/couperin_concerts.datapackage.json")
-repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 ```
 
@@ -116,7 +120,7 @@ L.debug("TEST")
 ### Unigrams
 
 ```{code-cell}
-package_path = resolve_dir("../couperin_corelli.datapackage.json")
+package_path = utils.resolve_dir("../couperin_corelli.datapackage.json")
 D = dc.Dataset.from_package(package_path)
 D
 ```
@@ -165,7 +169,7 @@ bigram_ranking
 ```
 
 ```{code-cell}
-bigram_ranking.to_clipboard()
+occurrence_ranking.to_clipboard()
 ```
 
 ```{code-cell}
@@ -212,10 +216,6 @@ counts
 ```
 
 ```{code-cell}
-counts.unstack(sort=False).loc["V", "i"]
-```
-
-```{code-cell}
 ix_df = counts.index.to_frame()
 ix_df.consequent.isna().any()
 ```
@@ -225,7 +225,7 @@ counts.iloc[:2990].unstack(sort=False)
 ```
 
 ```{code-cell}
- counts.iloc[2990:]
+counts.iloc[2990:]
 ```
 
 ```{code-cell}
@@ -268,15 +268,7 @@ grouped_transitions.plot_grouped(output=make_output_path("test_grouped_transitio
 ```
 
 ```{code-cell}
-all_matrices = grouped_transitions["proportion"].groupby(["corpus", "mode"], group_keys=False).apply(lambda df: df.unstack().iloc[:30, :30])
-all_matrices
-```
-
-```{code-cell}
-for group, df in grouped_transitions.groupby(["corpus", "mode"], group_keys=False):
-  matrix = df["proportion"].unstack()
-  display(matrix.head())
-  break
+grouped_transitions
 ```
 
 ## Bass degrees
@@ -293,7 +285,7 @@ bass_note_distribution.make_bar_plot(output=make_output_path("bass_note_distribu
 
 ```{code-cell}
 print(f"Fraction covered by P1, P4, and P5:")
-bass_note_distribution.combine_results().loc[pd.IndexSlice[:,:,[-1,0,1]]].gpb(level=[0,1]).proportion.sum().mul(100).round(1).astype(str).add(" %")
+bass_note_distribution.combine_results().loc[pd.IndexSlice[:,:,[-1,0,1]]].groupby(level=[0,1]).proportion.sum().mul(100).round(1).astype(str).add(" %")
 ```
 
 ```{code-cell}
