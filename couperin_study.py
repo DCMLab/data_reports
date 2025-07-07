@@ -417,9 +417,7 @@ def make_bass_degree_sankey(
     """bass_degree None means all unigrams."""
     selected_unigrams = BN.loc[mode]
     if bass_degree:
-        selected_unigrams = selected_unigrams.to_be_summarized(
-            f"bass_degree == '{bass_degree}'"
-        )
+        selected_unigrams = selected_unigrams.query(f"bass_degree == '{bass_degree}'")
         selection_text = f"bass degree {bass_degree}"
     else:
         selection_text = "any harmony"
@@ -435,7 +433,7 @@ def make_bass_degree_sankey(
 # %% [markdown]
 # ### Unigram Table
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 major_regola_rn = {
     "I": "both",
     "V43": "both",
@@ -503,15 +501,6 @@ occurrence_ranking = unigram_occurrences.make_ranking_table(
 )
 style_unigram_table(occurrence_ranking)
 
-# %%
-
-# %%
-
-# %%
-occurrence_ranking.dtypes
-
-# %%
-occurrence_ranking.columns
 
 # %% [markdown]
 # ### Unigram movement Sankey
@@ -837,22 +826,29 @@ style_rank_table(major)
 style_rank_table(minor)
 
 
-# %%
+# %% [markdown]
+# ### "Mega tables"
+#
+# Equivalent to the two preceding tables but with additional heatmaps that show the predominant
+# movement types preceding and following any chord.
+
+
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def summarize_groups_movements(
     df, column="preceding_movement_precise", normalize=False
 ):
     """Used in Groupby.apply()"""
-    proportions = df[column].replace("none", "same").value_counts(normalize=True)
+    proportions = df[column].value_counts(normalize=True)
     entropy = -(proportions * np.log2(proportions)).sum()
     if normalize:
         movements = proportions
     else:
-        movements = df[column].replace("none", "same").value_counts(normalize=False)
+        movements = df[column].value_counts(normalize=False)
     N = len(movements)
     normalized_entropy = entropy / np.log2(N) if N > 1 else 0.0
     main_movements = [
         ix
-        for ix in ("ascending", "descending", "leap", "same")
+        for ix in ("ascending", "descending", "leap", "none")
         if ix in movements.index.values
     ]
     main_types = movements.loc[main_movements]
@@ -878,7 +874,7 @@ def summarize_degree_wise_movement(
             summarize_groups_movements, column=column, normalize=normalize
         )
     ).droplevel(-1)
-    movement_cols = ["leap", "ascending", "descending", "same", "other_step"]
+    movement_cols = ["leap", "ascending", "descending", "none", "other_step"]
     column_order = ["movement_entropy"] + movement_cols
     value_column = "proportion" if normalize else "count"
     result = result.pivot(columns=column, values=value_column)[column_order]
@@ -887,7 +883,7 @@ def summarize_degree_wise_movement(
     return result
 
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def aggregate_other_movements(df, normalize=True):
     columns = [col for col in df.columns if col != "movement_entropy"]
     result = df.loc[:, columns].sum()
@@ -993,7 +989,124 @@ def make_mega_tables(BN=BN, k=None):
 
 
 mega_major, mega_minor = make_mega_tables(k=5)
-mega_major
+
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+major_roo_chord2movement = dict(
+    zip(
+        sorted(regola_vocabulary_major),
+        [
+            "both",
+            "both",
+            "both",
+            "descending",
+            "ascending",
+            "both",
+            "descending",
+            "ascending",
+            "ascending",
+            "descending",
+        ],
+    )
+)
+major_roo_chord2movement
+
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+minor_roo_chord2movement = dict(
+    zip(
+        sorted(regola_vocabulary_minor),
+        [
+            "ascending",
+            "ascending",
+            "both",
+            "both",
+            "both",
+            "descending",
+            "ascending",
+            "both",
+            "descending",
+            "descending",
+        ],
+    )
+)
+minor_roo_chord2movement
+
+
+# %% tags=["hide-input"]
+def style_mega_table(meta_table, mode):
+    mega_styled = meta_table.set_index(meta_table.columns.to_list()[:4], append=True)
+    mega_styled.index.names = ["B", "Chord", "R", "P", "E", "SR"]
+    col2type = {
+        col: "boolean" if col == ("ranking", "is_regola") else "Float64"
+        for col in mega_styled.columns
+    }
+    mega_styled = (
+        mega_styled.reorder_levels(["R", "B", "P", "E", "SR", "Chord"])
+        .sort_index()
+        .astype(col2type)
+    )
+    chords = mega_styled.index.get_level_values(-1)
+    mega_styled.reset_index(level=-1, drop=True, inplace=True)
+    mega_styled.insert(0, ("Chord", "Intervals"), chords)
+    mega_styled.columns = pd.MultiIndex.from_arrays(
+        [
+            3 * ["Chord"] + 6 * ["Preceding Movement"] + 6 * ["Subsequent Movement"],
+            ["Intervals", "P", "RoO"]
+            + 2 * ["E", "Leap", "RoO Asc", "RoO Desc", "None", "Other Step"],
+        ]
+    )
+    col2format = {
+        "E": "{:.2}",
+    }
+    format_dict = {
+        (l0, l1): "{:.1%}" if (f := col2format.get(l1)) is None else f
+        for l0, l1 in mega_styled.columns
+        if l1 not in ("RoO", "Intervals")
+    }
+
+    def get_chord_color(chord):
+        nonlocal mode
+        if mode == "major":
+            movement = major_roo_chord2movement.get(chord)
+        else:
+            movement = minor_roo_chord2movement.get(chord)
+        if movement is None:
+            return
+        return category2color[movement]
+
+    def color_regola_rows(row):
+        bass, intervals = row.name[1], row[("Chord", "Intervals")]
+        chord = (bass, intervals)
+        if color := get_chord_color(chord):
+            return [f"background-color: {color}"] * len(row)
+        return [None] * len(row)
+
+    roo_color_sublevels = ("Intervals", "P", "RoO", "E")
+    roo_color_columns = [
+        (l0, l1) for l0, l1 in mega_styled.columns if l1 in roo_color_sublevels
+    ]
+    heatmap_color_columns = [
+        (l0, l1) for l0, l1 in mega_styled.columns if l1 not in roo_color_sublevels
+    ]
+    return (
+        mega_styled.style.format(format_dict)
+        .format_index(
+            axis=0,
+            formatter={
+                "P": "{:.1%}",  # Format as percentage with 1 decimal place
+                "E": "{:.2f}",  # Format as float with 3 decimal places
+            },
+        )
+        .apply(color_regola_rows, axis=1, subset=roo_color_columns)
+        .background_gradient("Purples", subset=heatmap_color_columns)
+        .highlight_null(color="lightgrey")
+    )
+
+
+style_mega_table(mega_major, "major")
+
+# %% tags=["hide-input"]
+style_mega_table(mega_minor, "minor")
+
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 name2BN = {"couperin": BN}

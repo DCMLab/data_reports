@@ -449,7 +449,7 @@ def make_bass_degree_sankey(
     """bass_degree None means all unigrams."""
     selected_unigrams = BN.loc[mode]
     if bass_degree:
-        selected_unigrams = selected_unigrams.to_be_summarized(f"bass_degree == '{bass_degree}'")
+        selected_unigrams = selected_unigrams.query(f"bass_degree == '{bass_degree}'")
         selection_text = f"bass degree {bass_degree}"
     else:
         selection_text = "any harmony"
@@ -465,6 +465,12 @@ def make_bass_degree_sankey(
 ### Unigram Table
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 major_regola_rn = {
     "I": "both",
     "V43": "both",
@@ -531,22 +537,6 @@ occurrence_ranking = unigram_occurrences.make_ranking_table(
     drop_cols=["chord_and_mode", "proportion"], top_k=0
 )
 style_unigram_table(occurrence_ranking)
-```
-
-```{code-cell}
-
-```
-
-```{code-cell}
-
-```
-
-```{code-cell}
-occurrence_ranking.dtypes
-```
-
-```{code-cell}
-occurrence_ranking.columns
 ```
 
 ### Unigram movement Sankey
@@ -873,18 +863,35 @@ style_rank_table(major)
 style_rank_table(minor)
 ```
 
+### "Mega tables"
+
+Equivalent to the two preceding tables but with additional heatmaps that show the predominant
+movement types preceding and following any chord.
+
 ```{code-cell}
-def summarize_groups_movements(df, column="preceding_movement_precise", normalize=False):
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
+def summarize_groups_movements(
+    df, column="preceding_movement_precise", normalize=False
+):
     """Used in Groupby.apply()"""
-    proportions = df[column].replace("none", "same").value_counts(normalize=True)
+    proportions = df[column].value_counts(normalize=True)
     entropy = -(proportions * np.log2(proportions)).sum()
     if normalize:
         movements = proportions
     else:
-        movements = df[column].replace("none", "same").value_counts(normalize=False)
+        movements = df[column].value_counts(normalize=False)
     N = len(movements)
     normalized_entropy = entropy / np.log2(N) if N > 1 else 0.0
-    main_movements = [ix for ix in ("ascending", "descending", "leap", "same") if ix in movements.index.values]
+    main_movements = [
+        ix
+        for ix in ("ascending", "descending", "leap", "none")
+        if ix in movements.index.values
+    ]
     main_types = movements.loc[main_movements]
     if len(movements) > len(main_types):
         other = movements.loc[movements.index.difference(main_movements)]
@@ -899,23 +906,31 @@ def summarize_groups_movements(df, column="preceding_movement_precise", normaliz
     )
     return movements
 
-def summarize_degree_wise_movement(BN, column="preceding_movement_precise", normalize=False):
+
+def summarize_degree_wise_movement(
+    BN, column="preceding_movement_precise", normalize=False
+):
     result = (
         BN.groupby(["mode", "bass_degree", "intervals_over_bass"]).apply(
             summarize_groups_movements, column=column, normalize=normalize
         )
     ).droplevel(-1)
-    movement_cols = ["leap", "ascending", "descending", "same", "other_step"]
+    movement_cols = ["leap", "ascending", "descending", "none", "other_step"]
     column_order = ["movement_entropy"] + movement_cols
     value_column = "proportion" if normalize else "count"
     result = result.pivot(columns=column, values=value_column)[column_order]
     if not normalize:
         result = result.astype({col: "Int64" for col in movement_cols})
     return result
-
 ```
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def aggregate_other_movements(df, normalize=True):
     columns = [col for col in df.columns if col != "movement_entropy"]
     result = df.loc[:, columns].sum()
@@ -924,23 +939,25 @@ def aggregate_other_movements(df, normalize=True):
     entropy = -(non_zero * np.log2(non_zero)).sum()
     normalized_entropy = entropy / np.log2(len(columns))
     if normalized_entropy == 0:
-        normalized_entropy = abs(normalized_entropy) # to avoid -0.0
+        normalized_entropy = abs(normalized_entropy)  # to avoid -0.0
     if normalize:
         result = normalized
-    result = pd.concat([
-        pd.Series(dict(movement_entropy=normalized_entropy)),
-        result
-    ])
+    result = pd.concat([pd.Series(dict(movement_entropy=normalized_entropy)), result])
     return result
+
 
 def normalize_movement_columns(df):
     result = dict(ranking=df.loc[:, "ranking"])
     preceding = df.loc[:, "preceding"].copy()
     columns = [col for col in preceding.columns if col != "movement_entropy"]
-    preceding.loc[:, columns] = preceding[columns].div(preceding[columns].sum(axis=1), axis=0)
+    preceding.loc[:, columns] = preceding[columns].div(
+        preceding[columns].sum(axis=1), axis=0
+    )
     result["preceding"] = preceding
     subsequent = df.loc[:, "subsequent"].copy()
-    subsequent.loc[:, columns] = subsequent[columns].div(subsequent[columns].sum(axis=1), axis=0)
+    subsequent.loc[:, columns] = subsequent[columns].div(
+        subsequent[columns].sum(axis=1), axis=0
+    )
     result["subsequent"] = subsequent
     return pd.concat(result, axis=1)
 
@@ -957,12 +974,14 @@ def cut_down_to_k(mega_table, k=3, normalize=True):
             ranking_df = other.loc[:, "ranking"]
             ranking = ranking_df.iloc[0]
             ranking.proportion_chord = ranking_df.proportion_chord.sum()
-            preceding = aggregate_other_movements(other.loc[:, "preceding"], normalize=normalize)
-            subsequent = aggregate_other_movements(other.loc[:, "subsequent"], normalize=normalize)
-            concatenated = pd.concat(dict(
-                ranking=ranking,
-                preceding=preceding,
-                subsequent=subsequent)
+            preceding = aggregate_other_movements(
+                other.loc[:, "preceding"], normalize=normalize
+            )
+            subsequent = aggregate_other_movements(
+                other.loc[:, "subsequent"], normalize=normalize
+            )
+            concatenated = pd.concat(
+                dict(ranking=ranking, preceding=preceding, subsequent=subsequent)
             ).rename((ranking.name[0], "other"))
             result = pd.concat([result, concatenated.to_frame().T])
         results.append(result)
@@ -971,28 +990,188 @@ def cut_down_to_k(mega_table, k=3, normalize=True):
 
 def make_mega_tables(BN=BN, k=None):
     full_major, full_minor = degree_wise_top_k(BN, k=None)
-    preceding_movements = summarize_degree_wise_movement(BN, column="preceding_movement_precise")
-    subsequent_movements = summarize_degree_wise_movement(BN, column="subsequent_movement_precise")
-    pm_major, pm_minor = preceding_movements.loc["major"], preceding_movements.loc["minor"]
-    sm_major, sm_minor = subsequent_movements.loc["major"], subsequent_movements.loc["minor"]
-    reset_levels = [lvl for lvl in full_major.index.names if lvl not in ('bass_degree', 'intervals_over_bass')]
-    mega_major = pd.concat(dict(
-        ranking=full_major.reset_index(level=reset_levels).set_index("intervals_over_bass", append=True),
-        preceding=pm_major,
-        subsequent=sm_major,
-    ), axis=1)
-    mega_minor = pd.concat(dict(
-        ranking=full_minor.reset_index(level=reset_levels).set_index("intervals_over_bass", append=True),
-        preceding=pm_minor,
-        subsequent=sm_minor,
-    ), axis=1)
+    preceding_movements = summarize_degree_wise_movement(
+        BN, column="preceding_movement_precise"
+    )
+    subsequent_movements = summarize_degree_wise_movement(
+        BN, column="subsequent_movement_precise"
+    )
+    pm_major, pm_minor = (
+        preceding_movements.loc["major"],
+        preceding_movements.loc["minor"],
+    )
+    sm_major, sm_minor = (
+        subsequent_movements.loc["major"],
+        subsequent_movements.loc["minor"],
+    )
+    reset_levels = [
+        lvl
+        for lvl in full_major.index.names
+        if lvl not in ("bass_degree", "intervals_over_bass")
+    ]
+    mega_major = pd.concat(
+        dict(
+            ranking=full_major.reset_index(level=reset_levels).set_index(
+                "intervals_over_bass", append=True
+            ),
+            preceding=pm_major,
+            subsequent=sm_major,
+        ),
+        axis=1,
+    )
+    mega_minor = pd.concat(
+        dict(
+            ranking=full_minor.reset_index(level=reset_levels).set_index(
+                "intervals_over_bass", append=True
+            ),
+            preceding=pm_minor,
+            subsequent=sm_minor,
+        ),
+        axis=1,
+    )
     if k is not None:
         mega_major = cut_down_to_k(mega_major, k=k)
         mega_minor = cut_down_to_k(mega_minor, k=k)
     return mega_major, mega_minor
 
+
 mega_major, mega_minor = make_mega_tables(k=5)
-mega_major
+```
+
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
+major_roo_chord2movement = dict(
+    zip(
+        sorted(regola_vocabulary_major),
+        [
+            "both",
+            "both",
+            "both",
+            "descending",
+            "ascending",
+            "both",
+            "descending",
+            "ascending",
+            "ascending",
+            "descending",
+        ],
+    )
+)
+major_roo_chord2movement
+```
+
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
+minor_roo_chord2movement = dict(
+    zip(
+        sorted(regola_vocabulary_minor),
+        [
+            "ascending",
+            "ascending",
+            "both",
+            "both",
+            "both",
+            "descending",
+            "ascending",
+            "both",
+            "descending",
+            "descending",
+        ],
+    )
+)
+minor_roo_chord2movement
+```
+
+```{code-cell}
+:tags: [hide-input]
+
+def style_mega_table(meta_table, mode):
+    mega_styled = meta_table.set_index(meta_table.columns.to_list()[:4], append=True)
+    mega_styled.index.names = ["B", "Chord", "R", "P", "E", "SR"]
+    col2type = {
+        col: "boolean" if col == ("ranking", "is_regola") else "Float64"
+        for col in mega_styled.columns
+    }
+    mega_styled = (
+        mega_styled.reorder_levels(["R", "B", "P", "E", "SR", "Chord"])
+        .sort_index()
+        .astype(col2type)
+    )
+    chords = mega_styled.index.get_level_values(-1)
+    mega_styled.reset_index(level=-1, drop=True, inplace=True)
+    mega_styled.insert(0, ("Chord", "Intervals"), chords)
+    mega_styled.columns = pd.MultiIndex.from_arrays(
+        [
+            3 * ["Chord"] + 6 * ["Preceding Movement"] + 6 * ["Subsequent Movement"],
+            ["Intervals", "P", "RoO"]
+            + 2 * ["E", "Leap", "RoO Asc", "RoO Desc", "None", "Other Step"],
+        ]
+    )
+    col2format = {
+        "E": "{:.2}",
+    }
+    format_dict = {
+        (l0, l1): "{:.1%}" if (f := col2format.get(l1)) is None else f
+        for l0, l1 in mega_styled.columns
+        if l1 not in ("RoO", "Intervals")
+    }
+
+    def get_chord_color(chord):
+        nonlocal mode
+        if mode == "major":
+            movement = major_roo_chord2movement.get(chord)
+        else:
+            movement = minor_roo_chord2movement.get(chord)
+        if movement is None:
+            return
+        return category2color[movement]
+
+    def color_regola_rows(row):
+        bass, intervals = row.name[1], row[("Chord", "Intervals")]
+        chord = (bass, intervals)
+        if color := get_chord_color(chord):
+            return [f"background-color: {color}"] * len(row)
+        return [None] * len(row)
+
+    roo_color_sublevels = ("Intervals", "P", "RoO", "E")
+    roo_color_columns = [
+        (l0, l1) for l0, l1 in mega_styled.columns if l1 in roo_color_sublevels
+    ]
+    heatmap_color_columns = [
+        (l0, l1) for l0, l1 in mega_styled.columns if l1 not in roo_color_sublevels
+    ]
+    return (
+        mega_styled.style.format(format_dict)
+        .format_index(
+            axis=0,
+            formatter={
+                "P": "{:.1%}",  # Format as percentage with 1 decimal place
+                "E": "{:.2f}",  # Format as float with 3 decimal places
+            },
+        )
+        .apply(color_regola_rows, axis=1, subset=roo_color_columns)
+        .background_gradient("Purples", subset=heatmap_color_columns)
+        .highlight_null(color="lightgrey")
+    )
+
+
+style_mega_table(mega_major, "major")
+```
+
+```{code-cell}
+:tags: [hide-input]
+
+style_mega_table(mega_minor, "minor")
 ```
 
 ```{code-cell}
