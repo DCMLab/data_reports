@@ -164,7 +164,6 @@ roo_succession_map = dict(
 )
 
 
-
 def inverse_dict(d):
     return {v: k for k, v in d.items()}
 
@@ -174,6 +173,7 @@ roo_predecessor_map = dict(
     ascending_minor=inverse_dict(roo_succession_map["ascending_minor"]),
     descending=inverse_dict(roo_succession_map["descending"]),
 )
+
 
 def get_all_non_neighbours(lst, ix):
     N = len(lst)
@@ -187,8 +187,13 @@ def get_all_non_neighbours(lst, ix):
 def make_roo_leap_maps():
     steps = ["1", "2", "3", "4", "5", "6", "7"]
     asc_minor_steps = ["1", "2", "3", "4", "5", "#6", "#7"]
-    major = {step: set(get_all_non_neighbours(steps, i)) for i, step in enumerate(steps)}
-    minor = {step: set(get_all_non_neighbours(asc_minor_steps, i)) for i, step in enumerate(asc_minor_steps)}
+    major = {
+        step: set(get_all_non_neighbours(steps, i)) for i, step in enumerate(steps)
+    }
+    minor = {
+        step: set(get_all_non_neighbours(asc_minor_steps, i))
+        for i, step in enumerate(asc_minor_steps)
+    }
     for k, v in major.items():
         if k in minor:
             minor[k].update(v)
@@ -196,10 +201,15 @@ def make_roo_leap_maps():
             minor[k] = v
     return major, minor
 
+
 def make_roo_step_maps():
     major = {k: {v} for k, v in roo_succession_map["ascending_major"].items()}
-    minor_preceding  = {k: {v} for k, v in roo_predecessor_map["ascending_minor"].items()}
-    minor_subsequent = {k: {v} for k, v in roo_succession_map["ascending_minor"].items()}
+    minor_preceding = {
+        k: {v} for k, v in roo_predecessor_map["ascending_minor"].items()
+    }
+    minor_subsequent = {
+        k: {v} for k, v in roo_succession_map["ascending_minor"].items()
+    }
     for k, v in roo_predecessor_map["descending"].items():
         if k in minor_preceding:
             minor_preceding[k].add(v)
@@ -213,8 +223,11 @@ def make_roo_step_maps():
             minor_subsequent[k] = {v}
     return major, minor_preceding, minor_subsequent
 
+
 roo_leap_map_major, roo_leap_map_minor = make_roo_leap_maps()
-roo_step_map_major, roo_step_map_minor_preceding, roo_step_map_minor_subsequent = make_roo_step_maps()
+roo_step_map_major, roo_step_map_minor_preceding, roo_step_map_minor_subsequent = (
+    make_roo_step_maps()
+)
 ```
 
 ```{code-cell}
@@ -231,8 +244,12 @@ def make_precise_preceding_movement_column(df):
     )
     expected_ascending_degree = pd.concat(
         [
-            df.loc[["major"], "bass_degree"].map(roo_predecessor_map["ascending_major"]),
-            df.loc[["minor"], "bass_degree"].map(roo_predecessor_map["ascending_minor"]),
+            df.loc[["major"], "bass_degree"].map(
+                roo_predecessor_map["ascending_major"]
+            ),
+            df.loc[["minor"], "bass_degree"].map(
+                roo_predecessor_map["ascending_minor"]
+            ),
         ]
     )
     expected_descending_degree = df.bass_degree.map(roo_predecessor_map["descending"])
@@ -265,6 +282,7 @@ def make_precise_subsequent_movement_column(df):
     )
     return subsequent_movement_precise
 
+
 def make_preceding_movement_category_column(df):
     """Expects a dataframe containing the columns bass_degree, subsequent_bass_degree, and subsequent_movement,"""
     preceding_movement_category = df.preceding_movement.copy()
@@ -277,12 +295,9 @@ def make_preceding_movement_category_column(df):
     is_regola_leap_mask = pd.Series(
         [
             False if pd.isnull(roo_leaps) else prec_bn in roo_leaps
-            for prec_bn, roo_leaps in zip(
-                df.preceding_bass_degree,
-                would_be_roo_leaps
-            )
+            for prec_bn, roo_leaps in zip(df.preceding_bass_degree, would_be_roo_leaps)
         ],
-        index=df.index
+        index=df.index,
     )
     preceding_movement_category = preceding_movement_category.where(
         ~is_regola_leap_mask, "roo_leap"
@@ -296,17 +311,15 @@ def make_preceding_movement_category_column(df):
     is_regola_step_mask = pd.Series(
         [
             False if pd.isnull(roo_steps) else prec_bn in roo_steps
-            for prec_bn, roo_steps in zip(
-                df.preceding_bass_degree,
-                would_be_roo_steps
-            )
+            for prec_bn, roo_steps in zip(df.preceding_bass_degree, would_be_roo_steps)
         ],
-        index=df.index
+        index=df.index,
     )
     preceding_movement_category = preceding_movement_category.where(
         ~is_regola_step_mask, "roo_step"
     ).replace("step", "other_step")
     return preceding_movement_category.rename("preceding_movement_category")
+
 
 def make_subsequent_movement_category_column(df):
     """Expects a dataframe containing the columns bass_degree, subsequent_bass_degree, and subsequent_movement,"""
@@ -320,12 +333,9 @@ def make_subsequent_movement_category_column(df):
     is_regola_leap_mask = pd.Series(
         [
             False if pd.isnull(roo_leaps) else subs_bn in roo_leaps
-            for subs_bn, roo_leaps in zip(
-                df.subsequent_bass_degree,
-                would_be_roo_leaps
-            )
+            for subs_bn, roo_leaps in zip(df.subsequent_bass_degree, would_be_roo_leaps)
         ],
-        index=df.index
+        index=df.index,
     )
     subsequent_movement_category = subsequent_movement_category.where(
         ~is_regola_leap_mask, "roo_leap"
@@ -339,12 +349,9 @@ def make_subsequent_movement_category_column(df):
     is_regola_step_mask = pd.Series(
         [
             False if pd.isnull(roo_steps) else subs_bn in roo_steps
-            for subs_bn, roo_steps in zip(
-                df.subsequent_bass_degree,
-                would_be_roo_steps
-            )
+            for subs_bn, roo_steps in zip(df.subsequent_bass_degree, would_be_roo_steps)
         ],
-        index=df.index
+        index=df.index,
     )
     subsequent_movement_category = subsequent_movement_category.where(
         ~is_regola_step_mask, "roo_step"
@@ -447,7 +454,9 @@ def plot_bass_movement(BN, corpus_name, **kwargs):
         title=f"Mode-wise proportion of how often a bass note moves by an interval in {corpus_name}",
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
-    return style_plotly(fig, f"how_often_a_bass_note_moves_by_an_interval_{corpus_name}", **kwargs)
+    return style_plotly(
+        fig, f"how_often_a_bass_note_moves_by_an_interval_{corpus_name}", **kwargs
+    )
 
 
 fig = plot_bass_movement(BN, "Couperin", font=dict(size=40))
@@ -464,35 +473,32 @@ this study.**
 ```{code-cell}
 :tags: [hide-input]
 
-def plot_movement_types(BN, corpus_name, precise_categories=True, **kwargs):
-    subsequent_movement = (
-        "subsequent_movement_precise" if precise_categories else "subsequent_movement"
-    )
+def plot_movement_types(BN, corpus_name, column="subsequent_movement_category", **kwargs):
     movement_data = pd.concat(
         [
-            BN.groupby("mode")[subsequent_movement].value_counts(
+            BN.groupby("mode")[column].value_counts(
                 normalize=True, dropna=False
             ),
-            BN.groupby(["piece", "mode"])[subsequent_movement]
+            BN.groupby(["piece", "mode"])[column]
             .value_counts(normalize=True, dropna=False)
-            .groupby(["mode", subsequent_movement])
+            .groupby(["mode", column])
             .sem()
             .rename("std_err"),
         ],
         axis=1,
     ).reset_index()
-    movement_data[subsequent_movement] = movement_data[subsequent_movement].fillna(
+    movement_data[column] = movement_data[column].fillna(
         "none"
     )
     fig = px.bar(
         movement_data,
-        x=subsequent_movement,
+        x=column,
         y="proportion",
         color="mode",
         barmode="group",
         error_y="std_err",
         color_discrete_map=utils.MAJOR_MINOR_COLORS,
-        labels={subsequent_movement: "Movement"},
+        labels={column: "Movement"},
         title=f"Mode-wise proportion of a bass note moving in a certain manner in {corpus_name}",
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
@@ -514,14 +520,22 @@ mystnb:
 tags: [hide-cell]
 ---
 def make_sankey_data(
-    five_major, color_edges=True, precise=True
+    five_major, color_edges=True, precise=None
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
-    preceding_movement = (
-        "preceding_movement_precise" if precise else "preceding_movement"
-    )
-    subsequent_movement = (
-        "subsequent_movement_precise" if precise else "subsequent_movement"
-    )
+    """
+    precise=False -> preceding_movement / subsequent_movement
+    precise=True -> preceding_movement_precise / subsequent_movement_precise
+    precise=None -> preceding_movement_category / subsequent_movement_category
+    """
+    if precise is None:
+        preceding_movement = "preceding_movement_category"
+        subsequent_movement = "subsequent_movement_category"
+    elif precise:
+        preceding_movement = "preceding_movement_precise"
+        subsequent_movement = "subsequent_movement_precise"
+    else:
+        preceding_movement = "preceding_movement"
+        subsequent_movement = "subsequent_movement"
     type_counts = five_major["intervals_over_bass"].value_counts()
     preceding_movement_counts = five_major[preceding_movement].value_counts()
     subsequent_movement_counts = five_major[subsequent_movement].value_counts()

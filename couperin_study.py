@@ -445,35 +445,30 @@ fig
 
 
 # %% tags=["hide-input"]
-def plot_movement_types(BN, corpus_name, precise_categories=True, **kwargs):
-    subsequent_movement = (
-        "subsequent_movement_precise" if precise_categories else "subsequent_movement"
-    )
+def plot_movement_types(
+    BN, corpus_name, column="subsequent_movement_category", **kwargs
+):
     movement_data = pd.concat(
         [
-            BN.groupby("mode")[subsequent_movement].value_counts(
-                normalize=True, dropna=False
-            ),
-            BN.groupby(["piece", "mode"])[subsequent_movement]
+            BN.groupby("mode")[column].value_counts(normalize=True, dropna=False),
+            BN.groupby(["piece", "mode"])[column]
             .value_counts(normalize=True, dropna=False)
-            .groupby(["mode", subsequent_movement])
+            .groupby(["mode", column])
             .sem()
             .rename("std_err"),
         ],
         axis=1,
     ).reset_index()
-    movement_data[subsequent_movement] = movement_data[subsequent_movement].fillna(
-        "none"
-    )
+    movement_data[column] = movement_data[column].fillna("none")
     fig = px.bar(
         movement_data,
-        x=subsequent_movement,
+        x=column,
         y="proportion",
         color="mode",
         barmode="group",
         error_y="std_err",
         color_discrete_map=utils.MAJOR_MINOR_COLORS,
-        labels={subsequent_movement: "Movement"},
+        labels={column: "Movement"},
         title=f"Mode-wise proportion of a bass note moving in a certain manner in {corpus_name}",
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
@@ -491,14 +486,22 @@ fig
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_sankey_data(
-    five_major, color_edges=True, precise=True
+    five_major, color_edges=True, precise=None
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
-    preceding_movement = (
-        "preceding_movement_precise" if precise else "preceding_movement"
-    )
-    subsequent_movement = (
-        "subsequent_movement_precise" if precise else "subsequent_movement"
-    )
+    """
+    precise=False -> preceding_movement / subsequent_movement
+    precise=True -> preceding_movement_precise / subsequent_movement_precise
+    precise=None -> preceding_movement_category / subsequent_movement_category
+    """
+    if precise is None:
+        preceding_movement = "preceding_movement_category"
+        subsequent_movement = "subsequent_movement_category"
+    elif precise:
+        preceding_movement = "preceding_movement_precise"
+        subsequent_movement = "subsequent_movement_precise"
+    else:
+        preceding_movement = "preceding_movement"
+        subsequent_movement = "subsequent_movement"
     type_counts = five_major["intervals_over_bass"].value_counts()
     preceding_movement_counts = five_major[preceding_movement].value_counts()
     subsequent_movement_counts = five_major[subsequent_movement].value_counts()
