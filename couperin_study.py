@@ -121,8 +121,8 @@ utils.print_heading("Key Segments Couperin")
 print(local_keys.groupby("mode").size().to_string())
 local_keys.head()
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
-succession_map = dict(
+# %%
+roo_succession_map = dict(
     ascending_major={
         "1": "2",
         "2": "3",
@@ -149,13 +149,69 @@ def inverse_dict(d):
     return {v: k for k, v in d.items()}
 
 
-predecessor_map = dict(
-    ascending_major=inverse_dict(succession_map["ascending_major"]),
-    ascending_minor=inverse_dict(succession_map["ascending_minor"]),
-    descending=inverse_dict(succession_map["descending"]),
+roo_predecessor_map = dict(
+    ascending_major=inverse_dict(roo_succession_map["ascending_major"]),
+    ascending_minor=inverse_dict(roo_succession_map["ascending_minor"]),
+    descending=inverse_dict(roo_succession_map["descending"]),
 )
 
 
+def get_all_non_neighbours(lst, ix):
+    N = len(lst)
+    if ix >= N:
+        return []
+    left = (ix - 1) % N
+    right = (ix + 1) % N
+    return [item for i, item in enumerate(lst) if i not in (left, ix, right)]
+
+
+def make_roo_leap_maps():
+    steps = ["1", "2", "3", "4", "5", "6", "7"]
+    asc_minor_steps = ["1", "2", "3", "4", "5", "#6", "#7"]
+    major = {
+        step: set(get_all_non_neighbours(steps, i)) for i, step in enumerate(steps)
+    }
+    minor = {
+        step: set(get_all_non_neighbours(asc_minor_steps, i))
+        for i, step in enumerate(asc_minor_steps)
+    }
+    for k, v in major.items():
+        if k in minor:
+            minor[k].update(v)
+        else:
+            minor[k] = v
+    return major, minor
+
+
+def make_roo_step_maps():
+    major = {k: {v} for k, v in roo_succession_map["ascending_major"].items()}
+    minor_preceding = {
+        k: {v} for k, v in roo_predecessor_map["ascending_minor"].items()
+    }
+    minor_subsequent = {
+        k: {v} for k, v in roo_succession_map["ascending_minor"].items()
+    }
+    for k, v in roo_predecessor_map["descending"].items():
+        if k in minor_preceding:
+            minor_preceding[k].add(v)
+        else:
+            minor_preceding[k] = {v}
+    for k, v in roo_succession_map["descending"].items():
+        major[k].add(v)
+        if k in minor_subsequent:
+            minor_subsequent[k].add(v)
+        else:
+            minor_subsequent[k] = {v}
+    return major, minor_preceding, minor_subsequent
+
+
+roo_leap_map_major, roo_leap_map_minor = make_roo_leap_maps()
+roo_step_map_major, roo_step_map_minor_preceding, roo_step_map_minor_subsequent = (
+    make_roo_step_maps()
+)
+
+
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_precise_preceding_movement_column(df):
     """Expects a dataframe containing the columns bass_degree, preceding_bass_degree, and preceding_movement,"""
     preceding_movement_precise = df.preceding_movement.where(
@@ -163,11 +219,15 @@ def make_precise_preceding_movement_column(df):
     )
     expected_ascending_degree = pd.concat(
         [
-            df.loc[["major"], "bass_degree"].map(predecessor_map["ascending_major"]),
-            df.loc[["minor"], "bass_degree"].map(predecessor_map["ascending_minor"]),
+            df.loc[["major"], "bass_degree"].map(
+                roo_predecessor_map["ascending_major"]
+            ),
+            df.loc[["minor"], "bass_degree"].map(
+                roo_predecessor_map["ascending_minor"]
+            ),
         ]
     )
-    expected_descending_degree = df.bass_degree.map(predecessor_map["descending"])
+    expected_descending_degree = df.bass_degree.map(roo_predecessor_map["descending"])
     preceding_movement_precise = preceding_movement_precise.where(
         df.preceding_bass_degree != expected_ascending_degree, "ascending"
     )
@@ -184,11 +244,11 @@ def make_precise_subsequent_movement_column(df):
     )
     expected_ascending_degree = pd.concat(
         [
-            df.loc[["major"], "bass_degree"].map(succession_map["ascending_major"]),
-            df.loc[["minor"], "bass_degree"].map(succession_map["ascending_minor"]),
+            df.loc[["major"], "bass_degree"].map(roo_succession_map["ascending_major"]),
+            df.loc[["minor"], "bass_degree"].map(roo_succession_map["ascending_minor"]),
         ]
     )
-    expected_descending_degree = df.bass_degree.map(succession_map["descending"])
+    expected_descending_degree = df.bass_degree.map(roo_succession_map["descending"])
     subsequent_movement_precise = subsequent_movement_precise.where(
         df.subsequent_bass_degree != expected_ascending_degree, "ascending"
     )
@@ -196,6 +256,82 @@ def make_precise_subsequent_movement_column(df):
         df.subsequent_bass_degree != expected_descending_degree, "descending"
     )
     return subsequent_movement_precise
+
+
+def make_preceding_movement_category_column(df):
+    """Expects a dataframe containing the columns bass_degree, subsequent_bass_degree, and subsequent_movement,"""
+    preceding_movement_category = df.preceding_movement.copy()
+    would_be_roo_leaps = pd.concat(
+        [
+            df.loc[["major"], "bass_degree"].map(roo_leap_map_major),
+            df.loc[["minor"], "bass_degree"].map(roo_leap_map_minor),
+        ]
+    )
+    is_regola_leap_mask = pd.Series(
+        [
+            False if pd.isnull(roo_leaps) else prec_bn in roo_leaps
+            for prec_bn, roo_leaps in zip(df.preceding_bass_degree, would_be_roo_leaps)
+        ],
+        index=df.index,
+    )
+    preceding_movement_category = preceding_movement_category.where(
+        ~is_regola_leap_mask, "roo_leap"
+    ).replace("leap", "other_leap")
+    would_be_roo_steps = pd.concat(
+        [
+            df.loc[["major"], "bass_degree"].map(roo_step_map_major),
+            df.loc[["minor"], "bass_degree"].map(roo_step_map_minor_preceding),
+        ]
+    )
+    is_regola_step_mask = pd.Series(
+        [
+            False if pd.isnull(roo_steps) else prec_bn in roo_steps
+            for prec_bn, roo_steps in zip(df.preceding_bass_degree, would_be_roo_steps)
+        ],
+        index=df.index,
+    )
+    preceding_movement_category = preceding_movement_category.where(
+        ~is_regola_step_mask, "roo_step"
+    ).replace("step", "other_step")
+    return preceding_movement_category.rename("preceding_movement_category")
+
+
+def make_subsequent_movement_category_column(df):
+    """Expects a dataframe containing the columns bass_degree, subsequent_bass_degree, and subsequent_movement,"""
+    subsequent_movement_category = df.subsequent_movement.copy()
+    would_be_roo_leaps = pd.concat(
+        [
+            df.loc[["major"], "bass_degree"].map(roo_leap_map_major),
+            df.loc[["minor"], "bass_degree"].map(roo_leap_map_minor),
+        ]
+    )
+    is_regola_leap_mask = pd.Series(
+        [
+            False if pd.isnull(roo_leaps) else subs_bn in roo_leaps
+            for subs_bn, roo_leaps in zip(df.subsequent_bass_degree, would_be_roo_leaps)
+        ],
+        index=df.index,
+    )
+    subsequent_movement_category = subsequent_movement_category.where(
+        ~is_regola_leap_mask, "roo_leap"
+    ).replace("leap", "other_leap")
+    would_be_roo_steps = pd.concat(
+        [
+            df.loc[["major"], "bass_degree"].map(roo_step_map_major),
+            df.loc[["minor"], "bass_degree"].map(roo_step_map_minor_subsequent),
+        ]
+    )
+    is_regola_step_mask = pd.Series(
+        [
+            False if pd.isnull(roo_steps) else subs_bn in roo_steps
+            for subs_bn, roo_steps in zip(df.subsequent_bass_degree, would_be_roo_steps)
+        ],
+        index=df.index,
+    )
+    subsequent_movement_category = subsequent_movement_category.where(
+        ~is_regola_step_mask, "roo_step"
+    ).replace("step", "other_step")
+    return subsequent_movement_category.rename("subsequent_movement_category")
 
 
 # %% [markdown]
@@ -226,7 +362,7 @@ def make_adjacency_table(bass_notes):
     ).where(  # +m2, -M2, +M2, -m2
         BN.preceding_iv.notna()
     )
-    BN["subsequent_iv_is_step"] = BN.subsequent_iv.isin((-5, -2, 2, 5)).where(
+    BN["subsequent_iv_is_step"] = BN.subsequent_iv.isin((-7, -5, -2, 2, 5, 7)).where(
         BN.subsequent_iv.notna()
     )
     BN["preceding_iv_is_0"] = BN.preceding_iv == 0
@@ -243,6 +379,8 @@ def make_adjacency_table(bass_notes):
     )
     BN["preceding_movement_precise"] = make_precise_preceding_movement_column(BN)
     BN["subsequent_movement_precise"] = make_precise_subsequent_movement_column(BN)
+    BN["preceding_movement_category"] = make_preceding_movement_category_column(BN)
+    BN["subsequent_movement_category"] = make_subsequent_movement_category_column(BN)
     return BN
 
 
@@ -994,6 +1132,7 @@ def make_mega_tables(BN=BN, k=None):
 
 
 mega_major, mega_minor = make_mega_tables(k=5)
+mega_major
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 major_roo_chord2movement = dict(
