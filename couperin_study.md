@@ -292,7 +292,7 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
 ```{code-cell}
 :tags: [hide-input]
 
-def plot_bass_movement(BN, corpus_name):
+def plot_bass_movement(BN, corpus_name, **kwargs):
     interval_data = pd.concat(
         [
             BN.groupby("mode").subsequent_interval.value_counts(normalize=True),
@@ -316,10 +316,12 @@ def plot_bass_movement(BN, corpus_name):
         title=f"Mode-wise proportion of how often a bass note moves by an interval in {corpus_name}",
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
-    style_plotly(fig, f"how_often_a_bass_note_moves_by_an_interval_{corpus_name}")
+    return style_plotly(fig, f"how_often_a_bass_note_moves_by_an_interval_{corpus_name}", **kwargs)
 
 
-plot_bass_movement(BN, "Couperin")
+fig = plot_bass_movement(BN, "Couperin", font=dict(size=40))
+save_figure_as(fig, "bass_intervals", height=1000)
+fig
 ```
 
 ### Types of movement
@@ -331,7 +333,7 @@ this study.**
 ```{code-cell}
 :tags: [hide-input]
 
-def plot_movement_types(BN, corpus_name, precise_categories=True):
+def plot_movement_types(BN, corpus_name, precise_categories=True, **kwargs):
     subsequent_movement = (
         "subsequent_movement_precise" if precise_categories else "subsequent_movement"
     )
@@ -363,10 +365,12 @@ def plot_movement_types(BN, corpus_name, precise_categories=True):
         title=f"Mode-wise proportion of a bass note moving in a certain manner in {corpus_name}",
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
-    return style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}")
+    return style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}", **kwargs)
 
 
-plot_movement_types(BN, "Couperin")
+fig = plot_movement_types(BN, "Couperin", font=dict(size=40))
+save_figure_as(fig, "bass_movements", height=1000)
+fig
 ```
 
 ## Sankey diagrams showing movement types before and after each scale degree
