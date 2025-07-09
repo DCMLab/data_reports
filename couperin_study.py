@@ -122,6 +122,59 @@ print(local_keys.groupby("mode").size().to_string())
 local_keys.head()
 
 # %%
+MAJOR_REGOLA_RN = {
+    "I": "both",
+    "V43": "both",
+    "I6": "both",
+    "ii65": "ascending",
+    "V2": "descending",
+    "V": "both",
+    "IV6": "ascending",
+    "V43/V": "descending",
+    "V65": "ascending",
+    "V6": "descending",
+}
+MINOR_REGOLA_RN = {
+    "i": "both",
+    "V43": "both",
+    "i6": "both",
+    "ii%65": "ascending",
+    "V2": "descending",
+    "V": "both",
+    "IV6": "ascending",
+    "ii%43": "descending",
+    "V65": "ascending",
+    "v6": "descending",
+}
+
+
+def make_regola_chord_column(df):
+    chord_category = pd.concat(
+        [
+            df.loc[["major"], "chord"].map(MAJOR_REGOLA_RN),
+            df.loc[["minor"], "chord"].map(MINOR_REGOLA_RN),
+        ]
+    )
+    return chord_category.rename("roo_chord")
+
+
+def make_regola_suspensions_column(df):
+    major_roo_chords = tuple(MAJOR_REGOLA_RN.keys())
+    minor_roo_chords = tuple(MINOR_REGOLA_RN.keys())
+    major_roo_suspensions = tuple(chord + "(" for chord in major_roo_chords)
+    minor_roo_suspensions = tuple(chord + "(" for chord in minor_roo_chords)
+    major = df.loc[["major"], "chord"]
+    major = major.where(~major.str.startswith(major_roo_suspensions), "roo_suspension")
+    major = major.where(~major.isin(major_roo_chords), "roo_chord")
+    major = major.where(major.isin(("roo_chord", "roo_suspension")), "other")
+    minor = df.loc[["minor"], "chord"]
+    minor = minor.where(~minor.str.startswith(minor_roo_suspensions), "roo_suspension")
+    minor = minor.where(~minor.isin(minor_roo_chords), "roo_chord")
+    minor = minor.where(minor.isin(("roo_chord", "roo_suspension")), "other")
+    roo_suspensions = pd.concat([major, minor])
+    return roo_suspensions.rename("roo_suspensions")
+
+
 roo_succession_map = dict(
     ascending_major={
         "1": "2",
@@ -344,6 +397,14 @@ def make_subsequent_movement_category_column(df):
 
 # %% tags=["hide-input"]
 def make_adjacency_table(bass_notes):
+    bass_notes = pd.concat(
+        [
+            bass_notes,
+            make_regola_chord_column(bass_notes),
+            make_regola_suspensions_column(bass_notes),
+        ],
+        axis=1,
+    )
     preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
     preceding.columns = "preceding_" + preceding.columns
     subsequent = bass_notes.groupby(["piece", "localkey_slice"]).shift(-1)
@@ -485,8 +546,42 @@ fig
 
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+CATEGORY2COLOR = dict(
+    both="lightcoral",
+    ascending="lightgreen",
+    descending="lightblue",
+)
+
+
+def get_color(chord, mode):
+    if mode == "major":
+        category = MAJOR_REGOLA_RN.get(chord)
+    elif mode == "minor":
+        category = MINOR_REGOLA_RN.get(chord)
+    if category:
+        return CATEGORY2COLOR[category]
+
+
+def style_unigram_table(df: pd.DataFrame):
+
+    def color_regola_rows(row, mode):
+        if pd.isna(row.iloc[0]):
+            return None
+        if color := get_color(row.iloc[0], mode):
+            return [f"background-color: {color}"] * len(row)
+        return None
+
+    new_index = pd.MultiIndex.from_product(
+        [["Major", "Minor"], ["Unigram", "Occurrences", "Proportion"]]
+    )
+    df = df.set_axis(new_index, axis=1)
+    return df.style.apply(
+        color_regola_rows, axis=1, subset=["Major"], mode="major"
+    ).apply(color_regola_rows, axis=1, subset=["Minor"], mode="minor")
+
+
 def make_sankey_data(
-    five_major, color_edges=True, precise=None
+    BN, color_edges=True, precise=None, middle_nodes_column="intervals_over_bass"
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
     """
     precise=False -> preceding_movement / subsequent_movement
@@ -502,15 +597,15 @@ def make_sankey_data(
     else:
         preceding_movement = "preceding_movement"
         subsequent_movement = "subsequent_movement"
-    type_counts = five_major["intervals_over_bass"].value_counts()
-    preceding_movement_counts = five_major[preceding_movement].value_counts()
-    subsequent_movement_counts = five_major[subsequent_movement].value_counts()
-    preceding_links = five_major.groupby(
-        [preceding_movement]
-    ).intervals_over_bass.value_counts()
-    subsequent_links = five_major.groupby(
-        [subsequent_movement]
-    ).intervals_over_bass.value_counts()
+    type_counts = BN[middle_nodes_column].value_counts()
+    preceding_movement_counts = BN[preceding_movement].value_counts()
+    subsequent_movement_counts = BN[subsequent_movement].value_counts()
+    preceding_links = BN.groupby([preceding_movement])[
+        middle_nodes_column
+    ].value_counts()
+    subsequent_links = BN.groupby([subsequent_movement])[
+        middle_nodes_column
+    ].value_counts()
 
     node_labels = []
     label_ids = dict()
@@ -559,16 +654,27 @@ def make_bass_degree_sankey(
     corpus: str,
     mode: Literal["major", "minor"],
     bass_degree: Optional[str | int] = None,
+    precise=None,
+    middle_nodes_column="intervals_over_bass",
     **layout,
 ):
-    """bass_degree None means all unigrams."""
+    """
+    bass_degree=None -> all unigrams.
+    precise=False -> preceding_movement / subsequent_movement
+    precise=True -> preceding_movement_precise / subsequent_movement_precise
+    precise=None -> preceding_movement_category / subsequent_movement_category
+    """
     selected_unigrams = BN.loc[mode]
     if bass_degree:
         selected_unigrams = selected_unigrams.query(f"bass_degree == '{bass_degree}'")
         selection_text = f"bass degree {bass_degree}"
     else:
         selection_text = "any harmony"
-    edge_data, node_labels, node_colors = make_sankey_data(selected_unigrams)
+    edge_data, node_labels, node_colors = make_sankey_data(
+        selected_unigrams,
+        precise=precise,
+        middle_nodes_column=middle_nodes_column,
+    )
 
     title = f"Motions to and from {selection_text} in {corpus} ({mode})"
     fig = utils.make_sankey(
@@ -577,68 +683,11 @@ def make_bass_degree_sankey(
     return fig
 
 
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+make_bass_degree_sankey(BN, "Couperin", "major", middle_nodes_column="roo_suspensions")
+
 # %% [markdown]
 # ### Unigram Table
-
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
-major_regola_rn = {
-    "I": "both",
-    "V43": "both",
-    "I6": "both",
-    "ii65": "ascending",
-    "V2": "descending",
-    "V": "both",
-    "IV6": "ascending",
-    "V43/V": "descending",
-    "V65": "ascending",
-    "V6": "descending",
-}
-minor_regola_rn = {
-    "i": "both",
-    "V43": "both",
-    "i6": "both",
-    "ii%65": "ascending",
-    "V2": "descending",
-    "V": "both",
-    "IV6": "ascending",
-    "ii%43": "descending",
-    "V65": "ascending",
-    "v6": "descending",
-}
-
-category2color = dict(
-    both="lightcoral",
-    ascending="lightgreen",
-    descending="lightblue",
-)
-
-
-def get_color(chord, mode):
-    if mode == "major":
-        category = major_regola_rn.get(chord)
-    elif mode == "minor":
-        category = minor_regola_rn.get(chord)
-    if category:
-        return category2color[category]
-
-
-def style_unigram_table(df: pd.DataFrame):
-
-    def color_regola_rows(row, mode):
-        if pd.isna(row.iloc[0]):
-            return None
-        if color := get_color(row.iloc[0], mode):
-            return [f"background-color: {color}"] * len(row)
-        return None
-
-    new_index = pd.MultiIndex.from_product(
-        [["Major", "Minor"], ["Unigram", "Occurrences", "Proportion"]]
-    )
-    df = df.set_axis(new_index, axis=1)
-    return df.style.apply(
-        color_regola_rows, axis=1, subset=["Major"], mode="major"
-    ).apply(color_regola_rows, axis=1, subset=["Minor"], mode="minor")
-
 
 # %%
 chord_labels = grouped_D.get_feature("HarmonyLabels")
@@ -1218,7 +1267,7 @@ def style_mega_table(meta_table, mode):
             movement = minor_roo_chord2movement.get(chord)
         if movement is None:
             return
-        return category2color[movement]
+        return CATEGORY2COLOR[movement]
 
     def color_regola_rows(row):
         bass, intervals = row.name[1], row[("Chord", "Intervals")]
