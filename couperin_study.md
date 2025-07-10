@@ -490,6 +490,107 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
 )
 ```
 
+## Conditional probabilities
+### p(RoO)
+
+**The probability that a randomly picked chord is a RoO chord is 64.6 %**
+
+
+```{code-cell}
+BN.roo_suspensions.value_counts(normalize=True)
+```
+
+### p(RoO|bass)
+
+```{code-cell}
+def filter_diatonic_bass_degrees(
+    base, mode: Optional[Literal["major", "minor"]] = None
+):
+    if mode is None:
+        query = (
+            "(mode == 'major' & bass_degree in ('1', '2', '3', '4', '5', '6', '7')) | "
+            "(mode == 'minor' & bass_degree in ('1', '2', '3', '4', '5', '6', '#6', '7', '#7'))"
+        )
+    elif mode == "major":
+        query = "bass_degree in ('1', '2', '3', '4', '5', '6', '7')"
+    elif mode == "minor":
+        query = "bass_degree in ('1', '2', '3', '4', '5', '6', '#6', '7', '#7')"
+    result = base.query(query)
+    return result
+
+
+BN_dia = filter_diatonic_bass_degrees(BN)
+print(f"len(BN_dia) = {len(BN)} - {len(BN) - len(BN_dia)} = {len(BN_dia)}")
+```
+
+**Probability that a diatonic bass degree is covered by the corresponding RoO chord: 65.7 %**
+
+```{code-cell}
+BN_dia.roo_suspensions.value_counts(normalize=True)
+```
+
+### p(#RoO = {2,1,0} | bass bigram)
+
+```{code-cell}
+all_bigrams = BN.query("subsequent_movement != 'None'")
+all_steps = BN.query("subsequent_movement == 'step'")
+dia_steps = BN_dia.query("subsequent_movement_category == 'RoO step'")
+n_bigrams, n_steps, n_dia_steps = len(all_bigrams), len(all_steps), len(dia_steps)
+print(
+    f"The Couperin dataset contains {n_bigrams} bigrams, "
+    f"of which {n_steps} ({n_steps/n_bigrams:.1%}) are steps, "
+    f"and {n_dia_steps} ({n_dia_steps/n_bigrams:.1%}) are diatonic steps."
+)
+all_leaps = BN.query("subsequent_movement == 'leap'")
+dia_leaps = BN_dia.query("subsequent_movement_category == 'RoO leap'")
+n_leaps, n_dia_leaps = len(all_leaps), len(dia_leaps)
+print(
+    f"The Couperin dataset contains {n_bigrams} bigrams, "
+    f"of which {n_leaps} ({n_leaps/n_bigrams:.1%}) are leaps, "
+    f"and {n_dia_leaps} ({n_dia_leaps/n_bigrams:.1%}) are diatonic leaps."
+)
+```
+
+**Given any bass bigram, the probability that**
+
+* both bass notes carry RoO chords is **44.1 %** (**+ 5.7 %** that one is RoO, the other a suspension thereof);
+* one of them carries an RoO chord is **34.3 %** (**+ 1.2 %** that one is an RoO suspension chord);
+* none of them carries an RoO chord is **14.6 %**.
+
+```{code-cell}
+all_bigrams[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
+    set, axis=1
+).value_counts(normalize=True)
+```
+
+### p(#RoO = {2,1,0} | diatonic leap)
+
+**Given a diatonic leap, the probability that**
+
+* both bass notes carry RoO chords is **46.1 %** (**+ 3.1 %** that one is RoO, the other a suspension thereof);
+* one of them carries an RoO chord is **37.0 %** (**+ 0.3 %** that one is an RoO suspension chord);
+* none of them carries an RoO chord is **13.4 %**.
+
+```{code-cell}
+dia_leaps[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
+    set, axis=1
+).value_counts(normalize=True)
+```
+
+### p(#RoO = {2,1,0} | diatonic step)
+
+**Given a diatonic step, the probability that**
+
+* both bass notes carry RoO chords is **59.2 %** (**+ 4.5 %** that one is RoO, the other a suspension thereof);
+* one of them carries an RoO chord is **25.0 %** (**+ 1.2 %** that one is an RoO suspension chord);
+* none of them carries an RoO chord is **10.1 %**.
+
+```{code-cell}
+dia_steps[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
+    set, axis=1
+).value_counts(normalize=True)
+```
+
 ## Overview of how the bass moves
 ### Intervals
 
@@ -1382,7 +1483,8 @@ def style_mega_table(
         [
             3 * ["Chord"] + 7 * ["Preceding Movement"] + 7 * ["Subsequent Movement"],
             ["Intervals", "P", "RoO"]
-            + 2 * ["None", "Other leap", "Other step", "RoO leap", "RoO step", "Same", "E"],
+            + 2
+            * ["None", "Other leap", "Other step", "RoO leap", "RoO step", "Same", "E"],
         ]
     )
     col2format = {
@@ -1438,14 +1540,16 @@ def style_mega_table(
         .highlight_null(color="lightgrey")
         .set_table_styles(
             {
-                ('Chord', 'Intervals'): [{'selector': '', 'props': 'border-left: 1px solid'}],
-                ("Preceding Movement", "None"):[
-                    {'selector': '', 'props': 'border-left: 1px solid'},
-                    {'selector': 'td', 'props': 'border-left: 1px solid #000066'}
+                ("Chord", "Intervals"): [
+                    {"selector": "", "props": "border-left: 1px solid"}
                 ],
-                ("Subsequent Movement", "None"):[
-                    {'selector': '', 'props': 'border-left: 1px solid'},
-                    {'selector': 'td', 'props': 'border-left: 1px solid #000066'}
+                ("Preceding Movement", "None"): [
+                    {"selector": "", "props": "border-left: 1px solid"},
+                    {"selector": "td", "props": "border-left: 1px solid #000066"},
+                ],
+                ("Subsequent Movement", "None"): [
+                    {"selector": "", "props": "border-left: 1px solid"},
+                    {"selector": "td", "props": "border-left: 1px solid #000066"},
                 ],
             }
         )
@@ -1486,12 +1590,7 @@ def get_base_df(
     if selection == "all":
         result = base
     elif selection == "diatonic":
-        if mode == "major":
-            result = base.query("bass_degree in ('1', '2', '3', '4', '5', '6', '7')")
-        elif mode == "minor":
-            result = base.query(
-                "bass_degree in ('1', '2', '3', '4', '5', '6', '#6', '7', '#7')"
-            )
+        result = filter_diatonic_bass_degrees(base, mode)
     else:
         raise ValueError(f"Unknown keyword for selection: {selection!r}")
     if query:
