@@ -478,7 +478,7 @@ BN.roo_suspensions.value_counts(normalize=True)
 # ### p(RoO|bass)
 
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def filter_diatonic_bass_degrees(
     base, mode: Optional[Literal["major", "minor"]] = None
 ):
@@ -507,7 +507,7 @@ BN_dia.roo_suspensions.value_counts(normalize=True)
 # %% [markdown]
 # ### p(#RoO = {2,1,0} | bass bigram)
 
-# %%
+# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 all_bigrams = BN.query("subsequent_movement != 'None'")
 all_steps = BN.query("subsequent_movement == 'step'")
 dia_steps = BN_dia.query("subsequent_movement_category == 'RoO step'")
