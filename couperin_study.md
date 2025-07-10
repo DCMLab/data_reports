@@ -1771,20 +1771,20 @@ features = dict(
     to_descending="subsequent_movement_precise == 'descending'",
     to_either="subsequent_movement_precise == ['ascending', 'descending']",
     to_leap="subsequent_movement == 'leap'",
-    to_same="subsequent_movement == 'same'",
-    last_notes="subsequent_movement == 'none'",
+    to_same="subsequent_movement == 'Same'",
+    last_notes="subsequent_movement == 'None'",
     from_ascending="preceding_movement_precise == 'ascending'",
     from_descending="preceding_movement_precise == 'descending'",
     from_either="preceding_movement_precise == ['ascending', 'descending']",
     from_leap="preceding_movement == 'leap'",
-    from_same="preceding_movement == 'same'",
-    first_notes="preceding_movement == 'none'",
+    from_same="preceding_movement == 'Same'",
+    first_notes="preceding_movement == 'None'",
     to_and_from_ascending="subsequent_movement_precise == 'ascending' & preceding_movement_precise == 'ascending'",
     to_and_from_descending="subsequent_movement_precise == 'descending' & preceding_movement_precise == 'descending'",
     to_and_from_either="subsequent_movement_precise == ['ascending', 'descending'] & "
     "preceding_movement_precise == ['ascending', 'descending']",
     to_and_from_leap="subsequent_movement == 'leap' & preceding_movement == 'leap'",
-    to_and_from_same="subsequent_movement == 'same' & preceding_movement == 'same'",
+    to_and_from_same="subsequent_movement == 'Same' & preceding_movement == 'Same'",
 )
 
 regola_coverage = get_coverage_values(
@@ -1973,13 +1973,70 @@ plot_coverage_data_categorical(
 ```
 
 ```{code-cell}
-r0, r1 = 8, 13
-selection = coverage_data.query("@r0 - 1 <= rank <= @r1 + 1")
+r0, r1 = 7, 14
+selection = coverage_data.query("@r0 <= rank <= @r1")
 fig = plot_coverage_data_categorical(
     selection,
 )
 save_figure_as(fig, "couperin_top_k_coverage")
 fig
+```
+
+**The following table shows for which subsets the regola performs better (positive values) or
+worse (negative values) than the top-10 vocabulary.**
+
+```{code-cell}
+unigram_subset_sizes = {}
+for mode in ("major", "minor"):
+    basis_dia, basis_all = mode + "_diatonic", mode + "_all"
+    for f_name, query in features.items():
+        mask = get_chord_vocabulary_mask(
+            "couperin", basis=basis_dia, vocabulary=(), query=query
+        )
+        unigram_subset_sizes[(mode, f_name)] = len(mask)
+    mask = get_chord_vocabulary_mask(
+        "couperin", basis=basis_dia, vocabulary=(), query=None
+    )
+    unigram_subset_sizes[(mode, "diatonic")] = len(mask)
+    mask = get_chord_vocabulary_mask(
+        "couperin", basis=basis_all, vocabulary=(), query=None
+    )
+    unigram_subset_sizes[(mode, "all")] = len(mask)
+
+unigram_subset_sizes = pd.Series(unigram_subset_sizes, name="N").rename_axis(
+    ["mode", "coverage_of"]
+)
+unigram_subset_sizes
+```
+
+```{code-cell}
+def prep_cov_data(S):
+    return (
+        S.reset_index(drop=True)
+        .set_index(["vocabulary", "mode", "coverage_of"])
+        .proportion
+    )
+
+
+roo_vals = prep_cov_data(
+    coverage_data.query("rank == 10.5 & vocabulary == 'cumulative'")
+)
+top_10_vals = prep_cov_data(
+    coverage_data.query("rank == 10 & vocabulary == 'cumulative'")
+)
+difference_roo_top10 = roo_vals - top_10_vals
+merged = pd.merge(
+    unigram_subset_sizes,
+    roo_vals.rename("RoO"),
+    on=["mode", "coverage_of"],
+    how="right",
+)
+merged.index = roo_vals.index
+inspect_difference = pd.concat(
+    [merged, top_10_vals.rename("top-10"), difference_roo_top10.rename("difference")],
+    axis=1,
+)
+inspect_difference.sort_values("difference", ascending=False)
 ```
 
 ```{code-cell}
