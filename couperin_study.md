@@ -76,9 +76,14 @@ def style_plotly(
     xaxes: Optional[dict] = None,
     yaxes: Optional[dict] = None,
     match_facet_yaxes=False,
+    font_size=40,
     **layout,
 ):
     layout_args = dict(utils.STD_LAYOUT, **layout)
+    if font_size:
+        font = layout_args.pop("font", {})
+        font["size"] = font_size
+        layout_args["font"] = font
     fig.update_layout(**layout_args)
     xaxes_settings = dict(gridcolor="lightgrey")
     if xaxes:
@@ -166,6 +171,7 @@ MINOR_REGOLA_RN = {
     "v6": "descending",
 }
 
+
 def make_regola_chord_column(df):
     chord_category = pd.concat(
         [
@@ -175,21 +181,23 @@ def make_regola_chord_column(df):
     )
     return chord_category.rename("roo_chord")
 
+
 def make_regola_suspensions_column(df):
     major_roo_chords = tuple(MAJOR_REGOLA_RN.keys())
     minor_roo_chords = tuple(MINOR_REGOLA_RN.keys())
     major_roo_suspensions = tuple(chord + "(" for chord in major_roo_chords)
     minor_roo_suspensions = tuple(chord + "(" for chord in minor_roo_chords)
     major = df.loc[["major"], "chord"]
-    major = major.where(~major.str.startswith(major_roo_suspensions), "roo_suspension")
-    major = major.where(~major.isin(major_roo_chords), "roo_chord")
-    major = major.where(major.isin(("roo_chord", "roo_suspension")), "other")
+    major = major.where(~major.str.startswith(major_roo_suspensions), "RoO suspension")
+    major = major.where(~major.isin(major_roo_chords), "RoO chord")
+    major = major.where(major.isin(("RoO chord", "RoO suspension")), "Other")
     minor = df.loc[["minor"], "chord"]
-    minor = minor.where(~minor.str.startswith(minor_roo_suspensions), "roo_suspension")
-    minor = minor.where(~minor.isin(minor_roo_chords), "roo_chord")
-    minor = minor.where(minor.isin(("roo_chord", "roo_suspension")), "other")
+    minor = minor.where(~minor.str.startswith(minor_roo_suspensions), "RoO suspension")
+    minor = minor.where(~minor.isin(minor_roo_chords), "RoO chord")
+    minor = minor.where(minor.isin(("RoO chord", "RoO suspension")), "Other")
     roo_suspensions = pd.concat([major, minor])
     return roo_suspensions.rename("roo_suspensions")
+
 
 roo_succession_map = dict(
     ascending_major={
@@ -350,8 +358,8 @@ def make_preceding_movement_category_column(df):
         index=df.index,
     )
     preceding_movement_category = preceding_movement_category.where(
-        ~is_regola_leap_mask, "roo_leap"
-    ).replace("leap", "other_leap")
+        ~is_regola_leap_mask, "RoO leap"
+    ).replace("leap", "Other leap")
     would_be_roo_steps = pd.concat(
         [
             df.loc[["major"], "bass_degree"].map(roo_step_map_major),
@@ -366,8 +374,8 @@ def make_preceding_movement_category_column(df):
         index=df.index,
     )
     preceding_movement_category = preceding_movement_category.where(
-        ~is_regola_step_mask, "roo_step"
-    ).replace("step", "other_step")
+        ~is_regola_step_mask, "RoO step"
+    ).replace("step", "Other step")
     return preceding_movement_category.rename("preceding_movement_category")
 
 
@@ -388,8 +396,8 @@ def make_subsequent_movement_category_column(df):
         index=df.index,
     )
     subsequent_movement_category = subsequent_movement_category.where(
-        ~is_regola_leap_mask, "roo_leap"
-    ).replace("leap", "other_leap")
+        ~is_regola_leap_mask, "RoO leap"
+    ).replace("leap", "Other leap")
     would_be_roo_steps = pd.concat(
         [
             df.loc[["major"], "bass_degree"].map(roo_step_map_major),
@@ -404,8 +412,8 @@ def make_subsequent_movement_category_column(df):
         index=df.index,
     )
     subsequent_movement_category = subsequent_movement_category.where(
-        ~is_regola_step_mask, "roo_step"
-    ).replace("step", "other_step")
+        ~is_regola_step_mask, "RoO step"
+    ).replace("step", "Other step")
     return subsequent_movement_category.rename("subsequent_movement_category")
 ```
 
@@ -419,11 +427,14 @@ undefined subsequent values.**
 :tags: [hide-input]
 
 def make_adjacency_table(bass_notes):
-    bass_notes = pd.concat([
-        bass_notes,
-        make_regola_chord_column(bass_notes),
-        make_regola_suspensions_column(bass_notes)
-    ], axis=1)
+    bass_notes = pd.concat(
+        [
+            bass_notes,
+            make_regola_chord_column(bass_notes),
+            make_regola_suspensions_column(bass_notes),
+        ],
+        axis=1,
+    )
     preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
     preceding.columns = "preceding_" + preceding.columns
     subsequent = bass_notes.groupby(["piece", "localkey_slice"]).shift(-1)
@@ -449,13 +460,13 @@ def make_adjacency_table(bass_notes):
     BN["subsequent_iv_is_0"] = BN.subsequent_iv == 0
     BN["preceding_movement"] = (
         BN.preceding_iv_is_step.map({True: "step", False: "leap"})
-        .where(~BN.preceding_iv_is_0, "same")
-        .where(BN.preceding_iv.notna(), "none")
+        .where(~BN.preceding_iv_is_0, "Same")
+        .where(BN.preceding_iv.notna(), "None")
     )
     BN["subsequent_movement"] = (
         BN.subsequent_iv_is_step.map({True: "step", False: "leap"})
-        .where(~BN.subsequent_iv_is_0, "same")
-        .where(BN.subsequent_iv.notna(), "none")
+        .where(~BN.subsequent_iv_is_0, "Same")
+        .where(BN.subsequent_iv.notna(), "None")
     )
     BN["preceding_movement_precise"] = make_precise_preceding_movement_column(BN)
     BN["subsequent_movement_precise"] = make_precise_subsequent_movement_column(BN)
@@ -514,7 +525,7 @@ def plot_bass_movement(BN, corpus_name, **kwargs):
     )
 
 
-fig = plot_bass_movement(BN, "Couperin", font=dict(size=40))
+fig = plot_bass_movement(BN, "Couperin")
 save_figure_as(fig, "bass_intervals", height=1000)
 fig
 ```
@@ -528,12 +539,15 @@ this study.**
 ```{code-cell}
 :tags: [hide-input]
 
-def plot_movement_types(BN, corpus_name, column="subsequent_movement_category", **kwargs):
+def plot_movement_types(
+    BN,
+    corpus_title: Optional[str] = None,
+    column="subsequent_movement_category",
+    **kwargs,
+):
     movement_data = pd.concat(
         [
-            BN.groupby("mode")[column].value_counts(
-                normalize=True, dropna=False
-            ),
+            BN.groupby("mode")[column].value_counts(normalize=True, dropna=False),
             BN.groupby(["piece", "mode"])[column]
             .value_counts(normalize=True, dropna=False)
             .groupby(["mode", column])
@@ -542,8 +556,11 @@ def plot_movement_types(BN, corpus_name, column="subsequent_movement_category", 
         ],
         axis=1,
     ).reset_index()
-    movement_data[column] = movement_data[column].fillna(
-        "none"
+    movement_data[column] = movement_data[column].fillna("None")
+    figure_title = (
+        None
+        if corpus_title is None
+        else f"Mode-wise proportion of how often a bass note moves in a certain manner in {corpus_title}"
     )
     fig = px.bar(
         movement_data,
@@ -554,13 +571,19 @@ def plot_movement_types(BN, corpus_name, column="subsequent_movement_category", 
         error_y="std_err",
         color_discrete_map=utils.MAJOR_MINOR_COLORS,
         labels={column: "Movement"},
-        title=f"Mode-wise proportion of a bass note moving in a certain manner in {corpus_name}",
+        title=figure_title,
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
-    return style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_name}", **kwargs)
+    return style_plotly(fig, save_as=f"mode-wise_bass_motion_{corpus_title}", **kwargs)
 
 
-fig = plot_movement_types(BN, "Couperin", font=dict(size=40))
+fig = plot_movement_types(
+    BN,
+    None,
+    font=dict(size=40),
+    # xaxes=dict(tickvals=["RoO leap", "RoO step", "Same", "None", "Other step", "Other leap"],
+    #            ticktext=["RoO leap", "RoO step", "Same", "None", "Other step", "Other leap"])
+)
 save_figure_as(fig, "bass_movements", height=1000)
 fig
 ```
@@ -609,10 +632,7 @@ def style_unigram_table(df: pd.DataFrame):
 
 
 def make_sankey_data(
-        BN,
-        color_edges=True,
-        precise=None,
-        middle_nodes_column = "intervals_over_bass"
+    BN, color_edges=True, precise=None, middle_nodes_column="intervals_over_bass"
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
     """
     precise=False -> preceding_movement / subsequent_movement
@@ -631,12 +651,12 @@ def make_sankey_data(
     type_counts = BN[middle_nodes_column].value_counts()
     preceding_movement_counts = BN[preceding_movement].value_counts()
     subsequent_movement_counts = BN[subsequent_movement].value_counts()
-    preceding_links = BN.groupby(
-        [preceding_movement]
-    )[middle_nodes_column].value_counts()
-    subsequent_links = BN.groupby(
-        [subsequent_movement]
-    )[middle_nodes_column].value_counts()
+    preceding_links = BN.groupby([preceding_movement])[
+        middle_nodes_column
+    ].value_counts()
+    subsequent_links = BN.groupby([subsequent_movement])[
+        middle_nodes_column
+    ].value_counts()
 
     node_labels = []
     label_ids = dict()
@@ -681,21 +701,32 @@ def make_sankey_data(
 
 
 def make_bass_degree_sankey(
-        BN: pd.DataFrame,
-        corpus: str,
-        mode: Literal["major", "minor"],
-        bass_degree: Optional[str | int] = None,
-        precise=None,
-        middle_nodes_column="intervals_over_bass",
-        **layout,
+    BN: pd.DataFrame,
+    corpus_title: Optional[str] = None,
+    mode: Optional[Literal["major", "minor"]] = None,
+    bass_degree: Optional[str | int] = None,
+    precise=None,
+    middle_nodes_column="intervals_over_bass",
+    font_size=40,
+    **layout,
 ):
     """
-    bass_degree=None -> all unigrams.
-    precise=False -> preceding_movement / subsequent_movement
-    precise=True -> preceding_movement_precise / subsequent_movement_precise
-    precise=None -> preceding_movement_category / subsequent_movement_category
+    Create Sankey diagram with values from `middle_nodes_column` as nodes stacked at the middle of the x axis.
+    Nodes stacked at the left and right correspond to bass movements depending on the `precise` parameter.
+
+    Args:
+        BN (pd.DataFrame): Bass notes table used throughout this notebook.
+        corpus_title (str, optional): Corpus title. If None, no title is added to the figure.
+        mode (Literal["major", "minor"], optional):
+            Usually, you need to select one mode for a meaningful diagram.
+        bass_degree (str, int, optional): Bass degree for which to create the Sankey diagram.
+        precise (bool, optional): Which movement columns to use for the left and right nodes.
+            precise=False -> preceding_movement / subsequent_movement
+            precise=True -> preceding_movement_precise / subsequent_movement_precise
+            precise=None -> preceding_movement_category / subsequent_movement_category
+        middle_nodes_column (str, optional): Column name from which to generate the middle nodes.
     """
-    selected_unigrams = BN.loc[mode]
+    selected_unigrams = BN if mode is None else BN.loc[mode]
     if bass_degree:
         selected_unigrams = selected_unigrams.query(f"bass_degree == '{bass_degree}'")
         selection_text = f"bass degree {bass_degree}"
@@ -706,8 +737,15 @@ def make_bass_degree_sankey(
         precise=precise,
         middle_nodes_column=middle_nodes_column,
     )
-
-    title = f"Motions to and from {selection_text} in {corpus} ({mode})"
+    title = (
+        None
+        if corpus_title is None
+        else f"Motions to and from {selection_text} in {corpus_title} ({mode})"
+    )
+    if font_size:
+        font = layout.pop("font", {})
+        font["size"] = font_size
+        layout["font"] = font
     fig = utils.make_sankey(
         edge_data, node_labels, node_color=node_colors, title=title, **layout
     )
@@ -721,7 +759,17 @@ mystnb:
   code_prompt_show: Show helpers
 tags: [hide-cell]
 ---
-make_bass_degree_sankey(BN, "Couperin", "major", middle_nodes_column="roo_suspensions")
+fig = make_bass_degree_sankey(BN, None, None, middle_nodes_column="roo_suspensions")
+save_figure_as(fig, "movement_sankey", height=700)
+fig
+```
+
+```{code-cell}
+BN.roo_suspensions.value_counts(normalize=True)  # Tabelle: gesamt, Dur, Moll
+# Megatable zusammenfassen in 1 konditionale Wahrsch. pro Bassstufe, zusammengefasst zu 7 Stufen pro Modus
+# --> aggregieren mit spread
+# Nächster Schritt: Alle Step bigrams vs. alle Leap bigrams: In wie vielen Fällen tragen sie a) zwei, b) einen,
+# oder c) null Regolaakkorde?
 ```
 
 ### Unigram Table
@@ -936,7 +984,7 @@ def summarize_groups_top_k_chords(df, column="intervals_over_bass", k=None):
         if len(proportions) > k:
             other = proportions.iloc[k:]
             n_rows += 1
-            top_k["other"] = other.sum()
+            top_k["Other"] = other.sum()
     rank_col = list(range(1, n_rows + 1))
     result = pd.DataFrame(
         {
@@ -1085,13 +1133,13 @@ def summarize_groups_movements(
     normalized_entropy = entropy / np.log2(N) if N > 1 else 0.0
     main_movements = [
         ix
-        for ix in ("ascending", "descending", "leap", "none")
+        for ix in ("ascending", "descending", "leap", "None")
         if ix in movements.index.values
     ]
     main_types = movements.loc[main_movements]
     if len(movements) > len(main_types):
         other = movements.loc[movements.index.difference(main_movements)]
-        main_types["other_step"] = other.sum()
+        main_types["Other step"] = other.sum()
     main_types["movement_entropy"] = normalized_entropy
     value_column = "proportion" if normalize else "count"
     movements = pd.DataFrame(
@@ -1111,7 +1159,7 @@ def summarize_degree_wise_movement(
             summarize_groups_movements, column=column, normalize=normalize
         )
     ).droplevel(-1)
-    movement_cols = ["leap", "ascending", "descending", "none", "other_step"]
+    movement_cols = ["leap", "ascending", "descending", "None", "Other step"]
     column_order = ["movement_entropy"] + movement_cols
     value_column = "proportion" if normalize else "count"
     result = result.pivot(columns=column, values=value_column)[column_order]
@@ -1178,7 +1226,7 @@ def cut_down_to_k(mega_table, k=3, normalize=True):
             )
             concatenated = pd.concat(
                 dict(ranking=ranking, preceding=preceding, subsequent=subsequent)
-            ).rename((ranking.name[0], "other"))
+            ).rename((ranking.name[0], "Other"))
             result = pd.concat([result, concatenated.to_frame().T])
         results.append(result)
     return pd.concat(results)
