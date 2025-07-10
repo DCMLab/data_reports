@@ -1131,15 +1131,20 @@ def summarize_groups_movements(
         movements = df[column].value_counts(normalize=False)
     N = len(movements)
     normalized_entropy = entropy / np.log2(N) if N > 1 else 0.0
-    main_movements = [
-        ix
-        for ix in ("ascending", "descending", "leap", "None")
-        if ix in movements.index.values
-    ]
-    main_types = movements.loc[main_movements]
-    if len(movements) > len(main_types):
-        other = movements.loc[movements.index.difference(main_movements)]
-        main_types["Other step"] = other.sum()
+    if column.endswith("_precise"):
+        # differentiating between main categories and "Other" -- it would have been more clean to introduce this
+        # alternative categorization as an additional column
+        main_movements = [
+            ix
+            for ix in ("ascending", "descending", "leap", "None")
+            if ix in movements.index.values
+        ]
+        main_types = movements.loc[main_movements]
+        if len(movements) > len(main_types):
+            other = movements.loc[movements.index.difference(main_movements)]
+            main_types["Other step"] = other.sum()
+    else:
+        main_types = movements
     main_types["movement_entropy"] = normalized_entropy
     value_column = "proportion" if normalize else "count"
     movements = pd.DataFrame(
@@ -1159,10 +1164,12 @@ def summarize_degree_wise_movement(
             summarize_groups_movements, column=column, normalize=normalize
         )
     ).droplevel(-1)
-    movement_cols = ["leap", "ascending", "descending", "None", "Other step"]
-    column_order = ["movement_entropy"] + movement_cols
+    movement_cols = list(
+        BN[column].unique()
+    )  # ["leap", "ascending", "descending", "None", "Other step"]
+    # column_order = ["movement_entropy"] + movement_cols
     value_column = "proportion" if normalize else "count"
-    result = result.pivot(columns=column, values=value_column)[column_order]
+    result = result.pivot(columns=column, values=value_column)  # [column_order]
     if not normalize:
         result = result.astype({col: "Int64" for col in movement_cols})
     return result
@@ -1232,14 +1239,19 @@ def cut_down_to_k(mega_table, k=3, normalize=True):
     return pd.concat(results)
 
 
-def make_mega_tables(BN=BN, k=None):
+def make_mega_tables(BN=BN, k=None, precise: Optional[bool] = None):
     full_major, full_minor = degree_wise_top_k(BN, k=None)
-    preceding_movements = summarize_degree_wise_movement(
-        BN, column="preceding_movement_precise"
-    )
-    subsequent_movements = summarize_degree_wise_movement(
-        BN, column="subsequent_movement_precise"
-    )
+    if precise is None:
+        pm_col = "preceding_movement_category"
+        sm_col = "subsequent_movement_category"
+    elif precise:
+        pm_col = "preceding_movement_precise"
+        sm_col = "subsequent_movement_precise"
+    else:
+        pm_col = "preceding_movement"
+        sm_col = "subsequent_movement"
+    preceding_movements = summarize_degree_wise_movement(BN, column=pm_col)
+    subsequent_movements = summarize_degree_wise_movement(BN, column=sm_col)
     pm_major, pm_minor = (
         preceding_movements.loc["major"],
         preceding_movements.loc["minor"],
@@ -1340,7 +1352,10 @@ minor_roo_chord2movement
 ```{code-cell}
 :tags: [hide-input]
 
-def style_mega_table(meta_table, mode):
+def style_mega_table(
+    meta_table,
+    mode,
+):
     mega_styled = meta_table.set_index(meta_table.columns.to_list()[:4], append=True)
     mega_styled.index.names = ["B", "Chord", "R", "P", "E", "SR"]
     col2type = {
@@ -1350,16 +1365,24 @@ def style_mega_table(meta_table, mode):
     mega_styled = (
         mega_styled.reorder_levels(["R", "B", "P", "E", "SR", "Chord"])
         .sort_index()
+        .droplevel(0)
         .astype(col2type)
     )
     chords = mega_styled.index.get_level_values(-1)
     mega_styled.reset_index(level=-1, drop=True, inplace=True)
     mega_styled.insert(0, ("Chord", "Intervals"), chords)
+    # mega_styled.columns = pd.MultiIndex.from_arrays(
+    #     [
+    #         3 * ["Chord"] + 6 * ["Preceding Movement"] + 6 * ["Subsequent Movement"],
+    #         ["Intervals", "P", "RoO"]
+    #         + 2 * ["E", "Leap", "RoO Asc", "RoO Desc", "None", "Other Step"],
+    #     ]
+    # )
     mega_styled.columns = pd.MultiIndex.from_arrays(
         [
-            3 * ["Chord"] + 6 * ["Preceding Movement"] + 6 * ["Subsequent Movement"],
+            3 * ["Chord"] + 7 * ["Preceding Movement"] + 7 * ["Subsequent Movement"],
             ["Intervals", "P", "RoO"]
-            + 2 * ["E", "Leap", "RoO Asc", "RoO Desc", "None", "Other Step"],
+            + 2 * ["None", "Other leap", "Other step", "RoO leap", "RoO step", "Same", "E"],
         ]
     )
     col2format = {
@@ -1382,13 +1405,19 @@ def style_mega_table(meta_table, mode):
         return CATEGORY2COLOR[movement]
 
     def color_regola_rows(row):
-        bass, intervals = row.name[1], row[("Chord", "Intervals")]
+        bass, intervals = row.name[0], row[("Chord", "Intervals")]
         chord = (bass, intervals)
         if color := get_chord_color(chord):
             return [f"background-color: {color}"] * len(row)
         return [None] * len(row)
 
-    roo_color_sublevels = ("Intervals", "P", "RoO", "E")
+    # roo_color_sublevels = ("Intervals", "P", "RoO", "E")
+    roo_color_sublevels = (
+        "Intervals",
+        "P",
+        "RoO",
+        "E",
+    )
     roo_color_columns = [
         (l0, l1) for l0, l1 in mega_styled.columns if l1 in roo_color_sublevels
     ]
@@ -1401,12 +1430,25 @@ def style_mega_table(meta_table, mode):
             axis=0,
             formatter={
                 "P": "{:.1%}",  # Format as percentage with 1 decimal place
-                "E": "{:.2f}",  # Format as float with 3 decimal places
+                "E": "{:.2f}",  # Format as float with 2 decimal places
             },
         )
         .apply(color_regola_rows, axis=1, subset=roo_color_columns)
-        .background_gradient("Purples", subset=heatmap_color_columns)
+        .background_gradient("Purples", subset=heatmap_color_columns, axis=None)
         .highlight_null(color="lightgrey")
+        .set_table_styles(
+            {
+                ('Chord', 'Intervals'): [{'selector': '', 'props': 'border-left: 1px solid'}],
+                ("Preceding Movement", "None"):[
+                    {'selector': '', 'props': 'border-left: 1px solid'},
+                    {'selector': 'td', 'props': 'border-left: 1px solid #000066'}
+                ],
+                ("Subsequent Movement", "None"):[
+                    {'selector': '', 'props': 'border-left: 1px solid'},
+                    {'selector': 'td', 'props': 'border-left: 1px solid #000066'}
+                ],
+            }
+        )
     )
 
 
