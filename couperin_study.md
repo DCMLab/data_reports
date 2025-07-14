@@ -532,6 +532,12 @@ print(f"len(BN_dia) = {len(BN)} - {len(BN) - len(BN_dia)} = {len(BN_dia)}")
 (+3.4 % a RoO suspension)**
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.1%}")
 ```
 
@@ -541,6 +547,12 @@ BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.
 (+0.5 % a RoO suspension)**
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 notes_essentielles = ("1", "3", "5")
 ess_selector = BN_dia.bass_degree.isin(notes_essentielles)
 NE = BN_dia[ess_selector]
@@ -591,6 +603,12 @@ print(
 * none of them carries an RoO chord is **14.6 %**.
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 all_bigrams[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
     lambda x: str(set(x)), axis=1  # str() is needed because of the styler
 ).value_counts(normalize=True).to_frame().style.format("{:.1%}")
@@ -651,6 +669,12 @@ NN := unigrams with diatonic bass degree ∈ {2, 4, 6, 7} (and {#6, #7} in minor
 * probability to be last in key segment: NE = **9.7 %**; NN = **2.5 %**
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 pd.concat(
     [
         NE.subsequent_movement.value_counts(normalize=True).rename(
@@ -674,6 +698,12 @@ Probability that the following chord is a RoO chord given
 * a note non-essentielle proceeding by step: **74.3 % (+0.2 % a suspension)**
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 (
     pd.concat(
         {
@@ -691,21 +721,25 @@ Probability that the following chord is a RoO chord given
 ).style.format("{:.1%}")
 ```
 
-```{code-cell}
-BN_dia.bass_degree.value_counts()
-```
+### Degree-wise movement Sankey
 
 ```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def make_summary_sankey_data(
-    BN,
-    extend_right=True,
-    color_edges=True
+    BN, extend_right=True, color_edges=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
     BN_dia = filter_diatonic_bass_degrees(BN)
     preceding_movement = "preceding_movement"
     subsequent_movement = "subsequent_movement"
     middle_nodes_column = "bass_degree"
-    BN_dia.loc[:, middle_nodes_column] = BN_dia[middle_nodes_column].str.replace("#", "")
+    BN_dia.loc[:, middle_nodes_column] = BN_dia[middle_nodes_column].str.replace(
+        "#", ""
+    )
     type_counts = BN_dia[middle_nodes_column].value_counts()
     preceding_movement_counts = BN_dia[preceding_movement].value_counts()
     subsequent_movement_counts = BN_dia[subsequent_movement].value_counts()
@@ -718,18 +752,18 @@ def make_summary_sankey_data(
     node_value_counts = [
         ("preceding", preceding_movement_counts),
         ("intervals", type_counts),
-        ("subsequent", subsequent_movement_counts)
+        ("subsequent", subsequent_movement_counts),
     ]
     if extend_right:
         subsequent_roo_counts = BN_dia["subsequent_roo_suspensions"].value_counts()
         node_value_counts.append(("right", subsequent_roo_counts))
-        subsequent_roo_links = BN_dia.groupby([subsequent_movement])["subsequent_roo_suspensions"].value_counts()
+        subsequent_roo_links = BN_dia.groupby([subsequent_movement])[
+            "subsequent_roo_suspensions"
+        ].value_counts()
 
     node_labels = []
     label_ids = dict()
-    for key, node_sizes in (
-            node_value_counts
-    ):
+    for key, node_sizes in node_value_counts:
         for label in node_sizes.index:
             label_id = len(node_labels)
             node_labels.append(str(label))
@@ -774,10 +808,11 @@ def make_summary_sankey_data(
         return edge_data, node_labels, node_colors
     return edge_data, node_labels
 
+
 edge_data, node_labels, node_colors = make_summary_sankey_data(BN)
 fig = utils.make_sankey(
-        edge_data, node_labels, node_color=node_colors, font=dict(size=30)
-    )
+    edge_data, node_labels, node_color=node_colors, font=dict(size=30)
+)
 save_figure_as(fig, "movement_summary_sankey", height=1000)
 fig
 ```
