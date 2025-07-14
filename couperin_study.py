@@ -566,6 +566,24 @@ dia_steps[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
     set, axis=1
 ).value_counts(normalize=True)
 
+# %%
+notes_essentielles = ('1', '3', '5')
+bigrams_135 = all_bigrams.query("(bass_degree in @notes_essentielles) & (subsequent_bass_degree in @notes_essentielles) & bass_degree != subsequent_bass_degree")
+bigrams_135[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
+    set, axis=1
+).value_counts(normalize=True)
+
+# %%
+bigrams_135[["chord", "subsequent_chord"]].apply(
+    tuple, axis=1
+).value_counts(normalize=True)
+
+# %%
+eine Urne mit allen 1,3, 5 Akkorden, eine mit allen anderen; 1. Wahrscheinlichkeit sprunghaft/schrittweise; 2. gegeben sprunghaft/schrittweise: Regolaakkord oder nicht
+
+# %%
+Sankey mit Stufen 1-7 in der Mitte und Bewegungstypen
+
 # %% [markdown]
 # ## Overview of how the bass moves
 # ### Intervals
