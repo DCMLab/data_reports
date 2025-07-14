@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -108,6 +108,7 @@ print(
 # %% [markdown]
 # ### Mean composition years per corpus
 
+
 # %%
 def make_summary(metadata_df):
     piece_is_annotated = metadata_df.label_count > 0
@@ -170,6 +171,7 @@ fig.show()
 # ## Dimensions
 #
 # ### Overview
+
 
 # %%
 def make_overview_table(groupby, group_name="pieces"):

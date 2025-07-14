@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -395,6 +395,7 @@ print(
 # %% [markdown]
 # ### Ultimae as Roman numeral
 
+
 # %%
 def highlight(row, color="#ffffb3"):
     if row.counts < 10:
@@ -476,6 +477,7 @@ fig.show()
 
 # %% [markdown]
 # ### PACs with ultima I/i
+
 
 # %%
 def remove_immediate_duplicates(lst):
@@ -612,6 +614,7 @@ fig.show()
 
 # %% [markdown]
 # #### Bass degrees without accidentals
+
 
 # %%
 def remove_sd_accidentals(t):

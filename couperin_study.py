@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: Python 3 (ipykernel)
 #     language: python
@@ -399,7 +399,6 @@ def make_subsequent_movement_category_column(df):
 # leaving first bass degrees with undefined preceding values and last bass degrees without
 # undefined subsequent values.**
 
-
 # %% tags=["hide-input"]
 def make_adjacency_table(bass_notes):
     bass_notes = pd.concat(
@@ -473,7 +472,6 @@ BN.roo_suspensions.value_counts(normalize=True)
 
 # %% [markdown]
 # ### p(RoO|bass)
-
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def filter_diatonic_bass_degrees(
@@ -652,9 +650,9 @@ pd.concat(
     .rename_axis("Subsequent Chord", axis=1)
 ).style.format("{:.1%}")
 
+
 # %% [markdown]
 # ### Degree-wise movement Sankey
-
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_summary_sankey_data(
@@ -748,7 +746,6 @@ fig
 # ## Overview of how the bass moves
 # ### Intervals
 
-
 # %% tags=["hide-input"]
 def plot_bass_movement(BN, corpus_name, **kwargs):
     interval_data = pd.concat(
@@ -790,7 +787,6 @@ fig
 # **The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
 # degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
 # this study.**
-
 
 # %% tags=["hide-input"]
 def plot_movement_types(
@@ -1208,7 +1204,6 @@ regola_vocabulary_minor = tuple(
 # %% [markdown]
 # ### Most frequent chords for each bass degree
 
-
 # %% tags=["hide-input"]
 def summarize_groups_top_k_chords(df, column="intervals_over_bass", k=None):
     """Used in Groupby.apply()"""
@@ -1352,7 +1347,6 @@ style_rank_table(minor)
 #
 # Equivalent to the two preceding tables but with additional heatmaps that show the predominant
 # movement types preceding and following any chord.
-
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def summarize_groups_movements(
@@ -1894,7 +1888,6 @@ regola_coverage
 # The lower two plots show how many unigrams are covered by individual chords.
 # Hover over the points to see the corresponding chords.**
 
-
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_coverage_plot_data(
     bn_name, include_singular_vocabularies=True, **features
@@ -1932,7 +1925,6 @@ def make_coverage_plot_data(
         results[("single", i)] = pd.concat([values, chord], axis=1)
     index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
     return pd.concat(results, names=index_levels)
-
 
 # %% tags=["hide-input"]
 
@@ -2134,7 +2126,6 @@ plot_regola_vs_top_k_coverage("couperin")
 # ### All regola chords
 # **The following table shows absolute counts and proportion of movement types preceding and
 # succeeding all RoO chords.**
-
 
 # %% tags=["hide-input"]
 def get_BN_reg(BN, regola_only=True):
