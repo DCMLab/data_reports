@@ -65,7 +65,7 @@ def style_plotly(
     xaxes: Optional[dict] = None,
     yaxes: Optional[dict] = None,
     match_facet_yaxes=False,
-    font_size=40,
+    font_size=30,
     **layout,
 ):
     layout_args = dict(utils.STD_LAYOUT, **layout)
@@ -658,7 +658,7 @@ BN_dia.bass_degree.value_counts()
 
 # %%
 def make_summary_sankey_data(
-    BN, color_edges=True
+    BN, extend_right=True, color_edges=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
     BN_dia = filter_diatonic_bass_degrees(BN)
     preceding_movement = "preceding_movement"
@@ -676,14 +676,21 @@ def make_summary_sankey_data(
     subsequent_links = BN_dia.groupby([subsequent_movement])[
         middle_nodes_column
     ].value_counts()
-
-    node_labels = []
-    label_ids = dict()
-    for key, node_sizes in (
+    node_value_counts = [
         ("preceding", preceding_movement_counts),
         ("intervals", type_counts),
         ("subsequent", subsequent_movement_counts),
-    ):
+    ]
+    if extend_right:
+        subsequent_roo_counts = BN_dia["subsequent_roo_suspensions"].value_counts()
+        node_value_counts.append(("right", subsequent_roo_counts))
+        subsequent_roo_links = BN_dia.groupby([subsequent_movement])[
+            "subsequent_roo_suspensions"
+        ].value_counts()
+
+    node_labels = []
+    label_ids = dict()
+    for key, node_sizes in node_value_counts:
         for label in node_sizes.index:
             label_id = len(node_labels)
             node_labels.append(str(label))
@@ -713,6 +720,16 @@ def make_summary_sankey_data(
         else:
             links.append((source_id, target_id, cnt))
 
+    if extend_right:
+        for (subs_mov, roo), cnt in subsequent_roo_links.items():
+            source_id = label_ids.get(("subsequent", subs_mov))
+            target_id = label_ids.get(("right", roo))
+            if color_edges:
+                edge_color = node_colors[target_id]
+                links.append((source_id, target_id, cnt, edge_color))
+            else:
+                links.append((source_id, target_id, cnt))
+
     edge_data = pd.DataFrame(links, columns=edge_columns)
     if color_edges:
         return edge_data, node_labels, node_colors
@@ -720,7 +737,11 @@ def make_summary_sankey_data(
 
 
 edge_data, node_labels, node_colors = make_summary_sankey_data(BN)
-utils.make_sankey(edge_data, node_labels, node_color=node_colors)
+fig = utils.make_sankey(
+    edge_data, node_labels, node_color=node_colors, font=dict(size=30)
+)
+save_figure_as(fig, "movement_summary_sankey", height=1000)
+fig
 
 
 # %% [markdown]
@@ -934,7 +955,7 @@ def make_bass_degree_sankey(
     bass_degree: Optional[str | int] = None,
     precise=None,
     middle_nodes_column="intervals_over_bass",
-    font_size=40,
+    font_size=30,
     **layout,
 ):
     """
@@ -959,7 +980,7 @@ def make_bass_degree_sankey(
         selection_text = f"bass degree {bass_degree}"
     else:
         selection_text = "any harmony"
-    edge_data, node_labels, node_colors = make_summary_sankey_data(
+    edge_data, node_labels, node_colors = make_sankey_data(
         selected_unigrams,
         precise=precise,
         middle_nodes_column=middle_nodes_column,
