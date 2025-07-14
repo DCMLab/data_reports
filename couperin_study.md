@@ -691,6 +691,76 @@ Probability that the following chord is a RoO chord given
 ).style.format("{:.1%}")
 ```
 
+```{code-cell}
+BN_dia.bass_degree.value_counts()
+```
+
+```{code-cell}
+def make_summary_sankey_data(
+    BN, color_edges=True
+) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
+    BN_dia = filter_diatonic_bass_degrees(BN)
+    preceding_movement = "preceding_movement"
+    subsequent_movement = "subsequent_movement"
+    middle_nodes_column = "bass_degree"
+    BN_dia.loc[:, middle_nodes_column] = BN_dia[middle_nodes_column].str.replace("#", "")
+    type_counts = BN_dia[middle_nodes_column].value_counts()
+    preceding_movement_counts = BN_dia[preceding_movement].value_counts()
+    subsequent_movement_counts = BN_dia[subsequent_movement].value_counts()
+    preceding_links = BN_dia.groupby([preceding_movement])[
+        middle_nodes_column
+    ].value_counts()
+    subsequent_links = BN_dia.groupby([subsequent_movement])[
+        middle_nodes_column
+    ].value_counts()
+
+    node_labels = []
+    label_ids = dict()
+    for key, node_sizes in (
+        ("preceding", preceding_movement_counts),
+        ("intervals", type_counts),
+        ("subsequent", subsequent_movement_counts),
+    ):
+        for label in node_sizes.index:
+            label_id = len(node_labels)
+            node_labels.append(str(label))
+            label_ids[(key, label)] = label_id
+
+    edge_columns = ["source", "target", "value"]
+    if color_edges:
+        node_colors = utils.make_evenly_distributed_color_map(node_labels)
+        edge_columns.append("color")
+
+    links = []
+    for (prec_mov, iv), cnt in preceding_links.items():
+        source_id = label_ids.get(("preceding", prec_mov))
+        target_id = label_ids.get(("intervals", iv))
+        if color_edges:
+            edge_color = node_colors[source_id]
+            links.append((source_id, target_id, cnt, edge_color))
+        else:
+            links.append((source_id, target_id, cnt))
+
+    for (subs_mov, iv), cnt in subsequent_links.items():
+        source_id = label_ids.get(("intervals", iv))
+        target_id = label_ids.get(("subsequent", subs_mov))
+        if color_edges:
+            edge_color = node_colors[target_id]
+            links.append((source_id, target_id, cnt, edge_color))
+        else:
+            links.append((source_id, target_id, cnt))
+
+    edge_data = pd.DataFrame(links, columns=edge_columns)
+    if color_edges:
+        return edge_data, node_labels, node_colors
+    return edge_data, node_labels
+
+edge_data, node_labels, node_colors = make_summary_sankey_data(BN)
+utils.make_sankey(
+        edge_data, node_labels, node_color=node_colors
+    )
+```
+
 ## Overview of how the bass moves
 ### Intervals
 
@@ -933,7 +1003,7 @@ def make_bass_degree_sankey(
         selection_text = f"bass degree {bass_degree}"
     else:
         selection_text = "any harmony"
-    edge_data, node_labels, node_colors = make_sankey_data(
+    edge_data, node_labels, node_colors = make_summary_sankey_data(
         selected_unigrams,
         precise=precise,
         middle_nodes_column=middle_nodes_column,
