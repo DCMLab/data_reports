@@ -8,9 +8,9 @@
 #       format_version: '1.3'
 #       jupytext_version: 1.17.1
 #   kernelspec:
-#     display_name: revamp
+#     display_name: Python 3 (ipykernel)
 #     language: python
-#     name: revamp
+#     name: python3
 # ---
 
 # %% [markdown]
@@ -461,14 +461,11 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
     .sort_values()
 )
 
-
 # %% [markdown]
 # ## Conditional probabilities
 # ### p(RoO)
 #
 # **The probability that a randomly picked chord is a RoO chord is 64.6 %**
-#
-#
 
 # %%
 BN.roo_suspensions.value_counts(normalize=True)
@@ -499,10 +496,32 @@ BN_dia = filter_diatonic_bass_degrees(BN)
 print(f"len(BN_dia) = {len(BN)} - {len(BN) - len(BN_dia)} = {len(BN_dia)}")
 
 # %% [markdown]
-# **Probability that a diatonic bass degree is covered by the corresponding RoO chord: 65.7 %**
+# **Probability that a diatonic bass degree is covered by the corresponding RoO chord: 65.7 %
+# (+3.4 % a RoO suspension)**
 
 # %%
-BN_dia.roo_suspensions.value_counts(normalize=True)
+BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.1%}")
+
+# %% [markdown]
+# **Probability that a note essentielle is covered by the corresponding RoO chord: 73.7 %
+# (+5.2 % a RoO suspension)**\
+# **Probability that a note non-essentielle is covered by the corresponding RoO chord: 53.7 %
+# (+0.5 % a RoO suspension)**
+
+# %%
+notes_essentielles = ("1", "3", "5")
+ess_selector = BN_dia.bass_degree.isin(notes_essentielles)
+NE = BN_dia[ess_selector]
+NN = BN_dia[~ess_selector]
+pd.concat(
+    [
+        NE.roo_suspensions.value_counts(normalize=True).rename("Notes Essentielles"),
+        NN.roo_suspensions.value_counts(normalize=True).rename(
+            "Notes Non-Essentielles"
+        ),
+    ],
+    axis=1,
+).style.format("{:.1%}")
 
 # %% [markdown]
 # ### p(#RoO = {2,1,0} | bass bigram)
@@ -535,8 +554,8 @@ print(
 
 # %%
 all_bigrams[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
-    set, axis=1
-).value_counts(normalize=True)
+    lambda x: str(set(x)), axis=1  # str() is needed because of the styler
+).value_counts(normalize=True).to_frame().style.format("{:.1%}")
 
 # %% [markdown]
 # ### p(#RoO = {2,1,0} | diatonic leap)
@@ -549,8 +568,8 @@ all_bigrams[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
 
 # %%
 dia_leaps[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
-    set, axis=1
-).value_counts(normalize=True)
+    lambda x: str(set(x)), axis=1
+).value_counts(normalize=True).to_frame().style.format("{:.1%}")
 
 # %% [markdown]
 # ### p(#RoO = {2,1,0} | diatonic step)
@@ -563,26 +582,76 @@ dia_leaps[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
 
 # %%
 dia_steps[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
-    set, axis=1
-).value_counts(normalize=True)
+    lambda x: str(set(x)), axis=1
+).value_counts(normalize=True).to_frame().style.format("{:.1%}")
+
+# %% [markdown]
+# ### p(#RoO = {2,1,0} | bass ∈ {1, 3, 5})
+#
+# * both bass notes carry RoO chords is **64.9 %** (**+ 5.6 %** that one is RoO, the other a suspension thereof);
+# * one of them carries an RoO chord is **26.5 %** (**+ 0.2 %** that one is an RoO suspension chord);
+# * none of them carries an RoO chord is **2.8 %**.
 
 # %%
-notes_essentielles = ('1', '3', '5')
-bigrams_135 = all_bigrams.query("(bass_degree in @notes_essentielles) & (subsequent_bass_degree in @notes_essentielles) & bass_degree != subsequent_bass_degree")
-bigrams_135[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
-    set, axis=1
-).value_counts(normalize=True)
+bigrams_135_distinct = all_bigrams.query(
+    "(bass_degree in @notes_essentielles) & (subsequent_bass_degree in @notes_essentielles) "
+    "& bass_degree != subsequent_bass_degree"
+)
+bigrams_135_distinct[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
+    lambda x: str(set(x)), axis=1
+).value_counts(normalize=True).to_frame().style.format("{:.1%}")
+
+# %% [markdown]
+# ### p(movement = {leap,step,other} | bass ∈ {1, 3, 5})
+#
+# NE := unigrams with diatonic bass degree ∈ {1, 3, 5}\
+# NN := unigrams with diatonic bass degree ∈ {2, 4, 6, 7} (and {#6, #7} in minor)
+#
+# * probability to proceed by leap: NE = **54.4 %**; NN = **36.0 %**
+# * probability to proceed by step: NE = **23.1 %**; NN = **53.5 %**
+# * probability to remain: NE = **12.8 %**; NN = **8.1 %**
+# * probability to be last in key segment: NE = **9.7 %**; NN = **2.5 %**
 
 # %%
-bigrams_135[["chord", "subsequent_chord"]].apply(
-    tuple, axis=1
-).value_counts(normalize=True)
+pd.concat(
+    [
+        NE.subsequent_movement.value_counts(normalize=True).rename(
+            "Notes Essentielles"
+        ),
+        NN.subsequent_movement.value_counts(normalize=True).rename(
+            "Notes Non-Essentielles"
+        ),
+    ],
+    axis=1,
+).style.format("{:.1%}")
+
+# %% [markdown]
+# ### p( RoO(subsequent) | bass ∈ {1, 3, 5} moves by {leap, step} )
+#
+# Probability that the following chord is a RoO chord given
+#
+# * a note essentielle proceeding by leap: **78.7 % (+0.5 % a suspension)**
+# * a note essentielle proceeding by step: **72.4 % (+0.4 % a suspension)**
+# * a note non-essentielle proceeding by leap: **35.5 % (+0.2 % a suspension)**
+# * a note non-essentielle proceeding by step: **74.3 % (+0.2 % a suspension)**
 
 # %%
-eine Urne mit allen 1,3, 5 Akkorden, eine mit allen anderen; 1. Wahrscheinlichkeit sprunghaft/schrittweise; 2. gegeben sprunghaft/schrittweise: Regolaakkord oder nicht
+(
+    pd.concat(
+        {
+            "Essentielles": NE.groupby("subsequent_movement")
+            .roo_suspensions.value_counts(normalize=True)
+            .unstack(),
+            "Non-Essentielles": NN.groupby("subsequent_movement")
+            .roo_suspensions.value_counts(normalize=True)
+            .unstack(),
+        }
+    )
+    .fillna(0.0)
+    .rename_axis(["Notes", "Movement"])
+    .rename_axis("Subsequent Chord", axis=1)
+).style.format("{:.1%}")
 
-# %%
-Sankey mit Stufen 1-7 in der Mitte und Bewegungstypen
 
 # %% [markdown]
 # ## Overview of how the bass moves
@@ -681,10 +750,8 @@ fig = plot_movement_types(
 save_figure_as(fig, "bass_movements", height=1000)
 fig
 
-
 # %% [markdown]
 # ## Sankey diagrams showing movement types before and after each scale degree
-
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 CATEGORY2COLOR = dict(
@@ -853,7 +920,6 @@ BN.roo_suspensions.value_counts(normalize=True)  # Tabelle: gesamt, Dur, Moll
 # --> aggregieren mit spread
 # Nächster Schritt: Alle Step bigrams vs. alle Leap bigrams: In wie vielen Fällen tragen sie a) zwei, b) einen,
 # oder c) null Regolaakkorde?
-
 
 # %% [markdown]
 # ### Unigram Table
