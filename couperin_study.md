@@ -503,16 +503,12 @@ BN.roo_suspensions.value_counts(normalize=True)
 ### p(RoO|bass)
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 def filter_diatonic_bass_degrees(
     base,
-        mode: Optional[Literal["major", "minor"]] = None,
-        roo_chords_only: bool = False
+    mode: Optional[Literal["major", "minor"]] = None,
+    roo_chords_only: bool = False,
 ):
     if mode is None:
         query = (
@@ -537,12 +533,8 @@ print(f"len(BN_dia) = {len(BN)} - {len(BN) - len(BN_dia)} = {len(BN_dia)}")
 (+3.4 % a RoO suspension)**
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.1%}")
 ```
 
@@ -552,12 +544,8 @@ BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.
 (+0.5 % a RoO suspension)**
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 notes_essentielles = ("1", "3", "5")
 ess_selector = BN_dia.bass_degree.isin(notes_essentielles)
 roo_selector = BN_dia.roo_chord.notna()
@@ -577,12 +565,8 @@ pd.concat(
 ### p(#RoO = {2,1,0} | bass bigram)
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 all_bigrams = BN.query("subsequent_movement != 'None'")
 all_steps = BN.query("subsequent_movement == 'Step'")
 dia_steps = BN_dia.query("subsequent_movement_category == 'Diatonic step'")
@@ -609,12 +593,8 @@ print(
 * none of them carries an RoO chord is **14.6 %**.
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 all_bigrams[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
     lambda x: str(set(x)), axis=1  # str() is needed because of the styler
 ).value_counts(normalize=True).to_frame().style.format("{:.1%}")
@@ -675,12 +655,8 @@ NN := unigrams with diatonic bass degree ∈ {2, 4, 6, 7} (and {#6, #7} in minor
 * probability to be last in key segment: NE = **10.9 %**; NN = **0.7 %**
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 NE_roo = BN_dia[roo_selector & ess_selector]
 NN_roo = BN_dia[roo_selector & ~ess_selector]
 pd.concat(
@@ -706,12 +682,8 @@ Probability that the following chord is a RoO chord given
 * a note non-essentielle proceeding by step: **80.5 % (+8.3 % a suspension)**
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 (
     pd.concat(
         {
@@ -732,12 +704,8 @@ tags: [hide-cell]
 ### Degree-wise movement Sankey
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 def make_summary_sankey_data(
     BN, roo_chords_only=True, extend_right=True, color_edges=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
@@ -1088,12 +1056,8 @@ def make_bass_degree_sankey(
 ```
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide helpers
-  code_prompt_show: Show helpers
-tags: [hide-cell]
----
+:tags: [hide-input]
+
 fig = make_bass_degree_sankey(BN, None, None, middle_nodes_column="roo_suspensions")
 save_figure_as(fig, "movement_sankey", height=700)
 fig
@@ -1718,7 +1682,15 @@ def style_mega_table(
             3 * ["Chord"] + 7 * ["Preceding Movement"] + 7 * ["Subsequent Movement"],
             ["Intervals", "P", "RoO"]
             + 2
-            * ["None", "Other leap", "Other step", "Diatonic leap", "Diatonic step", "Same", "E"],
+            * [
+                "None",
+                "Other leap",
+                "Other step",
+                "Diatonic leap",
+                "Diatonic step",
+                "Same",
+                "E",
+            ],
         ]
     )
     col2format = {

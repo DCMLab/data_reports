@@ -476,7 +476,7 @@ BN.roo_suspensions.value_counts(normalize=True)
 # ### p(RoO|bass)
 
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 def filter_diatonic_bass_degrees(
     base,
     mode: Optional[Literal["major", "minor"]] = None,
@@ -504,7 +504,7 @@ print(f"len(BN_dia) = {len(BN)} - {len(BN) - len(BN_dia)} = {len(BN_dia)}")
 # **Probability that a diatonic bass degree is covered by the corresponding RoO chord: 65.7 %
 # (+3.4 % a RoO suspension)**
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.1%}")
 
 # %% [markdown]
@@ -513,7 +513,7 @@ BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.
 # **Probability that a note non-essentielle is covered by the corresponding RoO chord: 53.7 %
 # (+0.5 % a RoO suspension)**
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 notes_essentielles = ("1", "3", "5")
 ess_selector = BN_dia.bass_degree.isin(notes_essentielles)
 roo_selector = BN_dia.roo_chord.notna()
@@ -532,7 +532,7 @@ pd.concat(
 # %% [markdown]
 # ### p(#RoO = {2,1,0} | bass bigram)
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 all_bigrams = BN.query("subsequent_movement != 'None'")
 all_steps = BN.query("subsequent_movement == 'Step'")
 dia_steps = BN_dia.query("subsequent_movement_category == 'Diatonic step'")
@@ -558,7 +558,7 @@ print(
 # * one of them carries an RoO chord is **34.3 %** (**+ 1.2 %** that one is an RoO suspension chord);
 # * none of them carries an RoO chord is **14.6 %**.
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 all_bigrams[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
     lambda x: str(set(x)), axis=1  # str() is needed because of the styler
 ).value_counts(normalize=True).to_frame().style.format("{:.1%}")
@@ -618,7 +618,7 @@ bigrams_135_distinct[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
 # * probability to remain: NE = **8.4 %**; NN = **1.5 %**
 # * probability to be last in key segment: NE = **10.9 %**; NN = **0.7 %**
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 NE_roo = BN_dia[roo_selector & ess_selector]
 NN_roo = BN_dia[roo_selector & ~ess_selector]
 pd.concat(
@@ -643,7 +643,7 @@ pd.concat(
 # * a note non-essentielle proceeding by leap: **50.0 % (+1.2 % a suspension)**
 # * a note non-essentielle proceeding by step: **80.5 % (+8.3 % a suspension)**
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 (
     pd.concat(
         {
@@ -665,7 +665,7 @@ pd.concat(
 # ### Degree-wise movement Sankey
 
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 def make_summary_sankey_data(
     BN, roo_chords_only=True, extend_right=True, color_edges=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
@@ -1009,7 +1009,7 @@ def make_bass_degree_sankey(
     return fig
 
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+# %% tags=["hide-input"]
 fig = make_bass_degree_sankey(BN, None, None, middle_nodes_column="roo_suspensions")
 save_figure_as(fig, "movement_sankey", height=700)
 fig
