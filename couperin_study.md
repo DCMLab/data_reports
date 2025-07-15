@@ -509,7 +509,9 @@ mystnb:
 tags: [hide-cell]
 ---
 def filter_diatonic_bass_degrees(
-    base, mode: Optional[Literal["major", "minor"]] = None
+    base,
+        mode: Optional[Literal["major", "minor"]] = None,
+        roo_chords_only: bool = False
 ):
     if mode is None:
         query = (
@@ -520,6 +522,8 @@ def filter_diatonic_bass_degrees(
         query = "bass_degree in ('1', '2', '3', '4', '5', '6', '7')"
     elif mode == "minor":
         query = "bass_degree in ('1', '2', '3', '4', '5', '6', '#6', '7', '#7')"
+    if roo_chords_only:
+        query += " & roo_chord.notna()"
     result = base.query(query)
     return result
 
@@ -555,6 +559,7 @@ tags: [hide-cell]
 ---
 notes_essentielles = ("1", "3", "5")
 ess_selector = BN_dia.bass_degree.isin(notes_essentielles)
+roo_selector = BN_dia.roo_chord.notna()
 NE = BN_dia[ess_selector]
 NN = BN_dia[~ess_selector]
 pd.concat(
@@ -660,13 +665,13 @@ bigrams_135_distinct[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
 
 ### p(movement = {leap,step,other} | bass ∈ {1, 3, 5})
 
-NE := unigrams with diatonic bass degree ∈ {1, 3, 5}\
-NN := unigrams with diatonic bass degree ∈ {2, 4, 6, 7} (and {#6, #7} in minor)
+NE := unigrams with diatonic bass degree ∈ {1, 3, 5} and RoO chord\
+NN := unigrams with diatonic bass degree ∈ {2, 4, 6, 7} (and {#6, #7} in minor) and RoO chord
 
-* probability to proceed by leap: NE = **54.4 %**; NN = **36.0 %**
-* probability to proceed by step: NE = **23.1 %**; NN = **53.5 %**
-* probability to remain: NE = **12.8 %**; NN = **8.1 %**
-* probability to be last in key segment: NE = **9.7 %**; NN = **2.5 %**
+* probability to proceed by leap: NE = **58.1 %**; NN = **23.8 %**
+* probability to proceed by step: NE = **22.6 %**; NN = **74.0 %**
+* probability to remain: NE = **8.4 %**; NN = **1.5 %**
+* probability to be last in key segment: NE = **10.9 %**; NN = **0.7 %**
 
 ```{code-cell}
 ---
@@ -675,12 +680,14 @@ mystnb:
   code_prompt_show: Show helpers
 tags: [hide-cell]
 ---
+NE_roo = BN_dia[roo_selector & ess_selector]
+NN_roo = BN_dia[roo_selector & ~ess_selector]
 pd.concat(
     [
-        NE.subsequent_movement.value_counts(normalize=True).rename(
+        NE_roo.subsequent_movement.value_counts(normalize=True).rename(
             "Notes Essentielles"
         ),
-        NN.subsequent_movement.value_counts(normalize=True).rename(
+        NN_roo.subsequent_movement.value_counts(normalize=True).rename(
             "Notes Non-Essentielles"
         ),
     ],
@@ -692,10 +699,10 @@ pd.concat(
 
 Probability that the following chord is a RoO chord given
 
-* a note essentielle proceeding by leap: **78.7 % (+0.5 % a suspension)**
-* a note essentielle proceeding by step: **72.4 % (+0.4 % a suspension)**
-* a note non-essentielle proceeding by leap: **35.5 % (+0.2 % a suspension)**
-* a note non-essentielle proceeding by step: **74.3 % (+0.2 % a suspension)**
+* a note essentielle proceeding by leap: **73.0 % (+4.7 % a suspension)**
+* a note essentielle proceeding by step: **71.0 % (+0.6 % a suspension)**
+* a note non-essentielle proceeding by leap: **50.0 % (+1.2 % a suspension)**
+* a note non-essentielle proceeding by step: **80.5 % (+8.3 % a suspension)**
 
 ```{code-cell}
 ---
@@ -707,11 +714,11 @@ tags: [hide-cell]
 (
     pd.concat(
         {
-            "Essentielles": NE.groupby("subsequent_movement")
-            .roo_suspensions.value_counts(normalize=True)
+            "Essentielles": NE_roo.groupby("subsequent_movement")
+            .subsequent_roo_suspensions.value_counts(normalize=True)
             .unstack(),
-            "Non-Essentielles": NN.groupby("subsequent_movement")
-            .roo_suspensions.value_counts(normalize=True)
+            "Non-Essentielles": NN_roo.groupby("subsequent_movement")
+            .subsequent_roo_suspensions.value_counts(normalize=True)
             .unstack(),
         }
     )
@@ -731,9 +738,9 @@ mystnb:
 tags: [hide-cell]
 ---
 def make_summary_sankey_data(
-    BN, extend_right=True, color_edges=True
+    BN, roo_chords_only=True, extend_right=True, color_edges=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
-    BN_dia = filter_diatonic_bass_degrees(BN)
+    BN_dia = filter_diatonic_bass_degrees(BN, roo_chords_only=roo_chords_only)
     preceding_movement = "preceding_movement"
     subsequent_movement = "subsequent_movement"
     middle_nodes_column = "bass_degree"
@@ -811,7 +818,7 @@ def make_summary_sankey_data(
 
 edge_data, node_labels, node_colors = make_summary_sankey_data(BN)
 fig = utils.make_sankey(
-    edge_data, node_labels, node_color=node_colors, font=dict(size=30)
+    edge_data, node_labels, node_color=node_colors, font=dict(size=45)
 )
 save_figure_as(fig, "movement_summary_sankey", height=1000)
 fig
