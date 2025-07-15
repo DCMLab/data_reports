@@ -273,7 +273,7 @@ roo_step_map_major, roo_step_map_minor_preceding, roo_step_map_minor_subsequent 
 def make_precise_preceding_movement_column(df):
     """Expects a dataframe containing the columns bass_degree, preceding_bass_degree, and preceding_movement,"""
     preceding_movement_precise = df.preceding_movement.where(
-        df.preceding_movement != "step", df.preceding_interval
+        df.preceding_movement != "Step", df.preceding_interval
     )
     expected_ascending_degree = pd.concat(
         [
@@ -298,7 +298,7 @@ def make_precise_preceding_movement_column(df):
 def make_precise_subsequent_movement_column(df):
     """Expects a dataframe containing the columns bass_degree, subsequent_bass_degree, and subsequent_movement,"""
     subsequent_movement_precise = df.subsequent_movement.where(
-        df.subsequent_movement != "step", df.subsequent_interval
+        df.subsequent_movement != "Step", df.subsequent_interval
     )
     expected_ascending_degree = pd.concat(
         [
@@ -333,8 +333,8 @@ def make_preceding_movement_category_column(df):
         index=df.index,
     )
     preceding_movement_category = preceding_movement_category.where(
-        ~is_regola_leap_mask, "RoO leap"
-    ).replace("leap", "Other leap")
+        ~is_regola_leap_mask, "Diatonic leap"
+    ).replace("Leap", "Other leap")
     would_be_roo_steps = pd.concat(
         [
             df.loc[["major"], "bass_degree"].map(roo_step_map_major),
@@ -349,8 +349,8 @@ def make_preceding_movement_category_column(df):
         index=df.index,
     )
     preceding_movement_category = preceding_movement_category.where(
-        ~is_regola_step_mask, "RoO step"
-    ).replace("step", "Other step")
+        ~is_regola_step_mask, "Diatonic step"
+    ).replace("Step", "Other step")
     return preceding_movement_category.rename("preceding_movement_category")
 
 
@@ -371,8 +371,8 @@ def make_subsequent_movement_category_column(df):
         index=df.index,
     )
     subsequent_movement_category = subsequent_movement_category.where(
-        ~is_regola_leap_mask, "RoO leap"
-    ).replace("leap", "Other leap")
+        ~is_regola_leap_mask, "Diatonic leap"
+    ).replace("Leap", "Other leap")
     would_be_roo_steps = pd.concat(
         [
             df.loc[["major"], "bass_degree"].map(roo_step_map_major),
@@ -387,8 +387,8 @@ def make_subsequent_movement_category_column(df):
         index=df.index,
     )
     subsequent_movement_category = subsequent_movement_category.where(
-        ~is_regola_step_mask, "RoO step"
-    ).replace("step", "Other step")
+        ~is_regola_step_mask, "Diatonic step"
+    ).replace("Step", "Other step")
     return subsequent_movement_category.rename("subsequent_movement_category")
 
 
@@ -398,6 +398,7 @@ def make_subsequent_movement_category_column(df):
 # The respective upward and downward shifts are performed within each localkey group,
 # leaving first bass degrees with undefined preceding values and last bass degrees without
 # undefined subsequent values.**
+
 
 # %% tags=["hide-input"]
 def make_adjacency_table(bass_notes):
@@ -433,12 +434,12 @@ def make_adjacency_table(bass_notes):
     BN["preceding_iv_is_0"] = BN.preceding_iv == 0
     BN["subsequent_iv_is_0"] = BN.subsequent_iv == 0
     BN["preceding_movement"] = (
-        BN.preceding_iv_is_step.map({True: "step", False: "leap"})
+        BN.preceding_iv_is_step.map({True: "Step", False: "Leap"})
         .where(~BN.preceding_iv_is_0, "Same")
         .where(BN.preceding_iv.notna(), "None")
     )
     BN["subsequent_movement"] = (
-        BN.subsequent_iv_is_step.map({True: "step", False: "leap"})
+        BN.subsequent_iv_is_step.map({True: "Step", False: "Leap"})
         .where(~BN.subsequent_iv_is_0, "Same")
         .where(BN.subsequent_iv.notna(), "None")
     )
@@ -472,6 +473,7 @@ BN.roo_suspensions.value_counts(normalize=True)
 
 # %% [markdown]
 # ### p(RoO|bass)
+
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def filter_diatonic_bass_degrees(
@@ -526,16 +528,16 @@ pd.concat(
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 all_bigrams = BN.query("subsequent_movement != 'None'")
-all_steps = BN.query("subsequent_movement == 'step'")
-dia_steps = BN_dia.query("subsequent_movement_category == 'RoO step'")
+all_steps = BN.query("subsequent_movement == 'Step'")
+dia_steps = BN_dia.query("subsequent_movement_category == 'Diatonic step'")
 n_bigrams, n_steps, n_dia_steps = len(all_bigrams), len(all_steps), len(dia_steps)
 print(
     f"The Couperin dataset contains {n_bigrams} bigrams, "
     f"of which {n_steps} ({n_steps/n_bigrams:.1%}) are steps, "
     f"and {n_dia_steps} ({n_dia_steps/n_bigrams:.1%}) are diatonic steps."
 )
-all_leaps = BN.query("subsequent_movement == 'leap'")
-dia_leaps = BN_dia.query("subsequent_movement_category == 'RoO leap'")
+all_leaps = BN.query("subsequent_movement == 'Leap'")
+dia_leaps = BN_dia.query("subsequent_movement_category == 'Diatonic leap'")
 n_leaps, n_dia_leaps = len(all_leaps), len(dia_leaps)
 print(
     f"The Couperin dataset contains {n_bigrams} bigrams, "
@@ -654,6 +656,7 @@ pd.concat(
 # %% [markdown]
 # ### Degree-wise movement Sankey
 
+
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_summary_sankey_data(
     BN, extend_right=True, color_edges=True
@@ -746,6 +749,7 @@ fig
 # ## Overview of how the bass moves
 # ### Intervals
 
+
 # %% tags=["hide-input"]
 def plot_bass_movement(BN, corpus_name, **kwargs):
     interval_data = pd.concat(
@@ -787,6 +791,7 @@ fig
 # **The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
 # degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
 # this study.**
+
 
 # %% tags=["hide-input"]
 def plot_movement_types(
@@ -831,8 +836,8 @@ fig = plot_movement_types(
     BN,
     None,
     font=dict(size=40),
-    # xaxes=dict(tickvals=["RoO leap", "RoO step", "Same", "None", "Other step", "Other leap"],
-    #            ticktext=["RoO leap", "RoO step", "Same", "None", "Other step", "Other leap"])
+    # xaxes=dict(tickvals=["Diatonic leap", "Diatonic step", "Same", "None", "Other step", "Other leap"],
+    #            ticktext=["Diatonic leap", "Diatonic step", "Same", "None", "Other step", "Other leap"])
 )
 save_figure_as(fig, "bass_movements", height=1000)
 fig
@@ -1204,6 +1209,7 @@ regola_vocabulary_minor = tuple(
 # %% [markdown]
 # ### Most frequent chords for each bass degree
 
+
 # %% tags=["hide-input"]
 def summarize_groups_top_k_chords(df, column="intervals_over_bass", k=None):
     """Used in Groupby.apply()"""
@@ -1348,6 +1354,7 @@ style_rank_table(minor)
 # Equivalent to the two preceding tables but with additional heatmaps that show the predominant
 # movement types preceding and following any chord.
 
+
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def summarize_groups_movements(
     df, column="preceding_movement_precise", normalize=False
@@ -1366,7 +1373,7 @@ def summarize_groups_movements(
         # alternative categorization as an additional column
         main_movements = [
             ix
-            for ix in ("ascending", "descending", "leap", "None")
+            for ix in ("ascending", "descending", "Leap", "None")
             if ix in movements.index.values
         ]
         main_types = movements.loc[main_movements]
@@ -1396,7 +1403,7 @@ def summarize_degree_wise_movement(
     ).droplevel(-1)
     movement_cols = list(
         BN[column].unique()
-    )  # ["leap", "ascending", "descending", "None", "Other step"]
+    )  # ["Leap", "ascending", "descending", "None", "Other step"]
     # column_order = ["movement_entropy"] + movement_cols
     value_column = "proportion" if normalize else "count"
     result = result.pivot(columns=column, values=value_column)  # [column_order]
@@ -1591,7 +1598,15 @@ def style_mega_table(
             3 * ["Chord"] + 7 * ["Preceding Movement"] + 7 * ["Subsequent Movement"],
             ["Intervals", "P", "RoO"]
             + 2
-            * ["None", "Other leap", "Other step", "RoO leap", "RoO step", "Same", "E"],
+            * [
+                "None",
+                "Other leap",
+                "Other step",
+                "Diatonic leap",
+                "Diatonic step",
+                "Same",
+                "E",
+            ],
         ]
     )
     col2format = {
@@ -1854,20 +1869,20 @@ features = dict(
     to_ascending="subsequent_movement_precise == 'ascending'",
     to_descending="subsequent_movement_precise == 'descending'",
     to_either="subsequent_movement_precise == ['ascending', 'descending']",
-    to_leap="subsequent_movement == 'leap'",
+    to_leap="subsequent_movement == 'Leap'",
     to_same="subsequent_movement == 'Same'",
     last_notes="subsequent_movement == 'None'",
     from_ascending="preceding_movement_precise == 'ascending'",
     from_descending="preceding_movement_precise == 'descending'",
     from_either="preceding_movement_precise == ['ascending', 'descending']",
-    from_leap="preceding_movement == 'leap'",
+    from_leap="preceding_movement == 'Leap'",
     from_same="preceding_movement == 'Same'",
     first_notes="preceding_movement == 'None'",
     to_and_from_ascending="subsequent_movement_precise == 'ascending' & preceding_movement_precise == 'ascending'",
     to_and_from_descending="subsequent_movement_precise == 'descending' & preceding_movement_precise == 'descending'",
     to_and_from_either="subsequent_movement_precise == ['ascending', 'descending'] & "
     "preceding_movement_precise == ['ascending', 'descending']",
-    to_and_from_leap="subsequent_movement == 'leap' & preceding_movement == 'leap'",
+    to_and_from_leap="subsequent_movement == 'Leap' & preceding_movement == 'Leap'",
     to_and_from_same="subsequent_movement == 'Same' & preceding_movement == 'Same'",
 )
 
@@ -1887,6 +1902,7 @@ regola_coverage
 # For comparison, its values are shown at point 10.5 on the x-axis.
 # The lower two plots show how many unigrams are covered by individual chords.
 # Hover over the points to see the corresponding chords.**
+
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_coverage_plot_data(
@@ -1925,6 +1941,7 @@ def make_coverage_plot_data(
         results[("single", i)] = pd.concat([values, chord], axis=1)
     index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
     return pd.concat(results, names=index_levels)
+
 
 # %% tags=["hide-input"]
 
@@ -2126,6 +2143,7 @@ plot_regola_vs_top_k_coverage("couperin")
 # ### All regola chords
 # **The following table shows absolute counts and proportion of movement types preceding and
 # succeeding all RoO chords.**
+
 
 # %% tags=["hide-input"]
 def get_BN_reg(BN, regola_only=True):

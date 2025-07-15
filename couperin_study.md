@@ -298,7 +298,7 @@ tags: [hide-cell]
 def make_precise_preceding_movement_column(df):
     """Expects a dataframe containing the columns bass_degree, preceding_bass_degree, and preceding_movement,"""
     preceding_movement_precise = df.preceding_movement.where(
-        df.preceding_movement != "step", df.preceding_interval
+        df.preceding_movement != "Step", df.preceding_interval
     )
     expected_ascending_degree = pd.concat(
         [
@@ -323,7 +323,7 @@ def make_precise_preceding_movement_column(df):
 def make_precise_subsequent_movement_column(df):
     """Expects a dataframe containing the columns bass_degree, subsequent_bass_degree, and subsequent_movement,"""
     subsequent_movement_precise = df.subsequent_movement.where(
-        df.subsequent_movement != "step", df.subsequent_interval
+        df.subsequent_movement != "Step", df.subsequent_interval
     )
     expected_ascending_degree = pd.concat(
         [
@@ -358,8 +358,8 @@ def make_preceding_movement_category_column(df):
         index=df.index,
     )
     preceding_movement_category = preceding_movement_category.where(
-        ~is_regola_leap_mask, "RoO leap"
-    ).replace("leap", "Other leap")
+        ~is_regola_leap_mask, "Diatonic leap"
+    ).replace("Leap", "Other leap")
     would_be_roo_steps = pd.concat(
         [
             df.loc[["major"], "bass_degree"].map(roo_step_map_major),
@@ -374,8 +374,8 @@ def make_preceding_movement_category_column(df):
         index=df.index,
     )
     preceding_movement_category = preceding_movement_category.where(
-        ~is_regola_step_mask, "RoO step"
-    ).replace("step", "Other step")
+        ~is_regola_step_mask, "Diatonic step"
+    ).replace("Step", "Other step")
     return preceding_movement_category.rename("preceding_movement_category")
 
 
@@ -396,8 +396,8 @@ def make_subsequent_movement_category_column(df):
         index=df.index,
     )
     subsequent_movement_category = subsequent_movement_category.where(
-        ~is_regola_leap_mask, "RoO leap"
-    ).replace("leap", "Other leap")
+        ~is_regola_leap_mask, "Diatonic leap"
+    ).replace("Leap", "Other leap")
     would_be_roo_steps = pd.concat(
         [
             df.loc[["major"], "bass_degree"].map(roo_step_map_major),
@@ -412,8 +412,8 @@ def make_subsequent_movement_category_column(df):
         index=df.index,
     )
     subsequent_movement_category = subsequent_movement_category.where(
-        ~is_regola_step_mask, "RoO step"
-    ).replace("step", "Other step")
+        ~is_regola_step_mask, "Diatonic step"
+    ).replace("Step", "Other step")
     return subsequent_movement_category.rename("subsequent_movement_category")
 ```
 
@@ -459,12 +459,12 @@ def make_adjacency_table(bass_notes):
     BN["preceding_iv_is_0"] = BN.preceding_iv == 0
     BN["subsequent_iv_is_0"] = BN.subsequent_iv == 0
     BN["preceding_movement"] = (
-        BN.preceding_iv_is_step.map({True: "step", False: "leap"})
+        BN.preceding_iv_is_step.map({True: "Step", False: "Leap"})
         .where(~BN.preceding_iv_is_0, "Same")
         .where(BN.preceding_iv.notna(), "None")
     )
     BN["subsequent_movement"] = (
-        BN.subsequent_iv_is_step.map({True: "step", False: "leap"})
+        BN.subsequent_iv_is_step.map({True: "Step", False: "Leap"})
         .where(~BN.subsequent_iv_is_0, "Same")
         .where(BN.subsequent_iv.notna(), "None")
     )
@@ -578,16 +578,16 @@ mystnb:
 tags: [hide-cell]
 ---
 all_bigrams = BN.query("subsequent_movement != 'None'")
-all_steps = BN.query("subsequent_movement == 'step'")
-dia_steps = BN_dia.query("subsequent_movement_category == 'RoO step'")
+all_steps = BN.query("subsequent_movement == 'Step'")
+dia_steps = BN_dia.query("subsequent_movement_category == 'Diatonic step'")
 n_bigrams, n_steps, n_dia_steps = len(all_bigrams), len(all_steps), len(dia_steps)
 print(
     f"The Couperin dataset contains {n_bigrams} bigrams, "
     f"of which {n_steps} ({n_steps/n_bigrams:.1%}) are steps, "
     f"and {n_dia_steps} ({n_dia_steps/n_bigrams:.1%}) are diatonic steps."
 )
-all_leaps = BN.query("subsequent_movement == 'leap'")
-dia_leaps = BN_dia.query("subsequent_movement_category == 'RoO leap'")
+all_leaps = BN.query("subsequent_movement == 'Leap'")
+dia_leaps = BN_dia.query("subsequent_movement_category == 'Diatonic leap'")
 n_leaps, n_dia_leaps = len(all_leaps), len(dia_leaps)
 print(
     f"The Couperin dataset contains {n_bigrams} bigrams, "
@@ -908,8 +908,8 @@ fig = plot_movement_types(
     BN,
     None,
     font=dict(size=40),
-    # xaxes=dict(tickvals=["RoO leap", "RoO step", "Same", "None", "Other step", "Other leap"],
-    #            ticktext=["RoO leap", "RoO step", "Same", "None", "Other step", "Other leap"])
+    # xaxes=dict(tickvals=["Diatonic leap", "Diatonic step", "Same", "None", "Other step", "Other leap"],
+    #            ticktext=["Diatonic leap", "Diatonic step", "Same", "None", "Other step", "Other leap"])
 )
 save_figure_as(fig, "bass_movements", height=1000)
 fig
@@ -1463,7 +1463,7 @@ def summarize_groups_movements(
         # alternative categorization as an additional column
         main_movements = [
             ix
-            for ix in ("ascending", "descending", "leap", "None")
+            for ix in ("ascending", "descending", "Leap", "None")
             if ix in movements.index.values
         ]
         main_types = movements.loc[main_movements]
@@ -1493,7 +1493,7 @@ def summarize_degree_wise_movement(
     ).droplevel(-1)
     movement_cols = list(
         BN[column].unique()
-    )  # ["leap", "ascending", "descending", "None", "Other step"]
+    )  # ["Leap", "ascending", "descending", "None", "Other step"]
     # column_order = ["movement_entropy"] + movement_cols
     value_column = "proportion" if normalize else "count"
     result = result.pivot(columns=column, values=value_column)  # [column_order]
@@ -1710,7 +1710,7 @@ def style_mega_table(
             3 * ["Chord"] + 7 * ["Preceding Movement"] + 7 * ["Subsequent Movement"],
             ["Intervals", "P", "RoO"]
             + 2
-            * ["None", "Other leap", "Other step", "RoO leap", "RoO step", "Same", "E"],
+            * ["None", "Other leap", "Other step", "Diatonic leap", "Diatonic step", "Same", "E"],
         ]
     )
     col2format = {
@@ -1984,20 +1984,20 @@ features = dict(
     to_ascending="subsequent_movement_precise == 'ascending'",
     to_descending="subsequent_movement_precise == 'descending'",
     to_either="subsequent_movement_precise == ['ascending', 'descending']",
-    to_leap="subsequent_movement == 'leap'",
+    to_leap="subsequent_movement == 'Leap'",
     to_same="subsequent_movement == 'Same'",
     last_notes="subsequent_movement == 'None'",
     from_ascending="preceding_movement_precise == 'ascending'",
     from_descending="preceding_movement_precise == 'descending'",
     from_either="preceding_movement_precise == ['ascending', 'descending']",
-    from_leap="preceding_movement == 'leap'",
+    from_leap="preceding_movement == 'Leap'",
     from_same="preceding_movement == 'Same'",
     first_notes="preceding_movement == 'None'",
     to_and_from_ascending="subsequent_movement_precise == 'ascending' & preceding_movement_precise == 'ascending'",
     to_and_from_descending="subsequent_movement_precise == 'descending' & preceding_movement_precise == 'descending'",
     to_and_from_either="subsequent_movement_precise == ['ascending', 'descending'] & "
     "preceding_movement_precise == ['ascending', 'descending']",
-    to_and_from_leap="subsequent_movement == 'leap' & preceding_movement == 'leap'",
+    to_and_from_leap="subsequent_movement == 'Leap' & preceding_movement == 'Leap'",
     to_and_from_same="subsequent_movement == 'Same' & preceding_movement == 'Same'",
 )
 
