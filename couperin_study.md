@@ -892,7 +892,7 @@ save_figure_as(fig, "bass_movements", height=1000)
 fig
 ```
 
-## Sankey diagrams showing movement types before and after each scale degree
+### Sankey diagrams showing movement types before and after each scale degree
 
 ```{code-cell}
 ---
@@ -1064,15 +1064,8 @@ save_figure_as(fig, "movement_sankey", height=700)
 fig
 ```
 
-```{code-cell}
-BN.roo_suspensions.value_counts(normalize=True)  # Tabelle: gesamt, Dur, Moll
-# Megatable zusammenfassen in 1 konditionale Wahrsch. pro Bassstufe, zusammengefasst zu 7 Stufen pro Modus
-# --> aggregieren mit spread
-# Nächster Schritt: Alle Step bigrams vs. alle Leap bigrams: In wie vielen Fällen tragen sie a) zwei, b) einen,
-# oder c) null Regolaakkorde?
-```
-
-### Unigram Table
+## Unigrams
+### Roman numerals
 
 ```{code-cell}
 chord_labels = grouped_D.get_feature("HarmonyLabels")
