@@ -811,7 +811,11 @@ def plot_bass_movement(BN, corpus_name, **kwargs):
         ],
         axis=1,
     ).reset_index()
-    title = f"Mode-wise proportion of how often a bass note moves by an interval in {corpus_name}" if corpus_name else None
+    title = (
+        f"Mode-wise proportion of how often a bass note moves by an interval in {corpus_name}"
+        if corpus_name
+        else None
+    )
     fig = px.bar(
         interval_data,
         x="subsequent_interval",
@@ -1059,7 +1063,9 @@ def make_bass_degree_sankey(
 ```{code-cell}
 :tags: [hide-input]
 
-fig = make_bass_degree_sankey(BN, None, None, middle_nodes_column="roo_suspensions", font_size=45)
+fig = make_bass_degree_sankey(
+    BN, None, None, middle_nodes_column="roo_suspensions", font_size=45
+)
 save_figure_as(fig, "movement_sankey", height=700)
 fig
 ```
