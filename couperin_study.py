@@ -30,6 +30,7 @@ import numpy as np
 import pandas as pd
 import plotly.express as px
 from dimcat import Pipeline, plotting
+from dimcat.data import resources
 
 import utils
 
@@ -2321,5 +2322,12 @@ make_bass_degree_sankey(BN_reg, "Couperin", "minor", "#7")
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 7)
 
 # %% [markdown]
-# ## Studying leaps
-# Are they predominantly chord inversions by modern standards?
+# ## Bigrams
+
+# %%
+chord_bgt: resources.NgramTable = chord_labels.apply_step("BigramAnalyzer")
+chord_bigrams = chord_bgt.make_bigram_tuples("chord")
+bgt = chord_bigrams.make_ranking_table()
+bgt.drop(columns=[("major", "proportion_%"), ("minor", "proportion_%")]).style.format(
+    {col: "{:.2%}" for col in bgt.columns if col[1] == "proportion"}
+)
