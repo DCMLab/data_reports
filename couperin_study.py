@@ -508,9 +508,9 @@ print(f"len(BN_dia) = {len(BN)} - {len(BN) - len(BN_dia)} = {len(BN_dia)}")
 BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.1%}")
 
 # %% [markdown]
-# **Probability that a note essentielle is covered by the corresponding RoO chord: 73.7 %
+# **Probability that a _note essentielle_ is covered by the corresponding RoO chord: 73.7 %
 # (+5.2 % a RoO suspension)**\
-# **Probability that a note non-essentielle is covered by the corresponding RoO chord: 53.7 %
+# **Probability that a _note non-essentielle_ is covered by the corresponding RoO chord: 53.7 %
 # (+0.5 % a RoO suspension)**
 
 # %% tags=["hide-input"]
@@ -608,7 +608,7 @@ bigrams_135_distinct[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
 ).value_counts(normalize=True).to_frame().style.format("{:.1%}")
 
 # %% [markdown]
-# ### p(movement = {leap,step,other} | bass ∈ {1, 3, 5})
+# ### p(movement = {leap,step,other} | RoO chord ∈ {1, 3, 5})
 #
 # NE := unigrams with diatonic bass degree ∈ {1, 3, 5} and RoO chord\
 # NN := unigrams with diatonic bass degree ∈ {2, 4, 6, 7} (and {#6, #7} in minor) and RoO chord
@@ -634,14 +634,14 @@ pd.concat(
 ).style.format("{:.1%}")
 
 # %% [markdown]
-# ### p( RoO(subsequent) | bass ∈ {1, 3, 5} moves by {leap, step} )
+# ### p( RoO(subsequent) | RoO chord ∈ {1, 3, 5} moves by {leap, step} )
 #
 # Probability that the following chord is a RoO chord given
 #
-# * a note essentielle proceeding by leap: **73.0 % (+4.7 % a suspension)**
-# * a note essentielle proceeding by step: **71.0 % (+0.6 % a suspension)**
-# * a note non-essentielle proceeding by leap: **50.0 % (+1.2 % a suspension)**
-# * a note non-essentielle proceeding by step: **80.5 % (+8.3 % a suspension)**
+# * a _note essentielle_ proceeding by leap: **73.0 % (+4.7 % a suspension)**
+# * a _note essentielle_ proceeding by step: **71.0 % (+0.6 % a suspension)**
+# * a _note non-essentielle_ proceeding by leap: **50.0 % (+1.2 % a suspension)**
+# * a _note non-essentielle_ proceeding by step: **80.5 % (+8.3 % a suspension)**
 
 # %% tags=["hide-input"]
 (
@@ -771,6 +771,11 @@ def plot_bass_movement(BN, corpus_name, **kwargs):
         ],
         axis=1,
     ).reset_index()
+    title = (
+        f"Mode-wise proportion of how often a bass note moves by an interval in {corpus_name}"
+        if corpus_name
+        else None
+    )
     fig = px.bar(
         interval_data,
         x="subsequent_interval",
@@ -780,7 +785,7 @@ def plot_bass_movement(BN, corpus_name, **kwargs):
         error_y="std_err",
         color_discrete_map=utils.MAJOR_MINOR_COLORS,
         labels=dict(subsequent_interval="Interval"),
-        title=f"Mode-wise proportion of how often a bass note moves by an interval in {corpus_name}",
+        title=title,
         category_orders=dict(subsequent_interval=interval2fifths.index),
     )
     return style_plotly(
@@ -788,7 +793,7 @@ def plot_bass_movement(BN, corpus_name, **kwargs):
     )
 
 
-fig = plot_bass_movement(BN, "Couperin")
+fig = plot_bass_movement(BN, None, font_size=45)
 save_figure_as(fig, "bass_intervals", height=1000)
 fig
 
@@ -843,7 +848,7 @@ def plot_movement_types(
 fig = plot_movement_types(
     BN,
     None,
-    font=dict(size=40),
+    font_size=45,
     # xaxes=dict(tickvals=["Diatonic leap", "Diatonic step", "Same", "None", "Other step", "Other leap"],
     #            ticktext=["Diatonic leap", "Diatonic step", "Same", "None", "Other step", "Other leap"])
 )
@@ -1010,7 +1015,9 @@ def make_bass_degree_sankey(
 
 
 # %% tags=["hide-input"]
-fig = make_bass_degree_sankey(BN, None, None, middle_nodes_column="roo_suspensions")
+fig = make_bass_degree_sankey(
+    BN, None, None, middle_nodes_column="roo_suspensions", font_size=45
+)
 save_figure_as(fig, "movement_sankey", height=700)
 fig
 
