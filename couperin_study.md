@@ -1683,11 +1683,11 @@ def style_mega_table(
             ["Intervals", "P", "RoO"]
             + 2
             * [
+                "Diatonic leap",
+                "Diatonic step",
                 "None",
                 "Other leap",
                 "Other step",
-                "Diatonic leap",
-                "Diatonic step",
                 "Same",
                 "E",
             ],
@@ -1717,7 +1717,12 @@ def style_mega_table(
         chord = (bass, intervals)
         if color := get_chord_color(chord):
             return [f"background-color: {color}"] * len(row)
-        return [None] * len(row)
+        return [""] * len(row)
+
+    def add_horizontal_lines(row):
+        if row.name[-1] == 1:
+            return ["border-top: 1px solid #000066"] * len(row)
+        return [""] * len(row)
 
     # roo_color_sublevels = ("Intervals", "P", "RoO", "E")
     roo_color_sublevels = (
@@ -1742,6 +1747,7 @@ def style_mega_table(
             },
         )
         .apply(color_regola_rows, axis=1, subset=roo_color_columns)
+        .apply(add_horizontal_lines, axis=1)
         .background_gradient("Purples", subset=heatmap_color_columns, axis=None)
         .highlight_null(color="lightgrey")
         .set_table_styles(
@@ -1749,11 +1755,11 @@ def style_mega_table(
                 ("Chord", "Intervals"): [
                     {"selector": "", "props": "border-left: 1px solid"}
                 ],
-                ("Preceding Movement", "None"): [
+                ("Preceding Movement", "Diatonic leap"): [
                     {"selector": "", "props": "border-left: 1px solid"},
                     {"selector": "td", "props": "border-left: 1px solid #000066"},
                 ],
-                ("Subsequent Movement", "None"): [
+                ("Subsequent Movement", "Diatonic leap"): [
                     {"selector": "", "props": "border-left: 1px solid"},
                     {"selector": "td", "props": "border-left: 1px solid #000066"},
                 ],
