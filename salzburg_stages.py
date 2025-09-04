@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.14.4
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: dimcat
 #     language: python
@@ -14,7 +14,7 @@
 # ---
 
 # %% [markdown]
-# `pip install dimcat Jinja2 colorlover GitPython plotly`
+# `pip install dimcat Jinja2 colorlover GitPython plotly networkx`
 
 # %%
 # %load_ext autoreload
@@ -23,12 +23,10 @@ import os
 from collections import Counter, defaultdict
 from fractions import Fraction
 
-import colorlover
-import dimcat as dc
+import dimcat as dc  # works when checking out dimcat@2abdf66b
 import ms3
 import numpy as np
 import pandas as pd
-import plotly.express as px
 from git import Repo
 from IPython.display import HTML
 
@@ -36,7 +34,6 @@ pd.set_option("display.max_columns", 100)
 pd.set_option("display.max_rows", 500)
 import matplotlib.pyplot as plt
 import plotly.express as px
-import plotly.graph_objects as go
 
 plt.set_loglevel("error")
 
@@ -103,7 +100,7 @@ HTML(
 # ## Software versions and configurations
 
 # %%
-dataset_path = "~/all_subcorpora"
+dataset_path = "~/git/meta_repositories/all_subcorpora/"
 
 repo = Repo(dataset_path)
 print(
@@ -141,7 +138,7 @@ for folder in [
     "corelli",
     "debussy_suite_bergamasque",
     "dvorak_silhouettes",
-    "grieg_lyrical_pieces",
+    "grieg_lyric_pieces",
     "handel_keyboard",
     "jc_bach_sonatas",
     "liszt_pelerinage",
@@ -1221,10 +1218,10 @@ fig = go.Figure(
 )
 fig.show()
 
-from gantt import create_gantt, create_modulation_plan, get_phraseends
-
 # %%
 from ms3 import make_gantt_data
+
+from create_gantt import create_gantt, create_modulation_plan, get_phraseends
 
 # %%
 df = all_labels.loc[("beethoven_piano_sonatas", "01-3")]
