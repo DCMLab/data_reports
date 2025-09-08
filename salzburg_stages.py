@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.7
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: dimcat
 #     language: python
@@ -19,22 +19,26 @@
 # %%
 # %load_ext autoreload
 # %autoreload 2
+
 import os
 from collections import Counter, defaultdict
 from fractions import Fraction
+from typing import Optional
 
 import dimcat as dc  # works when checking out dimcat@2abdf66b
+import matplotlib.pyplot as plt
 import ms3
 import numpy as np
 import pandas as pd
+import plotly.express as px
+import plotly.graph_objects as go
 from git import Repo
 from IPython.display import HTML
 
+import utils
+
 pd.set_option("display.max_columns", 100)
 pd.set_option("display.max_rows", 500)
-import matplotlib.pyplot as plt
-import plotly.express as px
-
 plt.set_loglevel("error")
 
 
@@ -47,6 +51,125 @@ def value_count_df(S, thing=None, counts="counts"):
 
 def color_background(x, color="#ffffb3"):
     return np.where(x.notna().to_numpy(), f"background-color: {color};", None)
+
+
+# %%
+RESULTS_PATH = os.path.abspath("/home/laser/phd/conferences/22_gmth_salzburg_cadence/")
+os.makedirs(RESULTS_PATH, exist_ok=True)
+
+
+def write_image(
+    fig: go.Figure,
+    filename: str,
+    directory: Optional[str] = None,
+    format=None,
+    scale=None,
+    width=None,
+    height=None,
+    validate=True,
+):
+    """
+    Convert a figure to a static image and write it to a file.
+
+    Args:
+        fig:
+            Figure object or dict representing a figure
+
+        file: str or writeable
+            A string representing a local file path or a writeable object
+            (e.g. a pathlib.Path object or an open file descriptor)
+
+        format: str or None
+            The desired image format. One of
+              - 'png'
+              - 'jpg' or 'jpeg'
+              - 'webp'
+              - 'svg'
+              - 'pdf'
+              - 'eps' (Requires the poppler library to be installed and on the PATH)
+
+            If not specified and `file` is a string then this will default to the
+            file extension. If not specified and `file` is not a string then this
+            will default to:
+                - `plotly.io.kaleido.scope.default_format` if engine is "kaleido"
+                - `plotly.io.orca.config.default_format` if engine is "orca"
+
+        width: int or None
+            The width of the exported image in layout pixels. If the `scale`
+            property is 1.0, this will also be the width of the exported image
+            in physical pixels.
+
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_width` if engine is "kaleido"
+                - `plotly.io.orca.config.default_width` if engine is "orca"
+
+        height: int or None
+            The height of the exported image in layout pixels. If the `scale`
+            property is 1.0, this will also be the height of the exported image
+            in physical pixels.
+
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_height` if engine is "kaleido"
+                - `plotly.io.orca.config.default_height` if engine is "orca"
+
+        scale: int or float or None
+            The scale factor to use when exporting the figure. A scale factor
+            larger than 1.0 will increase the image resolution with respect
+            to the figure's layout pixel dimensions. Whereas as scale factor of
+            less than 1.0 will decrease the image resolution.
+
+            If not specified, will default to:
+                - `plotly.io.kaleido.scope.default_scale` if engine is "kaleido"
+                - `plotly.io.orca.config.default_scale` if engine is "orca"
+
+        validate: bool
+            True if the figure should be validated before being converted to
+            an image, False otherwise.
+    """
+    fname, fext = os.path.splitext(filename)
+    has_allowed_extension = fext.lstrip(".") in (".png", ".jpg", ".pdf")
+    if format is None and has_allowed_extension:
+        output_filename = filename
+    else:
+        if format is None:
+            format = ".png"
+        output_filename = f"{filename}.{format.lstrip('.')}"
+    if directory is None:
+        folder, filename = os.path.split(output_filename)
+        if not folder:
+            folder = RESULTS_PATH
+        output_filepath = os.path.join(folder, output_filename)
+    else:
+        output_filepath = os.path.join(directory, output_filename)
+    if width is None:
+        width = 1280
+    if height is None:
+        height = 720
+    fig.write_image(
+        file=output_filepath,
+        width=width,
+        height=height,
+        scale=scale,
+        validate=validate,
+    )
+
+
+def make_output_path(
+    filename: str,
+    extension=None,
+    path=RESULTS_PATH,
+) -> str:
+    return utils.make_output_path(filename=filename, extension=extension, path=path)
+
+
+def save_figure_as(
+    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+):
+    if formats is not None:
+        for fmt in formats:
+            write_image(fig, filename, directory, format=fmt, **kwargs)
+    else:
+        write_image(fig, filename, directory, **kwargs)
 
 
 # %% [markdown]
@@ -130,12 +253,17 @@ cadence_colors = dict(
 
 # %%
 dataset = dc.Dataset()
-for folder in [
+for folder in [  # sub-corpora containing cadence labels
+    "bach_en_fr_suites",
     "bach_solo",
+    "bartok_bagatelles",
     "beethoven_piano_sonatas",
     "c_schumann_lieder",
     "chopin_mazurkas",
     "corelli",
+    "couperin_clavecin",
+    "couperin_concerts",  # excluding couperin concerts because of its HC subtypes
+    "cpe_bach_keyboard",
     "debussy_suite_bergamasque",
     "dvorak_silhouettes",
     "grieg_lyric_pieces",
@@ -144,9 +272,13 @@ for folder in [
     "liszt_pelerinage",
     "mahler_kindertotenlieder",
     "medtner_tales",
+    "mozart_piano_sonatas",
+    "peri_euridice",
     "pleyel_quartets",
+    "poulenc_mouvements_perpetuels",
+    "rachmaninoff_piano",
     "scarlatti_sonatas",
-    "schubert_dances",
+    "schulhoff_suite_dansante_en_jazz",
     "schumann_kinderszenen",
     "tchaikovsky_seasons",
     "wf_bach_sonatas",
@@ -401,6 +533,14 @@ phrase_segments.head(10)
 # %%
 print(phrase_segments.duration_qb.dtype)
 phrase_segments.duration_qb = pd.to_numeric(phrase_segments.duration_qb)
+
+# %%
+phrase_segments.cadence.notna().sum()
+
+# %%
+phrase_segments[
+    phrase_segments.cadence.str.contains(".", regex=False).fillna(False)
+].index.get_level_values(0).unique()
 
 # %% [markdown]
 # ## Distribution of phrase lengths
@@ -877,26 +1017,34 @@ fig.show()
 
 # %%
 def get_progressions(
-    selected="PAC", last_row={}, feature="chord", dataset=None, as_series=True
-):
+    selected: Optional[str | tuple[str]] = None,
+    last_row: dict[str, str | tuple[str]] = {},
+    feature: str = "chord",
+    sub_corpus: Optional[str] = None,
+    as_series: bool = True,
+) -> pd.Series | list[tuple[str, ...]]:
     """Uses the nonlocal variable phrase_segments."""
-    last_row = {k: v if isinstance(v, tuple) else (v,) for k, v in last_row.items()}
+    last_row = {
+        k: v if isinstance(v, (tuple, list)) else (v,) for k, v in last_row.items()
+    }
+    if isinstance(selected, str):
+        selected = (selected,)
     progressions = []
 
     for (corp, fname, *_), df in phrase_segments[
         phrase_segments[feature].notna()
     ].groupby(level=[0, 1, 2]):
-        if dataset is not None and dataset not in corp:
+        if sub_corpus is not None and sub_corpus not in corp:
             continue
-        if (df.cadence == selected).fillna(False).any():
+        if selected is None or (df.cadence.isin(selected)).fillna(False).any():
             # remove chords after the last cadence label
-            df = df[df.cadence.fillna(method="bfill").notna()]
+            df = df[df.cadence.bfill().notna()]
             # group segments leading up to a cadence label
             cadence_groups = df.cadence.notna().shift().fillna(False).cumsum()
             for i, cadence in df.groupby(cadence_groups):
                 last_r = cadence.iloc[-1]
                 typ = last_r.cadence
-                if typ != selected:
+                if selected is not None and typ not in selected:
                     continue
                 if any(last_r[feat] not in values for feat, values in last_row.items()):
                     continue
@@ -907,13 +1055,13 @@ def get_progressions(
 
 
 # %%
-chord_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "chord")
-print(f"Progressions for {len(chord_progressions)} cadences:")
-value_count_df(chord_progressions, "chord progressions")
+# chord_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "chord")
+# print(f"Progressions for {len(chord_progressions)} cadences:")
+# value_count_df(chord_progressions, "chord progressions")
 
 # %%
-numeral_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "numeral")
-value_count_df(numeral_progressions, "numeral progressions")
+# numeral_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "numeral")
+# value_count_df(numeral_progressions, "numeral progressions")
 
 
 # %%
@@ -921,8 +1069,8 @@ def remove_immediate_duplicates(l):
     return tuple(a for a, b in zip(l, (None,) + l) if a != b)
 
 
-numeral_prog_no_dups = numeral_progressions.map(remove_immediate_duplicates)
-value_count_df(numeral_prog_no_dups)
+# numeral_prog_no_dups = numeral_progressions.map(remove_immediate_duplicates)
+# value_count_df(numeral_prog_no_dups)
 
 # %% [markdown]
 # ### PACs ending on scale degree 1
@@ -930,14 +1078,14 @@ value_count_df(numeral_prog_no_dups)
 # **Scale degrees expressed w.r.t. major scale, regardless of actual key.**
 
 # %%
-bass_progressions = get_progressions("PAC", dict(bass_note=0), "bass_note")
-bass_prog = bass_progressions.map(ms3.fifths2sd)
-print(f"Progressions for {len(bass_progressions)} cadences:")
-value_count_df(bass_prog, "bass progressions")
+# bass_progressions = get_progressions("PAC", dict(bass_note=0), "bass_note")
+# bass_prog = bass_progressions.map(ms3.fifths2sd)
+# print(f"Progressions for {len(bass_progressions)} cadences:")
+# value_count_df(bass_prog, "bass progressions")
 
 # %%
-bass_prog_no_dups = bass_prog.map(remove_immediate_duplicates)
-value_count_df(bass_prog_no_dups)
+# bass_prog_no_dups = bass_prog.map(remove_immediate_duplicates)
+# value_count_df(bass_prog_no_dups)
 
 
 # %%
@@ -947,6 +1095,7 @@ def make_sankey(
     node_pos=None,
     margin={"l": 10, "r": 10, "b": 10, "t": 10},
     pad=20,
+    font_size: Optional[int] = 25,
     color="auto",
     **kwargs,
 ):
@@ -981,8 +1130,10 @@ def make_sankey(
             link=dict(source=data.source, target=data.target, value=data.value),
         ),
     )
-
-    fig.update_layout(margin=margin, **kwargs)
+    figure_layout = dict(kwargs)
+    if font_size is not None:
+        figure_layout["font"] = dict(size=font_size)
+    fig.update_layout(margin=margin, **figure_layout)
     return fig
 
 
@@ -1007,7 +1158,7 @@ def progressions2graph_data(progressions, cut_at_stage=None):
     return stage_nodes, edge_weights
 
 
-def graph_data2sankey(stage_nodes, edge_weights):
+def graph_data2sankey(stage_nodes, edge_weights, **kwargs):
     data = pd.DataFrame(
         [(u, v, w) for (u, v), w in edge_weights.items()],
         columns=["source", "target", "value"],
@@ -1018,17 +1169,92 @@ def graph_data2sankey(stage_nodes, edge_weights):
         for label, node in nodes.items()
     }
     labels = [node2label[i] for i in range(len(node2label))]
-    return make_sankey(data, labels)
+    return make_sankey(data, labels, **kwargs)
 
 
-def plot_progressions(progressions, cut_at_stage=None):
+def plot_progressions(progressions, cut_at_stage=None, **kwargs):
     stage_nodes, edge_weights = progressions2graph_data(
         progressions, cut_at_stage=cut_at_stage
     )
-    return graph_data2sankey(stage_nodes, edge_weights)
+    return graph_data2sankey(stage_nodes, edge_weights, **kwargs)
 
 
-plot_progressions(numeral_prog_no_dups, cut_at_stage=3)
+# plot_progressions(numeral_prog_no_dups, cut_at_stage=3)
+
+# %%
+# all_chord_progressions = get_progressions()
+# print(f"Number of chord progressions: {len(all_chord_progressions)}")
+
+# %%
+# all_bass_progressions = get_progressions(feature="bass_note").map(ms3.fifths2sd).map(remove_immediate_duplicates)
+# print(f"Number of bass progressions: {len(all_bass_progressions)}")
+
+# %%
+all_chord_progressions = get_progressions(feature="chord").map(
+    remove_immediate_duplicates
+)
+print(f"Number of all progressions: {len(all_chord_progressions)}")
+
+# %%
+fig = plot_progressions(all_chord_progressions, cut_at_stage=2)
+save_figure_as(fig, "all_chord_progressions", height=600)
+fig
+
+# %%
+all_numeral_progressions = get_progressions(feature="numeral").map(
+    remove_immediate_duplicates
+)
+print(f"Number of root progressions: {len(all_numeral_progressions)}")
+
+# %%
+fig = plot_progressions(all_numeral_progressions, cut_at_stage=6)
+save_figure_as(fig, "all_numeral_progressions", height=600)
+fig
+
+# %%
+all_pac = get_progressions("PAC", feature="chord").map(remove_immediate_duplicates)
+print(f"Number of PAC progressions: {len(all_pac)}")
+
+# %%
+fig = plot_progressions(all_pac, cut_at_stage=2)
+save_figure_as(fig, "all_pac_progressions", height=500)
+
+# %%
+all_pac_numerals = get_progressions("PAC", feature="numeral").map(
+    remove_immediate_duplicates
+)
+print(f"Number of PAC numeral progressions: {len(all_pac_numerals)}")
+
+# %%
+fig = plot_progressions(all_pac_numerals, cut_at_stage=6)
+save_figure_as(fig, "all_pac_numeral_progressions", height=500)
+fig
+
+# %%
+all_pac_bass = (
+    get_progressions("PAC", feature="bass_note")
+    .map(ms3.fifths2sd)
+    .map(remove_immediate_duplicates)
+)
+print(f"Number of PAC bass progressions: {len(all_pac_bass)}")
+
+# %%
+fig = plot_progressions(all_pac_bass, cut_at_stage=6)
+save_figure_as(fig, "all_pac_bass_progressions", height=500)
+fig
+
+# %%
+all_hc_bass = (
+    get_progressions("HC", feature="bass_note")
+    .map(ms3.fifths2sd)
+    .map(remove_immediate_duplicates)
+)
+print(f"Number of HC bass progressions: {len(all_hc_bass)}")
+
+# %%
+fig = plot_progressions(all_hc_bass, cut_at_stage=6)
+save_figure_as(fig, "all_hc_bass_progressions", height=500)
+fig
 
 # %%
 chord_progressions_minor = get_progressions(
@@ -1068,185 +1294,3 @@ plot_progressions(bass_prog_no_acc_no_dup, cut_at_stage=7)
 half = get_progressions("HC", dict(numeral="V"), "bass_note").map(ms3.fifths2sd)
 print(f"Progressions for {len(half)} cadences:")
 plot_progressions(half.map(remove_immediate_duplicates), cut_at_stage=5)
-
-# %%
-HTML(
-    """<script>
-  function code_toggle() {
-    if (code_shown){
-      $('div.input').hide('500');
-      $('#toggleButton').val('Show Code')
-    } else {
-      $('div.input').show('500');
-      $('#toggleButton').val('Hide Code')
-    }
-    code_shown = !code_shown
-  }
-  $( document ).ready(function(){
-    code_shown=false;
-    $('div.input').hide()
-  });
-</script>
-<form action="javascript:code_toggle()"><input type="submit" id="toggleButton" value="Show Code"></form>"""
-)
-
-# %% [markdown]
-# # Profiles
-
-# %%
-
-# %% [markdown]
-# # Gantt approach
-
-# %%
-HTML(
-    """<script>
-  function code_toggle() {
-    if (code_shown){
-      $('div.input').hide('500');
-      $('#toggleButton').val('Show Code')
-    } else {
-      $('div.input').show('500');
-      $('#toggleButton').val('Hide Code')
-    }
-    code_shown = !code_shown
-  }
-  $( document ).ready(function(){
-    code_shown=false;
-    $('div.input').hide()
-  });
-</script>
-<form action="javascript:code_toggle()"><input type="submit" id="toggleButton" value="Show Code"></form>"""
-)
-
-# %%
-chord_progressions = dict(
-    PAC=[],
-    IAC=[],
-    HC=[],
-    EC=[],
-    DC=[],
-    PC=[],
-)
-
-import networkx as nx
-
-# %%
-import plotly.graph_objects as go
-
-G = nx.random_geometric_graph(200, 0.125)
-
-edge_x = []
-edge_y = []
-for edge in G.edges():
-    x0, y0 = G.nodes[edge[0]]["pos"]
-    x1, y1 = G.nodes[edge[1]]["pos"]
-    edge_x.append(x0)
-    edge_x.append(x1)
-    edge_x.append(None)
-    edge_y.append(y0)
-    edge_y.append(y1)
-    edge_y.append(None)
-
-edge_trace = go.Scatter(
-    x=edge_x,
-    y=edge_y,
-    line=dict(width=0.5, color="#888"),
-    hoverinfo="none",
-    mode="lines",
-)
-
-node_x = []
-node_y = []
-for node in G.nodes():
-    x, y = G.nodes[node]["pos"]
-    node_x.append(x)
-    node_y.append(y)
-
-node_trace = go.Scatter(
-    x=node_x,
-    y=node_y,
-    mode="markers",
-    hoverinfo="text",
-    marker=dict(
-        showscale=True,
-        # colorscale options
-        #'Greys' | 'YlGnBu' | 'Greens' | 'YlOrRd' | 'Bluered' | 'RdBu' |
-        #'Reds' | 'Blues' | 'Picnic' | 'Rainbow' | 'Portland' | 'Jet' |
-        #'Hot' | 'Blackbody' | 'Earth' | 'Electric' | 'Viridis' |
-        colorscale="YlGnBu",
-        reversescale=True,
-        color=[],
-        size=10,
-        colorbar=dict(
-            thickness=15, title="Node Connections", xanchor="left", titleside="right"
-        ),
-        line_width=2,
-    ),
-)
-
-node_adjacencies = []
-node_text = []
-for node, adjacencies in enumerate(G.adjacency()):
-    node_adjacencies.append(len(adjacencies[1]))
-    node_text.append("# of connections: " + str(len(adjacencies[1])))
-
-node_trace.marker.color = node_adjacencies
-node_trace.text = node_text
-
-fig = go.Figure(
-    data=[edge_trace, node_trace],
-    layout=go.Layout(
-        title="<br>Network graph made with Python",
-        titlefont_size=16,
-        showlegend=False,
-        hovermode="closest",
-        margin=dict(b=20, l=5, r=5, t=40),
-        annotations=[
-            dict(
-                text="Python code: <a href='https://plotly.com/ipython-notebooks/network-graphs/'> https://plotly.com/ipython-notebooks/network-graphs/</a>",
-                showarrow=False,
-                xref="paper",
-                yref="paper",
-                x=0.005,
-                y=-0.002,
-            )
-        ],
-        xaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-        yaxis=dict(showgrid=False, zeroline=False, showticklabels=False),
-    ),
-)
-fig.show()
-
-# %%
-from ms3 import make_gantt_data
-
-from create_gantt import create_gantt, create_modulation_plan, get_phraseends
-
-# %%
-df = all_labels.loc[("beethoven_piano_sonatas", "01-3")]
-data = make_gantt_data(df)
-data
-
-# %%
-create_gantt(data, task_column="fifths")
-
-# %%
-df[df.phraseend.notna()]
-
-# %%
-create_modulation_plan(
-    data,
-    title="Beethoven 01-3",
-    globalkey="f",
-    task_column="semitones",
-    phraseends=get_phraseends(df),
-)
-
-# %%
-for ix, df in phrase_segments.groupby(level=["corpus", "fname", "phrase_slice"]):
-    display(df)
-    break
-
-# %%
-make_gantt_data(df)
