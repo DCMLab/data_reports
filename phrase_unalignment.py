@@ -1,12 +1,13 @@
 # ---
 # jupyter:
 #   jupytext:
+#     default_lexer: ipython3
 #     formats: md:myst,ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -14,7 +15,6 @@
 # ---
 
 # %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-
 # %load_ext autoreload
 # %autoreload 2
 import os

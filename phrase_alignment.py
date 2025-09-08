@@ -1,12 +1,13 @@
 # ---
 # jupyter:
 #   jupytext:
+#     default_lexer: ipython3
 #     formats: md:myst,ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -115,6 +116,7 @@ stage_data._df["numeral_or_applied_to_numeral"] = stage_data.numeral_fifths.map(
 )
 stage_data.sample(50)
 
+
 # %% [raw]
 # root_roman_or_its_dominants = utils.make_root_roman_or_its_dominants_criterion(
 #     phrase_annotations,  # query=f"phrase_id == 9649", inspect_masks=True
@@ -131,9 +133,8 @@ stage_data.sample(50)
 # ).droplevel(3)
 # tonic_dominant
 
+
 # %%
-
-
 def make_regrouped_stage_index(
     df: pd.DataFrame,
     inner_grouping: pd.Series,
@@ -206,8 +207,6 @@ tondom.query(f"tondom_stage > {n}").index.droplevel([2, 3, 4, 5]).unique().to_li
 
 
 # %%
-
-
 def combine_labels(tondom_nodes, stage_nodes):
     node2label = {
         node: label for nodes in stage_nodes.values() for label, node in nodes.items()
@@ -505,8 +504,6 @@ edge_weights, tondom_nodes, stage_nodes = tondom_stages2graph_data(
 stage_nodes
 
 # %%
-
-
 labels, node_pos = scale_ordered_node_info(tondom_nodes, stage_nodes, log_x=False)
 fig = tondom_graph_data2sankey(
     edge_weights, labels, node_pos, width=2500, arrangement="fixed"
@@ -525,9 +522,8 @@ fig = make_phrase_sankey_plot(
 # save_figure_as(fig, "tondom_sankey_draft", width=5000)
 fig
 
+
 # %%
-
-
 def tondom_stages2graph_data_with_loops(
     stages, ending_on=None, stop_at_modulation=False, cut_at_stage=None
 ):
@@ -653,7 +649,6 @@ for _, progression in no_repeats.groupby(["phrase_id", "tondom_stage"]):
 print(Grammar(tondom_stage_parser.tree))
 
 # %% [raw]
-#
 # def stages2graph_data(stages, ending_on=None,stop_at_modulation=False, cut_at_stage=None):
 #     stage_nodes = defaultdict(dict) # {stage -> {label -> node}}
 #     edge_weights = Counter()        # {(source_node, target_node) -> weight}

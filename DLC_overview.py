@@ -1,12 +1,13 @@
 # ---
 # jupyter:
 #   jupytext:
+#     default_lexer: ipython3
 #     formats: ipynb,md:myst,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.7
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -31,7 +32,6 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import plotly.io as pio
-
 pio.kaleido.scope.mathjax = None
 from dimcat import filters, plotting
 from dimcat.utils import get_middle_composition_year
@@ -119,7 +119,6 @@ print(
 
 # %% [markdown]
 # ### Mean composition years per corpus
-
 
 # %%
 def make_summary(metadata_df):
@@ -435,7 +434,6 @@ fig
 # ## Dimensions
 #
 # ### Overview
-
 
 # %%
 def piece_order(_):

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.17.2
 kernelspec:
   display_name: revamp
   language: python
@@ -19,7 +19,6 @@ mystnb:
   code_prompt_show: Show imports
 tags: [hide-cell]
 ---
-
 %load_ext autoreload
 %autoreload 2
 import os

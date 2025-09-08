@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.17.2
 kernelspec:
   display_name: revamp
   language: python
@@ -185,8 +185,6 @@ stage_data.query("phrase_id == 14633")
 ```
 
 ```{code-cell}
-
-
 def make_regrouped_stage_index(
     df: pd.DataFrame,
     inner_grouping: pd.Series,
@@ -265,8 +263,6 @@ tondom.query(f"tondom_stage > {n}").index.droplevel([2, 3, 4, 5]).unique().to_li
 ```
 
 ```{code-cell}
-
-
 def get_node_info(tondom_nodes, stage_nodes, offset=1e-09):
     """Offset is a workaround for the bug in Plotly preventing coordinates from being zero."""
     # labels

@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.17.2
 kernelspec:
   display_name: Python 3 (ipykernel)
   language: python
@@ -240,7 +240,6 @@ ix = phi0_first3.chord_and_mode.value_counts().index
 ```
 
 ```{code-cell} ipython3
-
 def group_operation(group_df):
     return utils._compute_smallest_fifth_ranges(
         group_df.lowest_tpc.values, group_df.tpc_width.values, verbose=False
@@ -278,9 +277,9 @@ enoid = utils.make_effective_numeral_or_its_dominant_criterion(phrase_annotation
 effective_numeral_or_its_dominant = criterion2stages["uncompressed"].regroup_phrases(
     enoid
 )
-criterion2stages[
-    "effective_numeral_or_its_dominant"
-] = effective_numeral_or_its_dominant
+criterion2stages["effective_numeral_or_its_dominant"] = (
+    effective_numeral_or_its_dominant
+)
 effective_numeral_or_its_dominant.head(100)
 ```
 
@@ -332,7 +331,6 @@ criterion2stages["diatonics"] = diatonics_stages
 ```
 
 ```{code-cell} ipython3
-
 def compare_criteria_metrics(
     name2phrase_data: Dict[str, resources.PhraseData], **kwargs
 ):

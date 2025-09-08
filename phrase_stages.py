@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -1049,9 +1049,9 @@ def make_sposalizio(
     ]
     # return phrase_timeline_data
     new_resource_column = pd.Series("chromatic-in", index=phrase_timeline_data.index)
-    new_resource_column.loc[
-        phrase_timeline_data.chord_tone_tpc.between(3, 9)
-    ] = "diatonic-in"
+    new_resource_column.loc[phrase_timeline_data.chord_tone_tpc.between(3, 9)] = (
+        "diatonic-in"
+    )
     phrase_timeline_data.Resource = new_resource_column
     tones_to_add = [
         (33, 11, "E#", "chromatic-out"),

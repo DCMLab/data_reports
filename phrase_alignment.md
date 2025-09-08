@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.17.2
 kernelspec:
   display_name: revamp
   language: python
@@ -144,8 +144,6 @@ tonic_dominant
 ```
 
 ```{code-cell} ipython3
-
-
 def make_regrouped_stage_index(
     df: pd.DataFrame,
     inner_grouping: pd.Series,
@@ -220,8 +218,6 @@ tondom.query(f"tondom_stage > {n}").index.droplevel([2, 3, 4, 5]).unique().to_li
 ```
 
 ```{code-cell} ipython3
-
-
 def combine_labels(tondom_nodes, stage_nodes):
     node2label = {
         node: label for nodes in stage_nodes.values() for label, node in nodes.items()
@@ -522,8 +518,6 @@ stage_nodes
 ```
 
 ```{code-cell} ipython3
-
-
 labels, node_pos = scale_ordered_node_info(tondom_nodes, stage_nodes, log_x=False)
 fig = tondom_graph_data2sankey(
     edge_weights, labels, node_pos, width=2500, arrangement="fixed"
@@ -545,8 +539,6 @@ fig
 ```
 
 ```{code-cell} ipython3
-
-
 def tondom_stages2graph_data_with_loops(
     stages, ending_on=None, stop_at_modulation=False, cut_at_stage=None
 ):
@@ -683,7 +675,6 @@ print(Grammar(tondom_stage_parser.tree))
 ```
 
 ```{raw-cell}
-
 def stages2graph_data(stages, ending_on=None,stop_at_modulation=False, cut_at_stage=None):
     stage_nodes = defaultdict(dict) # {stage -> {label -> node}}
     edge_weights = Counter()        # {(source_node, target_node) -> weight}

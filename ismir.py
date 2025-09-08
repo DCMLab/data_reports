@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.1
+#       jupytext_version: 1.17.2
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -120,7 +120,6 @@ notes.plot_grouped(
 
 # %% [markdown]
 # ## Slicer
-
 
 # %%
 def globalminor_localkey_expressed_in_globalmajor(key):
@@ -297,7 +296,7 @@ plt.show()
 # font_dict = {'font': {'size': 20}}2
 width = 1600
 height = 900
-layout = dict(
+layout=dict(
     utils.STD_LAYOUT,
     margin=dict(l=0, r=0, b=0, t=0),
 )
@@ -310,10 +309,7 @@ fig = utils.plot_cum(
     width=width,
     **layout,
 )
-for trace, color in zip(
-    fig.data,
-    (utils.TailwindColorsHex.get_color(c) for c in ("PURPLE_800", "EMERALD_800")),
-):
+for trace, color in zip(fig.data, (utils.TailwindColorsHex.get_color(c) for c in ("PURPLE_800", "EMERALD_800"))):
     trace.marker.color = color
 save_figure_as(
     fig,
