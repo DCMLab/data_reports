@@ -20,6 +20,7 @@ kernelspec:
 import os
 from collections import Counter, defaultdict
 
+import dimcat as dc
 import matplotlib.pyplot as plt
 import ms3
 import pandas as pd
@@ -59,7 +60,7 @@ def save_figure_as(
 **Loading data**
 
 ```{code-cell}
-D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
+D = dc.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 ```
 

@@ -20,7 +20,7 @@ ToDo
 * 07-1, phrase_id 2415, vi/V in D would be f# but this is clearly in a. It is a minor key, so bVI should be VI
 * phrase806_n14op131_05_1-79 clearly too long, begins with sequenced segments ending on HCs
 
-```{code-cell}
+```{code-cell} ipython3
 %load_ext autoreload
 %autoreload 2
 
@@ -42,7 +42,7 @@ from dimcat.data.resources.utils import (
 from dimcat.plotting import make_box_plot, write_image
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -57,7 +57,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 RESULTS_PATH = os.path.expanduser("~/git/diss/33_phrases/figs")
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -80,7 +80,7 @@ def save_figure_as(
         write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = utils.resolve_dir(
@@ -96,12 +96,12 @@ chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 phrase_annotations: resources.PhraseAnnotations = D.get_feature("PhraseAnnotations")
 phrase_annotations
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 CRITERIA = dict(
     chord_reduced_and_localkey=["chord_reduced", "localkey"],
     chord_reduced_and_mode=["chord_reduced_and_mode"],
@@ -114,14 +114,14 @@ CRITERIA = dict(
 criterion2stages = utils.make_criterion_stages(phrase_annotations, CRITERIA)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 uncompressed_lengths = utils.get_criterion_phrase_lengths(
     criterion2stages["uncompressed"]
 )
 uncompressed_lengths.groupby("corpus").describe()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 make_box_plot(
     uncompressed_lengths,
     x_col="corpus",
@@ -131,7 +131,7 @@ make_box_plot(
 )
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 root_roman_or_its_dominants = utils.make_root_roman_or_its_dominants_criterion(
     phrase_annotations,  # query=f"phrase_id == 9649", inspect_masks=True
 )
@@ -189,7 +189,7 @@ restored = ms3.load_tsv(
 restored.compare(root_roman_or_its_dominants.df)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_simple_resource_column(timeline_data, name="Resource"):
     is_dominant = timeline_data.expected_root_tpc.notna()
     group_levels = is_dominant.index.names[:-1]
@@ -299,7 +299,7 @@ def make_timeline_data(root_roman_or_its_dominants, detailed=True):
     return timeline_data
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def make_function_colors(detailed=True):
     if detailed:
         colorscale = {
@@ -851,7 +851,7 @@ def get_extended_tonicization_shape_data(stage_inspection_data, y_min):
     return shapes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 DETAILED_FUNCTIONS = True
 timeline_data = make_timeline_data(
     root_roman_or_its_dominants, detailed=DETAILED_FUNCTIONS
@@ -860,7 +860,7 @@ n_phrases = max(timeline_data.index.levels[2])
 colorscale = make_function_colors(detailed=DETAILED_FUNCTIONS)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def plot_stage_data(
     stage_data,
     localkey_shapes: bool = True,
@@ -935,15 +935,15 @@ save_figure_as(
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig.layout.shapes
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 [shape for shape in fig.layout.shapes if shape.x0 == -18.0]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 PIN_PHRASE_ID = 9773
 # 24 good Bach
 # 87 short and simple ABC example, e-a-G with pivot chord, pretty ideal
@@ -973,26 +973,25 @@ else:
 plot_phrase_stages(phrase_annotations, phrase_id=current_id)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 modulating_phrases = phrase_annotations.groupby("phrase_id").filter(
     lambda df: df.localkey.nunique() > 1
 )
 modulating_ids = modulating_phrases.index.get_level_values("phrase_id").unique()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 selected_modulating_id = choice(modulating_ids)
 plot_phrase_stages(phrase_annotations, phrase_id=selected_modulating_id)
 ```
 
 # Sposalizio plot for Chromaticity paper
 
-```{code-cell}
+```{code-cell} ipython3
 sposalizio = plot_phrase_stages(phrase_annotations, phrase_id=9685)
 ```
 
-```{code-cell}
-
+```{code-cell} ipython3
 def _make_localkey_shapes(
     y_root: int, is_minor: bool, x0: Number, x1: Number, text: Optional[str] = None
 ) -> List[dict]:
@@ -1138,7 +1137,7 @@ sposalizio = make_sposalizio(
 sposalizio
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 save_figure_as(
     sposalizio,
     "chromatic_example_sposalizio",
@@ -1172,13 +1171,13 @@ class DominantsToEndIndexer(BaseIndexer):
 indexer = DominantsToEndIndexer()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 criterion2stages["uncompressed"]
 ```
 
 ## Sposalizio chromaticity example
 
-```{code-cell}
+```{code-cell} ipython3
 sposalizio = utils.make_root_roman_or_its_dominants_criterion(
     phrase_annotations, query="phrase_id == 9685 & mc < 19"
 )
@@ -1211,11 +1210,11 @@ fig = utils.plot_phrase(
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 phrase_timeline_data
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 ct = phrase_timeline_data.chord_tone_tpc
 above = (ct - 9).astype(str)
 below = (3 - ct).astype(str)

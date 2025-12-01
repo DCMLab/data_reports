@@ -29,6 +29,7 @@ import os
 from functools import cache
 from typing import Iterable, List, Literal, Optional, Tuple
 
+import dimcat as dc
 import ms3
 import numpy as np
 import pandas as pd
@@ -112,7 +113,7 @@ def style_plotly(
 ```{code-cell}
 :tags: [hide-input]
 
-D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
+D = dc.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 ```
 

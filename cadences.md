@@ -14,7 +14,7 @@ kernelspec:
 
 # Cadences
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -35,7 +35,7 @@ from dimcat.steps import filters, groupers, slicers
 from git import Repo
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 from utils import (
@@ -62,7 +62,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
     write_image(fig, filename, directory, **kwargs)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 package_path = resolve_dir(
     "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
 )
@@ -75,12 +75,12 @@ D = dc.Dataset.from_package(package_path)
 D
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 cadence_labels = D.get_feature("cadencelabels")
 cadence_labels
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 cadence_labels.plot_grouped(
     title="Distribution of cadence types over the DLC",
     output=make_output_path("all_cadences_pie"),
@@ -91,22 +91,22 @@ cadence_labels.plot_grouped(
 
 ### Metadata
 
-```{code-cell}
+```{code-cell} ipython3
 cadence_filter = filters.HasCadenceAnnotationsFilter()
 filtered_D = cadence_filter.process(D)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 hascadence_metadata = filtered_D.get_metadata()
 chronological_corpus_names = hascadence_metadata.get_corpus_names()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 cadence_counts = cadence_labels.apply_step("Counter")
 cadence_counts.plot_grouped("corpus")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 mean_composition_years = (
     hascadence_metadata.groupby(level=0).composed_end.mean().astype(int).sort_values()
 )
@@ -137,7 +137,7 @@ fig.update_traces(width=5)
 * **EC**: Evaded Cadence
 * **PC**: Plagal Cadence
 
-```{code-cell}
+```{code-cell} ipython3
 print(f"{len(cadence_labels)} cadence labels.")
 value_count_df(cadence_labels.cadence)
 ```
@@ -162,7 +162,7 @@ fig.show()
 
 ## Per dataset
 
-```{code-cell}
+```{code-cell} ipython3
 all_labels = D.get_feature("harmonylabels")
 cadence_count_per_dataset = all_labels.groupby("corpus").cadence.value_counts()
 cadence_fraction_per_dataset = (
@@ -189,7 +189,7 @@ save_figure_as(fig, "all_cadences_corpuswise_stacked_bars", height=1000)
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.pie(
     cadence_count_per_dataset.rename("count").reset_index(),
     names="cadence",
@@ -206,7 +206,7 @@ save_figure_as(fig, "all_cadences_corpuswise_pies")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 cadence_count_per_mode = (
     all_labels.groupby("localkey_is_minor").cadence.value_counts().reset_index()
 )
@@ -228,7 +228,7 @@ save_figure_as(fig, "all_cadences_modewise_pies")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 corelli = dc.Dataset()
 CORELLI_PATH = os.path.abspath(os.path.join("..", "corelli"))
 corelli.load(directory=CORELLI_PATH, parse_tsv=False)
@@ -262,7 +262,7 @@ save_figure_as(fig, "all_corelli_cadences_modewise_pies")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 combined_cadences = pd.concat(
     [cadence_count_per_mode, corelli_cadence_count_per_mode],
     keys=["couperin", "corelli"],
@@ -288,7 +288,7 @@ fig.show()
 ## Per phrase
 ### Number of cadences per phrase
 
-```{code-cell}
+```{code-cell} ipython3
 grouped_by_corpus = groupers.CorpusGrouper().process(D)
 segmented = slicers.PhraseSlicer().process_data(grouped_by_corpus)
 phrases = segmented.get_slice_info()
@@ -317,7 +317,7 @@ phrases_with_cadences = pd.concat(
 value_count_df(phrases_with_cadences.n_cadences, counts_column="#phrases")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 n_cad = (
     phrases_with_cadences.groupby(level="corpus")
     .n_cadences.value_counts()
@@ -342,13 +342,13 @@ fig.show()
 
 ### Combinations of cadence types for phrases with more than one cadence
 
-```{code-cell}
+```{code-cell} ipython3
 value_count_df(phrases_with_cadences[phrases_with_cadences.n_cadences > 1].cadences)
 ```
 
 ### Positioning of cadences within phrases
 
-```{code-cell}
+```{code-cell} ipython3
 df_rows = []
 y_position = 0
 for ix in (
@@ -373,7 +373,7 @@ for ix in (
 data = pd.DataFrame(df_rows, columns=["phrase_ix", "x", "marker", "description"])
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.scatter(
     data[data.x.notna()],
     x="x",
@@ -392,7 +392,7 @@ fig.show()
 
 ## Cadence ultima
 
-```{code-cell}
+```{code-cell} ipython3
 phrase_segments = segmented.get_facet("expanded")
 cadence_selector = phrase_segments.cadence.notna()
 missing_chord_selector = phrase_segments.chord.isna()
@@ -413,7 +413,7 @@ print(
 
 ### Ultimae as Roman numeral
 
-```{code-cell}
+```{code-cell} ipython3
 def highlight(row, color="#ffffb3"):
     if row.counts < 10:
         return [None, None, None, None]
@@ -435,7 +435,7 @@ ultima_root.localkey_is_minor = ultima_root.localkey_is_minor.map(
 # ultima_root.style.apply(highlight, axis=1)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.pie(
     ultima_root,
     names="numeral",
@@ -452,14 +452,14 @@ save_figure_as(fig, "ultima_root_distributions_over_cadence_types_maj_min_pies")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # phrase_segments.groupby(level=[0,1,2], group_keys=False).apply(lambda df: df if ((df.cadence == 'PAC') &
 # (df.numeral == 'V')).any() else None)
 ```
 
 ### Ultimae bass note as scale degree
 
-```{code-cell}
+```{code-cell} ipython3
 ultima_bass = (
     phrase_segments.groupby(["localkey_is_minor", "cadence"])
     .bass_note.value_counts()
@@ -475,7 +475,7 @@ ultima_bass.localkey_is_minor = ultima_bass.localkey_is_minor.map(
 # ultima_bass.style.apply(highlight, axis=1)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.pie(
     ultima_bass,
     names="bass_note",
@@ -498,7 +498,7 @@ fig.show()
 
 ### PACs with ultima I/i
 
-```{code-cell}
+```{code-cell} ipython3
 def remove_immediate_duplicates(lst):
     return tuple(a for a, b in zip(lst, (None,) + lst) if a != b)
 
@@ -543,18 +543,18 @@ def get_progressions(
     return progressions
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chord_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "chord")
 print(f"Progressions for {len(chord_progressions)} cadences:")
 value_count_df(chord_progressions, "chord progressions")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 numeral_progressions = get_progressions("PAC", dict(numeral=("I", "i")), "numeral")
 value_count_df(numeral_progressions, "numeral progressions")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 numeral_prog_no_dups = numeral_progressions.map(remove_immediate_duplicates)
 value_count_df(numeral_prog_no_dups)
 ```
@@ -563,19 +563,19 @@ value_count_df(numeral_prog_no_dups)
 
 **Scale degrees expressed w.r.t. major scale, regardless of actual key.**
 
-```{code-cell}
+```{code-cell} ipython3
 bass_progressions = get_progressions("PAC", dict(bass_note=0), "bass_note")
 bass_prog = bass_progressions.map(ms3.fifths2sd)
 print(f"Progressions for {len(bass_progressions)} cadences:")
 value_count_df(bass_prog, "bass progressions")
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 bass_prog_no_dups = bass_prog.map(remove_immediate_duplicates)
 value_count_df(bass_prog_no_dups)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def progressions2graph_data(progressions, cut_at_stage=None):
     stage_nodes = defaultdict(dict)
     edge_weights = Counter()
@@ -606,7 +606,7 @@ def plot_progressions(progressions, cut_at_stage=None, **kwargs):
 
 #### Chordal roots for the 3 last stages
 
-```{code-cell}
+```{code-cell} ipython3
 fig = plot_progressions(
     numeral_prog_no_dups,
     cut_at_stage=3,
@@ -618,7 +618,7 @@ fig.show()
 
 #### Complete chords for the last four stages in major
 
-```{code-cell}
+```{code-cell} ipython3
 pac_major = get_progressions("PAC", dict(numeral="I", localkey_is_minor=False), "chord")
 fig = plot_progressions(pac_major, cut_at_stage=4)
 save_figure_as(fig, "last_4_stages_before_pacs_in_major_sankey")
@@ -627,7 +627,7 @@ fig.show()
 
 #### Bass degrees for the last 6 stages.
 
-```{code-cell}
+```{code-cell} ipython3
 fig = plot_progressions(bass_prog_no_dups, cut_at_stage=7)
 save_figure_as(fig, "last_7_degrees_before_pacs_ending_on_1_sankey")
 fig.show()
@@ -635,7 +635,7 @@ fig.show()
 
 #### Bass degrees without accidentals
 
-```{code-cell}
+```{code-cell} ipython3
 def remove_sd_accidentals(t):
     return tuple(map(lambda sd: sd[-1], t))
 
@@ -650,7 +650,7 @@ fig.show()
 
 ### HCs ending on V
 
-```{code-cell}
+```{code-cell} ipython3
 half = get_progressions("HC", dict(numeral="V"), "bass_note").map(ms3.fifths2sd)
 print(f"Progressions for {len(half)} cadences:")
 fig = plot_progressions(half.map(remove_immediate_duplicates), cut_at_stage=5)

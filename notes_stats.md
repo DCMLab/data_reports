@@ -14,7 +14,7 @@ kernelspec:
 
 # Notes
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 mystnb:
   code_prompt_hide: Hide imports
@@ -36,7 +36,7 @@ pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 RESULTS_PATH = os.path.abspath("/home/laser/git/diss/26_dlc/img/")
@@ -63,7 +63,7 @@ def save_figure_as(
 
 **Loading data**
 
-```{code-cell}
+```{code-cell} ipython3
 :tags: [hide-input]
 
 package_path = utils.resolve_dir(
@@ -80,26 +80,26 @@ D
 
 ## Metadata
 
-```{code-cell}
+```{code-cell} ipython3
 filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
 
 all_metadata = filtered_D.get_metadata()
 all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:, :20]
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 chronological_order = utils.chronological_corpus_order(all_metadata)
 corpus_colors = dict(zip(chronological_order, utils.CORPUS_COLOR_SCALE))
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 notes_feature = filtered_D.get_feature("notes")
 all_notes = notes_feature.df
 print(f"{len(all_notes.index)} notes over {len(all_notes.groupby(level=[0,1]))} files.")
 all_notes.head()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 def weight_notes(nl, group_col="midi", precise=True):
     summed_durations = nl.groupby(group_col).duration_qb.sum()
     shortest_duration = summed_durations[summed_durations > 0].min()
@@ -125,7 +125,7 @@ def repeat_notes_according_to_weights(weights):
 
 ## Ambitus
 
-```{code-cell}
+```{code-cell} ipython3
 corpus_names = {
     corp: utils.get_corpus_display_name(corp) for corp in chronological_order
 }
@@ -136,7 +136,7 @@ corpus_name_colors = {
 all_notes["corpus_name"] = all_notes.index.get_level_values(0).map(corpus_names)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 grouped_notes = all_notes.groupby("corpus_name")
 weighted_midi = pd.concat(
     [weight_notes(nl, "midi", precise=False) for _, nl in grouped_notes],
@@ -146,7 +146,7 @@ weighted_midi.columns = ["dataset", "midi"]
 weighted_midi
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 # fig = px.violin(weighted_midi,
 #                 x='dataset',
 #                 y='midi',
@@ -176,7 +176,7 @@ weighted_midi
 
 ## Tonal Pitch Classes (TPC)
 
-```{code-cell}
+```{code-cell} ipython3
 weighted_tpc = pd.concat(
     [weight_notes(nl, "tpc") for _, nl in grouped_notes],
     keys=grouped_notes.groups.keys(),
@@ -187,7 +187,7 @@ weighted_tpc
 
 ### As violin plot
 
-```{code-cell}
+```{code-cell} ipython3
 # fig = px.violin(weighted_tpc,
 #                 x='dataset',
 #                 y='tpc',
@@ -218,11 +218,11 @@ weighted_tpc
 # fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 (all_notes)
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 ---
 jupyter:
   outputs_hidden: false
@@ -301,7 +301,7 @@ save_figure_as(fig, "notes_violin", width=width, height=height)
 fig
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 fig = plotting.make_box_plot(
     weighted_pitch_values,
     x_col="dataset",
@@ -351,7 +351,7 @@ fig
 
 ### As bar plots
 
-```{code-cell}
+```{code-cell} ipython3
 bar_data = all_notes.groupby("tpc").duration_qb.sum().reset_index()
 x_values = list(range(bar_data.tpc.min(), bar_data.tpc.max() + 1))
 x_names = ms3.fifths2name(x_values)
@@ -379,7 +379,7 @@ save_figure_as(fig, "pitch_class_distribution_absolute_bars")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 scatter_data = all_notes.groupby(["corpus_name", "tpc"]).duration_qb.sum().reset_index()
 fig = px.bar(
     scatter_data,
@@ -412,7 +412,7 @@ fig.show()
 
 ### As scatter plots
 
-```{code-cell}
+```{code-cell} ipython3
 fig = px.scatter(
     scatter_data,
     x="tpc",
@@ -445,12 +445,12 @@ save_figure_as(fig, "pitch_class_distribution_corpuswise_scatter")
 fig.show()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 no_accidental = bar_data[bar_data.tpc.between(-1, 5)].duration_qb.sum()
 with_accidental = bar_data[~bar_data.tpc.between(-1, 5)].duration_qb.sum()
 ```
 
-```{code-cell}
+```{code-cell} ipython3
 entire = no_accidental + with_accidental
 (
     f"Fraction of note duration without accidental of the entire durations: {no_accidental} / {entire} = "
@@ -460,7 +460,7 @@ entire = no_accidental + with_accidental
 
 ### Notes and staves
 
-```{code-cell}
+```{code-cell} ipython3
 print("Distribution of notes over staves:")
 utils.value_count_df(all_notes.staff)
 ```

@@ -61,7 +61,7 @@ def save_figure_as(
 # **Loading data**
 
 # %%
-D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
+D = dc.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
 
 # %% [markdown]

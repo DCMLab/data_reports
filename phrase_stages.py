@@ -970,8 +970,6 @@ sposalizio = plot_phrase_stages(phrase_annotations, phrase_id=9685)
 
 
 # %%
-
-
 def _make_localkey_shapes(
     y_root: int, is_minor: bool, x0: Number, x1: Number, text: Optional[str] = None
 ) -> List[dict]:
