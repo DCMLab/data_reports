@@ -1,24 +1,28 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: md:myst,ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: Python 3 (ipykernel)
-#     language: python
-#     name: python3
-# ---
+---
+jupytext:
+  formats: md:myst,ipynb,py:percent
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.18.1
+kernelspec:
+  display_name: Python 3 (ipykernel)
+  language: python
+  name: python3
+---
 
-# %% [markdown]
-# # Cou
+# Cou
 
-# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# %load_ext autoreload
-# %autoreload 2
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide imports
+  code_prompt_show: Show imports
+tags: [hide-cell]
+---
+%load_ext autoreload
+%autoreload 2
 
 import itertools
 import os
@@ -36,8 +40,15 @@ import utils
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
+```
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "couperin_study"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -94,40 +105,48 @@ def style_plotly(
     if save_as:
         save_figure_as(fig, save_as)
     return fig
+```
 
+**Loading data**
 
-# %% [markdown]
-# **Loading data**
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D
+```
 
-# %% [markdown]
-# **Grouping data**
+**Grouping data**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 pipeline = Pipeline(["KeySlicer", "ModeGrouper"])
 grouped_D = D.apply_step(pipeline)
 grouped_D
+```
 
-# %% [markdown]
-# **Starting point: DiMCAT's BassNotes feature**
+**Starting point: DiMCAT's BassNotes feature**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 bass_notes = D.apply_step(pipeline).get_feature("bassnotes")
 bass_notes.df
+```
 
-# %% [markdown]
-# **If needed, the `localkey_slice` intervals can be resolved using this table:**
+**If needed, the `localkey_slice` intervals can be resolved using this table:**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 local_keys = grouped_D.get_feature("KeyAnnotations")
 utils.print_heading("Key Segments Couperin")
 print(local_keys.groupby("mode").size().to_string())
 local_keys.head()
+```
 
-# %%
+```{code-cell}
 MAJOR_REGOLA_RN = {
     "I": "both",
     "V43": "both",
@@ -268,9 +287,15 @@ roo_leap_map_major, roo_leap_map_minor = make_roo_leap_maps()
 roo_step_map_major, roo_step_map_minor_preceding, roo_step_map_minor_subsequent = (
     make_roo_step_maps()
 )
+```
 
-
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def make_precise_preceding_movement_column(df):
     """Expects a dataframe containing the columns bass_degree, preceding_bass_degree, and preceding_movement,"""
     preceding_movement_precise = df.preceding_movement.where(
@@ -391,17 +416,17 @@ def make_subsequent_movement_category_column(df):
         ~is_regola_step_mask, "Diatonic step"
     ).replace("Step", "Other step")
     return subsequent_movement_category.rename("subsequent_movement_category")
+```
 
+**This is the main table of this notebook. It corresponds to the `BassNotes` features,
+with a `preceding_` and a `subsequent_` copy of each column concatenated to the right.
+The respective upward and downward shifts are performed within each localkey group,
+leaving first bass degrees with undefined preceding values and last bass degrees without
+undefined subsequent values.**
 
-# %% [markdown]
-# **This is the main table of this notebook. It corresponds to the `BassNotes` features,
-# with a `preceding_` and a `subsequent_` copy of each column concatenated to the right.
-# The respective upward and downward shifts are performed within each localkey group,
-# leaving first bass degrees with undefined preceding values and last bass degrees without
-# undefined subsequent values.**
+```{code-cell}
+:tags: [hide-input]
 
-
-# %% tags=["hide-input"]
 def make_adjacency_table(bass_notes):
     bass_notes = pd.concat(
         [
@@ -452,8 +477,11 @@ def make_adjacency_table(bass_notes):
 
 
 BN = make_adjacency_table(bass_notes)
+```
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 ignore_mask = BN.subsequent_interval.isna() | BN.subsequent_interval.duplicated()
 interval2fifths = (  # mapping that allows to order the x-axis with intervals according to LoF
     BN.loc[~ignore_mask, ["subsequent_interval", "subsequent_iv"]]
@@ -461,22 +489,22 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
     .iloc[:, 0]
     .sort_values()
 )
+```
 
-# %% [markdown]
-# ## Conditional probabilities
-# ### p(RoO)
-#
-# **The probability that a randomly picked chord is a RoO chord is 64.6 %**
+## Conditional probabilities
+### p(RoO)
 
-# %%
+**The probability that a randomly picked chord is a RoO chord is 64.6 %**
+
+```{code-cell}
 BN.roo_suspensions.value_counts(normalize=True)
+```
 
+### p(RoO|bass)
 
-# %% [markdown]
-# ### p(RoO|bass)
+```{code-cell}
+:tags: [hide-input]
 
-
-# %% tags=["hide-input"]
 def filter_diatonic_bass_degrees(
     base,
     mode: Optional[Literal["major", "minor"]] = None,
@@ -499,21 +527,25 @@ def filter_diatonic_bass_degrees(
 
 BN_dia = filter_diatonic_bass_degrees(BN)
 print(f"len(BN_dia) = {len(BN)} - {len(BN) - len(BN_dia)} = {len(BN_dia)}")
+```
 
-# %% [markdown]
-# **Probability that a diatonic bass degree is covered by the corresponding RoO chord: 65.7 %
-# (+3.4 % a RoO suspension)**
+**Probability that a diatonic bass degree is covered by the corresponding RoO chord: 65.7 %
+(+3.4 % a RoO suspension)**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 BN_dia.roo_suspensions.value_counts(normalize=True).to_frame().style.format("{:.1%}")
+```
 
-# %% [markdown]
-# **Probability that a _note essentielle_ is covered by the corresponding RoO chord: 73.7 %
-# (+5.2 % a RoO suspension)**\
-# **Probability that a _note non-essentielle_ is covered by the corresponding RoO chord: 53.7 %
-# (+0.5 % a RoO suspension)**
+**Probability that a _note essentielle_ is covered by the corresponding RoO chord: 73.7 %
+(+5.2 % a RoO suspension)**\
+**Probability that a _note non-essentielle_ is covered by the corresponding RoO chord: 53.7 %
+(+0.5 % a RoO suspension)**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 notes_essentielles = ("1", "3", "5")
 ess_selector = BN_dia.bass_degree.isin(notes_essentielles)
 roo_selector = BN_dia.roo_chord.notna()
@@ -528,11 +560,13 @@ pd.concat(
     ],
     axis=1,
 ).style.format("{:.1%}")
+```
 
-# %% [markdown]
-# ### p(#RoO = {2,1,0} | bass bigram)
+### p(#RoO = {2,1,0} | bass bigram)
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 all_bigrams = BN.query("subsequent_movement != 'None'")
 all_steps = BN.query("subsequent_movement == 'Step'")
 dia_steps = BN_dia.query("subsequent_movement_category == 'Diatonic step'")
@@ -550,55 +584,57 @@ print(
     f"of which {n_leaps} ({n_leaps/n_bigrams:.1%}) are leaps, "
     f"and {n_dia_leaps} ({n_dia_leaps/n_bigrams:.1%}) are diatonic leaps."
 )
+```
 
-# %% [markdown]
-# **Given any bass bigram, the probability that**
-#
-# * both bass notes carry RoO chords is **44.1 %** (**+ 5.7 %** that one is RoO, the other a suspension thereof);
-# * one of them carries an RoO chord is **34.3 %** (**+ 1.2 %** that one is an RoO suspension chord);
-# * none of them carries an RoO chord is **14.6 %**.
+**Given any bass bigram, the probability that**
 
-# %% tags=["hide-input"]
+* both bass notes carry RoO chords is **44.1 %** (**+ 5.7 %** that one is RoO, the other a suspension thereof);
+* one of them carries an RoO chord is **34.3 %** (**+ 1.2 %** that one is an RoO suspension chord);
+* none of them carries an RoO chord is **14.6 %**.
+
+```{code-cell}
+:tags: [hide-input]
+
 all_bigrams[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
     lambda x: str(set(x)), axis=1  # str() is needed because of the styler
 ).value_counts(normalize=True).to_frame().style.format("{:.1%}")
+```
 
-# %% [markdown]
-# ### p(#RoO = {2,1,0} | diatonic leap)
-#
-# **Given a diatonic leap, the probability that**
-#
-# * both bass notes carry RoO chords is **46.1 %** (**+ 3.1 %** that one is RoO, the other a suspension thereof);
-# * one of them carries an RoO chord is **37.0 %** (**+ 0.3 %** that one is an RoO suspension chord);
-# * none of them carries an RoO chord is **13.4 %**.
+### p(#RoO = {2,1,0} | diatonic leap)
 
-# %%
+**Given a diatonic leap, the probability that**
+
+* both bass notes carry RoO chords is **46.1 %** (**+ 3.1 %** that one is RoO, the other a suspension thereof);
+* one of them carries an RoO chord is **37.0 %** (**+ 0.3 %** that one is an RoO suspension chord);
+* none of them carries an RoO chord is **13.4 %**.
+
+```{code-cell}
 dia_leaps[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
     lambda x: str(set(x)), axis=1
 ).value_counts(normalize=True).to_frame().style.format("{:.1%}")
+```
 
-# %% [markdown]
-# ### p(#RoO = {2,1,0} | diatonic step)
-#
-# **Given a diatonic step, the probability that**
-#
-# * both bass notes carry RoO chords is **59.2 %** (**+ 4.5 %** that one is RoO, the other a suspension thereof);
-# * one of them carries an RoO chord is **25.0 %** (**+ 1.2 %** that one is an RoO suspension chord);
-# * none of them carries an RoO chord is **10.1 %**.
+### p(#RoO = {2,1,0} | diatonic step)
 
-# %%
+**Given a diatonic step, the probability that**
+
+* both bass notes carry RoO chords is **59.2 %** (**+ 4.5 %** that one is RoO, the other a suspension thereof);
+* one of them carries an RoO chord is **25.0 %** (**+ 1.2 %** that one is an RoO suspension chord);
+* none of them carries an RoO chord is **10.1 %**.
+
+```{code-cell}
 dia_steps[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
     lambda x: str(set(x)), axis=1
 ).value_counts(normalize=True).to_frame().style.format("{:.1%}")
+```
 
-# %% [markdown]
-# ### p(#RoO = {2,1,0} | bass ∈ {1, 3, 5})
-#
-# * both bass notes carry RoO chords is **64.9 %** (**+ 5.6 %** that one is RoO, the other a suspension thereof);
-# * one of them carries an RoO chord is **26.5 %** (**+ 0.2 %** that one is an RoO suspension chord);
-# * none of them carries an RoO chord is **2.8 %**.
+### p(#RoO = {2,1,0} | bass ∈ {1, 3, 5})
 
-# %%
+* both bass notes carry RoO chords is **64.9 %** (**+ 5.6 %** that one is RoO, the other a suspension thereof);
+* one of them carries an RoO chord is **26.5 %** (**+ 0.2 %** that one is an RoO suspension chord);
+* none of them carries an RoO chord is **2.8 %**.
+
+```{code-cell}
 bigrams_135_distinct = all_bigrams.query(
     "(bass_degree in @notes_essentielles) & (subsequent_bass_degree in @notes_essentielles) "
     "& bass_degree != subsequent_bass_degree"
@@ -606,19 +642,21 @@ bigrams_135_distinct = all_bigrams.query(
 bigrams_135_distinct[["roo_suspensions", "subsequent_roo_suspensions"]].apply(
     lambda x: str(set(x)), axis=1
 ).value_counts(normalize=True).to_frame().style.format("{:.1%}")
+```
 
-# %% [markdown]
-# ### p(movement = {leap,step,other} | RoO chord ∈ {1, 3, 5})
-#
-# NE := unigrams with diatonic bass degree ∈ {1, 3, 5} and RoO chord\
-# NN := unigrams with diatonic bass degree ∈ {2, 4, 6, 7} (and {#6, #7} in minor) and RoO chord
-#
-# * probability to proceed by leap: NE = **58.1 %**; NN = **23.8 %**
-# * probability to proceed by step: NE = **22.6 %**; NN = **74.0 %**
-# * probability to remain: NE = **8.4 %**; NN = **1.5 %**
-# * probability to be last in key segment: NE = **10.9 %**; NN = **0.7 %**
+### p(movement = {leap,step,other} | RoO chord ∈ {1, 3, 5})
 
-# %% tags=["hide-input"]
+NE := unigrams with diatonic bass degree ∈ {1, 3, 5} and RoO chord\
+NN := unigrams with diatonic bass degree ∈ {2, 4, 6, 7} (and {#6, #7} in minor) and RoO chord
+
+* probability to proceed by leap: NE = **58.1 %**; NN = **23.8 %**
+* probability to proceed by step: NE = **22.6 %**; NN = **74.0 %**
+* probability to remain: NE = **8.4 %**; NN = **1.5 %**
+* probability to be last in key segment: NE = **10.9 %**; NN = **0.7 %**
+
+```{code-cell}
+:tags: [hide-input]
+
 NE_roo = BN_dia[roo_selector & ess_selector]
 NN_roo = BN_dia[roo_selector & ~ess_selector]
 pd.concat(
@@ -632,18 +670,20 @@ pd.concat(
     ],
     axis=1,
 ).style.format("{:.1%}")
+```
 
-# %% [markdown]
-# ### p( RoO(subsequent) | RoO chord ∈ {1, 3, 5} moves by {leap, step} )
-#
-# Probability that the following chord is a RoO chord given
-#
-# * a _note essentielle_ proceeding by leap: **73.0 % (+4.7 % a suspension)**
-# * a _note essentielle_ proceeding by step: **71.0 % (+0.6 % a suspension)**
-# * a _note non-essentielle_ proceeding by leap: **50.0 % (+1.2 % a suspension)**
-# * a _note non-essentielle_ proceeding by step: **80.5 % (+8.3 % a suspension)**
+### p( RoO(subsequent) | RoO chord ∈ {1, 3, 5} moves by {leap, step} )
 
-# %% tags=["hide-input"]
+Probability that the following chord is a RoO chord given
+
+* a _note essentielle_ proceeding by leap: **73.0 % (+4.7 % a suspension)**
+* a _note essentielle_ proceeding by step: **71.0 % (+0.6 % a suspension)**
+* a _note non-essentielle_ proceeding by leap: **50.0 % (+1.2 % a suspension)**
+* a _note non-essentielle_ proceeding by step: **80.5 % (+8.3 % a suspension)**
+
+```{code-cell}
+:tags: [hide-input]
+
 (
     pd.concat(
         {
@@ -659,13 +699,13 @@ pd.concat(
     .rename_axis(["Notes", "Movement"])
     .rename_axis("Subsequent Chord", axis=1)
 ).style.format("{:.1%}")
+```
 
+### Degree-wise movement Sankey
 
-# %% [markdown]
-# ### Degree-wise movement Sankey
+```{code-cell}
+:tags: [hide-input]
 
-
-# %% tags=["hide-input"]
 def make_summary_sankey_data(
     BN, roo_chords_only=True, extend_right=True, color_edges=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
@@ -751,14 +791,14 @@ fig = utils.make_sankey(
 )
 save_figure_as(fig, "movement_summary_sankey", height=1000)
 fig
+```
 
+## Overview of how the bass moves
+### Intervals
 
-# %% [markdown]
-# ## Overview of how the bass moves
-# ### Intervals
+```{code-cell}
+:tags: [hide-input]
 
-
-# %% tags=["hide-input"]
 def plot_bass_movement(BN, corpus_name, **kwargs):
     interval_data = pd.concat(
         [
@@ -796,17 +836,17 @@ def plot_bass_movement(BN, corpus_name, **kwargs):
 fig = plot_bass_movement(BN, None, font_size=45)
 save_figure_as(fig, "bass_intervals", height=1000)
 fig
+```
 
+### Types of movement
 
-# %% [markdown]
-# ### Types of movement
-#
-# **The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
-# degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
-# this study.**
+**The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
+degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
+this study.**
 
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 def plot_movement_types(
     BN,
     corpus_title: Optional[str] = None,
@@ -854,11 +894,17 @@ fig = plot_movement_types(
 )
 save_figure_as(fig, "bass_movements", height=1000)
 fig
+```
 
-# %% [markdown]
-# ### Sankey diagrams showing movement types before and after each scale degree
+### Sankey diagrams showing movement types before and after each scale degree
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 CATEGORY2COLOR = dict(
     both="lightcoral",
     ascending="lightgreen",
@@ -1012,152 +1058,154 @@ def make_bass_degree_sankey(
         edge_data, node_labels, node_color=node_colors, title=title, **layout
     )
     return fig
+```
 
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 fig = make_bass_degree_sankey(
     BN, None, None, middle_nodes_column="roo_suspensions", font_size=45
 )
 save_figure_as(fig, "movement_sankey", height=700)
 fig
+```
 
-# %% [markdown]
-# ## Unigrams
-# ### Roman numerals
+## Unigrams
+### Roman numerals
 
-# %%
+```{code-cell}
 chord_labels = grouped_D.get_feature("HarmonyLabels")
 unigram_occurrences = chord_labels.apply_step("Counter")
 occurrence_ranking = unigram_occurrences.make_ranking_table(
     drop_cols=["chord_and_mode", "proportion"], top_k=0
 )
 style_unigram_table(occurrence_ranking)
+```
 
-# %% [markdown]
-# ### Unigram movement Sankey
-# #### Major
+### Unigram movement Sankey
+#### Major
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN, "Couperin", "major")
 save_figure_as(fig, "couperin_sankey_complete_major")
 fig
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN, "Couperin", "minor")
 save_figure_as(fig, "couperin_sankey_complete_minor")
 fig
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 1
-# #### Major
+### Intervals over bass degree 1
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 1)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 1)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 2
-# #### Major
+### Intervals over bass degree 2
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 2)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 2)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 3
-# #### Major
+### Intervals over bass degree 3
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 3)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 3)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 4
-# #### Major
+### Intervals over bass degree 4
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 4)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 4)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 5
-# #### Major
+### Intervals over bass degree 5
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 5)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 5)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 6
-# #### Major
+### Intervals over bass degree 6
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 6)
+```
 
-# %% [markdown]
-# #### Minor (ascending)
+#### Minor (ascending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", "#6")
+```
 
-# %% [markdown]
-# #### Minor (descending)
+#### Minor (descending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 6)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 7
-# #### Major
+### Intervals over bass degree 7
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 7)
+```
 
-# %% [markdown]
-# #### Minor (ascending)
+#### Minor (ascending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", "#7")
+```
 
-# %% [markdown]
-# #### Minor (descending)
+#### Minor (descending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 7)
+```
 
-# %% [markdown]
-# ## Explanatory power of the RoO
-# ### Defining the vocabulary
+## Explanatory power of the RoO
+### Defining the vocabulary
 
-# %%
+```{code-cell}
 maj = ("M3", "P5")
 maj6 = ("m3", "m6")
 min = ("m3", "P5")
@@ -1213,13 +1261,13 @@ regola_vocabulary_major = tuple(
 regola_vocabulary_minor = tuple(
     set(regole["ascending_minor"] + regole["descending_minor"])
 )
+```
 
+### Most frequent chords for each bass degree
 
-# %% [markdown]
-# ### Most frequent chords for each bass degree
+```{code-cell}
+:tags: [hide-input]
 
-
-# %% tags=["hide-input"]
 def summarize_groups_top_k_chords(df, column="intervals_over_bass", k=None):
     """Used in Groupby.apply()"""
     proportions = df[column].value_counts(normalize=True)
@@ -1341,30 +1389,35 @@ def style_rank_table(df: pd.DataFrame):
         # .format_index_names(new_index_names, axis=0) # available in a future pandas version
         # https://pandas.pydata.org/docs/dev/reference/api/pandas.io.formats.style.Styler.format_index_names.html
     )
+```
 
+#### Major
 
-# %% [markdown]
-# #### Major
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 major, minor = degree_wise_top_k(BN, k=3)
 style_rank_table(major)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 style_rank_table(minor)
+```
 
+### "Mega tables"
 
-# %% [markdown]
-# ### "Mega tables"
-#
-# Equivalent to the two preceding tables but with additional heatmaps that show the predominant
-# movement types preceding and following any chord.
+Equivalent to the two preceding tables but with additional heatmaps that show the predominant
+movement types preceding and following any chord.
 
-
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def summarize_groups_movements(
     df, column="preceding_movement_precise", normalize=False
 ):
@@ -1419,9 +1472,15 @@ def summarize_degree_wise_movement(
     if not normalize:
         result = result.astype({col: "Int64" for col in movement_cols})
     return result
+```
 
-
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def aggregate_other_movements(df, normalize=True):
     columns = [col for col in df.columns if col != "movement_entropy"]
     result = df.loc[:, columns].sum()
@@ -1533,8 +1592,15 @@ def make_mega_tables(BN=BN, k=None, precise: Optional[bool] = None):
 
 mega_major, mega_minor = make_mega_tables(k=5)
 mega_major
+```
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 major_roo_chord2movement = dict(
     zip(
         sorted(regola_vocabulary_major),
@@ -1553,8 +1619,15 @@ major_roo_chord2movement = dict(
     )
 )
 major_roo_chord2movement
+```
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 minor_roo_chord2movement = dict(
     zip(
         sorted(regola_vocabulary_minor),
@@ -1573,9 +1646,11 @@ minor_roo_chord2movement = dict(
     )
 )
 minor_roo_chord2movement
+```
 
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 def style_mega_table(
     meta_table,
     mode,
@@ -1694,11 +1769,21 @@ def style_mega_table(
 
 
 style_mega_table(mega_major, "major")
+```
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 style_mega_table(mega_minor, "minor")
+```
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 name2BN = {"couperin": BN}
 
 
@@ -1851,28 +1936,29 @@ def get_coverage_values(
     result = pd.Series(results, name="proportion")
     result.index.names = ["mode", "coverage_of"]
     return result
+```
 
+### Which proportion of unigrams are "explained" by Campion's regola
 
-# %% [markdown]
-# ### Which proportion of unigrams are "explained" by Campion's regola
-#
-# The percentages are based on different sets of unigrams.
-# `from` means before/leading to a bass degree, `to` means after/following a bass degree.
-#
-# * `all`: all bass degrees
-# * `diatonic`: all non-chromatic bass degrees (in minor, the chromatic scale degrees `#6` and `#7` are considered
-#   diatonic)
-# * `to_ascending`: all diatonic bass degrees that ascend within the regola
-# * `from_ascending`: all diatonic bass degrees that are reached by ascending within the regola
-# * `to_and_from_ascending`: all diatonic bass degrees that are reached by ascending within the regola and proceed
-#   ascending within the regola
-# * `to_and_from_either`: all diatonic bass degrees whose predecessor and successor are both upper or lower neighbors
-#   within the regola
-# * `to_leap`: all diatonic bass degrees followed by a leap
-# * `to_same`: all diatonic bass degrees followed by the same bass degree
-# * etc.
+The percentages are based on different sets of unigrams.
+`from` means before/leading to a bass degree, `to` means after/following a bass degree.
 
-# %% tags=["hide-input"]
+* `all`: all bass degrees
+* `diatonic`: all non-chromatic bass degrees (in minor, the chromatic scale degrees `#6` and `#7` are considered
+  diatonic)
+* `to_ascending`: all diatonic bass degrees that ascend within the regola
+* `from_ascending`: all diatonic bass degrees that are reached by ascending within the regola
+* `to_and_from_ascending`: all diatonic bass degrees that are reached by ascending within the regola and proceed
+  ascending within the regola
+* `to_and_from_either`: all diatonic bass degrees whose predecessor and successor are both upper or lower neighbors
+  within the regola
+* `to_leap`: all diatonic bass degrees followed by a leap
+* `to_same`: all diatonic bass degrees followed by the same bass degree
+* etc.
+
+```{code-cell}
+:tags: [hide-input]
+
 regola_vocabulary_major = tuple(
     set(regole["ascending_major"] + regole["descending_major"])
 )
@@ -1908,18 +1994,22 @@ utils.print_heading(
     "What percentage of each unigram category the RoO covers in Couperin"
 )
 regola_coverage
+```
 
+### Comparing the regola against all "top k" vocabularies
 
-# %% [markdown]
-# ### Comparing the regola against all "top k" vocabularies
-#
-# **Campion's regola comprises 10 different chords for both major and minor.
-# For comparison, its values are shown at point 10.5 on the x-axis.
-# The lower two plots show how many unigrams are covered by individual chords.
-# Hover over the points to see the corresponding chords.**
+**Campion's regola comprises 10 different chords for both major and minor.
+For comparison, its values are shown at point 10.5 on the x-axis.
+The lower two plots show how many unigrams are covered by individual chords.
+Hover over the points to see the corresponding chords.**
 
-
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def make_coverage_plot_data(
     bn_name, include_singular_vocabularies=True, **features
 ) -> pd.DataFrame:
@@ -1956,9 +2046,11 @@ def make_coverage_plot_data(
         results[("single", i)] = pd.concat([values, chord], axis=1)
     index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
     return pd.concat(results, names=index_levels)
+```
 
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 
 
 def make_coverage_plot_data_with_regola(bn_name):
@@ -2049,9 +2141,9 @@ def plot_coverage_data_categorical(
         xaxes=xaxes,
         yaxes=yaxes,
     )
+```
 
-
-# %%
+```{code-cell}
 feature_group = dict(
     to_same="less",
     to_and_from_same="less",
@@ -2078,8 +2170,9 @@ coverage_data["comparison"] = coverage_data.coverage_of.map(feature_group)
 plot_coverage_data_categorical(
     coverage_data,
 )
+```
 
-# %%
+```{code-cell}
 r0, r1 = 7, 14
 selection = coverage_data.query("@r0 <= rank <= @r1")
 fig = plot_coverage_data_categorical(
@@ -2087,12 +2180,12 @@ fig = plot_coverage_data_categorical(
 )
 save_figure_as(fig, "couperin_top_k_coverage")
 fig
+```
 
-# %% [markdown]
-# **The following table shows for which subsets the regola performs better (positive values) or
-# worse (negative values) than the top-10 vocabulary.**
+**The following table shows for which subsets the regola performs better (positive values) or
+worse (negative values) than the top-10 vocabulary.**
 
-# %%
+```{code-cell}
 unigram_subset_sizes = {}
 for mode in ("major", "minor"):
     basis_dia, basis_all = mode + "_diatonic", mode + "_all"
@@ -2114,9 +2207,9 @@ unigram_subset_sizes = pd.Series(unigram_subset_sizes, name="N").rename_axis(
     ["mode", "coverage_of"]
 )
 unigram_subset_sizes
+```
 
-
-# %%
+```{code-cell}
 def prep_cov_data(S):
     return (
         S.reset_index(drop=True)
@@ -2144,23 +2237,25 @@ inspect_difference = pd.concat(
     axis=1,
 )
 inspect_difference.sort_values("difference", ascending=False)
+```
 
-# %%
+```{code-cell}
 plot_regola_vs_top_k_coverage("couperin")
+```
 
+**In order to inspect these plots you will want to hide traces.
+Click on a legend item to toggle it, double-click on an item to toggle all others.**
 
-# %% [markdown]
-# **In order to inspect these plots you will want to hide traces.
-# Click on a legend item to toggle it, double-click on an item to toggle all others.**
++++
 
-# %% [markdown]
-# ## Regola chords and movement types
-# ### All regola chords
-# **The following table shows absolute counts and proportion of movement types preceding and
-# succeeding all RoO chords.**
+## Regola chords and movement types
+### All regola chords
+**The following table shows absolute counts and proportion of movement types preceding and
+succeeding all RoO chords.**
 
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 def get_BN_reg(BN, regola_only=True):
     """A version of BN filtered on regola chords only."""
     result = []
@@ -2198,143 +2293,148 @@ def tally_movement_per_chord(BN_reg, degree_wise=False):
 
 BN_reg = get_BN_reg(BN)
 tally_movement_per_chord(BN_reg)
+```
 
-# %% [markdown]
-# ### Degree-wise
-# **The following table shows absolute counts and proportion of movement types preceding and
-# succeeding each individual RoO chord.**
+### Degree-wise
+**The following table shows absolute counts and proportion of movement types preceding and
+succeeding each individual RoO chord.**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 regola_chord_movement = tally_movement_per_chord(BN_reg, degree_wise=True)
 regola_chord_movement
+```
 
-# %% [markdown]
-# ### As Sankey diagrams
-# #### Major
+### As Sankey diagrams
+#### Major
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN_reg, "Couperin", "major")
 save_figure_as(fig, "couperin_sankey_regola_major")
 fig
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN_reg, "Couperin", "minor")
 save_figure_as(fig, "couperin_sankey_regola_minor")
 fig
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 1
-# #### Major
+### Intervals over bass degree 1
+#### Major
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 1)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 1)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 2
-# #### Major
+### Intervals over bass degree 2
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 2)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 2)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 3
-# #### Major
+### Intervals over bass degree 3
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 3)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 3)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 4
-# #### Major
+### Intervals over bass degree 4
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 4)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 4)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 5
-# #### Major
+### Intervals over bass degree 5
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 5)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 5)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 6
-# #### Major
+### Intervals over bass degree 6
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 6)
+```
 
-# %% [markdown]
-# #### Minor (ascending)
+#### Minor (ascending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", "#6")
+```
 
-# %% [markdown]
-# #### Minor (descending)
+#### Minor (descending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 6)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 7
-# #### Major
+### Intervals over bass degree 7
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 7)
+```
 
-# %% [markdown]
-# #### Minor (ascending)
+#### Minor (ascending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", "#7")
+```
 
-# %% [markdown]
-# #### Minor (descending)
+#### Minor (descending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 7)
+```
 
-# %% [markdown]
-# ## Bigrams
+## Bigrams
 
-# %%
+```{code-cell}
 chord_bgt: resources.NgramTable = chord_labels.apply_step("BigramAnalyzer")
 chord_bigrams = chord_bgt.make_bigram_tuples("chord")
 bgt = chord_bigrams.make_ranking_table()
 bgt.drop(columns=[("major", "proportion_%"), ("minor", "proportion_%")]).style.format(
     {col: "{:.2%}" for col in bgt.columns if col[1] == "proportion"}
 )
+```

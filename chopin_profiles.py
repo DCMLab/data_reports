@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.18.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -121,6 +121,7 @@ print(
 # %% [markdown]
 # ## Reduction of vocabulary size
 
+
 # %%
 def normalized_entropy_of_prevalence(value_counts):
     return compute_entropy_of_occurrences(value_counts) / math.log2(len(value_counts))
@@ -147,6 +148,7 @@ print(
 # %% [markdown]
 # Negligible difference between the two different ways of calculating, probably due to an inconsistent indication of
 # changes. But the second one is the one that also allows filtering out the changes >= 8
+
 
 # %%
 def show_stats(groupby, info, k=5):

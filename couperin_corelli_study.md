@@ -1,24 +1,28 @@
-# ---
-# jupyter:
-#   jupytext:
-#     formats: md:myst,ipynb,py:percent
-#     text_representation:
-#       extension: .py
-#       format_name: percent
-#       format_version: '1.3'
-#       jupytext_version: 1.18.1
-#   kernelspec:
-#     display_name: revamp
-#     language: python
-#     name: revamp
-# ---
+---
+jupytext:
+  formats: md:myst,ipynb,py:percent
+  text_representation:
+    extension: .md
+    format_name: myst
+    format_version: 0.13
+    jupytext_version: 1.18.1
+kernelspec:
+  display_name: revamp
+  language: python
+  name: revamp
+---
 
-# %% [markdown]
-# # Cou-Cor
+# Cou-Cor
 
-# %% mystnb={"code_prompt_hide": "Hide imports", "code_prompt_show": "Show imports"} tags=["hide-cell"]
-# %load_ext autoreload
-# %autoreload 2
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide imports
+  code_prompt_show: Show imports
+tags: [hide-cell]
+---
+%load_ext autoreload
+%autoreload 2
 
 import itertools
 import os
@@ -35,8 +39,15 @@ import utils
 
 pd.set_option("display.max_rows", 1000)
 pd.set_option("display.max_columns", 500)
+```
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 RESULTS_PATH = os.path.abspath(os.path.join(utils.OUTPUT_FOLDER, "couperin_study"))
 os.makedirs(RESULTS_PATH, exist_ok=True)
 
@@ -88,37 +99,44 @@ def style_plotly(
     if save_as:
         save_figure_as(fig, save_as)
     return fig
+```
 
+**Loading data**
 
-# %% [markdown]
-# **Loading data**
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 D = utils.get_dataset("couperin_concerts", corpus_release="v2.2")
 D_cor = utils.get_dataset("corelli", corpus_release="v2.7")
 D
+```
 
-# %% [markdown]
-# **Grouping data**
+**Grouping data**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 pipeline = Pipeline(["KeySlicer", "ModeGrouper"])
 grouped_D = D.apply_step(pipeline)
 grouped_D_cor = D_cor.apply_step(pipeline)
 grouped_D
+```
 
-# %% [markdown]
-# **Starting point: DiMCAT's BassNotes feature**
+**Starting point: DiMCAT's BassNotes feature**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 bass_notes = D.apply_step(pipeline).get_feature("bassnotes")
 bass_notes_cor = D_cor.apply_step(pipeline).get_feature("bassnotes")
 bass_notes.df
+```
 
-# %% [markdown]
-# **If needed, the `localkey_slice` intervals can be resolved using this table:**
+**If needed, the `localkey_slice` intervals can be resolved using this table:**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 local_keys = grouped_D.get_feature("KeyAnnotations")
 utils.print_heading("Key Segments Couperin")
 print(local_keys.groupby("mode").size().to_string())
@@ -126,8 +144,15 @@ local_keys_cor = grouped_D_cor.get_feature("KeyAnnotations")
 utils.print_heading("\nKey Segments Corelli")
 print(local_keys_cor.groupby("mode").size().to_string())
 local_keys.head()
+```
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 succession_map = dict(
     ascending_major={
         "1": "2",
@@ -202,17 +227,17 @@ def make_precise_subsequent_movement_column(df):
         df.subsequent_bass_degree != expected_descending_degree, "descending"
     )
     return subsequent_movement_precise
+```
 
+**This is the main table of this notebook. It corresponds to the `BassNotes` features,
+with a `preceding_` and a `subsequent_` copy of each column concatenated to the right.
+The respective upward and downward shifts are performed within each localkey group,
+leaving first bass degrees with undefined preceding values and last bass degrees without
+undefined subsequent values.**
 
-# %% [markdown]
-# **This is the main table of this notebook. It corresponds to the `BassNotes` features,
-# with a `preceding_` and a `subsequent_` copy of each column concatenated to the right.
-# The respective upward and downward shifts are performed within each localkey group,
-# leaving first bass degrees with undefined preceding values and last bass degrees without
-# undefined subsequent values.**
+```{code-cell}
+:tags: [hide-input]
 
-
-# %% tags=["hide-input"]
 def make_adjacency_table(bass_notes):
     preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
     preceding.columns = "preceding_" + preceding.columns
@@ -254,8 +279,11 @@ def make_adjacency_table(bass_notes):
 
 BN = make_adjacency_table(bass_notes)
 BN_cor = make_adjacency_table(bass_notes_cor)
+```
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 ignore_mask = BN.subsequent_interval.isna() | BN.subsequent_interval.duplicated()
 interval2fifths = (  # mapping that allows to order the x-axis with intervals according to LoF
     BN.loc[~ignore_mask, ["subsequent_interval", "subsequent_iv"]]
@@ -263,14 +291,14 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
     .iloc[:, 0]
     .sort_values()
 )
+```
 
+## Overview of how the bass moves
+### Intervals
 
-# %% [markdown]
-# ## Overview of how the bass moves
-# ### Intervals
+```{code-cell}
+:tags: [hide-input]
 
-
-# %% tags=["hide-input"]
 def plot_bass_movement(BN, corpus_name):
     interval_data = pd.concat(
         [
@@ -300,17 +328,17 @@ def plot_bass_movement(BN, corpus_name):
 
 plot_bass_movement(BN, "Couperin")
 plot_bass_movement(BN_cor, "Corelli")
+```
 
+### Types of movement
 
-# %% [markdown]
-# ### Types of movement
-#
-# **The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
-# degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
-# this study.**
+**The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
+degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
+this study.**
 
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 def plot_movement_types(BN, corpus_name, precise_categories=True):
     subsequent_movement = (
         "subsequent_movement_precise" if precise_categories else "subsequent_movement"
@@ -348,13 +376,17 @@ def plot_movement_types(BN, corpus_name, precise_categories=True):
 
 plot_movement_types(BN, "Couperin")
 plot_movement_types(BN_cor, "Corelli")
+```
 
+## Sankey diagrams showing movement types before and after each scale degree
 
-# %% [markdown]
-# ## Sankey diagrams showing movement types before and after each scale degree
-
-
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def make_sankey_data(
     five_major, color_edges=True, precise=True
 ) -> Tuple[pd.DataFrame, List[str], List[str]] | Tuple[pd.DataFrame, List[str]]:
@@ -437,12 +469,11 @@ def make_bass_degree_sankey(
         edge_data, node_labels, node_color=node_colors, title=title, **layout
     )
     return fig
+```
 
+### Unigram Table
 
-# %% [markdown]
-# ### Unigram Table
-
-# %%
+```{code-cell}
 major_regola_rn = {
     "I": "both",
     "V43": "both",
@@ -500,199 +531,217 @@ def style_unigram_table(df: pd.DataFrame):
     return df.style.apply(
         color_regola_rows, axis=1, subset=["Major"], mode="major"
     ).apply(color_regola_rows, axis=1, subset=["Minor"], mode="minor")
+```
 
-
-# %%
+```{code-cell}
 chord_labels_cor = grouped_D_cor.get_feature("HarmonyLabels")
 unigram_occurrences_cor = chord_labels_cor.apply_step("Counter")
 occurrence_ranking_cor = unigram_occurrences_cor.make_ranking_table(
     drop_cols=["chord_and_mode", "proportion"], top_k=0
 )
 style_unigram_table(occurrence_ranking_cor)
+```
 
-# %% [markdown]
-# ### Unigram movement Sankey
-# #### Major
+### Unigram movement Sankey
+#### Major
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN, "Couperin", "major")
 save_figure_as(fig, "couperin_sankey_complete_major")
 fig
+```
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN_cor, "Corelli", "major")
 save_figure_as(fig, "corelli_sankey_complete_major")
 fig
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN, "Couperin", "minor")
 save_figure_as(fig, "couperin_sankey_complete_minor")
 fig
+```
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN_cor, "Corelli", "minor")
 save_figure_as(fig, "corelli_sankey_complete_minor")
 fig
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 1
-# #### Major
+### Intervals over bass degree 1
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 1)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "major", 1)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 1)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "minor", 1)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 2
-# #### Major
+### Intervals over bass degree 2
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 2)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "major", 2)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 2)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "minor", 2)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 3
-# #### Major
+### Intervals over bass degree 3
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 3)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "major", 3)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 3)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "minor", 3)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 4
-# #### Major
+### Intervals over bass degree 4
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 4)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "major", 4)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 4)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "minor", 4)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 5
-# #### Major
+### Intervals over bass degree 5
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 5)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "major", 5)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 5)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "minor", 5)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 6
-# #### Major
+### Intervals over bass degree 6
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 6)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "major", 6)
+```
 
-# %% [markdown]
-# #### Minor (ascending)
+#### Minor (ascending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", "#6")
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Corelli", "minor", "#6")
+```
 
-# %% [markdown]
-# #### Minor (descending)
+#### Minor (descending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 6)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "minor", 6)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 7
-# #### Major
+### Intervals over bass degree 7
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "major", 7)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "major", 7)
+```
 
-# %% [markdown]
-# #### Minor (ascending)
+#### Minor (ascending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", "#7")
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Corelli", "minor", "#7")
+```
 
-# %% [markdown]
-# #### Minor (descending)
+#### Minor (descending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN, "Couperin", "minor", 7)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_cor, "Corelli", "minor", 7)
+```
 
-# %% [markdown]
-# ## Explanatory power of the RoO
-# ### Defining the vocabulary
+## Explanatory power of the RoO
+### Defining the vocabulary
 
-# %%
+```{code-cell}
 maj = ("M3", "P5")
 maj6 = ("m3", "m6")
 min = ("m3", "P5")
@@ -748,13 +797,13 @@ regola_vocabulary_major = tuple(
 regola_vocabulary_minor = tuple(
     set(regole["ascending_minor"] + regole["descending_minor"])
 )
+```
 
+### Most frequent chords for each bass degree
 
-# %% [markdown]
-# ### Most frequent chords for each bass degree
+```{code-cell}
+:tags: [hide-input]
 
-
-# %% tags=["hide-input"]
 def summarize_groups_top_k_chords(df, column="intervals_over_bass", k=3):
     """Used in Groupby.apply()"""
     proportions = df[column].value_counts(normalize=True)
@@ -863,41 +912,50 @@ def style_rank_table(df: pd.DataFrame):
         # .format_index_names(new_index_names, axis=0) # available in a future pandas version
         # https://pandas.pydata.org/docs/dev/reference/api/pandas.io.formats.style.Styler.format_index_names.html
     )
+```
 
+#### Major
+##### Couperin
 
-# %% [markdown]
-# #### Major
-# ##### Couperin
-
-# %%
+```{code-cell}
 maj5, min5 = degree_wise_top_k(BN, k=5)
 maj5
+```
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 major, minor = degree_wise_top_k(BN)
 style_rank_table(major)
+```
 
-# %% [markdown]
-# ##### Corelli
+##### Corelli
 
-# %%
+```{code-cell}
 major_cor, minor_cor = degree_wise_top_k(BN_cor)
 style_rank_table(major_cor)
+```
 
-# %% [markdown]
-# #### Minor
-# ##### Couperin
+#### Minor
+##### Couperin
 
-# %%
+```{code-cell}
 style_rank_table(minor)
+```
 
-# %% [markdown]
-# ##### Corelli
+##### Corelli
 
-# %%
+```{code-cell}
 style_rank_table(minor_cor)
+```
 
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 name2BN = {"couperin": BN, "corelli": BN_cor}
 
 
@@ -1055,28 +1113,29 @@ def get_coverage_values(
     result = pd.Series(results, name="proportion")
     result.index.names = ["mode", "coverage_of"]
     return result
+```
 
+### Which proportion of unigrams are "explained" by Campion's regola
 
-# %% [markdown]
-# ### Which proportion of unigrams are "explained" by Campion's regola
-#
-# The percentages are based on different sets of unigrams.
-# `from` means before/leading to a bass degree, `to` means after/following a bass degree.
-#
-# * `all`: all bass degrees
-# * `diatonic`: all non-chromatic bass degrees (in minor, the chromatic scale degrees `#6` and `#7` are considered
-#   diatonic)
-# * `to_ascending`: all diatonic bass degrees that ascend within the regola
-# * `from_ascending`: all diatonic bass degrees that are reached by ascending within the regola
-# * `to_and_from_ascending`: all diatonic bass degrees that are reached by ascending within the regola and proceed
-#   ascending within the regola
-# * `to_and_from_either`: all diatonic bass degrees whose predecessor and successor are both upper or lower neighbors
-#   within the regola
-# * `to_leap`: all diatonic bass degrees followed by a leap
-# * `to_same`: all diatonic bass degrees followed by the same bass degree
-# * etc.
+The percentages are based on different sets of unigrams.
+`from` means before/leading to a bass degree, `to` means after/following a bass degree.
 
-# %% tags=["hide-input"]
+* `all`: all bass degrees
+* `diatonic`: all non-chromatic bass degrees (in minor, the chromatic scale degrees `#6` and `#7` are considered
+  diatonic)
+* `to_ascending`: all diatonic bass degrees that ascend within the regola
+* `from_ascending`: all diatonic bass degrees that are reached by ascending within the regola
+* `to_and_from_ascending`: all diatonic bass degrees that are reached by ascending within the regola and proceed
+  ascending within the regola
+* `to_and_from_either`: all diatonic bass degrees whose predecessor and successor are both upper or lower neighbors
+  within the regola
+* `to_leap`: all diatonic bass degrees followed by a leap
+* `to_same`: all diatonic bass degrees followed by the same bass degree
+* etc.
+
+```{code-cell}
+:tags: [hide-input]
+
 regola_vocabulary_major = tuple(
     set(regole["ascending_major"] + regole["descending_major"])
 )
@@ -1112,8 +1171,9 @@ utils.print_heading(
     "What percentage of each unigram category the RoO covers in Couperin"
 )
 regola_coverage
+```
 
-# %%
+```{code-cell}
 regola_coverage_cor = get_coverage_values(
     "corelli", regola_vocabulary_major, regola_vocabulary_minor, **features
 )
@@ -1121,18 +1181,22 @@ utils.print_heading(
     "What percentage of each unigram category the RoO covers in Corelli"
 )
 regola_coverage_cor
+```
 
+### Comparing the regola against all "top k" vocabularies
 
-# %% [markdown]
-# ### Comparing the regola against all "top k" vocabularies
-#
-# **Campion's regola comprises 10 different chords for both major and minor.
-# For comparison, its values are shown at point 10.5 on the x-axis.
-# The lower two plots show how many unigrams are covered by individual chords.
-# Hover over the points to see the corresponding chords.**
+**Campion's regola comprises 10 different chords for both major and minor.
+For comparison, its values are shown at point 10.5 on the x-axis.
+The lower two plots show how many unigrams are covered by individual chords.
+Hover over the points to see the corresponding chords.**
 
-
-# %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
+```{code-cell}
+---
+mystnb:
+  code_prompt_hide: Hide helpers
+  code_prompt_show: Show helpers
+tags: [hide-cell]
+---
 def make_coverage_plot_data(
     bn_name, include_singular_vocabularies=True, **features
 ) -> pd.DataFrame:
@@ -1169,9 +1233,11 @@ def make_coverage_plot_data(
         results[("single", i)] = pd.concat([values, chord], axis=1)
     index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
     return pd.concat(results, names=index_levels)
+```
 
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 
 
 def make_coverage_plot_data_with_regola(bn_name):
@@ -1262,9 +1328,9 @@ def plot_coverage_data_categorical(
         xaxes=xaxes,
         yaxes=yaxes,
     )
+```
 
-
-# %%
+```{code-cell}
 feature_group = dict(
     to_same="less",
     to_and_from_same="less",
@@ -1291,8 +1357,9 @@ coverage_data["comparison"] = coverage_data.coverage_of.map(feature_group)
 plot_coverage_data_categorical(
     coverage_data,
 )
+```
 
-# %%
+```{code-cell}
 r0, r1 = 8, 13
 selection = coverage_data.query("@r0 - 1 <= rank <= @r1 + 1")
 fig = plot_coverage_data_categorical(
@@ -1300,30 +1367,32 @@ fig = plot_coverage_data_categorical(
 )
 save_figure_as(fig, "couperin_top_k_coverage")
 fig
+```
 
-# %%
+```{code-cell}
 plot_regola_vs_top_k_coverage("couperin")
+```
 
-# %% [markdown]
-# **In order to inspect these plots you will want to hide traces.
-# Click on a legend item to toggle it, double-click on an item to toggle all others.**
+**In order to inspect these plots you will want to hide traces.
+Click on a legend item to toggle it, double-click on an item to toggle all others.**
 
-# %%
+```{code-cell}
 plot_regola_vs_top_k_coverage("corelli")
+```
 
+**In order to inspect these plots you will want to hide traces.
+Click on a legend item to toggle it, double-click on an item to toggle all others.**
 
-# %% [markdown]
-# **In order to inspect these plots you will want to hide traces.
-# Click on a legend item to toggle it, double-click on an item to toggle all others.**
++++
 
-# %% [markdown]
-# ## Regola chords and movement types
-# ### All regola chords
-# **The following table shows absolute counts and proportion of movement types preceding and
-# succeeding all RoO chords.**
+## Regola chords and movement types
+### All regola chords
+**The following table shows absolute counts and proportion of movement types preceding and
+succeeding all RoO chords.**
 
+```{code-cell}
+:tags: [hide-input]
 
-# %% tags=["hide-input"]
 def get_BN_reg(BN, regola_only=True):
     """A version of BN filtered on regola chords only."""
     result = []
@@ -1362,194 +1431,216 @@ def tally_movement_per_chord(BN_reg, degree_wise=False):
 BN_reg = get_BN_reg(BN)
 BN_reg_cor = get_BN_reg(BN_cor)
 tally_movement_per_chord(BN_reg)
+```
 
-# %% [markdown]
-# ### Degree-wise
-# **The following table shows absolute counts and proportion of movement types preceding and
-# succeeding each individual RoO chord.**
+### Degree-wise
+**The following table shows absolute counts and proportion of movement types preceding and
+succeeding each individual RoO chord.**
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 regola_chord_movement = tally_movement_per_chord(BN_reg, degree_wise=True)
 regola_chord_movement
+```
 
-# %% [markdown]
-# ### All Regola chords
-# #### Major
+### All Regola chords
+#### Major
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN_reg, "Couperin", "major")
 save_figure_as(fig, "couperin_sankey_regola_major")
 fig
+```
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN_reg, "Corelli", "major")
 save_figure_as(fig, "corelli_sankey_regola_major")
 fig
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN_reg, "Couperin", "minor")
 save_figure_as(fig, "couperin_sankey_regola_minor")
 fig
+```
 
-# %%
+```{code-cell}
 fig = make_bass_degree_sankey(BN_reg, "Corelli", "minor")
 save_figure_as(fig, "corelli_sankey_regola_minor")
 fig
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 1
-# #### Major
+### Intervals over bass degree 1
+#### Major
 
-# %% tags=["hide-input"]
+```{code-cell}
+:tags: [hide-input]
+
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 1)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 1)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 1)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 1)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 2
-# #### Major
+### Intervals over bass degree 2
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 2)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 2)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 2)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 2)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 3
-# #### Major
+### Intervals over bass degree 3
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 3)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 3)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 3)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 3)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 4
-# #### Major
+### Intervals over bass degree 4
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 4)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 4)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 4)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 4)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 5
-# #### Major
+### Intervals over bass degree 5
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 5)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 5)
+```
 
-# %% [markdown]
-# #### Minor
+#### Minor
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 5)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 5)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 6
-# #### Major
+### Intervals over bass degree 6
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 6)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 6)
+```
 
-# %% [markdown]
-# #### Minor (ascending)
+#### Minor (ascending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", "#6")
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Corelli", "minor", "#6")
+```
 
-# %% [markdown]
-# #### Minor (descending)
+#### Minor (descending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 6)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 6)
+```
 
-# %% [markdown]
-# ### Intervals over bass degree 7
-# #### Major
+### Intervals over bass degree 7
+#### Major
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "major", 7)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "major", 7)
+```
 
-# %% [markdown]
-# #### Minor (ascending)
+#### Minor (ascending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", "#7")
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Corelli", "minor", "#7")
+```
 
-# %% [markdown]
-# #### Minor (descending)
+#### Minor (descending)
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg, "Couperin", "minor", 7)
+```
 
-# %%
+```{code-cell}
 make_bass_degree_sankey(BN_reg_cor, "Corelli", "minor", 7)
+```
 
-# %% [markdown]
-# ## Studying leaps
-# Are they predominantly chord inversions by modern standards?
+## Studying leaps
+Are they predominantly chord inversions by modern standards?
