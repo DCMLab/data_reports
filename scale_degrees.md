@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: revamp
   language: python
@@ -70,13 +70,7 @@ def save_figure_as(
 ```{code-cell}
 :tags: [hide-input]
 
-package_path = utils.resolve_dir("~/distant_listening_corpus/distant_listening_corpus.datapackage.json")
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = dc.get_dataset("distant_listening_corpus")
 D
 ```
 

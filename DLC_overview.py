@@ -27,7 +27,6 @@ from collections import defaultdict
 from typing import Dict, Iterator, List, Optional
 
 import dimcat as dc
-import ms3
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
@@ -36,7 +35,6 @@ import plotly.io as pio
 pio.kaleido.scope.mathjax = None
 from dimcat import filters, plotting
 from dimcat.utils import get_middle_composition_year
-from git import Repo
 from IPython.display import display
 from plotly.subplots import make_subplots
 
@@ -69,15 +67,7 @@ def save_figure_as(
 # **Loading data**
 
 # %%
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = dc.get_dataset("distant_listening_corpus")
 D
 
 # %%

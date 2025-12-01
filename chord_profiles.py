@@ -26,7 +26,6 @@ import os
 from typing import Dict
 
 import dimcat as dc
-import ms3
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -34,7 +33,6 @@ import plotly.graph_objects as go
 from dimcat import analyzers, resources
 from dimcat.plotting import write_image
 from dimcat.utils import get_middle_composition_year
-from git import Repo
 from scipy.spatial import ConvexHull
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import RobustScaler
@@ -66,15 +64,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 
 
 # %% tags=["hide-input"]
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = dc.get_dataset("distant_listening_corpus")
 chronological_corpus_names = D.get_metadata().get_corpus_names(func=None)
 D
 

@@ -28,12 +28,10 @@ tags: [hide-cell]
 import os
 
 import dimcat as dc
-import ms3
 import pandas as pd
 import plotly.express as px
 from dimcat import filters
 from dimcat.plotting import write_image
-from git import Repo
 from IPython.display import display
 ```
 
@@ -44,10 +42,7 @@ from utils import (
     OUTPUT_FOLDER,
     STD_LAYOUT,
     corpus_mean_composition_years,
-    get_corpus_display_name,
-    get_repo_name,
-    print_heading,
-    resolve_dir,
+    get_corpus_display_name
 )
 
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
@@ -65,15 +60,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 **Loading data**
 
 ```{code-cell} ipython3
-package_path = resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = dc.get_dataset("distant_listening_corpus")
 D
 ```
 

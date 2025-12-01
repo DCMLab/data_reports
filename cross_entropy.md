@@ -19,19 +19,12 @@ ToDo:
 * Bigrams
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide imports
-  code_prompt_show: Show imports
-tags: [hide-cell]
----
 %load_ext autoreload
 %autoreload 2
 import os
 from typing import Iterable, List, Optional
 
 import dimcat as dc
-import ms3
 import numpy as np
 import pandas as pd
 import plotly.express as px
@@ -41,7 +34,6 @@ from dimcat.data.resources import Durations
 from dimcat.data.resources.dc import UnitOfAnalysis
 from dimcat.plotting import make_bar_plot, make_scatter_plot, write_image
 from dimcat.utils import get_middle_composition_year
-from git import Repo
 
 import utils
 
@@ -305,15 +297,7 @@ def plot_incoherence(chord_proportions, chronological_corpus_names):
 ```{code-cell}
 :tags: [hide-input]
 
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = dc.get_dataset("distant_listening_corpus")
 D
 ```
 

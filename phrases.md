@@ -28,18 +28,13 @@ import re
 from typing import Optional
 
 import dimcat as dc
-import ms3
 import pandas as pd
 from dimcat.plotting import make_pie_chart, write_image
-from git import Repo
 
 from utils import (
     DEFAULT_OUTPUT_FORMAT,
     OUTPUT_FOLDER,
-    get_repo_name,
     make_stage_data,
-    print_heading,
-    resolve_dir,
     value_count_df,
 )
 
@@ -93,15 +88,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell}
 :tags: [hide-input]
 
-package_path = resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage_v3.1.json"
-)
-repo = Repo(os.path.dirname(package_path))
-print_heading("Data and software versions")
-print(f"Data repo '{get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = dc.get_dataset("distant_listening_corpus")
 D
 ```
 

@@ -35,7 +35,6 @@ import ms3
 import pandas as pd
 import plotly.express as px
 from dimcat import groupers, plotting, slicers
-from git import Repo
 
 import utils
 ```
@@ -76,9 +75,7 @@ slideshow:
   slide_type: ''
 tags: [hide-input]
 ---
-package_path = utils.resolve_dir("~/dimcat_data/couperin_concerts.datapackage.json")
-D = dc.Dataset.from_package(package_path)
-D
+D = dc.get_dataset("couperin_concerts")
 ```
 
 ```{code-cell} ipython3

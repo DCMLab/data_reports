@@ -17,12 +17,6 @@ kernelspec:
 Notebook created by copying and adapting `annotations.ipynb`.
 
 ```{code-cell}
----
-mystnb:
-  code_prompt_hide: Hide imports
-  code_prompt_show: Show imports
-tags: [hide-cell]
----
 %load_ext autoreload
 %autoreload 2
 import os
@@ -31,7 +25,6 @@ import dimcat as dc
 import ms3
 import pandas as pd
 from dimcat import analyzers, groupers, plotting
-from git import Repo
 from IPython.display import display
 from matplotlib import pyplot as plt
 
@@ -64,15 +57,7 @@ def save_figure_as(
 ```{code-cell}
 :tags: [remove-output]
 
-package_path = utils.resolve_dir(
-    "~/distant_listening_corpus/distant_listening_corpus.datapackage.json"
-)
-repo = Repo(os.path.dirname(package_path))
-utils.print_heading("Data and software versions")
-print(f"Data repo '{utils.get_repo_name(repo)}' @ {repo.commit().hexsha[:7]}")
-print(f"dimcat version {dc.__version__}")
-print(f"ms3 version {ms3.__version__}")
-D = dc.Dataset.from_package(package_path)
+D = dc.get_dataset("distant_listening_corpus")
 D
 ```
 

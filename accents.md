@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.1
+    jupytext_version: 1.18.1
 kernelspec:
   display_name: revamp
   language: python
@@ -32,12 +32,11 @@ import pandas as pd
 # import ms3
 import plotly.express as px
 
-from utils import (CORPUS_COLOR_SCALE, STD_LAYOUT, corpus_mean_composition_years,
-                   get_corpus_display_name, get_repo_name, print_heading, resolve_dir)
+from utils import (corpus_mean_composition_years)
 ```
 
 ```{code-cell}
-D = dc.Dataset.from_package("/home/laser/distant_listening_corpus/distant_listening_corpus.datapackage.json")
+D = dc.get_dataset("distant_listening_corpus")
 D
 ```
 
