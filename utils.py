@@ -3593,7 +3593,21 @@ def get_dataset(
     corpus_name,
     target_dir=".",
     corpus_release="latest",
-):
+) -> dc.Dataset:
+    """
+    Takes the name of a DCML corpus, downloads it if necessary, and returns a DiMCAT
+    :class:`Dataset`.
+
+    Args:
+        corpus_name: Name of the corpus as per the exact spelling of its repository name.
+        target_dir:
+            Where to look for or download the relevant datapackage. Defaults to the current
+            working directory.
+        corpus_release: Which version to download, e.g. "v2.2". Defaults to "latest".
+
+    Returns:
+
+    """
     url_release_component = (
         "releases/latest/download"
         if corpus_release == "latest"
