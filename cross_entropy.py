@@ -148,6 +148,7 @@ def compute_cross_entropies(
 # Fig. 2.6 from White, C. (2022). The music in the data: Corpus analysis, music analysis, and tonal traditions
 # (1st ed.). Routledge. https://doi.org/10.4324/9781003285663 p. 68
 
+
 # %%
 def mean_of_other_groups(df, excluded_group: str) -> pd.Series:
     """Computes the mean (of cross-entropies or whatever) for each row but only after dropping the column named
@@ -246,6 +247,7 @@ def plot_uniqueness(
 # ![coherence](img/coherence_white_fig.2.6_p68.png)
 # Fig. 2.6 from White, C. (2022). The music in the data: Corpus analysis, music analysis, and tonal traditions
 # (1st ed.). Routledge. https://doi.org/10.4324/9781003285663 p. 68
+
 
 # %%
 def compute_corpus_incoherence(

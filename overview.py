@@ -1,7 +1,6 @@
 # ---
 # jupyter:
 #   jupytext:
-#     default_lexer: ipython3
 #     formats: ipynb,md:myst,py:percent
 #     text_representation:
 #       extension: .py
@@ -109,6 +108,7 @@ print(
 # %% [markdown]
 # ### Mean composition years per corpus
 
+
 # %%
 def make_summary(metadata_df):
     piece_is_annotated = metadata_df.label_count > 0
@@ -171,6 +171,7 @@ fig.show()
 # ## Dimensions
 #
 # ### Overview
+
 
 # %%
 def make_overview_table(groupby, group_name="pieces"):
