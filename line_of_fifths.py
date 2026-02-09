@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -27,7 +27,10 @@ import dimcat as dc
 from dimcat import groupers, resources
 
 # %%
-from utils import DEFAULT_OUTPUT_FORMAT, OUTPUT_FOLDER
+from utils import (
+    DEFAULT_OUTPUT_FORMAT,
+    OUTPUT_FOLDER
+)
 
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "line_of_fifths"))
 os.makedirs(RESULTS_PATH, exist_ok=True)

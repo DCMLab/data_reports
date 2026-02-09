@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -256,7 +256,6 @@ df.plain_chords.iloc[:k]
 # %% [markdown]
 # **Consecutive identical labels are merged**
 
-
 # %%
 def remove_subsequent_identical(col):
     return col[col != col.shift()].to_list()
@@ -364,7 +363,6 @@ look_for(("V", "IV6", "V65"))
 
 # %% [markdown]
 # ### Chord progressions preceding phrase endings
-
 
 # %%
 def phraseending_progressions(df, n=3, k=k):

@@ -1,12 +1,13 @@
 # ---
 # jupyter:
 #   jupytext:
+#     default_lexer: ipython3
 #     formats: md:myst,ipynb,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: pydelta
 #     language: python
@@ -91,8 +92,8 @@ PIECE_MODE = metadata.annotated_key.str.islower().map({True: "minor", False: "ma
 corpus = data[("local_root_ct", "rootnorm")]
 corpus.shape
 
-# %%
 
+# %%
 
 @contextlib.contextmanager
 def tqdm_joblib(tqdm_object):
@@ -115,7 +116,6 @@ def tqdm_joblib(tqdm_object):
 
 
 # %%
-
 
 def get_scores(name, clf, x_train, y_train, x_test, y_test):
     clf.fit(x_train, y_train)
@@ -218,7 +218,6 @@ rpgr_results = compare_lda_classifiers(data[("root_per_globalkey", "rootnorm")])
 rpgr_results.head()
 
 # %%
-
 make_scatter_plot(
     rpgr_results,
     x_col="n_features",

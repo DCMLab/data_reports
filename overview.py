@@ -1,12 +1,13 @@
 # ---
 # jupyter:
 #   jupytext:
+#     default_lexer: ipython3
 #     formats: ipynb,md:myst,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -37,7 +38,7 @@ from utils import (
     OUTPUT_FOLDER,
     STD_LAYOUT,
     corpus_mean_composition_years,
-    get_corpus_display_name,
+    get_corpus_display_name
 )
 
 RESULTS_PATH = os.path.abspath(os.path.join(OUTPUT_FOLDER, "overview"))
@@ -94,7 +95,6 @@ print(
 
 # %% [markdown]
 # ### Mean composition years per corpus
-
 
 # %%
 def make_summary(metadata_df):
@@ -158,7 +158,6 @@ fig.show()
 # ## Dimensions
 #
 # ### Overview
-
 
 # %%
 def make_overview_table(groupby, group_name="pieces"):

@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -159,7 +159,6 @@ print(f"Shape: {root_fifths_over_global_tonic.shape}")
 #     cross_validate,
 #     train_test_split,
 # )
-
 
 # %%
 def make_split(

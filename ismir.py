@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -111,7 +111,6 @@ notes.plot_grouped(
 
 # %% [markdown]
 # ## Slicer
-
 
 # %%
 def globalminor_localkey_expressed_in_globalmajor(key):

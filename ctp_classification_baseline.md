@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.18.1
+    jupytext_version: 1.19.1
 kernelspec:
   display_name: pydelta
   language: python
@@ -101,7 +101,6 @@ corpus.shape
 
 ```{code-cell} ipython3
 
-
 @contextlib.contextmanager
 def tqdm_joblib(tqdm_object):
     """Context manager to patch joblib to report into tqdm progress bar given as argument.
@@ -123,7 +122,6 @@ def tqdm_joblib(tqdm_object):
 ```
 
 ```{code-cell} ipython3
-
 
 def get_scores(name, clf, x_train, y_train, x_test, y_test):
     clf.fit(x_train, y_train)
@@ -231,7 +229,6 @@ rpgr_results.head()
 ```
 
 ```{code-cell} ipython3
-
 make_scatter_plot(
     rpgr_results,
     x_col="n_features",

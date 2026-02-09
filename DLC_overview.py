@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -110,7 +110,6 @@ print(
 
 # %% [markdown]
 # ### Mean composition years per corpus
-
 
 # %%
 def make_summary(metadata_df):
@@ -426,7 +425,6 @@ fig
 # ## Dimensions
 #
 # ### Overview
-
 
 # %%
 def piece_order(_):

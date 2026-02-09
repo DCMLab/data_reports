@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -132,7 +132,6 @@ stage_data.sample(50)
 #     tondom_criterion, level_names=("tondom_stage", "substage")
 # ).droplevel(3)
 # tonic_dominant
-
 
 # %%
 def make_regrouped_stage_index(
@@ -1044,7 +1043,6 @@ root_roman_or_its_dominants.head(100)
 # utils._compare_criteria_entropies(
 #     criterion2stages, chronological_corpus_names=chronological_corpus_names
 # )
-
 
 # %%
 def make_simple_resource_column(timeline_data, name="Resource"):

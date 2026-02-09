@@ -7,7 +7,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.18.1
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -171,7 +171,6 @@ root_roman_or_its_dominants.head(100)
 #     )
 # )
 # restored.compare(root_roman_or_its_dominants.df)
-
 
 # %%
 def make_simple_resource_column(timeline_data, name="Resource"):
