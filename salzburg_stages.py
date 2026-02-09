@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: dimcat
 #     language: python
@@ -63,7 +63,7 @@ def write_image(
     filename: str,
     directory: Optional[str] = None,
     format=None,
-    scale=None,
+    scale=4,
     width=None,
     height=None,
     validate=True,
@@ -226,9 +226,9 @@ HTML(
 dataset_path = "~/git/meta_repositories/all_subcorpora/"
 
 repo = Repo(dataset_path)
-print(
-    f"{os.path.basename(dataset_path)} repository @ commit {repo.commit().hexsha[:7]}"
-)
+# print(
+#     f"{os.path.basename(dataset_path)} repository @ commit {repo.commit().hexsha[:7]}"
+# )
 print(f"dimcat version {dc.__version__}")
 print(f"ms3 version {ms3.__version__}")
 
