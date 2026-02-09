@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.17.2
+    jupytext_version: 1.19.1
 kernelspec:
   display_name: revamp
   language: python
@@ -992,7 +992,6 @@ sposalizio = plot_phrase_stages(phrase_annotations, phrase_id=9685)
 ```
 
 ```{code-cell}
-
 
 def _make_localkey_shapes(
     y_root: int, is_minor: bool, x0: Number, x1: Number, text: Optional[str] = None

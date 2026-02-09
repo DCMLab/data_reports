@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -170,7 +170,6 @@ root_roman_or_its_dominants.head(100)
 #     )
 # )
 # restored.compare(root_roman_or_its_dominants.df)
-
 
 # %%
 def make_simple_resource_column(timeline_data, name="Resource"):
@@ -970,7 +969,6 @@ sposalizio = plot_phrase_stages(phrase_annotations, phrase_id=9685)
 
 
 # %%
-
 
 def _make_localkey_shapes(
     y_root: int, is_minor: bool, x0: Number, x1: Number, text: Optional[str] = None
