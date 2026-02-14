@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -211,6 +211,7 @@ def make_precise_subsequent_movement_column(df):
 # leaving first bass degrees with undefined preceding values and last bass degrees without
 # undefined subsequent values.**
 
+
 # %% tags=["hide-input"]
 def make_adjacency_table(bass_notes):
     preceding = bass_notes.groupby(["piece", "localkey_slice"]).shift()
@@ -268,6 +269,7 @@ interval2fifths = (  # mapping that allows to order the x-axis with intervals ac
 # ## Overview of how the bass moves
 # ### Intervals
 
+
 # %% tags=["hide-input"]
 def plot_bass_movement(BN, corpus_name):
     interval_data = pd.concat(
@@ -306,6 +308,7 @@ plot_bass_movement(BN_cor, "Corelli")
 # **The values `ascending` and `descending` designate stepwise movement within the _regola_. Only non-chromatic scale
 # degrees can have these values with the exception of `#6` and `#7` which are considered diatonic in the context of
 # this study.**
+
 
 # %% tags=["hide-input"]
 def plot_movement_types(BN, corpus_name, precise_categories=True):
@@ -349,6 +352,7 @@ plot_movement_types(BN_cor, "Corelli")
 
 # %% [markdown]
 # ## Sankey diagrams showing movement types before and after each scale degree
+
 
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_sankey_data(
@@ -749,6 +753,7 @@ regola_vocabulary_minor = tuple(
 # %% [markdown]
 # ### Most frequent chords for each bass degree
 
+
 # %% tags=["hide-input"]
 def summarize_groups_top_k_chords(df, column="intervals_over_bass", k=3):
     """Used in Groupby.apply()"""
@@ -1126,6 +1131,7 @@ regola_coverage_cor
 # The lower two plots show how many unigrams are covered by individual chords.
 # Hover over the points to see the corresponding chords.**
 
+
 # %% mystnb={"code_prompt_hide": "Hide helpers", "code_prompt_show": "Show helpers"} tags=["hide-cell"]
 def make_coverage_plot_data(
     bn_name, include_singular_vocabularies=True, **features
@@ -1163,6 +1169,7 @@ def make_coverage_plot_data(
         results[("single", i)] = pd.concat([values, chord], axis=1)
     index_levels = ["vocabulary", "rank"] if include_singular_vocabularies else ["rank"]
     return pd.concat(results, names=index_levels)
+
 
 # %% tags=["hide-input"]
 
@@ -1314,6 +1321,7 @@ plot_regola_vs_top_k_coverage("corelli")
 # ### All regola chords
 # **The following table shows absolute counts and proportion of movement types preceding and
 # succeeding all RoO chords.**
+
 
 # %% tags=["hide-input"]
 def get_BN_reg(BN, regola_only=True):

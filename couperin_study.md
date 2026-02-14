@@ -5,11 +5,11 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.17.2
+    jupytext_version: 1.16.7
 kernelspec:
-  display_name: Python 3 (ipykernel)
+  display_name: revamp
   language: python
-  name: python3
+  name: revamp
 ---
 
 # Cou

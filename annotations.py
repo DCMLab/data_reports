@@ -1,13 +1,12 @@
 # ---
 # jupyter:
 #   jupytext:
-#     default_lexer: ipython3
 #     formats: ipynb,md:myst,py:percent
 #     text_representation:
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.16.7
 #   kernelspec:
 #     display_name: revamp
 #     language: python

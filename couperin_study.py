@@ -6,11 +6,11 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.2
+#       jupytext_version: 1.16.7
 #   kernelspec:
-#     display_name: Python 3 (ipykernel)
+#     display_name: revamp
 #     language: python
-#     name: python3
+#     name: revamp
 # ---
 
 # %% [markdown]
