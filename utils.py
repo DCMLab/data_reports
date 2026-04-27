@@ -1501,6 +1501,9 @@ def plot_cum(
         zeroline=False,
         dtick=right_dtick,
     )
+    if percent:
+        right_y_axis["tickmode"] = "array"
+        right_y_axis["tickvals"] = list(range(0, 101, int(right_dtick)))
     if left_range is not None:
         left_y_axis["range"] = left_range
     if right_range is not None:

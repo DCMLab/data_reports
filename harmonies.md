@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.17.1
+    jupytext_version: 1.19.1
 kernelspec:
   display_name: revamp
   language: python
@@ -122,7 +122,7 @@ fig = utils.plot_cum(
     x_log=True,
     markersize=4,
     left_range=(-0.03, 3.7),
-    right_range=(-0.01, 1.11),
+    right_range=(-1, 111),
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution")
@@ -149,7 +149,7 @@ fig = utils.plot_cum(
     x_log=True,
     markersize=4,
     left_range=(-0.03, 3.7),
-    right_range=(-0.01, 1.11),
+    right_range=(-1, 111),
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution_in_major")
@@ -175,7 +175,7 @@ fig = utils.plot_cum(
     x_log=True,
     markersize=4,
     left_range=(-0.03, 3.7),
-    right_range=(-0.01, 1.11),
+    right_range=(-1, 111),
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution_in_minor")
