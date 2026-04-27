@@ -114,15 +114,21 @@ H_LAYOUT.update(
         )
     }
 )
+
+CUMSUM_LAYOUT = dict(
+    x_log=True,
+    markersize=15,
+    n_labels=16,
+    font_size=40,
+    left_range=(-0.03, 3.7),
+    right_range=(-1, 111),
+)
 ```
 
 ```{code-cell}
 fig = utils.plot_cum(
     df.chord,
-    x_log=True,
-    markersize=4,
-    left_range=(-0.03, 3.7),
-    right_range=(-1, 111),
+    **CUMSUM_LAYOUT,
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution")
@@ -146,10 +152,7 @@ major.chord.value_counts().iloc[:k]
 ```{code-cell}
 fig = utils.plot_cum(
     major.chord,
-    x_log=True,
-    markersize=4,
-    left_range=(-0.03, 3.7),
-    right_range=(-1, 111),
+    **CUMSUM_LAYOUT,
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution_in_major")
@@ -172,10 +175,7 @@ minor.chord.value_counts().iloc[:k]
 ```{code-cell}
 fig = utils.plot_cum(
     minor.chord,
-    x_log=True,
-    markersize=4,
-    left_range=(-0.03, 3.7),
-    right_range=(-1, 111),
+    **CUMSUM_LAYOUT,
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution_in_minor")
