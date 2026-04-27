@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.18.1
+    jupytext_version: 1.19.1
 kernelspec:
   display_name: revamp
   language: python
@@ -47,7 +47,7 @@ def save_figure_as(fig, filename, directory=RESULTS_PATH, **kwargs):
 ```{code-cell}
 # CORPUS_PATH = os.path.abspath(os.path.join('..', '..'))  # for running the notebook in the homepage deployment
 # workflow
-CORPUS_PATH = "~/all_subcorpora/couperin_concerts"         # for running the notebook locally
+CORPUS_PATH = "~/git/analyse_graz"         # for running the notebook locally
 print_heading("Notebook settings")
 print(f"CORPUS_PATH: {CORPUS_PATH!r}")
 CORPUS_PATH = resolve_dir(CORPUS_PATH)
@@ -64,6 +64,7 @@ print(f"ms3 version {ms3.__version__}")
 ```{code-cell}
 corpus_obj = ms3.Corpus(CORPUS_PATH)
 corpus_obj.view.include('facet', 'expanded')
+corpus_obj.view.include('pieces', "_schubert")
 corpus_obj.parse_tsv()
 corpus_obj
 ```
@@ -105,77 +106,5 @@ def make_modulation_plans(
 ## c01
 
 ```{code-cell}
-make_modulation_plans(corpus_obj, regex='c01')
-```
-
-## c02
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c02')
-```
-
-## c03
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c03')
-```
-
-## c04
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c04')
-```
-
-## c05
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c05')
-```
-
-## c06
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c06')
-```
-
-## c07
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c07')
-```
-
-## c08
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c08')
-```
-
-## c09
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c09')
-```
-
-## c10
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c10')
-```
-
-## c11
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c11')
-```
-
-## c14
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='c14')
-```
-
-## parnasse
-
-```{code-cell}
-make_modulation_plans(corpus_obj, regex='parnasse')
+make_modulation_plans(corpus_obj)
 ```
