@@ -61,7 +61,13 @@ def save_figure_as(
 # **Loading data**
 
 # %%
-D = dc.get_dataset("couperin_concerts", corpus_release="v2.2")
+package_path = utils.resolve_dir(
+    "~/git/analyse_graz/analyse_graz.datapackage.json"
+)
+utils.print_heading("Data and software versions")
+print(f"dimcat version {dc.__version__}")
+print(f"ms3 version {ms3.__version__}")
+D = dc.Dataset.from_package(package_path)
 D
 
 # %% [markdown]
@@ -114,13 +120,18 @@ H_LAYOUT.update(
     }
 )
 
+CUMSUM_LAYOUT = dict(
+    x_log=True,
+    markersize=10,
+    n_labels=20,
+    left_range=(-0.03, 3.7),
+    right_range=(-1, 111),
+)
+
 # %%
 fig = utils.plot_cum(
     df.chord,
-    x_log=True,
-    markersize=4,
-    left_range=(-0.03, 3.7),
-    right_range=(-0.01, 1.11),
+    **CUMSUM_LAYOUT,
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution")
@@ -142,10 +153,7 @@ major.chord.value_counts().iloc[:k]
 # %%
 fig = utils.plot_cum(
     major.chord,
-    x_log=True,
-    markersize=4,
-    left_range=(-0.03, 3.7),
-    right_range=(-0.01, 1.11),
+    **CUMSUM_LAYOUT,
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution_in_major")
@@ -166,10 +174,7 @@ minor.chord.value_counts().iloc[:k]
 # %%
 fig = utils.plot_cum(
     minor.chord,
-    x_log=True,
-    markersize=4,
-    left_range=(-0.03, 3.7),
-    right_range=(-0.01, 1.11),
+    **CUMSUM_LAYOUT,
     **H_LAYOUT,
 )
 save_figure_as(fig, "chord_label_unigram_distribution_in_minor")
