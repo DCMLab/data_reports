@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.16.7
+    jupytext_version: 1.19.3
 kernelspec:
   display_name: revamp
   language: python
@@ -62,13 +62,26 @@ def make_output_path(
 
 
 def save_figure_as(
-    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+    fig, filename, formats=("png", "pdf", "html"), directory=RESULTS_PATH, **kwargs
 ):
+    if not isinstance(formats, str) and "html" in formats:
+        formats = [f for f in formats if f != "html"]
+        html_path = os.path.join(directory, filename + ".html")
+        fig.write_html(html_path)
     if formats is not None:
         for fmt in formats:
             plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
     else:
         plotting.write_image(fig, filename, directory, **kwargs)
+
+
+def save_table_as(
+    styler, filename, formats=("html", "csv"), directory=RESULTS_PATH
+):
+    if "html" in formats:
+        styler.to_html(os.path.join(directory, filename + ".html"))
+    if "csv" in formats:
+        styler.data.to_csv(os.path.join(directory, filename + ".csv"))
 
 
 def style_plotly(
@@ -921,7 +934,12 @@ def get_color(chord, mode):
         return CATEGORY2COLOR[category]
 
 
-def style_unigram_table(df: pd.DataFrame):
+def style_unigram_table(
+    df: pd.DataFrame,
+    filename=None,
+    formats=("html", "csv"),
+    directory=RESULTS_PATH,
+):
 
     def color_regola_rows(row, mode):
         if pd.isna(row.iloc[0]):
@@ -933,10 +951,13 @@ def style_unigram_table(df: pd.DataFrame):
     new_index = pd.MultiIndex.from_product(
         [["Major", "Minor"], ["Unigram", "Occurrences", "Proportion"]]
     )
-    df = df.set_axis(new_index, axis=1)
-    return df.style.apply(
+    styled = df.set_axis(new_index, axis=1)
+    styled = styled.style.apply(
         color_regola_rows, axis=1, subset=["Major"], mode="major"
     ).apply(color_regola_rows, axis=1, subset=["Minor"], mode="minor")
+    if filename is not None:
+        save_table_as(styled, filename, formats=formats, directory=directory)
+    return styled
 
 
 def make_sankey_data(
@@ -1079,7 +1100,7 @@ unigram_occurrences = chord_labels.apply_step("Counter")
 occurrence_ranking = unigram_occurrences.make_ranking_table(
     drop_cols=["chord_and_mode", "proportion"], top_k=0
 )
-style_unigram_table(occurrence_ranking)
+style_unigram_table(occurrence_ranking.iloc[:50], "couperin_unigrams")
 ```
 
 ### Unigram movement Sankey
@@ -1360,7 +1381,12 @@ def degree_wise_top_k(BN, column="intervals_over_bass", k=None):
     return result
 
 
-def style_rank_table(df: pd.DataFrame):
+def style_rank_table(
+    df: pd.DataFrame,
+    filename=None,
+    formats=("html", "csv"),
+    directory=RESULTS_PATH,
+):
 
     def color_true_green(value):
         if value:
@@ -1375,7 +1401,7 @@ def style_rank_table(df: pd.DataFrame):
         rank_chord="Top",
     )
     df = df.rename_axis(index=new_index_names)
-    return (
+    styled = (
         df.style.format({"proportion_chord": "{:.1%}"})
         .format_index(
             axis=0,
@@ -1389,6 +1415,9 @@ def style_rank_table(df: pd.DataFrame):
         # .format_index_names(new_index_names, axis=0) # available in a future pandas version
         # https://pandas.pydata.org/docs/dev/reference/api/pandas.io.formats.style.Styler.format_index_names.html
     )
+    if filename is not None:
+        save_table_as(styled, filename, formats=formats, directory=directory)
+    return styled
 ```
 
 #### Major
@@ -1654,6 +1683,9 @@ minor_roo_chord2movement
 def style_mega_table(
     meta_table,
     mode,
+    filename=None,
+    formats=("html", "csv"),
+    directory=RESULTS_PATH,
 ):
     mega_styled = meta_table.set_index(meta_table.columns.to_list()[:4], append=True)
     mega_styled.index.names = ["B", "Chord", "R", "P", "E", "SR"]
@@ -1737,7 +1769,7 @@ def style_mega_table(
     heatmap_color_columns = [
         (l0, l1) for l0, l1 in mega_styled.columns if l1 not in roo_color_sublevels
     ]
-    return (
+    styled = (
         mega_styled.style.format(format_dict)
         .format_index(
             axis=0,
@@ -1766,15 +1798,18 @@ def style_mega_table(
             }
         )
     )
+    if filename is not None:
+        save_table_as(styled, filename, formats=formats, directory=directory)
+    return styled
 
 
-style_mega_table(mega_major, "major")
+style_mega_table(mega_major, "major", "mega_table_major")
 ```
 
 ```{code-cell}
 :tags: [hide-input]
 
-style_mega_table(mega_minor, "minor")
+style_mega_table(mega_minor, "minor", "mega_table_minor")
 ```
 
 ```{code-cell}

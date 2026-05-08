@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.16.7
+#       jupytext_version: 1.19.1
 #   kernelspec:
 #     display_name: revamp
 #     language: python
@@ -50,8 +50,12 @@ def make_output_path(
 
 
 def save_figure_as(
-    fig, filename, formats=("png", "pdf"), directory=RESULTS_PATH, **kwargs
+    fig, filename, formats=("png", "pdf", "html"), directory=RESULTS_PATH, **kwargs
 ):
+    if not isinstance(formats, str) and "html" in formats:
+        formats = [f for f in formats if f != "html"]
+        html_path = os.path.join(directory, filename + ".html")
+        fig.write_html(html_path)
     if formats is not None:
         for fmt in formats:
             plotting.write_image(fig, filename, directory, format=fmt, **kwargs)
@@ -484,7 +488,12 @@ def get_color(chord, mode):
         return category2color[category]
 
 
-def style_unigram_table(df: pd.DataFrame):
+def style_unigram_table(
+    df: pd.DataFrame,
+    filename=None,
+    formats=("html", "csv"),
+    directory=RESULTS_PATH,
+):
 
     def color_regola_rows(row, mode):
         if pd.isna(row.iloc[0]):
@@ -496,10 +505,16 @@ def style_unigram_table(df: pd.DataFrame):
     new_index = pd.MultiIndex.from_product(
         [["Major", "Minor"], ["Unigram", "Occurrences", "Proportion"]]
     )
-    df = df.set_axis(new_index, axis=1)
-    return df.style.apply(
+    styled = df.set_axis(new_index, axis=1)
+    styled = styled.style.apply(
         color_regola_rows, axis=1, subset=["Major"], mode="major"
     ).apply(color_regola_rows, axis=1, subset=["Minor"], mode="minor")
+    if filename is not None:
+        if "html" in formats:
+            styled.to_html(os.path.join(directory, filename + ".html"))
+        if "csv" in formats:
+            df.to_csv(os.path.join(directory, filename + ".csv"))
+    return styled
 
 
 # %%
@@ -508,7 +523,7 @@ unigram_occurrences_cor = chord_labels_cor.apply_step("Counter")
 occurrence_ranking_cor = unigram_occurrences_cor.make_ranking_table(
     drop_cols=["chord_and_mode", "proportion"], top_k=0
 )
-style_unigram_table(occurrence_ranking_cor)
+style_unigram_table(occurrence_ranking_cor.iloc[:50], "corelli_unigrams")
 
 # %% [markdown]
 # ### Unigram movement Sankey
