@@ -2283,7 +2283,10 @@ display_difference = pd.concat(dict(
     major=display_difference.loc["major"],
     minor=display_difference.loc["minor"]
 ), axis=1)
-
+display_difference = display_difference.sort_index(
+    key=lambda idx: (display_difference[("major", "difference")] + display_difference[("minor", "difference")] / 2).values,
+    ascending=False
+)
 
 def style_difference_table(
     df,
