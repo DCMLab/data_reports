@@ -1969,7 +1969,7 @@ def get_coverage_values(
                 bn_name, "minor_diatonic", minor_vocabulary, query=query
             )
     result = pd.Series(results, name="proportion")
-    result.index.names = ["mode", "coverage_of"]
+    result.index.names = ["mode", "subset_name"]
     return result
 ```
 
@@ -2123,7 +2123,7 @@ def plot_coverage_data(
         x="rank",
         y="proportion",
         markers=True,
-        color="coverage_of",
+        color="subset_name",
         facet_col="mode",
         facet_row=facet_row,
         hover_name="chord",
@@ -2160,7 +2160,7 @@ def plot_coverage_data_categorical(
         x="vocab",
         y="proportion",
         markers=True,
-        color="coverage_of",
+        color="subset_name",
         facet_col="mode",
         facet_row=facet_row,
         hover_name="chord",
@@ -2201,7 +2201,7 @@ feature_group = dict(
     to_and_from_descending="more",
 )
 coverage_data = make_coverage_plot_data_with_regola("couperin")
-coverage_data["comparison"] = coverage_data.coverage_of.map(feature_group)
+coverage_data["comparison"] = coverage_data.subset_name.map(feature_group)
 plot_coverage_data_categorical(
     coverage_data,
 )
@@ -2239,7 +2239,7 @@ for mode in ("major", "minor"):
     unigram_subset_sizes[(mode, "all")] = len(mask)
 
 unigram_subset_sizes = pd.Series(unigram_subset_sizes, name="N").rename_axis(
-    ["mode", "coverage_of"]
+    ["mode", "subset_name"]
 )
 unigram_subset_proportions = unigram_subset_sizes.groupby("mode", group_keys=False).apply(lambda S: S/ S.xs("all", level=1)).rename("proportion")
 # unigram_subset_stats = pd.concat([unigram_subset_sizes, unigram_subset_proportions], axis=1)
@@ -2251,7 +2251,7 @@ unigram_subset_stats
 def prep_cov_data(S):
     return (
         S.reset_index(drop=True)
-        .set_index(["vocabulary", "mode", "coverage_of"])
+        .set_index(["vocabulary", "mode", "subset_name"])
         .proportion
     )
 
@@ -2266,7 +2266,7 @@ difference_roo_top10 = roo_vals - top_10_vals
 merged = pd.merge(
     unigram_subset_stats,
     roo_vals.rename("RoO"),
-    on=["mode", "coverage_of"],
+    on=["mode", "subset_name"],
     how="right",
 )
 merged.index = roo_vals.index
@@ -2317,8 +2317,8 @@ def style_difference_table(
         .set_table_styles(
             {
                 first_data_col: [
-                    {"selector": "", "props": "border-left: 1px solid black"},
-                    {"selector": "td", "props": "border-left: 1px solid black"},
+                    {"selector": "", "props": "border-left: 2px solid black"},
+                    {"selector": "td", "props": "border-left: 2px solid black"},
                 ],
                 minor_first_col: [
                     {"selector": "", "props": "border-left: 2px solid black"},

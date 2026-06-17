@@ -1,5 +1,5 @@
-mode,major,major,major,minor,minor,minor
-,chord,count,proportion_%,chord,count,proportion_%
+,Major,Major,Major,Minor,Minor,Minor
+,Unigram,Occurrences,Proportion,Unigram,Occurrences,Proportion
 rank,,,,,,
 1,I,906,21.89 %,i,761,17.96 %
 2,V,615,14.86 %,V,560,13.21 %
