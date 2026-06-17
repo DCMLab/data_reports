@@ -1033,6 +1033,24 @@ def make_bass_degree_sankey(
     return fig
 
 
+# %% [markdown]
+# ### Numbers for the explainer
+
+
+# %%
+def value_counts(S):
+    return pd.concat([S.value_counts(), S.value_counts(normalize=True)], axis=1)
+
+
+example16_roo_mask = BN.roo_suspensions == "RoO chord"
+print(f"N = {example16_roo_mask.sum()}")
+value_counts(BN.loc[example16_roo_mask, "preceding_movement_category"])
+
+# %%
+example16_leap_mask = BN.preceding_movement_category == "Diatonic leap"
+print(f"N = {example16_leap_mask.sum()}")
+value_counts(BN.loc[example16_leap_mask, "roo_suspensions"])
+
 # %% tags=["hide-input"]
 fig = make_bass_degree_sankey(
     BN, None, None, middle_nodes_column="roo_suspensions", font_size=45
