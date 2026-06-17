@@ -2151,9 +2151,13 @@ unigram_subset_proportions = (
     .apply(lambda S: S / S.xs("all", level=1))
     .rename("proportion")
 )
-unigram_subset_stats = pd.concat(
-    [unigram_subset_sizes, unigram_subset_proportions], axis=1
-)
+# unigram_subset_stats = pd.concat([unigram_subset_sizes, unigram_subset_proportions], axis=1)
+unigram_subset_stats = (
+    unigram_subset_sizes.astype(str)
+    + " ("
+    + unigram_subset_proportions.mul(100).round(1).astype(str)
+    + " %)"
+).rename("subset_size")
 unigram_subset_stats
 
 
@@ -2185,6 +2189,17 @@ inspect_difference = pd.concat(
     axis=1,
 )
 inspect_difference.sort_values("difference", ascending=False)
+
+# %%
+display_difference = inspect_difference.droplevel(0)
+display_difference = pd.concat(
+    dict(major=display_difference.loc["major"], minor=display_difference.loc["minor"]),
+    axis=1,
+)
+display_difference
+
+# %%
+display_difference.astype(str).head()
 
 # %%
 plot_regola_vs_top_k_coverage("couperin")

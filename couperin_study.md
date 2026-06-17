@@ -2242,7 +2242,8 @@ unigram_subset_sizes = pd.Series(unigram_subset_sizes, name="N").rename_axis(
     ["mode", "coverage_of"]
 )
 unigram_subset_proportions = unigram_subset_sizes.groupby("mode", group_keys=False).apply(lambda S: S/ S.xs("all", level=1)).rename("proportion")
-unigram_subset_stats = pd.concat([unigram_subset_sizes, unigram_subset_proportions], axis=1)
+# unigram_subset_stats = pd.concat([unigram_subset_sizes, unigram_subset_proportions], axis=1)
+unigram_subset_stats = (unigram_subset_sizes.astype(str) + " (" + unigram_subset_proportions.mul(100).round(1).astype(str) + " %)").rename("subset_size")
 unigram_subset_stats
 ```
 
@@ -2274,6 +2275,19 @@ inspect_difference = pd.concat(
     axis=1,
 )
 inspect_difference.sort_values("difference", ascending=False)
+```
+
+```{code-cell}
+display_difference = inspect_difference.droplevel(0)
+display_difference = pd.concat(dict(
+    major=display_difference.loc["major"],
+    minor=display_difference.loc["minor"]
+), axis=1)
+display_difference
+```
+
+```{code-cell}
+display_difference.astype(str).head()
 ```
 
 ```{code-cell}
