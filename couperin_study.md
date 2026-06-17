@@ -2315,6 +2315,7 @@ def style_difference_table(
 
     pct_cols = [col for col in df.columns if col[1] in ("RoO", "top-10", "difference")]
     diff_cols = [col for col in df.columns if col[1] == "difference"]
+    roo_cols = [col for col in df.columns if col[1] == "RoO"]
     subset_size_cols = [col for col in df.columns if col[1] == "subset_size"]
     first_data_col = df.columns[0]
     minor_first_col = next(col for col in df.columns if col[0] == "minor")
@@ -2322,6 +2323,7 @@ def style_difference_table(
     diff_vals = df[diff_cols].values.astype(float)
     vmax = float(max(abs(diff_vals.min()), abs(diff_vals.max())))
     rdwtgn = LinearSegmentedColormap.from_list("RdWtGn", ["#d73027", "white", "#1a9850"])
+    wtbl = LinearSegmentedColormap.from_list("WtBl", ["white", "#4575b4"])
 
     styled = (
         df.style
@@ -2329,6 +2331,9 @@ def style_difference_table(
         .background_gradient(
             cmap=rdwtgn, subset=diff_cols, axis=None,
             vmin=-vmax, vmax=vmax,
+        )
+        .background_gradient(
+            cmap=wtbl, subset=roo_cols, axis=None, vmin=0.5,
         )
         .set_properties(subset=subset_size_cols, **{"font-weight": "bold"})
         .set_table_styles(
