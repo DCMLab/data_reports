@@ -2012,7 +2012,7 @@ def make_coverage_plot_data_with_regola(bn_name):
 
 def plot_regola_vs_top_k_coverage(bn_name):
     result = make_coverage_plot_data_with_regola(bn_name)
-    plot_coverage_data(result, bn_name)
+    return plot_coverage_data(result, bn_name)
 
 
 def plot_coverage_data(
@@ -2146,7 +2146,15 @@ for mode in ("major", "minor"):
 unigram_subset_sizes = pd.Series(unigram_subset_sizes, name="N").rename_axis(
     ["mode", "coverage_of"]
 )
-unigram_subset_sizes
+unigram_subset_proportions = (
+    unigram_subset_sizes.groupby("mode", group_keys=False)
+    .apply(lambda S: S / S.xs("all", level=1))
+    .rename("proportion")
+)
+unigram_subset_stats = pd.concat(
+    [unigram_subset_sizes, unigram_subset_proportions], axis=1
+)
+unigram_subset_stats
 
 
 # %%
@@ -2166,7 +2174,7 @@ top_10_vals = prep_cov_data(
 )
 difference_roo_top10 = roo_vals - top_10_vals
 merged = pd.merge(
-    unigram_subset_sizes,
+    unigram_subset_stats,
     roo_vals.rename("RoO"),
     on=["mode", "coverage_of"],
     how="right",
