@@ -207,7 +207,7 @@ make_transition_matrix(chord_successions, k=k, distinct_only=True)
 
 ```{code-cell}
 make_transition_matrix(
-    chord_successions, k=k, distinct_only=True, normalize=True, decimals=2
+    chord_successions, k=k, distinct_only=True, normalize=True, percent=True, decimals=1
 )
 ```
 
