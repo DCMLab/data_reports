@@ -1,4 +1,4 @@
-dimcat[docs]>=2.0.0
+dimcat[docs]>=3.4.1
 jupyter
 jupytext
 scikit-learn
