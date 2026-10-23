@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.5
+#       jupytext_version: 1.19.6
 #   kernelspec:
 #     display_name: corpus_docs
 #     language: python
@@ -100,8 +100,9 @@ cadence_counts.plot_grouped("corpus")
 
 # %%
 mean_composition_years = (
-    hascadence_metadata.groupby(level="corpus")
-    .composed_end.mean()
+    utils.get_composition_years(hascadence_metadata)
+    .composed_end.groupby(level="corpus")
+    .mean()
     .astype(int)
     .sort_values()
 )

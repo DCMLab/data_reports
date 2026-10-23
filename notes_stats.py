@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.17.0
+#       jupytext_version: 1.19.6
 #   kernelspec:
 #     display_name: corpus_docs
 #     language: python
@@ -23,7 +23,7 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-from dimcat import filters, plotting
+from dimcat import plotting
 
 import utils
 
@@ -71,9 +71,9 @@ D
 # ## Metadata
 
 # %%
-filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
+filtered_D, includes_harmony_labels = utils.select_annotated_pieces(D)
 
-all_metadata = filtered_D.get_metadata()
+all_metadata = utils.coerce_numeric_metadata(filtered_D.get_metadata())
 all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:, :20]
 
 # %%
@@ -279,7 +279,10 @@ fig = plotting.make_violin_plot(
 )
 utils.realign_subplot_axes(fig, y_axes=dict(title_text=""))
 save_figure_as(fig, "notes_violin", width=width, height=height)
-fig
+# Render as a static image: the interactive violin embeds every note's value
+# inline, producing a >100 MB HTML for the metacorpus (exceeds GitHub's file
+# size limit and is unusable in a browser). The rasterised PNG is a few KB.
+fig.show(renderer="png")
 
 # %%
 fig = plotting.make_box_plot(
@@ -326,7 +329,8 @@ fig = plotting.make_box_plot(
 )
 utils.realign_subplot_axes(fig, y_axes=True)
 save_figure_as(fig, "notes_box", width=width, height=height)
-fig
+# Render as a static image (see notes_violin above): avoids a >100 MB HTML.
+fig.show(renderer="png")
 
 # %% [markdown]
 # ### As bar plots
