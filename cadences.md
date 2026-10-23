@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.19.5
+    jupytext_version: 1.19.6
 kernelspec:
   display_name: corpus_docs
   language: python
@@ -117,7 +117,11 @@ cadence_counts.plot_grouped("corpus")
 
 ```{code-cell}
 mean_composition_years = (
-    hascadence_metadata.groupby(level="corpus").composed_end.mean().astype(int).sort_values()
+    utils.get_composition_years(hascadence_metadata)
+    .composed_end.groupby(level="corpus")
+    .mean()
+    .astype(int)
+    .sort_values()
 )
 chronological_corpus_names = hascadence_metadata.get_corpus_names()
 bar_data = pd.concat(

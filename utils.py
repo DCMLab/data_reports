@@ -35,6 +35,7 @@ import seaborn as sns
 from dimcat import Dataset
 from dimcat.base import FriendlyEnum, deserialize_json_file, get_setting
 from dimcat.data import resources
+from dimcat.data.resources.dc import DimcatIndex
 from dimcat.data.resources.facets import add_chord_tone_intervals
 from dimcat.data.resources.features import extend_bass_notes_feature
 from dimcat.data.resources.results import TypeAlias
@@ -53,9 +54,9 @@ from dimcat.plotting import (
     make_scatter_plot,
     update_figure_layout,
 )
-from dimcat.steps import slicers
+from dimcat.steps import filters, slicers
 from dimcat.steps.analyzers import prevalence
-from dimcat.utils import get_middle_composition_year, grams, make_transition_matrix
+from dimcat.utils import grams, make_transition_matrix
 from git import Repo
 from IPython.display import display
 from matplotlib import gridspec
@@ -995,6 +996,113 @@ def color_background(x, color="#ffffb3"):
     return np.where(x.notna().to_numpy(), f"background-color: {color};", None)
 
 
+# region metadata helpers
+
+# Metadata columns that hold counts or lengths. Older corpus releases declare all metadata fields as strings in their
+# datapackage schema, so these need to be coerced before comparing or summing them.
+NUMERIC_METADATA_COLUMNS = (
+    "last_mc",
+    "last_mn",
+    "length_qb",
+    "last_mc_unfolded",
+    "last_mn_unfolded",
+    "length_qb_unfolded",
+    "all_notes_qb",
+    "n_onsets",
+    "n_onset_positions",
+    "guitar_chord_count",
+    "form_label_count",
+    "label_count",
+)
+
+EDTF_YEAR_REGEX = re.compile(r"^(?P<sign>-?)(?P<year>[\dX]{3,4})(?:-[\dX]{2}){0,2}$")
+"""Matches an EDTF date with year precision or finer, e.g. 1765, 1765-03, 1765-03-21, 176X, 17XX.
+3-digit years are accepted because the DCML metadata schema allows them."""
+
+
+def edtf_year_bounds(value) -> Tuple[Optional[int], Optional[int]]:
+    """Returns the earliest and latest year covered by an EDTF (Extended Date/Time Format) value.
+
+    Handles plain years and numbers, year-month(-day) dates, qualifiers (``?``, ``~``, ``%``), unspecified digits
+    (``17XX`` -> 1700, 1799), intervals (``1765/1780``) and sets (``[1765, 1767..1770]``, ``{1765,1780}``).
+    Open or unknown values (``..``, empty string, NA) and unparseable values yield None for the respective bound.
+    """
+    if value is None or value is pd.NA:
+        return None, None
+    if isinstance(value, Number) and not isinstance(value, bool):
+        if pd.isnull(value):
+            return None, None
+        return int(value), int(value)
+    s = str(value).strip()
+    if s.startswith(("[", "{")) and s.endswith(("]", "}")):
+        # set of dates and/or ranges written as 'start..end'
+        bounds = [edtf_year_bounds(element) for element in s[1:-1].split(",")]
+        lowers = [lower for lower, _ in bounds if lower is not None]
+        uppers = [upper for _, upper in bounds if upper is not None]
+        return (min(lowers) if lowers else None), (max(uppers) if uppers else None)
+    for separator in ("/", ".."):
+        # interval 'start/end' or set range 'start..end' (one side may be open)
+        if separator in s and s != "..":
+            start, end = s.split(separator, 1)
+            return edtf_year_bounds(start)[0], edtf_year_bounds(end)[1]
+    s = re.sub(r"[?~%]", "", s.split("T")[0])
+    match = EDTF_YEAR_REGEX.match(s)
+    if match is None:
+        return None, None
+    sign = -1 if match["sign"] else 1
+    lower = int(match["year"].replace("X", "0"))
+    upper = int(match["year"].replace("X", "9"))
+    if sign < 0:
+        lower, upper = upper, lower
+    return sign * lower, sign * upper
+
+
+def parse_edtf_years(
+    values: pd.Series, bound: Literal["lower", "upper"] = "lower"
+) -> pd.Series:
+    """Converts a series of EDTF values into (nullable integer) years, using the lower or upper bound of each value."""
+    position = 0 if bound == "lower" else 1
+    years = [edtf_year_bounds(value)[position] for value in values]
+    return pd.Series(years, index=values.index, name=values.name, dtype="Int64")
+
+
+def get_composition_years(
+    metadata: pd.DataFrame,
+    composed_start_column: str = "composed_start",
+    composed_end_column: str = "composed_end",
+    fill_open_bounds: bool = True,
+) -> pd.DataFrame:
+    """Returns a dataframe with the integer columns 'composed_start' and 'composed_end', parsed from the EDTF values
+    in the metadata. 'composed_start' holds the earliest and 'composed_end' the latest possible year of composition.
+    If ``fill_open_bounds`` is True (default), an open or unknown bound (e.g. '..') falls back to the other one.
+    """
+    composed_start = parse_edtf_years(metadata[composed_start_column], "lower")
+    composed_end = parse_edtf_years(metadata[composed_end_column], "upper")
+    if fill_open_bounds:
+        start_fallback = parse_edtf_years(metadata[composed_end_column], "lower")
+        end_fallback = parse_edtf_years(metadata[composed_start_column], "upper")
+        composed_start, composed_end = (
+            composed_start.fillna(start_fallback),
+            composed_end.fillna(end_fallback),
+        )
+    return pd.DataFrame(
+        dict(composed_start=composed_start, composed_end=composed_end),
+        index=metadata.index,
+    )
+
+
+def get_middle_composition_year(
+    metadata: pd.DataFrame,
+    composed_start_column: str = "composed_start",
+    composed_end_column: str = "composed_end",
+) -> pd.Series:
+    """Returns the middle of the (EDTF) composition year range, falling back to one bound if the other is open."""
+    years = get_composition_years(
+        metadata, composed_start_column, composed_end_column
+    ).astype(float)
+    return (years.composed_start + years.composed_end) / 2
+
+
 def corpus_mean_composition_years(
     df: pd.DataFrame,
     composed_start_column: str = "composed_start",
@@ -1019,6 +1127,56 @@ def chronological_corpus_order(
         df=df, composed_end_column=year_column
     )
     return mean_composition_years.index.to_list()
+
+
+def coerce_numeric_metadata(
+    metadata: pd.DataFrame, columns: Iterable[str] = NUMERIC_METADATA_COLUMNS
+) -> pd.DataFrame:
+    """Returns the metadata as a DataFrame in which the given count and length columns are numeric."""
+    metadata = (
+        metadata.df if isinstance(metadata, resources.DimcatResource) else metadata
+    )
+    metadata = metadata.copy()
+    for col in columns:
+        if col in metadata.columns and not pd.api.types.is_numeric_dtype(metadata[col]):
+            metadata[col] = pd.to_numeric(metadata[col], errors="coerce")
+    return metadata
+
+
+def get_label_counts(metadata: pd.DataFrame) -> pd.Series:
+    """Returns the number of DCML harmony labels per piece (0 if the column is missing)."""
+    if "label_count" not in metadata.columns:
+        return pd.Series(0, index=metadata.index, name="label_count")
+    return pd.to_numeric(metadata["label_count"], errors="coerce").fillna(0)
+
+
+class NumericHasHarmonyLabelsFilter(filters.HasHarmonyLabelsFilter):
+    """Same as :class:`dimcat.steps.filters.HasHarmonyLabelsFilter` but also works when the metadata column
+    'label_count' is not numeric (e.g. in older releases whose schema declares all metadata fields as strings).
+    """
+
+    def fit_to_dataset(self, dataset: Dataset) -> None:
+        metadata = dataset.get_metadata(raw=True)
+        has_labels = get_label_counts(metadata.df) > 0
+        grouping = has_labels.groupby(has_labels, sort=True).groups
+        self.grouped_units = DimcatIndex.from_grouping(
+            grouping, ("has_harmony_labels", "corpus", "piece")
+        )
+
+
+def select_annotated_pieces(D: Dataset) -> Tuple[Dataset, bool]:
+    """Returns the dataset filtered down to the pieces that have DCML harmony labels, and True. If no piece has
+    any, the corpus is unannotated and the unfiltered dataset is returned together with False.
+    """
+    if (get_label_counts(D.get_metadata(raw=True).df) > 0).any():
+        return NumericHasHarmonyLabelsFilter(keep_values=[True]).process(D), True
+    print(
+        "The dataset contains no DCML harmony labels. All pieces are included and label-based parts are skipped."
+    )
+    return D, False
+
+
+# endregion metadata helpers
 
 
 def cumulative_fraction(S, start_from_zero=False):

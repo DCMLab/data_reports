@@ -6,7 +6,7 @@
 #       extension: .py
 #       format_name: percent
 #       format_version: '1.3'
-#       jupytext_version: 1.19.5
+#       jupytext_version: 1.19.6
 #   kernelspec:
 #     display_name: corpus_docs
 #     language: python
@@ -26,7 +26,7 @@ import os
 import dimcat as dc
 import pandas as pd
 import plotly.express as px
-from dimcat import filters, plotting
+from dimcat import plotting
 from IPython.display import display
 
 import utils
@@ -69,8 +69,8 @@ print(f"dimcat version {dc.__version__}\n")
 D
 
 # %%
-filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
-all_metadata = filtered_D.get_metadata()
+filtered_D, includes_harmony_labels = utils.select_annotated_pieces(D)
+all_metadata = utils.coerce_numeric_metadata(filtered_D.get_metadata())
 assert len(all_metadata) > 0, "No pieces selected for analysis."
 all_metadata
 
@@ -92,15 +92,30 @@ mean_composition_years
 # %% [markdown]
 # ## Composition dates
 #
-# This section relies on the dataset's metadata.
+# This section relies on the dataset's metadata. Composition dates are given in the Extended Date/Time Format (EDTF),
+# where `..` stands for an open (unknown) bound.
 
 # %%
-valid_composed_start = pd.to_numeric(all_metadata.composed_start, errors="coerce")
-valid_composed_end = pd.to_numeric(all_metadata.composed_end, errors="coerce")
-print(
-    f"Composition dates range from {int(valid_composed_start.min())} {valid_composed_start.idxmin()} "
-    f"to {int(valid_composed_end.max())} {valid_composed_end.idxmax()}."
-)
+composition_years = utils.get_composition_years(all_metadata, fill_open_bounds=False)
+open_start = composition_years.composed_start.isna()
+open_end = composition_years.composed_end.isna()
+earliest_years = composition_years.composed_start.fillna(composition_years.composed_end)
+latest_years = composition_years.composed_end.fillna(composition_years.composed_start)
+if earliest_years.notna().any():
+    print(
+        f"Composition dates range from {earliest_years.min()} {earliest_years.idxmin()} "
+        f"to {latest_years.max()} {latest_years.idxmax()}."
+    )
+    if (n_open := (open_start & ~open_end).sum()) > 0:
+        print(
+            f"{n_open} pieces have an open start date, for which the end date was used."
+        )
+    if (n_open := (open_end & ~open_start).sum()) > 0:
+        print(
+            f"{n_open} pieces have an open end date, for which the start date was used."
+        )
+if (n_undated := (open_start & open_end).sum()) > 0:
+    print(f"{n_undated} pieces have no composition date.")
 
 
 # %% [markdown]
@@ -109,6 +124,8 @@ print(
 
 # %%
 def make_summary(metadata_df):
+    if not includes_harmony_labels:
+        return metadata_df.copy()
     piece_is_annotated = metadata_df.label_count > 0
     return metadata_df[piece_is_annotated].copy()
 
@@ -124,13 +141,14 @@ bar_data = pd.concat(
 ).reset_index()
 
 N = len(summary)
+pieces_description = "annotated pieces" if includes_harmony_labels else "pieces"
 fig = px.bar(
     bar_data,
     x="year",
     y="pieces",
     color="corpus",
     color_discrete_map=corpus_colors,
-    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
+    title=f"Temporal coverage of the {N} {pieces_description} in the Distant Listening Corpus",
 )
 fig.update_traces(width=5)
 fig.update_layout(**utils.STD_LAYOUT)
@@ -145,7 +163,9 @@ summary
 # ### Composition years histogram
 
 # %% tags=["hide-input"]
-hist_data = summary.reset_index()
+hist_data = summary.assign(
+    composed_end=utils.get_composition_years(summary).composed_end.astype(float)
+).reset_index()
 hist_data.corpus = hist_data.corpus.map(corpus_names)
 fig = px.histogram(
     hist_data,
@@ -156,7 +176,7 @@ fig = px.histogram(
         count="pieces",
     ),
     color_discrete_map=corpus_name_colors,
-    title=f"Temporal coverage of the {N} annotated pieces in the Distant Listening Corpus",
+    title=f"Temporal coverage of the {N} {pieces_description} in the Distant Listening Corpus",
 )
 fig.update_traces(xbins=dict(size=10))
 fig.update_layout(**utils.STD_LAYOUT)
@@ -194,7 +214,7 @@ absolute.astype(int)
 
 # %%
 def summarize_dataset(D):
-    all_metadata = D.get_metadata()
+    all_metadata = utils.coerce_numeric_metadata(D.get_metadata())
     summary = make_summary(all_metadata)
     return make_overview_table(summary.groupby(level=0))
 
