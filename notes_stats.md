@@ -5,7 +5,7 @@ jupytext:
     extension: .md
     format_name: myst
     format_version: 0.13
-    jupytext_version: 1.17.0
+    jupytext_version: 1.19.6
 kernelspec:
   display_name: corpus_docs
   language: python
@@ -27,7 +27,7 @@ import dimcat as dc
 import ms3
 import pandas as pd
 import plotly.express as px
-from dimcat import filters, plotting
+from dimcat import plotting
 
 import utils
 
@@ -79,9 +79,9 @@ D
 ## Metadata
 
 ```{code-cell}
-filtered_D = filters.HasHarmonyLabelsFilter(keep_values=[True]).process(D)
+filtered_D, includes_harmony_labels = utils.select_annotated_pieces(D)
 
-all_metadata = filtered_D.get_metadata()
+all_metadata = utils.coerce_numeric_metadata(filtered_D.get_metadata())
 all_metadata.reset_index(level=1).groupby(level=0).nth(0).iloc[:, :20]
 ```
 
